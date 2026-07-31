@@ -1,5 +1,8 @@
-import { motion } from "framer-motion"
+import { useMemo, useState } from "react"
+import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
+import { fmtCurrency } from "../../engine"
+import { pie3dGeometry } from "../../utils/pie3d"
 import type { YearRow } from "../../types"
 
 interface CapitalAllocationProps {
@@ -7,43 +10,121 @@ interface CapitalAllocationProps {
   darkMode: boolean
 }
 
+const PALETTE = {
+  light: {
+    invested: "#5f6b7a",
+    gains: "#a67c00",
+    losses: "#b23a3a",
+  },
+  dark: {
+    invested: "#9aa3af",
+    gains: "#e3b341",
+    losses: "#c0504d",
+  },
+}
+
+function shade(hex: string, factor: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.round(((n >> 16) & 255) * factor)
+  const g = Math.round(((n >> 8) & 255) * factor)
+  const b = Math.round((n & 255) * factor)
+  return `rgb(${r},${g},${b})`
+}
+
+const CX = 130
+const CY = 82
+const RX = 100
+const RY = 54
+const DEPTH = 24
+
 export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
   const lastRow = rows[rows.length - 1]
-  if (!lastRow) return null
+  const [active, setActive] = useState<number | null>(null)
+  const palette = darkMode ? PALETTE.dark : PALETTE.light
 
-  const items = [
-    { label: "Capital Investi", value: lastRow.investedNom, color: "#A09888" },
-    { label: "Généré par les intérêts", value: lastRow.interestsNom, color: "#D4AF37" },
-    { label: "Perdu en frais/impôts", value: lastRow.tax + lastRow.feesLost, color: "#8B3A3A" },
-  ]
-  const total = lastRow.nominal + lastRow.tax + lastRow.feesLost
+  const items = useMemo(() => {
+    if (!lastRow) return []
+    return [
+      { label: "Capital investi", value: lastRow.investedNom, color: palette.invested },
+      { label: "Généré par les intérêts", value: lastRow.interestsNom, color: palette.gains },
+      { label: "Perdu en frais / impôts", value: lastRow.tax + lastRow.feesLost, color: palette.losses },
+    ]
+  }, [lastRow, palette])
+
+  const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
+
+  const parts = useMemo(
+    () => pie3dGeometry(items.map(i => i.value), CX, CY, RX, RY, DEPTH),
+    [items],
+  )
+
+  if (!lastRow || items.length === 0) return null
+
+  const hoverStyle = (idx: number): CSSProperties =>
+    active === idx
+      ? { filter: "brightness(1.18)", cursor: "pointer" }
+      : active !== null
+        ? { opacity: 0.35 }
+        : { cursor: "default" }
+
+  const bind = (idx: number) => ({
+    onMouseEnter: () => setActive(idx),
+    onMouseLeave: () => setActive(null),
+  })
 
   return (
-    <div className="glass rounded-3xl p-6">
+    <div className="glass rounded-3xl p-6 animate-scale-in">
       <h3 className="text-xs font-bold mb-4 flex items-center gap-2">
         <PieChart size={12} className="text-warning" />
         Répartition du Capital
       </h3>
-      <div className="grid grid-cols-3 gap-4">
-        {items.map(item => {
+
+      <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
+        {parts.map((part, idx) =>
+          part.back ? <path key={`back-${idx}`} d={part.back} fill={shade(items[idx].color, 0.6)} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" /> : null,
+        )}
+        {parts.map((part, idx) =>
+          part.ribbon ? (
+            <path key={`ribbon-${idx}`} d={part.ribbon} fill={shade(items[idx].color, 0.78)} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" />
+          ) : null,
+        )}
+        {parts.map((part, idx) => (
+          <path key={`top-${idx}`} d={part.top} fill={items[idx].color} stroke="rgba(0,0,0,0.15)" strokeWidth={0.75} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" />
+        ))}
+      </svg>
+
+      <div className="mt-5 space-y-2">
+        {items.map((item, idx) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0
           return (
-            <div key={item.label} className="text-center">
-              <div className={`h-2 rounded-full overflow-hidden mb-2 ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  className="h-full rounded-full"
-                  style={{ background: item.color }}
-                />
-              </div>
-              <div className="text-[9px] text-text-dim">{item.label}</div>
-              <div className="mono text-xs font-bold mt-0.5" style={{ color: item.color }}>
-                {pct.toFixed(1)}%
-              </div>
+            <div
+              key={item.label}
+              onMouseEnter={() => setActive(idx)}
+              onMouseLeave={() => setActive(null)}
+              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                active === idx ? "bg-glass-hover" : active !== null ? "opacity-40" : ""
+              }`}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.color }} />
+                <span className="text-[10px] text-text-muted truncate">{item.label}</span>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="mono text-[10px] text-text-dim">{fmtCurrency(item.value)}</span>
+                <span className="mono text-[10px] font-bold" style={{ color: item.color }}>
+                  {pct.toFixed(1)}%
+                </span>
+              </span>
             </div>
           )
         })}
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+        <span className="text-[10px] text-text-dim">Patrimoine total</span>
+        <span className="mono text-xs font-bold" style={{ color: "var(--color-text)" }}>
+          {fmtCurrency(total)}
+        </span>
       </div>
     </div>
   )

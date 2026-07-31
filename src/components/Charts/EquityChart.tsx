@@ -26,7 +26,9 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
     [rows, showReal, inputs.envelope],
   )
 
-  const gainsColor = showReal ? "#B8960F" : "#D4AF37"
+  const gainsColor = showReal ? theme.gainsAlt : theme.gains
+  const investedColor = theme.invested
+  const taxColor = theme.tax
 
   return (
     <div className="glass rounded-3xl p-5 sm:p-6">
@@ -44,11 +46,11 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
             <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains générés
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#A09888]" /> Capital investi
+            <span className="w-2 h-2 rounded-full" style={{ background: investedColor }} /> Capital investi
           </span>
           {inputs.envelope !== "none" && (
             <span className="flex items-center gap-1">
-              <span className="w-2 h-0.5 rounded-full bg-[#8B3A3A]" /> Impact fiscal
+              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impact fiscal
             </span>
           )}
         </div>
@@ -59,8 +61,8 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
           <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="gradInvesti" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#A09888" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#A09888" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={investedColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={investedColor} stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="gradGains" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={gainsColor} stopOpacity={0.35} />
@@ -103,10 +105,10 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
                 )
               }}
             />
-            <Area type="monotone" dataKey="investi" name="Capital investi" stackId="1" stroke="#A09888" strokeWidth={2} fill="url(#gradInvesti)" />
+            <Area type="monotone" dataKey="investi" name="Capital investi" stackId="1" stroke={investedColor} strokeWidth={2} fill="url(#gradInvesti)" />
             <Area type="monotone" dataKey="gains" name="Gains générés" stackId="1" stroke={gainsColor} strokeWidth={2} fill="url(#gradGains)" />
             {inputs.envelope !== "none" && (
-              <Line type="monotone" dataKey="impôts" name="Impact fiscal" stroke="#8B3A3A" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+              <Line type="monotone" dataKey="impôts" name="Impact fiscal" stroke={taxColor} strokeWidth={2} strokeDasharray="6 3" dot={false} />
             )}
           </AreaChart>
         </ResponsiveContainer>

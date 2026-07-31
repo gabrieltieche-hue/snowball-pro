@@ -8,9 +8,11 @@
   --color-primary-dark: #b8960f;
   --color-primary-light: #e8d5a3;
   --color-accent: #c9a324;
-  --color-warning: #b8960f;
-  --color-danger: #8b3a3a;
-  --color-danger-light: #a84a4a;
+  --color-warning: #d9b64f;
+  --color-danger: #c96f6f;
+  --color-danger-light: #e08a8a;
+  --color-value-gold: #e6c35c;
+  --color-value-red: #e08a8a;
   --color-surface: #12100e;
   --color-surface-50: #1a1814;
   --color-surface-100: #1e1c17;
@@ -170,37 +172,72 @@
 }
 
 .light-mode {
-  --color-surface: #e8e3d8;
-  --color-surface-50: #ded9cc;
-  --color-surface-100: #d4cfc2;
-  --color-surface-200: #c8c2b4;
-  --color-surface-300: #bcb6a8;
-  --color-border: rgba(44, 44, 44, 0.1);
-  --color-border-light: rgba(44, 44, 44, 0.18);
-  --color-text: #1e1c17;
-  --color-text-muted: #4a453c;
-  --color-text-dim: #6e685c;
-  --color-glass: rgba(44, 44, 44, 0.04);
-  --color-glass-hover: rgba(44, 44, 44, 0.08);
+  --color-surface: #f8f6f1;
+  --color-surface-50: #ffffff;
+  --color-surface-100: #f0ede5;
+  --color-surface-200: #e4e0d5;
+  --color-surface-300: #d4d0c5;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-light: rgba(0, 0, 0, 0.12);
+  --color-text: #1a1816;
+  --color-text-muted: #5c564e;
+  --color-text-dim: #8a847a;
+  --color-primary: #b8860b;
+  --color-primary-dark: #996f09;
+  --color-primary-light: #d4a017;
+  --color-accent: #a67c00;
+  --color-warning: #c9860a;
+  --color-danger: #b83a3a;
+  --color-danger-light: #d04848;
+  --color-value-gold: #b8860b;
+  --color-value-red: #b83a3a;
+  --color-glass: rgba(255, 255, 255, 0.85);
+  --color-glass-hover: rgba(255, 255, 255, 0.95);
+}
+.light-mode .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.light-mode .glass-hover:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+.light-mode .glass-strong {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 .light-mode body {
   background-color: var(--color-surface);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 175, 55, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201, 163, 36, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(184, 134, 11, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(166, 124, 0, 0.04) 0%, transparent 50%);
   color: var(--color-text);
 }
 .light-mode input[type="range"] {
-  background: rgba(44, 44, 44, 0.08);
+  background: rgba(0, 0, 0, 0.06);
+}
+.light-mode input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #b8860b, #996f09);
+  box-shadow:
+    0 0 12px rgba(184, 134, 11, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.light-mode input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow:
+    0 0 20px rgba(184, 134, 11, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.light-mode input[type="range"]::-moz-range-thumb {
+  background: linear-gradient(135deg, #b8860b, #996f09);
 }
 .light-mode ::-webkit-scrollbar-thumb {
-  background: rgba(44, 44, 44, 0.12);
+  background: rgba(0, 0, 0, 0.12);
 }
 .light-mode ::-webkit-scrollbar-thumb:hover {
-  background: rgba(44, 44, 44, 0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 .light-mode ::selection {
-  background: rgba(212, 175, 55, 0.35);
+  background: rgba(184, 134, 11, 0.3);
 }
 
 @keyframes animateIn {

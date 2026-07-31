@@ -12,6 +12,7 @@ interface DrawdownChartProps {
 
 export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
   const theme = chartTheme(darkMode)
+  const ddColor = darkMode ? "#e08a8a" : "#9c2f2f"
   const data = useMemo(() => {
     let peak = rows[0]?.nominal || 0
     return rows.map(r => {
@@ -31,8 +32,8 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorDD" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8B3A3A" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#8B3A3A" stopOpacity={0} />
+                <stop offset="5%" stopColor={ddColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={ddColor} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} />
@@ -43,7 +44,7 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
               domain={["auto", 0]}
             />
             <Tooltip content={<CustomTooltip isCurrency={false} />} />
-            <Area type="monotone" dataKey="drawdown" stroke="#8B3A3A" fill="url(#colorDD)" strokeWidth={2} />
+            <Area type="monotone" dataKey="drawdown" stroke={ddColor} fill="url(#colorDD)" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -35,15 +35,15 @@ export function EnvelopeSelector({ value, onChange }: EnvelopeSelectorProps) {
             )}
             style={{
               borderColor: isActive ? env.color : undefined,
-              background: isActive ? `${env.color}15` : undefined,
+              background: isActive ? `color-mix(in srgb, ${env.color} 15%, transparent)` : undefined,
             }}
             aria-label={env.name}
             title={env.desc}
           >
-            <Icon size={16} style={{ color: isActive ? env.color : "#A09888" }} />
+            <Icon size={16} style={{ color: isActive ? env.color : "var(--color-text-muted)" }} />
             <span
               className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: isActive ? env.color : "#A09888" }}
+              style={{ color: isActive ? env.color : "var(--color-text-muted)" }}
             >
               {env.shortLabel}
             </span>

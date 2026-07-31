@@ -28,7 +28,7 @@ export function ActionBar({ onExportCSV, onPrint, darkMode, onToggleDarkMode }: 
       <button
         type="button"
         onClick={onPrint}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-[#C9A324] to-[#D4AF37] text-[#12100E] shadow-gold hover:from-[#D4AF37] hover:to-[#E5C158] transition-all"
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary transition-all"
       >
         <Printer size={12} /> Rapport PDF
       </button>

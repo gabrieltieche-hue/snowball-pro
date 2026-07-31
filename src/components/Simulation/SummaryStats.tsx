@@ -20,7 +20,6 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   if (!lastRow) return null
 
   const { showReal, envelope } = inputs
-  const env = ENVELOPE_CONFIGS.find(e => e.id === envelope) ?? ENVELOPE_CONFIGS[0]
 
   const displayFinal = showReal ? lastRow.real : lastRow.nominal
   const displayInvested = showReal ? lastRow.investedReal : lastRow.investedNom
@@ -33,12 +32,12 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
     {
       label: "Gains générés",
       value: `+${fmt(displayInterests)}`,
-      color: showReal ? "var(--color-warning)" : "var(--color-primary)",
+      color: "var(--color-value-gold)",
     },
     {
-      label: `Net fiscal (${env.shortLabel})`,
+      label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
       value: fmt(netAfterTax),
-      color: env.color,
+      color: "var(--color-value-gold)",
       sub: envelope !== "none" ? `Impôts : -${fmt(taxAmount)}` : "Aucune fiscalité",
     },
     {

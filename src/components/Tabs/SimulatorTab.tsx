@@ -39,10 +39,14 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
         <FeeImpact rows={rows} inputs={inputs} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DrawdownChart rows={rows} darkMode={darkMode} />
+      {inputs.crisisEnabled ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DrawdownChart rows={rows} darkMode={darkMode} />
+          <CapitalAllocation rows={rows} darkMode={darkMode} />
+        </div>
+      ) : (
         <CapitalAllocation rows={rows} darkMode={darkMode} />
-      </div>
+      )}
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
 

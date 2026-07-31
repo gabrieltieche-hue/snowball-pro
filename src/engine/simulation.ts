@@ -9,7 +9,10 @@ import { sanitizeInputs } from "./validation"
 function annualReturnForYear(inputs: SimulationInputs, yearIndex: number): number {
   if (inputs.returnMode === "historical") {
     const dataset = getHistoricalDataset(inputs.historicalIndex)
-    return dataset.years[yearIndex % dataset.years.length]?.return ?? inputs.annualReturn
+    // Ancrage inversé : l'année 1 de la projection rejoue le rendement le plus
+    // récent de l'indice (backtest "à partir d'aujourd'hui"), puis remonte dans le temps.
+    const returns = dataset.years.map(y => y.return)
+    return returns[returns.length - 1 - (yearIndex % returns.length)] ?? inputs.annualReturn
   }
   return inputs.annualReturn
 }

@@ -1,4 +1,5 @@
-import { Calendar, Coins, Landmark, Percent, RefreshCcw, Settings2, TrendingDown, Wallet } from "lucide-react"
+import { motion } from "framer-motion"
+import { Calendar, Coins, Landmark, PanelLeftClose, PanelLeftOpen, Percent, RefreshCcw, Settings2, TrendingDown, Wallet } from "lucide-react"
 import { BacktestSelector } from "../Forms/BacktestSelector"
 import { CrisisSelector } from "../Forms/CrisisSelector"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
@@ -6,7 +7,7 @@ import { ExpenseForm } from "../Forms/ExpenseForm"
 import { SectionTitle } from "../shared/SectionTitle"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
-import { fmtCurrency } from "../../engine"
+import { fmtCurrency, getHistoricalDataset } from "../../engine"
 import type { CrisisProfile, HistoricalIndex, SimulationInputs, YearRow } from "../../types"
 
 const MONTHS = [
@@ -27,31 +28,59 @@ const MONTHS = [
 interface SidebarProps {
   inputs: SimulationInputs
   rows: YearRow[]
+  collapsed: boolean
+  onToggleCollapse: () => void
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
   updateInputs: (partial: Partial<SimulationInputs>) => void
 }
 
-export function Sidebar({ inputs, rows, updateInput, updateInputs }: SidebarProps) {
+export function Sidebar({ inputs, rows, collapsed, onToggleCollapse, updateInput, updateInputs }: SidebarProps) {
   const lastRow = rows[rows.length - 1]
   const displayFinal = lastRow ? (inputs.showReal ? lastRow.real : lastRow.nominal) : 0
+  const historical = getHistoricalDataset(inputs.historicalIndex)
+  const historicalPeriod =
+    historical.years.length > 0
+      ? `${historical.name} · ${historical.years[0]?.year}–${historical.years[historical.years.length - 1]?.year}`
+      : historical.name
 
   return (
-    <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium lg:sticky lg:top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+    <motion.aside
+      className="glass rounded-3xl p-5 sm:p-6 shadow-premium lg:sticky lg:top-6 overflow-hidden"
+      initial={false}
+      animate={{ width: collapsed ? 72 : "100%" }}
+      transition={{ type: "spring", stiffness: 260, damping: 28 }}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-          <Wallet size={16} className="text-primary" />
-        </div>
-        <div>
-          <div className="text-lg font-extrabold tracking-tight leading-none">
-            SNOWBALL <span className="text-primary">PRO</span>
+      <div className="flex items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Wallet size={16} className="text-primary" />
           </div>
-          <div className="text-[9px] text-text-dim mt-1 uppercase tracking-[0.2em]">Simulateur patrimonial</div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <div className="text-lg font-extrabold tracking-tight leading-none whitespace-nowrap">
+                SNOWBALL <span className="text-primary">PRO</span>
+              </div>
+              <div className="text-[9px] text-text-dim mt-1 uppercase tracking-[0.2em] truncate">
+                Simulateur patrimonial
+              </div>
+            </div>
+          )}
         </div>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          title={collapsed ? "Déplier le menu" : "Replier le menu"}
+          className="p-1.5 rounded-lg text-text-dim hover:bg-glass-hover hover:text-text transition-colors shrink-0"
+        >
+          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
       </div>
 
-      {/* Calendrier */}
-      <SectionTitle icon={Calendar}>Calendrier</SectionTitle>
+      {!collapsed && (
+        <>
+          {/* Calendrier */}
+          <SectionTitle icon={Calendar}>Calendrier</SectionTitle>
       <SliderInput
         label="Mois de début"
         id="start-month"
@@ -109,7 +138,7 @@ export function Sidebar({ inputs, rows, updateInput, updateInputs }: SidebarProp
         checked={inputs.returnMode === "historical"}
         onChange={v => updateInputs({ returnMode: v ? "historical" : "fixed" })}
         label="Données historiques"
-        sub="Rendements réels d'un indice (1995-2025)"
+        sub={`Rendements réels de ${historicalPeriod}`}
       />
       {inputs.returnMode === "historical" && (
         <div className="mt-3 animate-fade-in">
@@ -197,6 +226,8 @@ export function Sidebar({ inputs, rows, updateInput, updateInputs }: SidebarProp
           )}
         </p>
       </div>
-    </aside>
+        </>
+      )}
+    </motion.aside>
   )
 }

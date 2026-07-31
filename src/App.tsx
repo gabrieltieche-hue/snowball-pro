@@ -19,11 +19,21 @@ const TABS = [
 ]
 
 const THEME_KEY = "snowball_v5_theme"
+const SIDEBAR_KEY = "snowball_v5_sidebar"
 
 function loadInitialDarkMode(): boolean {
   try {
     const stored = localStorage.getItem(THEME_KEY)
     if (stored) return stored === "dark"
+  } catch {
+    /* localStorage indisponible */
+  }
+  return false
+}
+
+function loadInitialSidebar(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === "collapsed"
   } catch {
     /* localStorage indisponible */
   }
@@ -55,6 +65,7 @@ export default function App() {
   const [inputs, setInputs] = useState<SimulationInputs>(loadInitialInputs)
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadInitialSidebar)
 
   const rows = useMemo(() => runSimulation(inputs), [inputs])
   const lastRow = rows[rows.length - 1]
@@ -84,6 +95,14 @@ export default function App() {
     }
   }, [darkMode])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? "collapsed" : "open")
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, [sidebarCollapsed])
+
   const exportCSV = () => {
     let csv = "Annee;Date;Total Verse;Interets;Valeur Nominale;Valeur Reelle;Net Fiscal\n"
     rows.forEach(r => {
@@ -104,8 +123,19 @@ export default function App() {
   return (
     <div className="min-h-screen bg-surface text-text">
       <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-          <Sidebar inputs={inputs} rows={rows} updateInput={updateInput} updateInputs={updateInputs} />
+        <div
+          className={`grid grid-cols-1 gap-6 items-start ${
+            sidebarCollapsed ? "lg:grid-cols-[72px_1fr]" : "lg:grid-cols-[380px_1fr]"
+          }`}
+        >
+          <Sidebar
+            inputs={inputs}
+            rows={rows}
+            updateInput={updateInput}
+            updateInputs={updateInputs}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+          />
 
           <main className="space-y-5 min-w-0">
             <ActionBar onExportCSV={exportCSV} onPrint={() => window.print()} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(d => !d)} />

@@ -298,7 +298,7 @@ export function RenteRetraiteTab({
               className={cn(
                 "w-full rounded-xl py-3.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors",
                 lastRow && lastRow.nominal > 0
-                  ? "bg-gradient-to-r from-[#C9A324] to-[#D4AF37] text-[#12100E] shadow-gold hover:from-[#D4AF37] hover:to-[#E5C158]"
+                   ? "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary"
                   : "bg-text-dim/20 text-text-dim cursor-not-allowed",
               )}
             >

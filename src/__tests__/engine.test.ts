@@ -19,8 +19,10 @@ import {
   v4SettingsToInputs,
   parseStoredInputs,
   DEFAULT_INPUTS,
+  getHistoricalDataset,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
+import { pie3dGeometry } from "../utils/pie3d"
 import type { SimulationInputs } from "../types"
 
 describe("roundCent", () => {
@@ -225,6 +227,59 @@ describe("runSimulation", () => {
     const normalEnd = normalRows[normalRows.length - 1]?.nominal ?? 0
     const crisisEnd = crisisRows[crisisRows.length - 1]?.nominal ?? 0
     expect(crisisEnd).toBeLessThan(normalEnd)
+  })
+
+  it("rejoue la série historique en partant de l'année la plus récente", () => {
+    const dataset = getHistoricalDataset("sp500")
+    const lastReturn = dataset.years[dataset.years.length - 1]?.return ?? 0
+    const histInputs: SimulationInputs = {
+      ...baseInputs,
+      returnMode: "historical",
+      historicalIndex: "sp500",
+      monthlyPayment: 0,
+      dividendYield: 0,
+      etfFees: 0,
+      brokerageFees: 0,
+      insuranceFees: 0,
+      managementFees: 0,
+      envelope: "none",
+      duration: 3,
+    }
+    const rows = runSimulation(histInputs)
+    expect(rows[1].yearlyReturn).toBeCloseTo(lastReturn, 3)
+  })
+})
+
+describe("getHistoricalDataset", () => {
+  it("couvre 1995–2025 pour les indices actions", () => {
+    for (const id of ["msci-world", "sp500", "nasdaq", "cac40"] as const) {
+      const dataset = getHistoricalDataset(id)
+      expect(dataset.years[0]?.year).toBe(1995)
+      expect(dataset.years[dataset.years.length - 1]?.year).toBe(2025)
+      expect(dataset.years.length).toBe(31)
+    }
+  })
+
+  it("couvre 2011–2025 pour Bitcoin sans année future", () => {
+    const dataset = getHistoricalDataset("bitcoin")
+    expect(dataset.years.length).toBe(15)
+    expect(dataset.years[0]?.year).toBe(2011)
+    expect(dataset.years[dataset.years.length - 1]?.year).toBe(2025)
+    expect(dataset.years.find(y => y.year === 2017)?.return).toBeCloseTo(13.3, 2)
+  })
+
+  it("couvre 2000–2025 pour l'or sans année future", () => {
+    const dataset = getHistoricalDataset("gold")
+    expect(dataset.years.length).toBe(26)
+    expect(dataset.years[0]?.year).toBe(2000)
+    expect(dataset.years[dataset.years.length - 1]?.year).toBe(2025)
+  })
+
+  it("produit des statistiques cohérentes avec les séries affichées", () => {
+    const dataset = getHistoricalDataset("sp500")
+    const expectedAvg = dataset.years.reduce((s, y) => s + y.return, 0) / dataset.years.length
+    expect(dataset.avgReturn).toBeCloseTo(expectedAvg, 10)
+    expect(dataset.volatility).toBeGreaterThan(0)
   })
 })
 
@@ -530,6 +585,15 @@ describe("chartTheme", () => {
     expect(theme.grid).toBe("rgba(255,255,255,0.04)")
     expect(theme.tick).toBe("#7A7265")
   })
+
+  it("returns theme-safe series colors", () => {
+    const light = chartTheme(false)
+    expect(light.gains).toBe("#8A6A00")
+    expect(light.tax).toBe("#B04545")
+    const dark = chartTheme(true)
+    expect(dark.gains).toBe("#E6C35C")
+    expect(dark.tax).toBe("#E08A8A")
+  })
 })
 
 describe("v4SettingsToInputs", () => {
@@ -594,5 +658,51 @@ describe("parseStoredInputs", () => {
     expect(inputs.capitalInitial).toBe(12345)
     expect(inputs.duration).toBe(12)
     expect(inputs.monthlyPayment).toBe(DEFAULT_INPUTS.monthlyPayment)
+  })
+})
+
+describe("pie3dGeometry", () => {
+  const G = (values: number[]) => pie3dGeometry(values, 130, 80, 96, 52, 22)
+
+  it("distributes 360° proportionally to values", () => {
+    const parts = G([60, 30, 10])
+    const totalDelta = parts.reduce((acc, p) => acc + p.delta, 0)
+    expect(totalDelta).toBeCloseTo(360)
+    expect(parts.map(p => p.delta)).toEqual([216, 108, 36])
+  })
+
+  it("renders a single slice as a full extruded ellipse", () => {
+    const [part] = G([100])
+    expect(part.delta).toBe(360)
+    expect(part.top).toContain("a 96 52 0 1 1 192 0")
+    expect(part.back).toBeDefined()
+    expect(part.ribbon).toBeDefined()
+  })
+
+  it("places the first half at the back (no ribbon) and the second at the front", () => {
+    const [back, front] = G([50, 50])
+    expect(back.ribbon).toBeUndefined()
+    expect(back.top).toBe("M 130 80 L 34 80 A 96 52 0 0 1 226 80 Z")
+    expect(front.ribbon).toBeDefined()
+    expect(front.ribbon).toBe("M 226 80 L 226 102 A 96 52 0 0 1 34 102 L 34 80 A 96 52 0 0 0 226 80 Z")
+  })
+
+  it("splits slices larger than 180° into back and front portions", () => {
+    const [large, small] = G([75, 25])
+    expect(large.back).toBeDefined()
+    expect(large.ribbon).toBeDefined()
+    expect(small.back).toBeUndefined()
+  })
+
+  it("keeps the ribbon on the front portion only of a slice crossing the 0° axis", () => {
+    const [back, front] = G([25, 75])
+    expect(back.ribbon).toBeUndefined()
+    expect(front.ribbon).toBeDefined()
+    expect(front.ribbon).toContain("M 226 80 L 226 102 A 96 52 0 0 1 34 102")
+  })
+
+  it("returns an empty list for empty or zero inputs", () => {
+    expect(G([])).toEqual([])
+    expect(G([0, 0])).toEqual([])
   })
 })

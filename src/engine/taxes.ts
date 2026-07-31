@@ -13,24 +13,24 @@ export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
     name: "Compte-titres ordinaire",
     shortLabel: "CTO",
     desc: "PFU 30% sur plus-values et dividendes",
-    color: "#D4AF37",
+    color: "var(--color-value-gold)",
   },
   {
     id: "pea",
     name: "Plan d'épargne en actions",
     shortLabel: "PEA",
     desc: "Après 5 ans : PS 17,2% sur les gains",
-    color: "#C9A324",
+    color: "var(--color-warning)",
   },
   {
     id: "av",
     name: "Assurance-vie",
     shortLabel: "AV",
     desc: "Après 8 ans : abattement puis 7,5% + PS",
-    color: "#E8D5A3",
+    color: "var(--color-primary-light)",
   },
-  { id: "per", name: "PER / PERIN", shortLabel: "PER", desc: "Fiscalité simplifiée à la sortie", color: "#8B7D5E" },
-  { id: "none", name: "Sans fiscalité", shortLabel: "BRUT", desc: "Projection brute avant impôts", color: "#F5F0E8" },
+  { id: "per", name: "PER / PERIN", shortLabel: "PER", desc: "Fiscalité simplifiée à la sortie", color: "var(--color-text-muted)" },
+  { id: "none", name: "Sans fiscalité", shortLabel: "BRUT", desc: "Projection brute avant impôts", color: "var(--color-text)" },
 ]
 
 export function roundCent(value: number): number {
