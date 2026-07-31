@@ -1,0 +1,62 @@
+import { motion } from "framer-motion"
+import { Trophy } from "lucide-react"
+import type { Milestone, YearRow } from "../../types"
+
+interface MilestoneTimelineProps {
+  milestones: Milestone[]
+  rows: YearRow[]
+}
+
+const springConfigSoft = { type: "spring" as const, stiffness: 200, damping: 20 }
+
+export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) {
+  const lastRow = rows[rows.length - 1]
+  if (!lastRow) return null
+
+  const dominanceYear = rows.findIndex(r => r.interestsNom >= r.investedNom)
+  const allMilestones = [
+    ...milestones,
+    {
+      id: "gains-dominance",
+      year: dominanceYear >= 0 ? dominanceYear : -1,
+      value: 0,
+      label: "Les gains dépassent les versements",
+      reached: lastRow.interestsNom >= lastRow.investedNom,
+    },
+  ]
+
+  const reached = allMilestones.filter(m => m.reached && m.year >= 0)
+
+  return (
+    <div className="glass rounded-2xl p-5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-4">
+        Timeline Patrimoniale
+        <span className="ml-2 text-[9px] text-text-dim">Étapes clés</span>
+      </div>
+      <div className="space-y-3">
+        {reached.length === 0 && (
+          <p className="text-xs text-text-dim">
+            Augmentez vos versements ou la durée pour atteindre vos premiers jalons.
+          </p>
+        )}
+        {reached.map((m, i) => (
+          <motion.div
+            key={m.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05, ...springConfigSoft }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+              <Trophy size={11} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-text">{m.label}</p>
+              <p className="text-[10px] text-text-dim">Atteint en année {m.year + 1}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
