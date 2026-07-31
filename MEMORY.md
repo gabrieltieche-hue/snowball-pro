@@ -4,6 +4,38 @@
 
 ---
 
+## SESSION — 2026-07-31 (Responsive mobile)
+
+### Résumé
+
+Passage responsive mobile vérifié sur la nouvelle architecture composants (Tailwind).
+
+### Important — contexte
+
+- La **migration composants** (App.tsx refactorisé, `src/components/`) s'est faite **pendant** cette session, en parallèle de l'agent. Le commit `e35b4717` est la baseline avant migration ; le worktree contient la migration non commitée.
+- L'architecture actuelle était déjà responsive (grid `grid-cols-1 lg:grid-cols-[380px_1fr]`, `min-w-0`). Corrections appliquées dessus.
+
+### Corrections appliquées
+
+- **TabBar** (`src/components/Layout/TabBar.tsx`) : `flex-wrap` + `min-w-[110px]` → 2×2 sur écrans étroits (320px), 4 colonnes sur desktop.
+- **SmartInput** (`src/components/shared/SmartInput.tsx`) : `min-w-0` — les inputs faisaient 228px de large intrinsèque et débordaient le layout à 320px (onglet Objectif).
+- **SliderInput** (`src/components/shared/SliderInput.tsx`) : `min-w-0` sur le wrapper label+input.
+- **index.css** : `@media (max-width: 640px)` → font-size 16px sur `input[type="text"]`, `input[type="number"]`, `select` (évite le zoom automatique iOS au focus).
+- **Graphiques** (`EquityChart`, `MonteCarloChart`, `DrawdownChart`) : `interval="preserveEnd"` + `minTickGap={28}` à la place des `interval` numériques → ticks d'axes jamais superposés sur mobile, desktop inchangé.
+
+### Vérifications
+
+- Playwright (headless) : 4 viewports (320/375/768/1440) × 4 onglets = **16/16 OK, zéro débordement horizontal**.
+- `npm run typecheck` ✓, `npm run lint` ✓, `npm run test` (38/38) ✓, `npm run build` ✓ (835 kB, 251 kB gzippé).
+
+### Notes
+
+- Les edits de ma 1ʳᵉ passe (bloc `<style>` inline sur l'ancien App.tsx) ont été abandonnés au profit de la nouvelle architecture (Tailwind natif) — les corrections finales sont dans `src/components/`.
+- `lang="fr"` déjà en place dans index.html.
+- Le sidebar garde `overflow-y-auto` : son contenu scroll en interne si besoin.
+
+---
+
 ## SESSION — 2026-06-28 (Audit + Corrections majeures)
 
 ### Résumé
@@ -85,3 +117,41 @@ Audit complet de Snowball Pro v5.0 avec correction de ~40 bugs, problèmes de pe
 4. **Ajouter un test** pour toute nouvelle fonction dans `engine/`
 5. **Ne jamais** remettre de logique métier dans `App.tsx` — utiliser les hooks
 6. **Mettre à jour** ce fichier MEMORY.md à la fin de chaque session
+
+---
+
+## SESSION — 2026-07-31 (Migration v5 : App monolithe → coquille + composants)
+
+### Résumé
+
+Migration du monolithe App.tsx (1906 lignes, moteur inline, Chart.js) vers la pile v5 (engine 13 modules + 26 composants prop-based). Application des skills ultrathink + fable-mode + apex (-a -x -v) + oneshot, gate de vérification après chaque stage.
+
+### Modifications
+
+- **`src/engine/migration.ts` (nouveau)** — `DEFAULT_INPUTS`, `V4_SETTINGS_KEY`/`SETTINGS_KEY`, `v4SettingsToInputs`, `parseStoredInputs` + clamps
+- **8 composants écrits** : EquityChart, MonteCarloChart, Sidebar, ActionBar, TabBar, SimulatorTab, MonteCarloPanel, GoalTab
+- **`src/App.tsx` réécrit** — 1906 → ~170 lignes : state local, runSimulation mémoïsé, 4 onglets, export CSV
+- **Suppressions (code mort)** : store.ts (Zustand), hooks/ (useStorage, useKeyboardShortcuts), components/ui/* (Radix, 9 fichiers), ComparisonBar, Card/StatCard/CurrencyValue, `index 2.css` (CSS legacy)
+- **package.json** : 4.1.0 → 5.0.0 ; retirés chart.js + 5 deps @radix-ui
+- **index.html** : titre « Snowball Pro v5 », fonts Inter/Outfit/JetBrains Mono
+- **AGENTS.md / CHANGELOG.md** : mis à jour (architecture réelle, 38 tests)
+- **Vérification graphe d'imports** : 47/47 fichiers atteignables, 0 mort
+
+### Décisions
+
+- Résultats numériques légèrement différents du moteur legacy (modèle fiscal v5 plus précis) — assumé
+- Krach legacy → `crisisEnabled=false` par défaut (toggle non persisté en v4)
+- Clé localStorage v4 conservée en lecture seule (rétrocompatibilité), écriture sur `snowball_v5_settings`
+- `@/utils/cn` : alias non vérifié → imports relatifs dans les nouveaux composants
+- Dark mode : prop `darkMode` (pas de toggle classe)
+
+### État
+
+- Gate final : typecheck ✓ lint ✓ 38 tests ✓ build ✓ (dist/index.html 835 kB / 251 kB gzip)
+- Version 5.0.0 prête, build singlefile OK
+
+### Commandes
+
+```bash
+npm run typecheck && npm run lint && npm run test && npm run build
+```

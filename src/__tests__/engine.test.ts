@@ -16,6 +16,9 @@ import {
   solveGoal,
   validateInputs,
   sanitizeInputs,
+  v4SettingsToInputs,
+  parseStoredInputs,
+  DEFAULT_INPUTS,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import type { SimulationInputs } from "../types"
@@ -526,5 +529,70 @@ describe("chartTheme", () => {
     const theme = chartTheme(true)
     expect(theme.grid).toBe("rgba(255,255,255,0.04)")
     expect(theme.tick).toBe("#7A7265")
+  })
+})
+
+describe("v4SettingsToInputs", () => {
+  it("maps every legacy key to its v5 counterpart", () => {
+    const inputs = v4SettingsToInputs({
+      p: 25000,
+      m: 750,
+      r: 6.5,
+      t: 30,
+      idx: 2,
+      inf: 1.5,
+      month: 6,
+      envelope: "pea",
+      kraschYear: 12,
+      kraschPct: 40,
+      showReal: true,
+    })
+    expect(inputs.capitalInitial).toBe(25000)
+    expect(inputs.monthlyPayment).toBe(750)
+    expect(inputs.annualReturn).toBeCloseTo(0.065)
+    expect(inputs.duration).toBe(30)
+    expect(inputs.indexation).toBeCloseTo(0.02)
+    expect(inputs.inflation).toBeCloseTo(0.015)
+    expect(inputs.startMonth).toBe(6)
+    expect(inputs.envelope).toBe("pea")
+    expect(inputs.crisisYear).toBe(12)
+    expect(inputs.crisisAmplitude).toBe(40)
+    expect(inputs.showReal).toBe(true)
+  })
+
+  it("falls back to defaults for missing keys", () => {
+    const inputs = v4SettingsToInputs({})
+    expect(inputs).toEqual(DEFAULT_INPUTS)
+  })
+
+  it("rejects invalid envelopes", () => {
+    const inputs = v4SettingsToInputs({ envelope: "futures" })
+    expect(inputs.envelope).toBe("cto")
+  })
+
+  it("clamps out-of-range values", () => {
+    const inputs = v4SettingsToInputs({ t: 500, month: 42, kraschPct: -10 })
+    expect(inputs.duration).toBe(80)
+    expect(inputs.startMonth).toBe(11)
+    expect(inputs.crisisAmplitude).toBe(0)
+  })
+
+  it("keeps krach inactive by default (legacy did not persist the toggle)", () => {
+    const inputs = v4SettingsToInputs({ kraschYear: 12, kraschPct: 40 })
+    expect(inputs.crisisEnabled).toBe(false)
+  })
+})
+
+describe("parseStoredInputs", () => {
+  it("returns defaults on empty or invalid input", () => {
+    expect(parseStoredInputs(null)).toEqual(DEFAULT_INPUTS)
+    expect(parseStoredInputs("not json")).toEqual(DEFAULT_INPUTS)
+  })
+
+  it("merges stored partial inputs over defaults", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ capitalInitial: 12345, duration: 12 }))
+    expect(inputs.capitalInitial).toBe(12345)
+    expect(inputs.duration).toBe(12)
+    expect(inputs.monthlyPayment).toBe(DEFAULT_INPUTS.monthlyPayment)
   })
 })

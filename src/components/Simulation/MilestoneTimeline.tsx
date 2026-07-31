@@ -13,19 +13,7 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
-  const dominanceYear = rows.findIndex(r => r.interestsNom >= r.investedNom)
-  const allMilestones = [
-    ...milestones,
-    {
-      id: "gains-dominance",
-      year: dominanceYear >= 0 ? dominanceYear : -1,
-      value: 0,
-      label: "Les gains dépassent les versements",
-      reached: lastRow.interestsNom >= lastRow.investedNom,
-    },
-  ]
-
-  const reached = allMilestones.filter(m => m.reached && m.year >= 0)
+  const reached = milestones.filter(m => m.reached && m.year >= 0)
 
   return (
     <div className="glass rounded-2xl p-5">

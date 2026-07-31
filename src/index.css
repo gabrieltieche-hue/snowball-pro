@@ -339,6 +339,14 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="number"],
+  select {
+    font-size: 16px !important;
+  }
+}
+
 input[type="text"].mono,
 input[type="number"].mono {
   font-family: var(--font-mono);

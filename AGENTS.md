@@ -8,7 +8,7 @@
 | `npm run typecheck`    | `tsc --noEmit` (strict mode)                                                                                  |
 | `npm run lint`         | ESLint 10 + TypeScript strict + react-hooks                                                                   |
 | `npm run lint:fix`     | Auto-fix lint                                                                                                 |
-| `npm run test`         | `vitest run` (25 tests, node env)                                                                             |
+| `npm run test`         | `vitest run` (38 tests, node env)                                                                             |
 | `npm run test:watch`   | `vitest` watch mode                                                                                           |
 | `npm run test:ui`      | `vitest --ui`                                                                                                 |
 | `npm run format`       | Prettier (`semi: false`, `singleQuote: false`, `trailingComma: all`, `printWidth: 120`, `arrowParens: avoid`) |
@@ -18,12 +18,11 @@
 
 ## Architecture
 
-- **Single-page app**: React 19 + Zustand 5 + Vite 7 + Tailwind CSS 4 + TypeScript strict
+- **Single-page app**: React 19 + Vite 7 + Tailwind CSS 4 + Recharts + framer-motion + TypeScript strict (Zustand/Radix/Chart.js removed in v5)
 - **Path alias**: `@/` → `src/` (configured in both `vite.config.ts` and `vitest.config.ts`)
-- **Engine** (`src/engine/`): modular pure functions (math, taxes, simulation, montecarlo, kpis, validation, formatting, rng, historical, crisis). Barrel re-exported via `src/engine.ts` → `src/engine/index.ts`
-- **Store** (`src/store.ts`): single Zustand store with A/B scenario comparison, undo/redo (20 levels), localStorage persistence (key `snowball_pro_v41_state`), versioned migration
-- **UI components** in `src/components/` (Layout, Forms, Charts, Simulation, shared, ui/radix)
-- **Hooks** in `src/hooks/`: useSimulation, useUndoRedo, useStorage, useValidation, useKeyboardShortcuts
+- **Engine** (`src/engine/`): modular pure functions (math, taxes, simulation, montecarlo, kpis, validation, formatting, rng, historical, crisis, decumulation, migration). Barrel re-exported via `src/engine.ts` → `src/engine/index.ts`
+- **State**: local component state only (`useState` in `App.tsx`), persisted to localStorage (key `snowball_v5_settings`, read via `parseStoredInputs`, fallback migration from v4 key `snowball_v4_settings` via `v4SettingsToInputs`)
+- **UI components** in `src/components/` (Layout, Forms, Charts, Simulation, Tabs, shared) — all prop-based, no store imports
 - **App is French**: labels, tax rules (CTO/PEA/AV/PER), locale formatting
 
 ## Testing
@@ -35,16 +34,14 @@
 
 ## Key conventions
 
-- **No business logic in `App.tsx`** — use hooks or store
+- **`App.tsx` is a thin shell**: local state (inputs, activeTab), `runSimulation` memo, CSV export, tab orchestration — no business logic beyond that
 - **Engine code is pure** — no side effects, no DOM
 - **Deterministic RNG** — mulberry32 with exposed seed for Monte Carlo reproducibility
-- **Default theme**: light mode (`class="light-mode"` on `<html>`), toggle switches to `dark`
-- **Dark mode toggle** toggles `.light-mode` / `.dark` classes on `<html>`
-- **Keyboard shortcuts**: Ctrl+Z undo, Ctrl+Shift+Z redo, Ctrl+Y redo (macOS Cmd variants), Ctrl+D dark mode
+- **Dark mode**: light default; v5 components take a `darkMode` prop (class-based toggle was removed)
 
 ## Quirks
 
 - `vite-plugin-singlefile`: build output is a single `index.html` with all JS/CSS inlined. `dist/` has a few extra files (sw.js, manifest.json) but the app lives in one HTML file
 - Tailwind CSS 4 with `@import "tailwindcss"` and `@theme` directive (not `tailwind.config.js`)
-- localStorage key: `snowball_pro_v41_state` — preserving backward compatibility matters
+- localStorage keys: `snowball_v5_settings` (current) and `snowball_v4_settings` (legacy, read-only fallback) — preserving backward compatibility matters
 - `MEMORY.md` serves as a team session log (not an agent instruction file)

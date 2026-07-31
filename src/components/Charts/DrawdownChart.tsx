@@ -33,7 +33,7 @@ export function DrawdownChart({ rows }: DrawdownChartProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="year" tick={{ fill: "#7A7265", fontSize: 10 }} />
+            <XAxis dataKey="year" tick={{ fill: "#7A7265", fontSize: 10 }} interval="preserveEnd" minTickGap={28} />
             <YAxis
               tick={{ fill: "#7A7265", fontSize: 10 }}
               tickFormatter={(v: number) => `${v.toFixed(0)}%`}

@@ -24,7 +24,7 @@ export function SliderInput({ label, id, value, min, max, step, suffix, onChange
         >
           {label}
         </label>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 min-w-0">
           {prefix && <span className="text-[10px] text-text-dim">{prefix}</span>}
           <SmartInput value={value} onChange={onChange} />
         </div>

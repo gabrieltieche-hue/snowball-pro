@@ -35,7 +35,7 @@ export function SmartInput({ value, onChange, className, ...props }: SmartInputP
         }
       }}
       className={cn(
-        "mono text-right text-xs font-bold bg-glass border border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50 transition-colors",
+        "mono text-right text-xs font-bold bg-glass border border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50 transition-colors min-w-0",
         className,
       )}
       {...props}

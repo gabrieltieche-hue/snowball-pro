@@ -1,4 +1,6 @@
 export { mulberry32, gaussian } from "./rng"
+export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY, SETTINGS_KEY } from "./migration"
+export type { V4Settings } from "./migration"
 export { fmtCurrency, fmtCompact, fmtPercent, parseCurrencyInput } from "./formatting"
 export { roundCent, clamp, ENVELOPE_CONFIGS, computeTaxBreakdown, dividendTaxRate, calcXIRR } from "./taxes"
 export {
