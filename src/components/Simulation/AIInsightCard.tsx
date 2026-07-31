@@ -36,7 +36,7 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-gold rounded-2xl p-5 border-l-2 border-[#D4AF37]/50"
+      className="glass-gold rounded-2xl p-5 border-l-2 border-primary/50"
     >
       <div className="flex items-center gap-2 mb-2">
         <Sparkles size={14} className="text-primary" />

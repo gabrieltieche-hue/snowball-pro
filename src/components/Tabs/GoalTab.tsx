@@ -14,7 +14,7 @@ interface GoalTabProps {
 
 const DIFFICULTY_META: Record<GoalDifficulty, { label: string; tone: string }> = {
   easy: { label: "Atteignable (livrets, obligations)", tone: "#4ADE80" },
-  moderate: { label: "Marché actions diversifié", tone: "#D4AF37" },
+  moderate: { label: "Marché actions diversifié", tone: "var(--color-primary)" },
   ambitious: { label: "Très ambitieux", tone: "#F87171" },
   impossible: { label: "Objectif irréaliste", tone: "#F87171" },
 }

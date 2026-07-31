@@ -43,8 +43,8 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
           <ComposedChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }} data={data}>
             <defs>
               <linearGradient id="bandGradientMC" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#D4AF37" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="#D4AF37" stopOpacity={0.03} />
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.22} />
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.03} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
@@ -87,7 +87,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
             />
             <Area type="monotone" dataKey="bande" name="Fourchette P10 – P90" stroke="none" fill="url(#bandGradientMC)" isAnimationActive={false} />
             <Line type="monotone" dataKey="p90" name="P90 — optimiste" stroke="#4ADE80" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-            <Line type="monotone" dataKey="p50" name="Médiane (P50)" stroke="#D4AF37" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="p50" name="Médiane (P50)" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} />
             <Line type="monotone" dataKey="p10" name="P10 — pessimiste" stroke="#F87171" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
             <ReferenceLine y={result.goalTarget} stroke="#60A5FA" strokeWidth={1} strokeDasharray="2 2" />
           </ComposedChart>

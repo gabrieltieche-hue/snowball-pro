@@ -64,9 +64,9 @@ const WITHDRAWAL_MODELS: {
     desc: "Retrait dynamique de 5,5 %/an",
     rate: 0.055,
     icon: Sparkles,
-    tone: "#D4AF37",
+    tone: "var(--color-primary)",
   },
-  { id: "custom", label: "Personnalisé", desc: "Montant fixe mensuel choisi", rate: 0, icon: Wallet, tone: "#C9A324" },
+  { id: "custom", label: "Personnalisé", desc: "Montant fixe mensuel choisi", rate: 0, icon: Wallet, tone: "var(--color-primary-dark)" },
 ]
 
 interface RenteRetraiteTabProps {
@@ -112,8 +112,8 @@ export function RenteRetraiteTab({
         <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
           <div className="flex-1 min-w-[260px]">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/15 flex items-center justify-center">
-                <TrendingUp size={14} className="text-[#D4AF37]" />
+              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                <TrendingUp size={14} className="text-primary" />
               </div>
               <h2 className="text-sm sm:text-base font-bold">Simulation de décaissement & rente</h2>
             </div>
@@ -122,7 +122,7 @@ export function RenteRetraiteTab({
               <strong className="text-text">{inputs.retirementYears} ans</strong> via une simulation Monte-Carlo.
             </p>
             <div className="flex items-center gap-1.5 mt-2 text-[10px] text-text-dim">
-              <AlertTriangle size={11} className="text-[#D4AF37]" />
+              <AlertTriangle size={11} className="text-primary" />
               <span>La rente n'est pas garantie — les performances passées ne préjugent pas des résultats futurs.</span>
             </div>
           </div>
@@ -162,7 +162,7 @@ export function RenteRetraiteTab({
                     className={cn(
                       "relative rounded-xl p-3.5 border text-left transition-all",
                       isActive
-                        ? "border-[#D4AF37]/60 bg-[#D4AF37]/10 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.25)]"
+                        ? "border-primary/60 bg-primary/10 shadow-[inset_0_0_0_1px_rgba(var(--color-primary-rgb),0.25)]"
                         : "glass border-border hover:bg-glass-hover",
                     )}
                   >
@@ -176,7 +176,7 @@ export function RenteRetraiteTab({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-bold">{model.label}</span>
-                          {isActive && <CheckCircle2 size={13} className="text-[#D4AF37] shrink-0" />}
+                          {isActive && <CheckCircle2 size={13} className="text-primary shrink-0" />}
                         </div>
                         <div className="text-[10px] text-text-dim mt-0.5 leading-snug">{model.desc}</div>
                         {model.rate > 0 && (
@@ -250,7 +250,7 @@ export function RenteRetraiteTab({
                 onChange={e => updateInput("retirementYears", Number(e.target.value))}
                 className="w-full mt-2"
                 aria-label="Durée de la rente en années"
-                style={{ accentColor: "#D4AF37" }}
+                style={{ accentColor: "var(--color-primary)" }}
               />
               <div className="flex justify-between text-[9px] text-text-dim mt-1">
                 <span>5 ans</span>
@@ -264,7 +264,7 @@ export function RenteRetraiteTab({
               onClick={() => updateInput("withdrawalInflation", !inputs.withdrawalInflation)}
               className={cn(
                 "w-full flex items-center justify-between glass rounded-xl px-4 py-3 cursor-pointer hover:bg-glass-hover transition-colors text-left",
-                inputs.withdrawalInflation && "border border-[#D4AF37]/40",
+                inputs.withdrawalInflation && "border border-primary/40",
               )}
               role="switch"
               aria-checked={inputs.withdrawalInflation}
@@ -278,7 +278,7 @@ export function RenteRetraiteTab({
               <div
                 className={cn(
                   "relative w-10 h-5 rounded-full transition-colors duration-300 flex-shrink-0",
-                  inputs.withdrawalInflation ? "bg-[#D4AF37]" : "bg-text-dim/30",
+                  inputs.withdrawalInflation ? "bg-primary" : "bg-text-dim/30",
                 )}
               >
                 <motion.div
@@ -333,19 +333,19 @@ export function RenteRetraiteTab({
             const monthly = (startingCapital * rate) / 12
             const yearly = monthly * 12
             const isCurrent = Math.abs(selectedModel.rate - rate) < 0.0001
-            const tone = rate <= 0.025 ? "#60A5FA" : rate <= 0.04 ? "#4ADE80" : "#D4AF37"
+            const tone = rate <= 0.025 ? "#60A5FA" : rate <= 0.04 ? "#4ADE80" : "var(--color-primary)"
             const label = rate <= 0.025 ? "Très prudent" : rate <= 0.04 ? "Équilibré (Bengen)" : "Dynamique"
             return (
               <div
                 key={rate}
-                className={cn("glass rounded-2xl p-4 transition-all", isCurrent && "ring-1 ring-[#D4AF37]/60")}
+                className={cn("glass rounded-2xl p-4 transition-all", isCurrent && "ring-1 ring-primary/60")}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] text-text-dim uppercase tracking-wider">
                     Taux {(rate * 100).toFixed(1).replace(/\.0$/, "")} %
                   </span>
                   {isCurrent && (
-                    <span className="text-[9px] mono font-bold text-[#D4AF37] uppercase tracking-wider">Actuel</span>
+                    <span className="text-[9px] mono font-bold text-primary uppercase tracking-wider">Actuel</span>
                   )}
                 </div>
                 <div className="mono text-lg sm:text-xl font-bold" style={{ color: tone }}>
@@ -371,7 +371,7 @@ export function RenteRetraiteTab({
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted mb-3">
-      <span className="w-1 h-3 rounded-full bg-[#D4AF37]" />
+      <span className="w-1 h-3 rounded-full bg-primary" />
       {children}
     </div>
   )
@@ -389,7 +389,7 @@ function ResultsSection({
   theme: ReturnType<typeof chartTheme>
 }) {
   const survival = decumResult.survivalProbability
-  const survivalTone = survival >= 90 ? "#4ADE80" : survival >= 75 ? "#D4AF37" : "#F87171"
+  const survivalTone = survival >= 90 ? "#4ADE80" : survival >= 75 ? "var(--color-primary)" : "#F87171"
   const survivalLabel = survival >= 90 ? "Excellente" : survival >= 75 ? "Correcte" : "Risquée"
   const ruinYear = decumResult.ruinYearMedian
   const finalMedian = decumResult.p50[decumResult.p50.length - 1] ?? 0
@@ -441,8 +441,8 @@ function ResultsSection({
             jusqu'au bout dans{" "}
             <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
           </p>
-          <div className="mt-2 rounded-xl bg-[#D4AF37]/8 border-l-2 border-[#D4AF37]/50 px-3 py-2 flex items-start gap-2">
-            <Lightbulb size={13} className="text-[#D4AF37] shrink-0 mt-0.5" />
+          <div className="mt-2 rounded-xl bg-primary/8 border-l-2 border-primary/50 px-3 py-2 flex items-start gap-2">
+            <Lightbulb size={13} className="text-primary shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed text-text-dim">
               <strong className="text-text">En clair :</strong>{" "}
               {ruinYear !== null ? (
@@ -469,7 +469,7 @@ function ResultsSection({
           label="Votre rente"
           value={fmtCurrency(decumResult.initialWithdrawal)}
           sub={`par mois, pendant ${decumResult.years.length - 1} ans`}
-          tone="#D4AF37"
+          tone="var(--color-primary)"
         />
         <KpiCard
           label="La rente dure-t-elle ?"
@@ -511,7 +511,7 @@ function ResultsSection({
               onClick={() => setShowGuide(v => !v)}
               className={cn(
                 "text-[10px] text-text-dim hover:text-text inline-flex items-center gap-1 transition-colors",
-                showGuide && "text-[#D4AF37]",
+                showGuide && "text-primary",
               )}
             >
               <HelpCircle size={11} /> Comment lire ?
@@ -532,7 +532,7 @@ function ResultsSection({
               </p>
               <ul className="space-y-1.5 list-disc pl-4">
                 <li>
-                  <strong className="text-[#D4AF37]">Ligne dorée (scénario moyen)</strong> : le cas le plus courant. Une
+                  <strong className="text-primary">Ligne dorée (scénario moyen)</strong> : le cas le plus courant. Une
                   fois sur deux, votre résultat est meilleur ; une fois sur deux, il est moins bon.
                 </li>
                 <li>
@@ -577,8 +577,8 @@ function ResultsSection({
               >
                 <defs>
                   <linearGradient id="bandGradientRente" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D4AF37" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#D4AF37" stopOpacity={0.04} />
+                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
@@ -634,7 +634,7 @@ function ResultsSection({
                   type="monotone"
                   dataKey="médian"
                   name="Scénario moyen (P50)"
-                  stroke="#D4AF37"
+                  stroke="var(--color-primary)"
                   strokeWidth={2.5}
                   dot={false}
                 />
@@ -660,7 +660,7 @@ function ResultsSection({
               desc="La bourse vous sourit — seul 1 cas sur 10 fait encore mieux"
             />
             <LegendItem
-              color="#D4AF37"
+              color="var(--color-primary)"
               label="Scénario moyen (P50)"
               desc="Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien"
             />
@@ -731,8 +731,8 @@ function EmptyState({ hasAccumulation }: { hasAccumulation: boolean }) {
   return (
     <div className="glass rounded-3xl p-8 sm:p-12 border border-dashed border-border">
       <div className="max-w-md mx-auto text-center space-y-3">
-        <div className="w-14 h-14 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto">
-          <TrendingUp size={24} className="text-[#D4AF37]" />
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+          <TrendingUp size={24} className="text-primary" />
         </div>
         <h3 className="text-sm font-bold">Lancez la simulation Monte-Carlo</h3>
         <p className="text-[11px] text-text-dim leading-relaxed">

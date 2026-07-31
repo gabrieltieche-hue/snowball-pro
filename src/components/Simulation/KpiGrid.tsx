@@ -16,7 +16,7 @@ export function KpiGrid({ kpis }: KpiGridProps) {
     { key: "cagr" as const, label: "CAGR", suffix: "%", color: GOLD, sub: "Croissance annualisée" },
     { key: "sharpe" as const, label: "Sharpe Ratio", suffix: "", color: GOLD, digits: 2, sub: "Performance ajustée au risque" },
     { key: "maxDrawdownPct" as const, label: "Drawdown Max", suffix: "%", color: RED, sub: "Pire chute du capital" },
-    { key: "capitalMultiple" as const, label: "Multiple Capital", suffix: "x", color: GOLD, sub: "Capital final ÷ investi" },
+    { key: "capitalMultiple" as const, label: "Multiplicateur", suffix: "x", color: GOLD, sub: "Capital final ÷ investi" },
     { key: "doublingTime" as const, label: "Doublement", suffix: " ans", color: GOLD, sub: "Années pour doubler" },
     { key: "contributionPct" as const, label: "Part Versements", suffix: "%", color: NEUTRAL, sub: "Issu de vos versements" },
     { key: "gainsPct" as const, label: "Part Gains", suffix: "%", color: GOLD, sub: "Issu des intérêts composés" },
@@ -43,7 +43,7 @@ export function KpiGrid({ kpis }: KpiGridProps) {
             <div className="mono text-base font-bold mt-1.5 leading-tight truncate" style={{ color: kpi.color }}>
               {display}
             </div>
-            <div className="text-[9px] text-text-dim mt-1 leading-snug">{kpi.sub}</div>
+            <div className="text-[9px] text-text-muted mt-1 leading-snug">{kpi.sub}</div>
           </div>
         )
       })}

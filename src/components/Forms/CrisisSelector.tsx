@@ -3,7 +3,7 @@ import { cn } from "../../utils/cn"
 import { SliderInput } from "../shared/SliderInput"
 
 const CRISIS_PROFILES = [
-  { id: "flash-crash", label: "Flash Crash", desc: "-25% en 1 an", color: "#C9A324" },
+  { id: "flash-crash", label: "Flash Crash", desc: "-25% en 1 an", color: "var(--color-primary)" },
   { id: "bear-market", label: "Bear Market", desc: "-40% sur 2 ans", color: "#8B3A3A" },
   { id: "long-depression", label: "Dépression Longue", desc: "-55% sur 5 ans", color: "#A84A4A" },
   { id: "stagflation", label: "Stagflation", desc: "-35% sur 4 ans", color: "#B8960F" },

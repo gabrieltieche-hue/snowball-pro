@@ -61,7 +61,7 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
   const scenarioCards = mcResult
     ? [
         { label: "Scénario pessimiste (P10)", value: mcResult.p10[mcResult.p10.length - 1] ?? 0, tone: "#F87171", sub: "1 chance sur 10 de faire moins" },
-        { label: "Scénario médian (P50)", value: mcResult.p50[mcResult.p50.length - 1] ?? 0, tone: "#D4AF37", sub: "Résultat le plus probable" },
+        { label: "Scénario médian (P50)", value: mcResult.p50[mcResult.p50.length - 1] ?? 0, tone: "var(--color-primary)", sub: "Résultat le plus probable" },
         { label: "Scénario optimiste (P90)", value: mcResult.p90[mcResult.p90.length - 1] ?? 0, tone: "#4ADE80", sub: "1 chance sur 10 de faire mieux" },
       ]
     : []
@@ -85,7 +85,7 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
               "inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-colors whitespace-nowrap",
               running
                 ? "bg-text-dim/20 text-text-dim cursor-not-allowed"
-                : "bg-gradient-to-r from-[#C9A324] to-[#D4AF37] text-[#12100E] shadow-gold hover:from-[#D4AF37] hover:to-[#E5C158]",
+                : "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary",
             )}
           >
             <Play size={13} fill="currentColor" /> {running ? "Calcul..." : `Lancer ${inputs.mcRuns} simulations`}
