@@ -1,15 +1,18 @@
 import { useMemo } from "react"
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { fmtCurrency, fmtCompact } from "../../engine"
+import { chartTheme } from "../../utils/chartTheme"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface EquityChartProps {
   rows: YearRow[]
   inputs: SimulationInputs
+  darkMode: boolean
 }
 
-export function EquityChart({ rows, inputs }: EquityChartProps) {
+export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
   const showReal = inputs.showReal
+  const theme = chartTheme(darkMode)
 
   const data = useMemo(
     () =>
@@ -64,17 +67,17 @@ export function EquityChart({ rows, inputs }: EquityChartProps) {
                 <stop offset="100%" stopColor={gainsColor} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fill: "#7A7265", fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 10 }}
               interval="preserveEnd"
               minTickGap={28}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#7A7265", fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 10 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}

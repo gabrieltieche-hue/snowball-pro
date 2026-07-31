@@ -5,6 +5,7 @@ import { ActionBar } from "./components/Layout/ActionBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar } from "./components/Layout/TabBar"
+import { SummaryStats } from "./components/Simulation/SummaryStats"
 import { GoalTab } from "./components/Tabs/GoalTab"
 import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "./components/Tabs/RenteRetraiteTab"
@@ -16,6 +17,22 @@ const TABS = [
   { id: "rente", label: "💸 Rente & Retraite" },
   { id: "goal", label: "🎯 Objectif Inversé" },
 ]
+
+const THEME_KEY = "snowball_v5_theme"
+
+function loadInitialDarkMode(): boolean {
+  try {
+    const stored = localStorage.getItem(THEME_KEY)
+    if (stored) return stored === "dark"
+  } catch {
+    /* localStorage indisponible */
+  }
+  return false
+}
+
+function applyThemeClass(darkMode: boolean) {
+  document.documentElement.classList.toggle("light-mode", !darkMode)
+}
 
 function loadInitialInputs(): SimulationInputs {
   try {
@@ -30,6 +47,11 @@ function loadInitialInputs(): SimulationInputs {
 }
 
 export default function App() {
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const initial = loadInitialDarkMode()
+    applyThemeClass(initial)
+    return initial
+  })
   const [inputs, setInputs] = useState<SimulationInputs>(loadInitialInputs)
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
@@ -52,6 +74,15 @@ export default function App() {
       /* localStorage indisponible */
     }
   }, [inputs])
+
+  useEffect(() => {
+    applyThemeClass(darkMode)
+    try {
+      localStorage.setItem(THEME_KEY, darkMode ? "dark" : "light")
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, [darkMode])
 
   const exportCSV = () => {
     let csv = "Annee;Date;Total Verse;Interets;Valeur Nominale;Valeur Reelle;Net Fiscal\n"
@@ -77,23 +108,24 @@ export default function App() {
           <Sidebar inputs={inputs} rows={rows} updateInput={updateInput} updateInputs={updateInputs} />
 
           <main className="space-y-5 min-w-0">
-            <ActionBar onExportCSV={exportCSV} onPrint={() => window.print()} />
+            <ActionBar onExportCSV={exportCSV} onPrint={() => window.print()} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(d => !d)} />
+            <SummaryStats rows={rows} inputs={inputs} />
             <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-            {activeTab === "simulator" && <SimulatorTab rows={rows} inputs={inputs} />}
-            {activeTab === "montecarlo" && <MonteCarloPanel inputs={inputs} />}
+            {activeTab === "simulator" && <SimulatorTab rows={rows} inputs={inputs} darkMode={darkMode} />}
+            {activeTab === "montecarlo" && <MonteCarloPanel inputs={inputs} darkMode={darkMode} />}
             {activeTab === "rente" && (
               <RenteRetraiteTab
                 inputs={inputs}
                 decumResult={decumResult}
                 lastRow={lastRow}
-                darkMode={false}
+                darkMode={darkMode}
                 updateInput={updateInput}
                 updateInputs={updateInputs}
                 runDecum={runDecum}
               />
             )}
-            {activeTab === "goal" && <GoalTab inputs={inputs} rows={rows} updateInput={updateInput} />}
+            {activeTab === "goal" && <GoalTab inputs={inputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />}
           </main>
         </div>
 

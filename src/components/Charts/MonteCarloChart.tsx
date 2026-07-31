@@ -1,13 +1,16 @@
 import { useMemo } from "react"
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { fmtCurrency, fmtCompact } from "../../engine"
+import { chartTheme } from "../../utils/chartTheme"
 import type { MonteCarloResult } from "../../types"
 
 interface MonteCarloChartProps {
   result: MonteCarloResult
+  darkMode: boolean
 }
 
-export function MonteCarloChart({ result }: MonteCarloChartProps) {
+export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
+  const theme = chartTheme(darkMode)
   const data = useMemo(
     () =>
       result.years.map((y, i) => {
@@ -44,17 +47,17 @@ export function MonteCarloChart({ result }: MonteCarloChartProps) {
                 <stop offset="100%" stopColor="#D4AF37" stopOpacity={0.03} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fill: "#7A7265", fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 10 }}
               interval="preserveEnd"
               minTickGap={28}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#7A7265", fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 10 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}

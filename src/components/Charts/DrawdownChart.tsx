@@ -1,14 +1,17 @@
 import { TrendingDown } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
+import { chartTheme } from "../../utils/chartTheme"
 import type { YearRow } from "../../types"
 import { CustomTooltip } from "../shared/CustomTooltip"
 
 interface DrawdownChartProps {
   rows: YearRow[]
+  darkMode: boolean
 }
 
-export function DrawdownChart({ rows }: DrawdownChartProps) {
+export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
+  const theme = chartTheme(darkMode)
   const data = useMemo(() => {
     let peak = rows[0]?.nominal || 0
     return rows.map(r => {
@@ -32,10 +35,10 @@ export function DrawdownChart({ rows }: DrawdownChartProps) {
                 <stop offset="95%" stopColor="#8B3A3A" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="year" tick={{ fill: "#7A7265", fontSize: 10 }} interval="preserveEnd" minTickGap={28} />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} />
+            <XAxis dataKey="year" tick={{ fill: theme.tick, fontSize: 10 }} interval="preserveEnd" minTickGap={28} />
             <YAxis
-              tick={{ fill: "#7A7265", fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 10 }}
               tickFormatter={(v: number) => `${v.toFixed(0)}%`}
               domain={["auto", 0]}
             />

@@ -4,9 +4,10 @@ import type { YearRow } from "../../types"
 
 interface CapitalAllocationProps {
   rows: YearRow[]
+  darkMode: boolean
 }
 
-export function CapitalAllocation({ rows }: CapitalAllocationProps) {
+export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
@@ -28,7 +29,7 @@ export function CapitalAllocation({ rows }: CapitalAllocationProps) {
           const pct = total > 0 ? (item.value / total) * 100 : 0
           return (
             <div key={item.label} className="text-center">
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden mb-2">
+              <div className={`h-2 rounded-full overflow-hidden mb-2 ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
