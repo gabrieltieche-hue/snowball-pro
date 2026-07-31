@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import {
   TrendingUp,
@@ -9,10 +9,12 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
+  ChevronDown,
   Sparkles,
   AlertTriangle,
   Play,
   RefreshCw,
+  Lightbulb,
 } from "lucide-react"
 import {
   ComposedChart,
@@ -391,9 +393,9 @@ function ResultsSection({
   const survivalLabel = survival >= 90 ? "Excellente" : survival >= 75 ? "Correcte" : "Risquée"
   const ruinYear = decumResult.ruinYearMedian
   const finalMedian = decumResult.p50[decumResult.p50.length - 1] ?? 0
-  const startingCapital = decumResult.p50[0] ?? 0
   const finalSurvival = finalMedian > 0
   const success = survival >= 85
+  const [showGuide, setShowGuide] = useState(false)
 
   return (
     <motion.div
@@ -423,7 +425,7 @@ function ResultsSection({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-bold">{success ? "Stratégie viable" : "Stratégie risquée"}</h3>
+            <h3 className="text-sm font-bold">{success ? "Votre rente est sûre" : "Votre rente est risquée"}</h3>
             <span
               className="text-[10px] mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
               style={{ background: `${survivalTone}20`, color: survivalTone }}
@@ -432,46 +434,64 @@ function ResultsSection({
             </span>
           </div>
           <p className="text-[11px] text-text-dim mt-1 leading-relaxed">
-            Sur <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")}</strong> simulations
-            Monte-Carlo, votre rente initiale de{" "}
-            <strong className="text-text">{fmtCurrency(decumResult.initialWithdrawal)} / mois</strong>{" "}
-            {success ? (
-              <>
-                tient dans <strong className="text-[#4ADE80]">{survival.toFixed(1)} %</strong> des scénarios.
-              </>
-            ) : (
-              <>
-                ne tient que dans <strong className="text-[#F87171]">{survival.toFixed(1)} %</strong> des scénarios.
-              </>
-            )}
+            Nous avons rejoué votre plan{" "}
+            <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")} fois</strong>, avec des évolutions
+            de bourse différentes à chaque fois. Résultat : votre rente de{" "}
+            <strong className="text-text">{fmtCurrency(decumResult.initialWithdrawal)} / mois</strong> est payée
+            jusqu'au bout dans{" "}
+            <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
           </p>
+          <div className="mt-2 rounded-xl bg-[#D4AF37]/8 border-l-2 border-[#D4AF37]/50 px-3 py-2 flex items-start gap-2">
+            <Lightbulb size={13} className="text-[#D4AF37] shrink-0 mt-0.5" />
+            <p className="text-[11px] leading-relaxed text-text-dim">
+              <strong className="text-text">En clair :</strong>{" "}
+              {ruinYear !== null ? (
+                <>
+                  sur <strong className="text-text">100 personnes dans votre situation</strong>, environ{" "}
+                  <strong className="text-[#4ADE80]">{Math.round(survival)}</strong> touchent leur rente pendant{" "}
+                  {decumResult.years.length - 1} ans sans manquer d'argent. Pour les quelques cas d'échec, l'argent
+                  manque généralement autour de l'année {ruinYear}.
+                </>
+              ) : (
+                <>
+                  dans <strong className="text-text">100 % des simulations</strong>, votre rente est payée jusqu'au bout
+                  — et il reste toujours de l'argent à la fin.
+                </>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* 4 KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
-          label="Rente initiale"
+          label="Votre rente"
           value={fmtCurrency(decumResult.initialWithdrawal)}
-          sub="par mois"
+          sub={`par mois, pendant ${decumResult.years.length - 1} ans`}
           tone="#D4AF37"
         />
         <KpiCard
-          label="Probabilité de survie"
-          value={`${survival.toFixed(1)} %`}
-          sub={`sur ${decumResult.years.length - 1} ans`}
+          label="La rente dure-t-elle ?"
+          value={fmtPct(survival)}
+          sub={`≈ ${Math.round(survival)} cas sur 100`}
           tone={survivalTone}
+          gauge={survival / 100}
         />
         <KpiCard
-          label="Ruine médiane"
+          label="Capital épuisé (si échec)"
           value={ruinYear !== null ? `Année ${ruinYear}` : "Jamais"}
-          sub={ruinYear !== null ? "1 simulation sur 2 ruinée" : "Capital préservé"}
+          sub={
+            ruinYear !== null
+              ? `l'argent manque vers l'année ${ruinYear} dans les cas défavorables`
+              : "le capital résiste dans 100 % des cas"
+          }
           tone={ruinYear !== null ? "#F87171" : "#4ADE80"}
         />
         <KpiCard
-          label="Capital final médian"
+          label="Capital restant"
           value={fmtCurrency(finalMedian)}
-          sub={startingCapital > 0 ? `${((finalMedian / startingCapital - 1) * 100).toFixed(0)} % vs départ` : "—"}
+          sub={`reste à la fin dans le scénario moyen (sur ${decumResult.years.length - 1} ans)`}
           tone={finalSurvival ? "#4ADE80" : "#F87171"}
         />
       </div>
@@ -483,17 +503,61 @@ function ResultsSection({
             <div className="flex items-center gap-2">
               <TrendingUp size={13} className="text-text-dim" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Évolution du capital — {decumResult.runs.toLocaleString("fr-FR")} simulations
+                Votre capital, année après année
               </span>
             </div>
             <button
               type="button"
-              className="text-[10px] text-text-dim hover:text-text inline-flex items-center gap-1"
-              title="Les percentiles P10/P90 représentent les scénarios pessimiste/optimiste. La médiane (P50) est le scénario central."
+              onClick={() => setShowGuide(v => !v)}
+              className={cn(
+                "text-[10px] text-text-dim hover:text-text inline-flex items-center gap-1 transition-colors",
+                showGuide && "text-[#D4AF37]",
+              )}
             >
               <HelpCircle size={11} /> Comment lire ?
+              <ChevronDown size={11} className={cn("transition-transform", showGuide && "rotate-180")} />
             </button>
           </div>
+          <p className="text-[10px] text-text-dim mb-2 px-1">
+            {decumResult.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un
+            cas possible
+          </p>
+
+          {showGuide && (
+            <div className="mb-3 rounded-xl bg-glass border border-border p-3 sm:p-4 text-[11px] text-text-dim leading-relaxed space-y-2">
+              <p>
+                <strong className="text-text">Pourquoi ce graphique ?</strong> Personne ne peut prédire l'avenir de la
+                bourse. Nous avons donc rejoué votre plan {decumResult.runs.toLocaleString("fr-FR")} fois, avec des
+                évolutions différentes, pour voir dans quels cas votre argent dure jusqu'au bout.
+              </p>
+              <ul className="space-y-1.5 list-disc pl-4">
+                <li>
+                  <strong className="text-[#D4AF37]">Ligne dorée (scénario moyen)</strong> : le cas le plus courant. Une
+                  fois sur deux, votre résultat est meilleur ; une fois sur deux, il est moins bon.
+                </li>
+                <li>
+                  <strong className="text-text">Zone jaune pâle</strong> : votre vrai résultat se situera probablement
+                  quelque part entre la ligne verte et la ligne rouge.
+                </li>
+                <li>
+                  <strong className="text-[#4ADE80]">Ligne verte (bonne période de bourse)</strong> : la bourse vous
+                  sourit. Seul 1 cas sur 10 fait encore mieux.
+                </li>
+                <li>
+                  <strong className="text-[#F87171]">Ligne rouge (période difficile)</strong> : la bourse est décevante.
+                  Seul 1 cas sur 10 fait encore moins bien.
+                </li>
+                <li>
+                  <strong className="text-text">Quand une ligne touche 0 €</strong> : dans ce scénario, tout le capital
+                  a été dépensé avant la fin — la rente s'arrête.
+                </li>
+              </ul>
+              <p className="italic text-[10px]">
+                Astuce : regardez surtout si la ligne rouge tient jusqu'à la fin de votre retraite. Si oui, votre plan
+                résiste même quand la bourse est mauvaise.
+              </p>
+            </div>
+          )}
           <div className="h-72 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
@@ -532,17 +596,19 @@ function ResultsSection({
                         <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">
                           {label === "Aujourd'hui" ? "Aujourd'hui" : `${label} ans`}
                         </div>
-                        {payload.map((entry, i) => (
-                          <div key={i} className="flex items-center justify-between gap-3 py-0.5">
-                            <span className="text-[11px] flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-                              {entry.name}
-                            </span>
-                            <span className="mono text-[11px] font-bold" style={{ color: entry.color }}>
-                              {fmtCurrency(entry.value as number)}
-                            </span>
-                          </div>
-                        ))}
+                        {payload
+                          .filter(entry => entry.name !== "Fourchette (pire – meilleur cas)")
+                          .map((entry, i) => (
+                            <div key={i} className="flex items-center justify-between gap-3 py-0.5">
+                              <span className="text-[11px] flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
+                                {entry.name}
+                              </span>
+                              <span className="mono text-[11px] font-bold" style={{ color: entry.color }}>
+                                {fmtCurrency(entry.value as number)}
+                              </span>
+                            </div>
+                          ))}
                       </div>
                     )
                   }}
@@ -550,7 +616,7 @@ function ResultsSection({
                 <Area
                   type="monotone"
                   dataKey="bande"
-                  name="Fourchette P10 – P90"
+                  name="Fourchette (pire – meilleur cas)"
                   stroke="none"
                   fill="url(#bandGradientRente)"
                   isAnimationActive={false}
@@ -558,7 +624,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="p90"
-                  name="P90 — optimiste"
+                  name="Bonne période de bourse (P90)"
                   stroke="#4ADE80"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
@@ -567,7 +633,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="médian"
-                  name="Médiane (P50)"
+                  name="Scénario moyen (P50)"
                   stroke="#D4AF37"
                   strokeWidth={2.5}
                   dot={false}
@@ -575,7 +641,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="p10"
-                  name="P10 — pessimiste"
+                  name="Période difficile (P10)"
                   stroke="#F87171"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
@@ -586,11 +652,23 @@ function ResultsSection({
             </ResponsiveContainer>
           </div>
 
-          {/* Légende corrigée (P10/P90 inversés dans la version précédente) */}
+          {/* Légende simplifiée — langage débutant */}
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] leading-snug">
-            <LegendItem color="#4ADE80" label="P90 — optimiste" desc="Seuls 10 % des scénarios font mieux" />
-            <LegendItem color="#D4AF37" label="Médiane (P50)" desc="50 % des scénarios au-dessus, 50 % en-dessous" />
-            <LegendItem color="#F87171" label="P10 — pessimiste" desc="Seuls 10 % des scénarios font moins bien" />
+            <LegendItem
+              color="#4ADE80"
+              label="Bonne période de bourse (P90)"
+              desc="La bourse vous sourit — seul 1 cas sur 10 fait encore mieux"
+            />
+            <LegendItem
+              color="#D4AF37"
+              label="Scénario moyen (P50)"
+              desc="Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien"
+            />
+            <LegendItem
+              color="#F87171"
+              label="Période difficile (P10)"
+              desc="La bourse est décevante — seul 1 cas sur 10 fait encore moins bien"
+            />
           </div>
         </div>
       )}
@@ -598,7 +676,23 @@ function ResultsSection({
   )
 }
 
-function KpiCard({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: string }) {
+function fmtPct(v: number): string {
+  return `${v.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`
+}
+
+function KpiCard({
+  label,
+  value,
+  sub,
+  tone,
+  gauge,
+}: {
+  label: string
+  value: string
+  sub?: string
+  tone: string
+  gauge?: number
+}) {
   return (
     <div className="glass rounded-2xl p-4">
       <div className="flex items-center gap-1.5 mb-2">
@@ -609,6 +703,14 @@ function KpiCard({ label, value, sub, tone }: { label: string; value: string; su
         {value}
       </div>
       {sub && <div className="text-[10px] text-text-dim mt-1.5">{sub}</div>}
+      {gauge !== undefined && (
+        <div className="mt-2 h-2 rounded-full bg-text-dim/30 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${Math.round(gauge * 100)}%`, background: tone }}
+          />
+        </div>
+      )}
     </div>
   )
 }
