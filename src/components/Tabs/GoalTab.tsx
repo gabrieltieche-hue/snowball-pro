@@ -8,6 +8,7 @@ import type { GoalDifficulty, SimulationInputs, YearRow } from "../../types"
 interface GoalTabProps {
   inputs: SimulationInputs
   rows: YearRow[]
+  darkMode: boolean
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
 }
 
@@ -20,7 +21,7 @@ const DIFFICULTY_META: Record<GoalDifficulty, { label: string; tone: string }> =
 
 const COMPARISON_RATES = [3, 5, 7, 10, 12]
 
-export function GoalTab({ inputs, rows, updateInput }: GoalTabProps) {
+export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
   const goalResult = useMemo(() => solveGoal(inputs), [inputs])
   const lastRow = rows[rows.length - 1]
   const difficulty = DIFFICULTY_META[goalResult.difficulty]
@@ -96,7 +97,7 @@ export function GoalTab({ inputs, rows, updateInput }: GoalTabProps) {
               {inputs.goalCapital > 0 && ` et un capital de départ de ${fmtCurrency(inputs.goalCapital)}`}.
             </p>
             {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 && (
-              <div className="mt-3 p-2.5 bg-white/5 rounded-lg text-[11px] text-text-muted">
+              <div className={`mt-3 p-2.5 rounded-lg text-[11px] text-text-muted ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
                 Effort total versé :{" "}
                 <strong className="text-text">{fmtCurrency(goalResult.totalInvested ?? 0)}</strong> — Gains générés :{" "}
                 <strong className="text-primary">{fmtCurrency(goalResult.totalGains ?? 0)}</strong>
@@ -117,7 +118,7 @@ export function GoalTab({ inputs, rows, updateInput }: GoalTabProps) {
               <strong className="text-text">{fmtCurrency(inputs.goalPayment)}/mois</strong>
               {inputs.goalCapital > 0 && ` avec un capital initial de ${fmtCurrency(inputs.goalCapital)}`}.
             </p>
-            <div className="mt-3 flex items-center gap-2 p-2.5 bg-white/5 rounded-lg">
+            <div className={`mt-3 flex items-center gap-2 p-2.5 rounded-lg ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: difficulty.tone }} />
               <span className="text-[11px] text-text-muted">{difficulty.label}</span>
             </div>

@@ -1,0 +1,65 @@
+import { ENVELOPE_CONFIGS } from "../../engine"
+import type { SimulationInputs, YearRow } from "../../types"
+
+interface SummaryStatsProps {
+  rows: YearRow[]
+  inputs: SimulationInputs
+}
+
+const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`
+
+interface StatCard {
+  label: string
+  value: string
+  color: string
+  sub?: string
+}
+
+export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
+  const lastRow = rows[rows.length - 1]
+  if (!lastRow) return null
+
+  const { showReal, envelope } = inputs
+  const env = ENVELOPE_CONFIGS.find(e => e.id === envelope) ?? ENVELOPE_CONFIGS[0]
+
+  const displayFinal = showReal ? lastRow.real : lastRow.nominal
+  const displayInvested = showReal ? lastRow.investedReal : lastRow.investedNom
+  const displayInterests = Math.max(0, displayFinal - displayInvested)
+  const netAfterTax = lastRow.taxNet
+  const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
+
+  const cards: StatCard[] = [
+    { label: "Effort d'épargne", value: fmt(displayInvested), color: "var(--color-text-muted)" },
+    {
+      label: "Gains générés",
+      value: `+${fmt(displayInterests)}`,
+      color: showReal ? "var(--color-warning)" : "var(--color-primary)",
+    },
+    {
+      label: `Net fiscal (${env.shortLabel})`,
+      value: fmt(netAfterTax),
+      color: env.color,
+      sub: envelope !== "none" ? `Impôts : -${fmt(taxAmount)}` : "Aucune fiscalité",
+    },
+    {
+      label: "Patrimoine final",
+      value: fmt(displayFinal),
+      color: "var(--color-text)",
+      sub: showReal ? "Euros d'aujourd'hui" : "Valeur nominale",
+    },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {cards.map(card => (
+        <div key={card.label} className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors min-w-0">
+          <div className="text-[9px] text-text-dim uppercase tracking-wider mb-2 truncate">{card.label}</div>
+          <div className="mono text-sm sm:text-base font-bold truncate" style={{ color: card.color }}>
+            {card.value}
+          </div>
+          {card.sub && <div className="text-[10px] text-text-dim mt-1 truncate">{card.sub}</div>}
+        </div>
+      ))}
+    </div>
+  )
+}

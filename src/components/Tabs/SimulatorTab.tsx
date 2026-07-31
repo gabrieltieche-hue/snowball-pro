@@ -15,16 +15,17 @@ import type { SimulationInputs, YearRow } from "../../types"
 interface SimulatorTabProps {
   rows: YearRow[]
   inputs: SimulationInputs
+  darkMode: boolean
 }
 
-export function SimulatorTab({ rows, inputs }: SimulatorTabProps) {
+export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const milestones = useMemo(() => computeMilestones(rows), [rows])
   const [tableOpen, setTableOpen] = useState(true)
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <EquityChart rows={rows} inputs={inputs} />
+      <EquityChart rows={rows} inputs={inputs} darkMode={darkMode} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
@@ -39,8 +40,8 @@ export function SimulatorTab({ rows, inputs }: SimulatorTabProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DrawdownChart rows={rows} />
-        <CapitalAllocation rows={rows} />
+        <DrawdownChart rows={rows} darkMode={darkMode} />
+        <CapitalAllocation rows={rows} darkMode={darkMode} />
       </div>
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />

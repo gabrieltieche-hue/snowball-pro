@@ -37,7 +37,7 @@
 - **`App.tsx` is a thin shell**: local state (inputs, activeTab), `runSimulation` memo, CSV export, tab orchestration — no business logic beyond that
 - **Engine code is pure** — no side effects, no DOM
 - **Deterministic RNG** — mulberry32 with exposed seed for Monte Carlo reproducibility
-- **Dark mode**: light default; v5 components take a `darkMode` prop (class-based toggle was removed)
+- **Dark mode**: light default; `darkMode` state lives in `App.tsx` (localStorage key `snowball_v5_theme`, default `light`), toggled from `ActionBar`; the `light-mode` class is applied on `<html>` (CSS vars in `index.css`) and components take a `darkMode` prop for Recharts colors via `chartTheme(darkMode)`
 
 ## Quirks
 

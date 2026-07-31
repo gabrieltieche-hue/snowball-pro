@@ -7,9 +7,10 @@ import type { MonteCarloResult, SimulationInputs } from "../../types"
 
 interface MonteCarloPanelProps {
   inputs: SimulationInputs
+  darkMode: boolean
 }
 
-export function MonteCarloPanel({ inputs }: MonteCarloPanelProps) {
+export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null)
   const [running, setRunning] = useState(false)
   const [computedFor, setComputedFor] = useState("")
@@ -100,7 +101,7 @@ export function MonteCarloPanel({ inputs }: MonteCarloPanelProps) {
 
         {mcResult && (
           <div className="space-y-5">
-            <MonteCarloChart result={mcResult} />
+            <MonteCarloChart result={mcResult} darkMode={darkMode} />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
                 <div key={card.label} className="glass rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
@@ -130,7 +131,12 @@ export function MonteCarloPanel({ inputs }: MonteCarloPanelProps) {
 
       {/* Krach recap */}
       {inputs.crisisEnabled && lastRow && noCrisisRow && (
-        <div className="rounded-2xl p-5 border border-[#8B3A3A]/30 bg-gradient-to-br from-[#1a1210] to-[#160d0b] border-l-2 border-l-danger">
+        <div
+          className={cn(
+            "rounded-2xl p-5 border border-[#8B3A3A]/30 border-l-2 border-l-danger",
+            darkMode ? "bg-gradient-to-br from-[#1a1210] to-[#160d0b]" : "bg-gradient-to-br from-[#fdf3ec] to-[#f9e9dd]",
+          )}
+        >
           <h3 className="text-xs font-bold text-danger uppercase tracking-wider mb-2.5">
             ⚠️ Impact du krach simulé
           </h3>
