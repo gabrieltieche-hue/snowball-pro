@@ -4,6 +4,31 @@
 
 ---
 
+## SESSION — 2026-08-01 (v5.1.3 : addendum tests + re-déploiement prod)
+
+### Résumé
+
+Addendum à la session v5.1.3 (fiscalité TMI/barème) : durcissement final des tests composants puis re-déploiement en production. Aucun changement de logique métier.
+
+### Modifications
+
+- **`ba24fff6`** `test(components)` : `vi.restoreAllMocks()` dans l'`afterEach` de `components.test.tsx` — restaure les spies (console.error, HTMLAnchorElement.click…) même si une assertion échoue (pas de mock qui fuit entre tests).
+- **`f7fb69e9`** `test(vitest)` : `testTimeout: 20000` global dans `vitest.config.ts` — filet défensif pour les tests composants jsdom qui rendent `<App />` complet (simulation entière à chaque render, > 5 s sous contention CPU). Les tests composants se configurent déjà à 30 s par-fichier (`vi.setConfig`) et par-test (3ᵉ argument) — le global ne sert que de base pour de futurs fichiers.
+- Le mock framer-motion des tests est stable (Proxy → fonction unique) : un getter créant une fonction par accès provoquait une tempête de remounts React (tests 10× plus lents, timeouts flaky).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **133/133 tests** ✓ build ✓ (dist 905 kB / 271 kB gzip).
+- Production : `vercel --prod` → https://v4-three-beige.vercel.app — HTTP 200, `CACHE_VERSION = "snowball-pro-v5.1.3"`, en-têtes HSTS / nosniff / X-Frame-Options DENY présents.
+- Revue code (code-reviewer) : aucun point bloquant — l'ajout du timeout global est sain (hiérarchie vitest respectée : global < par-fichier < par-test).
+
+### Notes
+
+- Identité git auto-détectée au commit (`Yoric Tieche <yorictieche@macbook-air-de-yoric.home>`) — avertissement cosmétique, cohérent avec les commits précédents de la session.
+- Pas de bump de version (commits test-only, aucun changement utilisateur) : 5.1.3 conservée partout.
+
+---
+
 ## SESSION — 2026-08-01 (v5.1.3 : suppression « Millésime fiscal » + fiscalité TMI/barème + déploiement prod)
 
 ### Résumé
