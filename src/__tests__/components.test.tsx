@@ -84,6 +84,9 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  // Restaure tous les spies (console.error, HTMLAnchorElement.click…) même si
+  // une assertion échoue en cours de test : pas de mock qui fuit entre tests.
+  vi.restoreAllMocks()
 })
 
 /* Monter l'App complète en jsdom est coûteux (simulation entière recalculée à
