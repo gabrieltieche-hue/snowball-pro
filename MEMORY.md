@@ -4,6 +4,43 @@
 
 ---
 
+## SESSION — 2026-08-01 (v5.1.0 : comparaison A/B, undo/redo, snapshots)
+
+### Résumé
+
+Les 3 fonctionnalités v4.1 perdues lors de la migration v5 ont été restaurées dans l'architecture composants, avec des corrections de bugs v4.1 et une validation Playwright complète.
+
+### Décisions d'architecture
+
+- **Engine pur par fichier** (règle MEMORY) : `src/engine/history.ts`, `snapshots.ts`, `comparison.ts` + `compareScenarios` typé dans `kpis.ts`.
+- **Undo/redo corrigé vs v4.1** : l'historique stocke `patch` + `previous` (valeurs d'avant l'édition) par clé → l'undo du v4.1 était un no-op (il ré-appliquait les valeurs courantes).
+- **Historique scénario-aware** : chaque entrée porte `scenario: "A" | "B"` → l'undo/redo cible le bon état même après avoir quitté le mode comparaison (bug latent v4.1 évité).
+- **Scénario B isolé** : état `inputsB` propre + clé `snowball_v5_settings_b` (survit au rechargement) ; `frozenA` = copie d'`inputsRef.current` au clic « Comparer » ; `applyPatch` route vers le bon ref.
+- **Snapshots** : cap 8, clé `snowball_v5_snapshots`, lecture fallback de la clé v4.1 `snowball_pro_v41_state` (migration best-effort).
+- **`null` (pas `NaN`)** dans `mergeComparisonSeries` : contrat Recharts pour créer des trous de courbe (tooltip gère `value == null`).
+
+### Modifications
+
+- **Engine** : `history.ts` (cap 20, `HistoryScenario`), `snapshots.ts` (CRUD, cap 8), `comparison.ts` (`mergeComparisonSeries`), `kpis.ts` (`ScenarioComparison`), exports barrel `engine/index.ts`.
+- **Hooks** : `src/hooks/useHistory.ts` (API `record(prev, patch, scenario)` → `{patch, scenario}`), `src/hooks/useKeyboardShortcuts.ts` (⌘Z / ⌘⇧Z / ⌘Y / ⌘D, saute les champs de saisie).
+- **UI** : `ActionBar.tsx` réécrit (Annuler/Rétablir/Comparer), `ComparisonBar.tsx` (bannière mode actif), `ComparisonTab.tsx` (résumé + courbe + tableau annuel), `ComparisonSummary.tsx` (3 cartes A/B/écart avec préfixe `+`), `ComparisonChart.tsx`, `SnapshotPanel.tsx` (sidebar, boutons sauvegarder/charger/supprimer), `Sidebar.tsx` (badge « Scénario B »).
+- **`src/App.tsx`** : câblage complet (état `comparing`/`frozenA`/`inputsB`, handlers undo/redo/snapshots, `applyPatch`), refs (`inputsRef`, `inputsBRef`, `comparingRef`) contre la stale closure, `toggleComparing` pur (StrictMode-safe).
+- **Hygiène** : `.freebuff/` ajouté aux ignores ESLint + `.gitignore` (provoquait 108 erreurs lint) ; variable morte `impactPct` supprimée dans `FeeImpact.tsx` ; préfixe `+` sur l'écart positif dans `ComparisonSummary.tsx`.
+- **Tests** : +27 tests (history/snapshots/comparison/scénario) → 65/65.
+
+### Vérifications
+
+- Gate complet : typecheck ✓ lint ✓ **65/65 tests** ✓ build ✓ (dist 872 kB / 261 kB gzip).
+- Playwright : **28/28 PASS** (undo/redo boutons + raccourcis ⌘Z/⌘⇧Z, mode comparaison complet, écarts, snapshots créer/persister/charger/supprimer, zéro erreur console), rendu visuel validé par describe_image.
+- Piège identifié : format monétaire fr-FR utilise l'espace fine insécable `\u202F` → normaliser dans les assertions (« 2 000 » ≠ `"2\u202F000"`).
+
+### Notes
+
+- Les 3 features et la refonte pédagogique (session parallèle) ont été committés ensemble : `faa5af79` v5.1.0.
+- Vercel : projet `v4` (prj_J8bvSime5dm7oNJsUZBhjyTrBe8T), déploiement `v4-three-beige.vercel.app`.
+
+---
+
 ## SESSION — 2026-07-31 (Restauration stats grid en haut)
 
 ### Résumé

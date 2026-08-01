@@ -26,7 +26,7 @@ export {
   redoHistory,
   HISTORY_LIMIT,
 } from "./history"
-export type { HistoryStack } from "./history"
+export type { HistoryStack, HistoryScenario } from "./history"
 export { createSnapshot, addSnapshot, removeSnapshot, SNAPSHOT_LIMIT, SNAPSHOT_STORAGE_KEY, V41_STATE_KEY } from "./snapshots"
 export { mergeComparisonSeries } from "./comparison"
 export type { ComparisonSeriesRow } from "./comparison"
