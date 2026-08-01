@@ -24,7 +24,7 @@
 
 ---
 
-## v5.1.2 — Durcissement sécurité (audit complet)
+## v5.1.1 — Durcissement sécurité (audit complet)
 
 - **Dépendances** : `vite` 7.2.4 → 7.3.6 — élimine les 5 advisories connus
   (dont 3 High : bypass `server.fs.deny`, lecture de fichiers arbitraires via
