@@ -20,6 +20,16 @@ import {
   parseStoredInputs,
   DEFAULT_INPUTS,
   getHistoricalDataset,
+  createHistory,
+  pushHistory,
+  undoHistory,
+  redoHistory,
+  createSnapshot,
+  addSnapshot,
+  removeSnapshot,
+  compareScenarios,
+  mergeComparisonSeries,
+  SNAPSHOT_LIMIT,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -704,5 +714,175 @@ describe("pie3dGeometry", () => {
   it("returns an empty list for empty or zero inputs", () => {
     expect(G([])).toEqual([])
     expect(G([0, 0])).toEqual([])
+  })
+})
+
+describe("history", () => {
+  const P = (patch: Record<string, unknown>) => patch as Partial<SimulationInputs>
+
+  it("starts empty with no undo/redo", () => {
+    const stack = createHistory()
+    expect(stack).toEqual({ past: [], future: [] })
+    expect(undoHistory(stack)).toBeNull()
+    expect(redoHistory(stack)).toBeNull()
+  })
+
+  it("pushes patches and clears the future branch on new edits", () => {
+    let stack = createHistory()
+    stack = pushHistory(stack, DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A")
+    stack = pushHistory(stack, { ...DEFAULT_INPUTS, monthlyPayment: 1100 }, P({ monthlyPayment: 1200 }), "A")
+    expect(stack.past).toHaveLength(2)
+    expect(stack.future).toHaveLength(0)
+    const undone = undoHistory(stack)
+    expect(undone).not.toBeNull()
+    stack = (undone as NonNullable<typeof undone>).stack
+    expect(stack.past).toHaveLength(1)
+    expect(stack.future).toHaveLength(1)
+    stack = pushHistory(stack, { ...DEFAULT_INPUTS, monthlyPayment: 1200 }, P({ duration: 30 }), "A")
+    expect(stack.future).toHaveLength(0)
+  })
+
+  it("records the scenario of each edit", () => {
+    let stack = createHistory()
+    stack = pushHistory(stack, DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A")
+    stack = pushHistory(stack, { ...DEFAULT_INPUTS, monthlyPayment: 1100 }, P({ monthlyPayment: 1350 }), "B")
+    const undone = undoHistory(stack)
+    expect(undone).not.toBeNull()
+    expect((undone as NonNullable<typeof undone>).scenario).toBe("B")
+    const redone = redoHistory((undone as NonNullable<typeof undone>).stack)
+    expect(redone).not.toBeNull()
+    expect((redone as NonNullable<typeof redone>).scenario).toBe("B")
+  })
+
+  it("undo restores the previous values of the patched keys", () => {
+    const stack = pushHistory(
+      pushHistory(createHistory(), DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A"),
+      { ...DEFAULT_INPUTS, monthlyPayment: 1100 },
+      P({ annualReturn: 0.09 }),
+      "A",
+    )
+    const result = undoHistory(stack)
+    expect(result).not.toBeNull()
+    expect((result as NonNullable<typeof result>).patch).toMatchObject({
+      annualReturn: DEFAULT_INPUTS.annualReturn,
+    })
+    const next = {
+      ...DEFAULT_INPUTS,
+      monthlyPayment: 1100,
+      annualReturn: 0.09,
+      ...(result as NonNullable<typeof result>).patch,
+    }
+    expect(next.annualReturn).toBe(DEFAULT_INPUTS.annualReturn)
+    expect(next.monthlyPayment).toBe(1100)
+  })
+
+  it("undo restores only the keys touched by the last edit", () => {
+    const stack = pushHistory(createHistory(), DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A")
+    const result = undoHistory(stack)
+    expect(result).not.toBeNull()
+    const patch = (result as NonNullable<typeof result>).patch
+    expect(Object.keys(patch)).toEqual(["monthlyPayment"])
+    expect(patch.monthlyPayment).toBe(DEFAULT_INPUTS.monthlyPayment)
+  })
+
+  it("redo replays the undone patch", () => {
+    let stack = createHistory()
+    stack = pushHistory(stack, DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A")
+    const undone = undoHistory(stack)
+    expect(undone).not.toBeNull()
+    const redone = redoHistory((undone as NonNullable<typeof undone>).stack)
+    expect(redone).not.toBeNull()
+    const redo = redone as NonNullable<typeof redone>
+    expect(redo.patch).toMatchObject({ monthlyPayment: 1100 })
+    expect(redo.stack.future).toHaveLength(0)
+  })
+
+  it("caps the past stack at HISTORY_LIMIT entries", () => {
+    let stack = createHistory()
+    let prev = DEFAULT_INPUTS
+    for (let i = 0; i < 25; i += 1) {
+      const next = { ...prev, seed: i }
+      stack = pushHistory(stack, prev, P({ seed: i }), "A")
+      prev = next
+    }
+    expect(stack.past).toHaveLength(20)
+    expect(stack.past[19].patch).toMatchObject({ seed: 24 })
+  })
+})
+
+describe("snapshots", () => {
+  it("creates a snapshot from inputs and rows with a default name", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, duration: 5 })
+    const snap = createSnapshot(DEFAULT_INPUTS, rows)
+    expect(snap.id).toBeDefined()
+    expect(snap.name).toMatch(/^Snapshot /)
+    expect(snap.createdAt).toBeDefined()
+    expect(snap.finalCapital).toBe(rows[rows.length - 1].taxNet)
+    expect(snap.inputs).toEqual(DEFAULT_INPUTS)
+  })
+
+  it("uses a provided non-empty name and trims it", () => {
+    const snap = createSnapshot(DEFAULT_INPUTS, [], "  Mon scénario  ")
+    expect(snap.name).toBe("Mon scénario")
+    expect(snap.finalCapital).toBe(0)
+  })
+
+  it("addSnapshot prepends and caps the list at SNAPSHOT_LIMIT", () => {
+    let list: ReturnType<typeof createSnapshot>[] = []
+    for (let i = 0; i < 12; i += 1) {
+      list = addSnapshot(list, createSnapshot(DEFAULT_INPUTS, [], `S${i}`))
+    }
+    expect(list).toHaveLength(SNAPSHOT_LIMIT)
+    expect(list[0].name).toBe("S11")
+  })
+
+  it("removeSnapshot deletes by id without mutating the input list", () => {
+    const a = createSnapshot(DEFAULT_INPUTS, [], "A")
+    const b = createSnapshot(DEFAULT_INPUTS, [], "B")
+    const list = addSnapshot(addSnapshot([], a), b)
+    const next = removeSnapshot(list, a.id)
+    expect(next).toHaveLength(1)
+    expect(next[0].id).toBe(b.id)
+    expect(list).toHaveLength(2)
+  })
+})
+
+describe("compareScenarios / mergeComparisonSeries", () => {
+  const rows = runSimulation(DEFAULT_INPUTS)
+
+  it("compareScenarios reports the better scenario and the absolute/percent gap", () => {
+    const alt = runSimulation({ ...DEFAULT_INPUTS, monthlyPayment: 2000 })
+    const result = compareScenarios(rows, alt)
+    expect(result.finalA).toBe(rows[rows.length - 1].taxNet)
+    expect(result.finalB).toBe(alt[alt.length - 1].taxNet)
+    expect(result.diffAbsolute).toBeCloseTo(result.finalB - result.finalA, 0)
+    expect(result.betterScenario).toBe("B")
+    expect(result.diffPercent).toBeGreaterThan(0)
+  })
+
+  it("compareScenarios returns equal for identical rows", () => {
+    const result = compareScenarios(rows, rows)
+    expect(result.betterScenario).toBe("equal")
+    expect(result.diffAbsolute).toBe(0)
+    expect(result.diffPercent).toBe(0)
+  })
+
+  it("compareScenarios handles empty rows gracefully", () => {
+    const result = compareScenarios([], [])
+    expect(result).toEqual({ finalA: 0, finalB: 0, diffAbsolute: 0, diffPercent: 0, betterScenario: "equal" })
+  })
+
+  it("mergeComparisonSeries aligns both series by index and respects showReal", () => {
+    const short = runSimulation({ ...DEFAULT_INPUTS, duration: 3 })
+    const long = runSimulation({ ...DEFAULT_INPUTS, duration: 5 })
+    const nominal = mergeComparisonSeries(short, long, false)
+    expect(nominal).toHaveLength(6)
+    expect(nominal[0].A).toBe(short[0].nominal)
+    expect(nominal[3].B).toBe(long[3].nominal)
+    expect(nominal[4].A).toBeNull()
+    expect(nominal[5].A).toBeNull()
+    const real = mergeComparisonSeries(short, long, true)
+    expect(real[0].A).toBe(short[0].real)
+    expect(real[1].year).toBe("An 1")
   })
 })

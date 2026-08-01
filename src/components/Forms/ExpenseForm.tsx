@@ -10,7 +10,7 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
   return (
     <div className="space-y-2">
       <SliderInput
-        label="Frais ETF (%/an)"
+        label="Frais du fonds (ETF)"
         id="fee-etf"
         value={inputs.etfFees * 100}
         min={0}
@@ -20,7 +20,7 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         onChange={v => updateInput("etfFees", v / 100)}
       />
       <SliderInput
-        label="Frais Courtier (%/an)"
+        label="Frais du courtier"
         id="fee-broker"
         value={inputs.brokerageFees * 100}
         min={0}
@@ -30,7 +30,7 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         onChange={v => updateInput("brokerageFees", v / 100)}
       />
       <SliderInput
-        label="Frais Gestion Pilotée (%/an)"
+        label="Frais de gestion pilotée"
         id="fee-manage"
         value={inputs.managementFees * 100}
         min={0}
@@ -40,7 +40,7 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         onChange={v => updateInput("managementFees", v / 100)}
       />
       <SliderInput
-        label="Frais Assurance-Vie (%/an)"
+        label="Frais de l'assurance-vie"
         id="fee-insurance"
         value={inputs.insuranceFees * 100}
         min={0}

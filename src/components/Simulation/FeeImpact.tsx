@@ -14,17 +14,18 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
   const noFeeRows = reRunSim({ ...inputs, etfFees: 0, brokerageFees: 0, managementFees: 0 })
   const noFeeFinal = noFeeRows[noFeeRows.length - 1]?.nominal || 0
   const feeImpact = noFeeFinal - lastRow.nominal
-  const impactPct = noFeeFinal > 0 ? (feeImpact / noFeeFinal) * 100 : 0
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
       <div className="flex items-center gap-2 mb-2">
         <Percent size={14} className="text-text-dim" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Impact des Frais</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          Ce que les frais vous coûtent
+        </span>
       </div>
       <div className="space-y-1.5">
         {[
-          { label: "Frais cumulés", value: lastRow.feesLost, color: "#8B3A3A" },
+          { label: "Frais payés au total", value: lastRow.feesLost, color: "#8B3A3A" },
           { label: "Capital perdu à cause des frais", value: feeImpact, color: "#A84A4A" },
         ].map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">
@@ -36,9 +37,15 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
         ))}
       </div>
       <div className="h-px bg-border my-2" />
-      <div className="text-[10px] text-text-dim">
-        Soit <span className="font-bold text-danger">{impactPct.toFixed(1)}%</span> du capital potentiel sans frais
-      </div>
+      {feeImpact > 0 ? (
+        <div className="text-[10px] text-text-dim">
+          Sans frais, votre capital final serait de{" "}
+          <span className="font-bold text-danger">{fmtCurrency(noFeeFinal)}</span> (au lieu de{" "}
+          {fmtCurrency(lastRow.nominal)}).
+        </div>
+      ) : (
+        <div className="text-[10px] text-text-dim">Vos frais sont à 0 % : votre capital n'en perd rien.</div>
+      )}
     </div>
   )
 }

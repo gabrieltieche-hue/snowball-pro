@@ -28,23 +28,29 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
 
   const cards: StatCard[] = [
-    { label: "Effort d'épargne", value: fmt(displayInvested), color: "var(--color-text-muted)" },
+    {
+      label: "Total épargné",
+      value: fmt(displayInvested),
+      color: "var(--color-text-muted)",
+      sub: "tout l'argent que vous avez mis de côté",
+    },
     {
       label: "Gains générés",
       value: `+${fmt(displayInterests)}`,
       color: "var(--color-value-gold)",
+      sub: "la croissance de la bourse",
     },
     {
-      label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
+      label: `Après impôts (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
       value: fmt(netAfterTax),
       color: "var(--color-value-gold)",
-      sub: envelope !== "none" ? `Impôts : -${fmt(taxAmount)}` : "Aucune fiscalité",
+      sub: envelope !== "none" ? `Impôts retirés : -${fmt(taxAmount)}` : "Aucun impôt à payer",
     },
     {
-      label: "Patrimoine final",
+      label: "Capital final",
       value: fmt(displayFinal),
       color: "var(--color-text)",
-      sub: showReal ? "Euros d'aujourd'hui" : "Valeur nominale",
+      sub: showReal ? "en euros d'aujourd'hui (inflation déduite)" : "en euros bruts (inflation non déduite)",
     },
   ]
 

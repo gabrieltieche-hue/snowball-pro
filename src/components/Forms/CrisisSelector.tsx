@@ -3,10 +3,10 @@ import { cn } from "../../utils/cn"
 import { SliderInput } from "../shared/SliderInput"
 
 const CRISIS_PROFILES = [
-  { id: "flash-crash", label: "Flash Crash", desc: "-25% en 1 an", color: "var(--color-primary)" },
-  { id: "bear-market", label: "Bear Market", desc: "-40% sur 2 ans", color: "#8B3A3A" },
-  { id: "long-depression", label: "Dépression Longue", desc: "-55% sur 5 ans", color: "#A84A4A" },
-  { id: "stagflation", label: "Stagflation", desc: "-35% sur 4 ans", color: "#B8960F" },
+  { id: "flash-crash", label: "Krach éclair", desc: "-25% en 1 an", color: "var(--color-primary)" },
+  { id: "bear-market", label: "Marché baissier", desc: "-40% sur 2 ans", color: "#8B3A3A" },
+  { id: "long-depression", label: "Dépression longue", desc: "-55% sur 5 ans", color: "#A84A4A" },
+  { id: "stagflation", label: "Stagnation + inflation", desc: "-35% sur 4 ans", color: "#B8960F" },
 ]
 
 interface CrisisSelectorProps {
@@ -48,7 +48,7 @@ export function CrisisSelector({
         ))}
       </div>
       <SliderInput
-        label="Année du choc"
+        label="Année de la chute"
         id="crisis-year"
         value={year}
         min={1}
@@ -58,7 +58,7 @@ export function CrisisSelector({
         color="#8B3A3A"
       />
       <SliderInput
-        label="Amplitude (%)"
+        label="Gravité de la chute (%)"
         id="crisis-amp"
         value={amplitude}
         min={5}

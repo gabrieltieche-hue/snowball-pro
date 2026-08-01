@@ -30,16 +30,16 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
     <div className="space-y-5 animate-fade-in">
       <div className="glass rounded-3xl p-5 sm:p-6 space-y-6">
         <div>
-          <h2 className="text-base font-bold mb-1">🎯 Objectif inversé</h2>
+          <h2 className="text-base font-bold mb-1">🎯 Objectif d'épargne</h2>
           <p className="text-xs text-text-muted leading-relaxed max-w-xl">
-            Vous connaissez votre objectif patrimonial. Le simulateur calcule automatiquement le versement mensuel
-            nécessaire et le rendement requis.
+            Vous savez combien vous voulez avoir plus tard : l'app calcule combien épargner chaque mois (et quel
+            rendement de la bourse viser) pour y arriver.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
           <SliderInput
-            label="Objectif patrimonial (€)"
+            label="Objectif (€)"
             id="goal-target"
             value={inputs.goalTarget}
             min={10000}
@@ -69,14 +69,14 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             onChange={v => updateInput("goalDuration", v)}
           />
           <SliderInput
-            label="Rendement cible (%)"
+            label="Rendement de la bourse (%)"
             id="goal-rate"
             value={inputs.goalAnnualReturn * 100}
             min={0.1}
             max={20}
             step={0.1}
             color="#6366F1"
-            suffix={`Versement de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
+            suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
             onChange={v => updateInput("goalAnnualReturn", v / 100)}
           />
         </div>
@@ -85,10 +85,12 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-2xl p-5 border-2 border-[#6366F1]/40 bg-[#6366F1]/10">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] mb-2">
-              💰 Versement mensuel nécessaire
+              💰 Épargne mensuelle nécessaire
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
-              {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 ? fmtCurrency(goalResult.pmtPerMonth) : "—"}
+              {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0
+                ? fmtCurrency(goalResult.pmtPerMonth)
+                : "—"}
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
               Pour atteindre <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
@@ -97,24 +99,26 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               {inputs.goalCapital > 0 && ` et un capital de départ de ${fmtCurrency(inputs.goalCapital)}`}.
             </p>
             {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 && (
-              <div className={`mt-3 p-2.5 rounded-lg text-[11px] text-text-muted ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
-                Effort total versé :{" "}
-                <strong className="text-text">{fmtCurrency(goalResult.totalInvested ?? 0)}</strong> — Gains générés :{" "}
-                <strong className="text-primary">{fmtCurrency(goalResult.totalGains ?? 0)}</strong>
+              <div
+                className={`mt-3 p-2.5 rounded-lg text-[11px] text-text-muted ${darkMode ? "bg-white/5" : "bg-black/5"}`}
+              >
+                Total épargné : <strong className="text-text">{fmtCurrency(goalResult.totalInvested ?? 0)}</strong> —
+                Gains de la bourse : <strong className="text-primary">{fmtCurrency(goalResult.totalGains ?? 0)}</strong>
               </div>
             )}
           </div>
 
           <div className="rounded-2xl p-5 border-2 border-[#4ADE80]/30 bg-[#4ADE80]/8">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#4ADE80] mb-2">
-              📈 Rendement requis ({fmtCurrency(inputs.goalPayment)}/mois)
+              📈 Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois d'épargne)
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
-              {goalResult.requiredRate !== null ? `${goalResult.requiredRate.toFixed(2)}%` : "> 60% — Impossible"}
+              {goalResult.requiredRate !== null ? `${goalResult.requiredRate.toFixed(2)}%` : "Impossible"}
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
-              Rendement annuel à atteindre pour obtenir <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong>{" "}
-              en <strong className="text-text">{inputs.goalDuration} ans</strong> en épargnant{" "}
+              Rendement de la bourse nécessaire chaque année pour obtenir{" "}
+              <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
+              <strong className="text-text">{inputs.goalDuration} ans</strong> en épargnant{" "}
               <strong className="text-text">{fmtCurrency(inputs.goalPayment)}/mois</strong>
               {inputs.goalCapital > 0 && ` avec un capital initial de ${fmtCurrency(inputs.goalCapital)}`}.
             </p>
@@ -137,7 +141,13 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border">
-                  {["Rendement", "PMT nécessaire", "Total versé", "Gains intérêts", "Ratio effort/gains"].map(h => (
+                  {[
+                    "Rendement/an",
+                    "Épargne /mois",
+                    "Total épargné",
+                    "Gains de la bourse",
+                    "Part de l'objectif épargnée",
+                  ].map(h => (
                     <th
                       key={h}
                       className="text-[9px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
@@ -166,7 +176,8 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                         {fmtCurrency(gains)}
                       </td>
                       <td className="py-2.5 px-3 text-text-dim">
-                        {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% effort
+                        {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
+                        provient de votre épargne
                       </td>
                     </tr>
                   )

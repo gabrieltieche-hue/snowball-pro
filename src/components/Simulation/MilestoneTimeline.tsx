@@ -17,14 +17,11 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
 
   return (
     <div className="glass rounded-2xl p-5">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-4">
-        Timeline Patrimoniale
-        <span className="ml-2 text-[9px] text-text-dim">Étapes clés</span>
-      </div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-4">Vos étapes clés</div>
       <div className="space-y-3">
         {reached.length === 0 && (
           <p className="text-xs text-text-dim">
-            Augmentez vos versements ou la durée pour atteindre vos premiers jalons.
+            Épargnez plus ou allongez la durée pour atteindre vos premières étapes.
           </p>
         )}
         {reached.map((m, i) => (

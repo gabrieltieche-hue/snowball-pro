@@ -17,16 +17,20 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
     let peak = rows[0]?.nominal || 0
     return rows.map(r => {
       if (r.nominal > peak) peak = r.nominal
-      return { year: `An ${r.year}`, drawdown: peak > 0 ? ((r.nominal - peak) / peak) * 100 : 0 }
+      return { year: `Année ${r.year}`, drawdown: peak > 0 ? ((r.nominal - peak) / peak) * 100 : 0 }
     })
   }, [rows])
 
   return (
     <div className="glass rounded-3xl p-6">
-      <h3 className="text-xs font-bold mb-4 flex items-center gap-2">
+      <h3 className="text-xs font-bold mb-1 flex items-center gap-2">
         <TrendingDown size={12} className="text-danger" />
-        Drawdown Maximum
+        Les baisses de votre capital
       </h3>
+      <p className="text-[10px] text-text-dim mb-4 leading-snug">
+        Les valeurs négatives = les moments où votre capital a baissé par rapport à son plus haut niveau (la « pire
+        chute » est le point le plus bas de la courbe).
+      </p>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
@@ -44,7 +48,14 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
               domain={["auto", 0]}
             />
             <Tooltip content={<CustomTooltip isCurrency={false} />} />
-            <Area type="monotone" dataKey="drawdown" stroke={ddColor} fill="url(#colorDD)" strokeWidth={2} />
+            <Area
+              type="monotone"
+              dataKey="drawdown"
+              name="Baisse du capital"
+              stroke={ddColor}
+              fill="url(#colorDD)"
+              strokeWidth={2}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>

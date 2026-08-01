@@ -21,7 +21,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
         const total = showReal ? r.real : r.nominal
         const gains = Math.max(0, total - invested)
         const taxes = inputs.envelope === "none" ? 0 : Math.max(0, r.nominal - r.taxNet)
-        return { year: `An ${r.year}`, investi: invested, gains, impôts: taxes }
+        return { year: `Année ${r.year}`, investi: invested, gains, impôts: taxes }
       }),
     [rows, showReal, inputs.envelope],
   )
@@ -34,23 +34,23 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
     <div className="glass rounded-3xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-xs font-bold flex items-center gap-2">
-          📈 Projection patrimoniale
+          📈 Projection de votre capital
           {showReal && (
             <span className="text-[9px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-              Pouvoir d'achat réel
+              Euros d'aujourd'hui
             </span>
           )}
         </h3>
         <div className="flex items-center gap-3 text-[9px] text-text-dim">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains générés
+            <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains (bourse)
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: investedColor }} /> Capital investi
+            <span className="w-2 h-2 rounded-full" style={{ background: investedColor }} /> Argent épargné
           </span>
           {inputs.envelope !== "none" && (
             <span className="flex items-center gap-1">
-              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impact fiscal
+              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impôts payés
             </span>
           )}
         </div>
@@ -105,10 +105,34 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
                 )
               }}
             />
-            <Area type="monotone" dataKey="investi" name="Capital investi" stackId="1" stroke={investedColor} strokeWidth={2} fill="url(#gradInvesti)" />
-            <Area type="monotone" dataKey="gains" name="Gains générés" stackId="1" stroke={gainsColor} strokeWidth={2} fill="url(#gradGains)" />
+            <Area
+              type="monotone"
+              dataKey="investi"
+              name="Argent épargné"
+              stackId="1"
+              stroke={investedColor}
+              strokeWidth={2}
+              fill="url(#gradInvesti)"
+            />
+            <Area
+              type="monotone"
+              dataKey="gains"
+              name="Gains (bourse)"
+              stackId="1"
+              stroke={gainsColor}
+              strokeWidth={2}
+              fill="url(#gradGains)"
+            />
             {inputs.envelope !== "none" && (
-              <Line type="monotone" dataKey="impôts" name="Impact fiscal" stroke={taxColor} strokeWidth={2} strokeDasharray="6 3" dot={false} />
+              <Line
+                type="monotone"
+                dataKey="impôts"
+                name="Impôts payés"
+                stroke={taxColor}
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+              />
             )}
           </AreaChart>
         </ResponsiveContainer>

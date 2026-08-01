@@ -12,7 +12,9 @@ export function GoalProgress({ current, target }: GoalProgressProps) {
   return (
     <div className="glass rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Progression</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          Avec votre épargne actuelle
+        </span>
         <span className="mono text-xs font-bold text-text">{pct.toFixed(1)}%</span>
       </div>
       <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
@@ -31,7 +33,9 @@ export function GoalProgress({ current, target }: GoalProgressProps) {
           }}
         />
       </div>
-      <p className="text-[10px] text-text-dim mt-2">Objectif : {fmtCurrency(target)}</p>
+      <p className="text-[10px] text-text-dim mt-2">
+        Objectif visé : {fmtCurrency(target)} — capital projeté avec votre épargne : {fmtCurrency(current)}
+      </p>
     </div>
   )
 }

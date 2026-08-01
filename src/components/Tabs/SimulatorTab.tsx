@@ -56,7 +56,7 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
           onClick={() => setTableOpen(!tableOpen)}
           className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors"
         >
-          <span className="text-xs font-bold flex items-center gap-2">📋 Tableau d'amortissement détaillé</span>
+          <span className="text-xs font-bold flex items-center gap-2">📋 Détail année par année</span>
           <span className="text-[10px] text-text-dim flex items-center gap-1">
             {tableOpen ? (
               <>

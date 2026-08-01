@@ -1,5 +1,15 @@
 import { useMemo } from "react"
-import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import type { MonteCarloResult } from "../../types"
@@ -32,12 +42,16 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
     <div className="glass rounded-2xl p-3 sm:p-4">
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-          Évolution du capital — {result.runs.toLocaleString("fr-FR")} simulations
+          Votre capital, année après année
         </span>
         <span className="text-[9px] text-text-dim">
-          Objectif : <span className="mono">{fmtCompact(result.goalTarget)}</span>
+          Objectif visé : <span className="mono">{fmtCompact(result.goalTarget)}</span>
         </span>
       </div>
+      <p className="text-[10px] text-text-dim mb-2 px-1">
+        {result.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un cas
+        possible
+      </p>
       <div className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }} data={data}>
@@ -70,25 +84,57 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
                     <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">
                       {label === "Aujourd'hui" ? "Aujourd'hui" : `${label} ans`}
                     </div>
-                    {payload.map((entry, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3 py-0.5">
-                        <span className="text-[11px] flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-                          {entry.name}
-                        </span>
-                        <span className="mono text-[11px] font-bold" style={{ color: entry.color }}>
-                          {fmtCurrency(entry.value as number)}
-                        </span>
-                      </div>
-                    ))}
+                    {payload
+                      .filter(entry => entry.name !== "Fourchette (pire – meilleur cas)")
+                      .map((entry, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 py-0.5">
+                          <span className="text-[11px] flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
+                            {entry.name}
+                          </span>
+                          <span className="mono text-[11px] font-bold" style={{ color: entry.color }}>
+                            {fmtCurrency(entry.value as number)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )
               }}
             />
-            <Area type="monotone" dataKey="bande" name="Fourchette P10 – P90" stroke="none" fill="url(#bandGradientMC)" isAnimationActive={false} />
-            <Line type="monotone" dataKey="p90" name="P90 — optimiste" stroke="#4ADE80" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-            <Line type="monotone" dataKey="p50" name="Médiane (P50)" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="p10" name="P10 — pessimiste" stroke="#F87171" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+            <Area
+              type="monotone"
+              dataKey="bande"
+              name="Fourchette (pire – meilleur cas)"
+              stroke="none"
+              fill="url(#bandGradientMC)"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="p90"
+              name="Bonne période de bourse (P90)"
+              stroke="#4ADE80"
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="p50"
+              name="Scénario moyen (P50)"
+              stroke="var(--color-primary)"
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="p10"
+              name="Période difficile (P10)"
+              stroke="#F87171"
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              dot={false}
+            />
             <ReferenceLine y={result.goalTarget} stroke="#60A5FA" strokeWidth={1} strokeDasharray="2 2" />
           </ComposedChart>
         </ResponsiveContainer>
@@ -98,22 +144,22 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
         <div className="flex items-start gap-2 px-1">
           <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[#4ADE80]" />
           <div>
-            <div className="font-bold text-text">P90 — optimiste</div>
-            <div className="text-text-dim">Seuls 10 % des scénarios font mieux</div>
+            <div className="font-bold text-text">Bonne période de bourse (P90)</div>
+            <div className="text-text-dim">La bourse vous sourit — seul 1 cas sur 10 fait encore mieux</div>
           </div>
         </div>
         <div className="flex items-start gap-2 px-1">
-          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[#D4AF37]" />
+          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-primary" />
           <div>
-            <div className="font-bold text-text">Médiane (P50)</div>
-            <div className="text-text-dim">50 % des scénarios au-dessus, 50 % en-dessous</div>
+            <div className="font-bold text-text">Scénario moyen (P50)</div>
+            <div className="text-text-dim">Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien</div>
           </div>
         </div>
         <div className="flex items-start gap-2 px-1">
           <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[#F87171]" />
           <div>
-            <div className="font-bold text-text">P10 — pessimiste</div>
-            <div className="text-text-dim">Seuls 10 % des scénarios font moins bien</div>
+            <div className="font-bold text-text">Période difficile (P10)</div>
+            <div className="text-text-dim">La bourse est décevante — seul 1 cas sur 10 fait encore moins bien</div>
           </div>
         </div>
       </div>

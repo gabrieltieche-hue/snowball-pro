@@ -45,8 +45,8 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
   const items = useMemo(() => {
     if (!lastRow) return []
     return [
-      { label: "Capital investi", value: lastRow.investedNom, color: palette.invested },
-      { label: "Généré par les intérêts", value: lastRow.interestsNom, color: palette.gains },
+      { label: "Argent épargné", value: lastRow.investedNom, color: palette.invested },
+      { label: "Croissance de la bourse", value: lastRow.interestsNom, color: palette.gains },
       { label: "Perdu en frais / impôts", value: lastRow.tax + lastRow.feesLost, color: palette.losses },
     ]
   }, [lastRow, palette])
@@ -54,7 +54,15 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
   const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
 
   const parts = useMemo(
-    () => pie3dGeometry(items.map(i => i.value), CX, CY, RX, RY, DEPTH),
+    () =>
+      pie3dGeometry(
+        items.map(i => i.value),
+        CX,
+        CY,
+        RX,
+        RY,
+        DEPTH,
+      ),
     [items],
   )
 
@@ -76,20 +84,45 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
     <div className="glass rounded-3xl p-6 animate-scale-in">
       <h3 className="text-xs font-bold mb-4 flex items-center gap-2">
         <PieChart size={12} className="text-warning" />
-        Répartition du Capital
+        D'où vient votre argent ?
       </h3>
 
       <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
         {parts.map((part, idx) =>
-          part.back ? <path key={`back-${idx}`} d={part.back} fill={shade(items[idx].color, 0.6)} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" /> : null,
+          part.back ? (
+            <path
+              key={`back-${idx}`}
+              d={part.back}
+              fill={shade(items[idx].color, 0.6)}
+              {...bind(idx)}
+              style={hoverStyle(idx)}
+              className="transition-all duration-200"
+            />
+          ) : null,
         )}
         {parts.map((part, idx) =>
           part.ribbon ? (
-            <path key={`ribbon-${idx}`} d={part.ribbon} fill={shade(items[idx].color, 0.78)} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" />
+            <path
+              key={`ribbon-${idx}`}
+              d={part.ribbon}
+              fill={shade(items[idx].color, 0.78)}
+              {...bind(idx)}
+              style={hoverStyle(idx)}
+              className="transition-all duration-200"
+            />
           ) : null,
         )}
         {parts.map((part, idx) => (
-          <path key={`top-${idx}`} d={part.top} fill={items[idx].color} stroke="rgba(0,0,0,0.15)" strokeWidth={0.75} {...bind(idx)} style={hoverStyle(idx)} className="transition-all duration-200" />
+          <path
+            key={`top-${idx}`}
+            d={part.top}
+            fill={items[idx].color}
+            stroke="rgba(0,0,0,0.15)"
+            strokeWidth={0.75}
+            {...bind(idx)}
+            style={hoverStyle(idx)}
+            className="transition-all duration-200"
+          />
         ))}
       </svg>
 
@@ -121,7 +154,7 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
       </div>
 
       <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-        <span className="text-[10px] text-text-dim">Patrimoine total</span>
+        <span className="text-[10px] text-text-dim">Capital total</span>
         <span className="mono text-xs font-bold" style={{ color: "var(--color-text)" }}>
           {fmtCurrency(total)}
         </span>

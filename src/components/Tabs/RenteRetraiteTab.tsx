@@ -66,7 +66,14 @@ const WITHDRAWAL_MODELS: {
     icon: Sparkles,
     tone: "var(--color-primary)",
   },
-  { id: "custom", label: "Personnalisé", desc: "Montant fixe mensuel choisi", rate: 0, icon: Wallet, tone: "var(--color-primary-dark)" },
+  {
+    id: "custom",
+    label: "Personnalisé",
+    desc: "Montant fixe mensuel choisi",
+    rate: 0,
+    icon: Wallet,
+    tone: "var(--color-primary-dark)",
+  },
 ]
 
 interface RenteRetraiteTabProps {
@@ -298,7 +305,7 @@ export function RenteRetraiteTab({
               className={cn(
                 "w-full rounded-xl py-3.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors",
                 lastRow && lastRow.nominal > 0
-                   ? "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary"
+                  ? "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary"
                   : "bg-text-dim/20 text-text-dim cursor-not-allowed",
               )}
             >

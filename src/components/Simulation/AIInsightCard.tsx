@@ -16,20 +16,30 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
   const insights: string[] = []
   if (lastRow.interestsNom > lastRow.investedNom) {
     insights.push(
-      `Votre portefeuille a généré plus que vos contributions. ${fmtCurrency(lastRow.interestsNom)} proviennent des intérêts composés.`,
+      `Votre argent a rapporté plus que ce que vous avez mis de côté : ${fmtCurrency(
+        lastRow.interestsNom,
+      )} proviennent de la croissance de la bourse.`,
     )
   }
   if (kpis.gainsPct > 50) {
-    insights.push(`${kpis.gainsPct.toFixed(0)}% de votre capital provient des intérêts composés.`)
+    insights.push(
+      `${kpis.gainsPct.toFixed(0)}% de votre capital provient de la croissance de la bourse, pas de votre épargne.`,
+    )
   }
   if (kpis.cagr > inputs.annualReturn * 100) {
-    insights.push(`Votre CAGR réel de ${kpis.cagr.toFixed(1)}% dépasse le rendement cible.`)
+    insights.push(
+      `Votre croissance annuelle moyenne de ${kpis.cagr.toFixed(1)}% dépasse le rendement de ${(
+        inputs.annualReturn * 100
+      ).toFixed(0)}% que vous aviez prévu.`,
+    )
   }
   if (inputs.crisisEnabled) {
-    insights.push("Un krach boursier est intégré. Diversifiez vos actifs pour réduire l'impact.")
+    insights.push("Un krach boursier est simulé. Diversifiez vos placements pour réduire l'impact.")
   }
   if (insights.length === 0) {
-    insights.push("Augmentez votre taux d'épargne ou la durée pour maximiser l'effet des intérêts composés.")
+    insights.push(
+      "Épargnez plus ou prolongez la durée : avec le temps, la bourse fait travailler votre argent (intérêts composés).",
+    )
   }
 
   return (
@@ -40,7 +50,9 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     >
       <div className="flex items-center gap-2 mb-2">
         <Sparkles size={14} className="text-primary" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">AI Insights</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          Analyse & conseils
+        </span>
       </div>
       {insights.map((text, i) => (
         <p key={i} className="text-xs text-text-muted leading-relaxed mb-1">

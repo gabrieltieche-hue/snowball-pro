@@ -13,16 +13,77 @@ export function KpiGrid({ kpis }: KpiGridProps) {
   if (!kpis) return null
 
   const cards = [
-    { key: "cagr" as const, label: "CAGR", suffix: "%", color: GOLD, sub: "Croissance annualisée" },
-    { key: "sharpe" as const, label: "Sharpe Ratio", suffix: "", color: GOLD, digits: 2, sub: "Performance ajustée au risque" },
-    { key: "maxDrawdownPct" as const, label: "Drawdown Max", suffix: "%", color: RED, sub: "Pire chute du capital" },
-    { key: "capitalMultiple" as const, label: "Multiplicateur", suffix: "x", color: GOLD, sub: "Capital final ÷ investi" },
-    { key: "doublingTime" as const, label: "Doublement", suffix: " ans", color: GOLD, sub: "Années pour doubler" },
-    { key: "contributionPct" as const, label: "Part Versements", suffix: "%", color: NEUTRAL, sub: "Issu de vos versements" },
-    { key: "gainsPct" as const, label: "Part Gains", suffix: "%", color: GOLD, sub: "Issu des intérêts composés" },
-    { key: "realReturn" as const, label: "Rendement Réel", suffix: "%", color: GOLD, sub: "Après inflation" },
-    { key: "feeImpactPct" as const, label: "Impact Frais", suffix: "%", color: RED, sub: "Capital perdu en frais" },
-    { key: "totalFees" as const, label: "Frais Totaux", suffix: "", color: RED, sub: "Frais cumulés sur la durée" },
+    {
+      key: "cagr" as const,
+      label: "Croissance/an",
+      suffix: "%",
+      color: GOLD,
+      sub: "le rendement moyen de votre capital chaque année",
+    },
+    {
+      key: "sharpe" as const,
+      label: "Gain par risque",
+      suffix: "",
+      color: GOLD,
+      digits: 2,
+      sub: "le gain obtenu pour chaque risque pris (Sharpe)",
+    },
+    {
+      key: "maxDrawdownPct" as const,
+      label: "Pire chute",
+      suffix: "%",
+      color: RED,
+      sub: "la plus grosse baisse du capital en cours de route",
+    },
+    {
+      key: "capitalMultiple" as const,
+      label: "Multiplié par",
+      suffix: "x",
+      color: GOLD,
+      sub: "capital final ÷ argent épargné",
+    },
+    {
+      key: "doublingTime" as const,
+      label: "Pour doubler",
+      suffix: " ans",
+      color: GOLD,
+      sub: "années pour que votre capital double",
+    },
+    {
+      key: "contributionPct" as const,
+      label: "Part épargne",
+      suffix: "%",
+      color: NEUTRAL,
+      sub: "issu de l'argent que vous avez mis de côté",
+    },
+    {
+      key: "gainsPct" as const,
+      label: "Part des gains",
+      suffix: "%",
+      color: GOLD,
+      sub: "issu de la croissance de la bourse",
+    },
+    {
+      key: "realReturn" as const,
+      label: "Après inflation",
+      suffix: "%",
+      color: GOLD,
+      sub: "votre gain réel, prix de l'inflation déduit",
+    },
+    {
+      key: "feeImpactPct" as const,
+      label: "Perdu en frais",
+      suffix: "%",
+      color: RED,
+      sub: "part du capital parti dans les frais",
+    },
+    {
+      key: "totalFees" as const,
+      label: "Frais payés",
+      suffix: "",
+      color: RED,
+      sub: "tous les frais cumulés sur la durée",
+    },
   ] as const
 
   const isCurrencyKey = (k: string): boolean => k === "totalFees"
@@ -38,8 +99,13 @@ export function KpiGrid({ kpis }: KpiGridProps) {
               ? fmtCurrency(val as number)
               : `${(val as number).toFixed(kpi.key === "sharpe" ? 2 : 1)}${kpi.suffix}`
         return (
-          <div key={kpi.key} className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors flex flex-col min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-text-muted truncate">{kpi.label}</div>
+          <div
+            key={kpi.key}
+            className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors flex flex-col min-w-0"
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-text-muted truncate">
+              {kpi.label}
+            </div>
             <div className="mono text-base font-bold mt-1.5 leading-tight truncate" style={{ color: kpi.color }}>
               {display}
             </div>

@@ -1,10 +1,53 @@
-# CHANGELOG — Snowball Pro v5.0
+# CHANGELOG — Snowball Pro v5.1
 
 > Simulation patrimoniale haut de gamme
 
 ---
 
-## Architecture & Stack Technique
+## v5.1.0 — Réintroduction des fonctionnalités v4.1 (Comparaison, Undo/Redo, Snapshots)
+
+- **Comparaison A/B** : mode comparateur restauré — bouton « Comparer » dans l'ActionBar, bannière
+  « Mode Comparaison actif », panneau éditant le Scénario B (A figé au lancement), graphique
+  comparé A vs B, résumé 3 cartes (A, B, écart +/–), tableau comparatif annuel. Les autres onglets
+  (MC, Rente, Objectif) opèrent sur B. `compareScenarios` retypé (`ScenarioComparison`), nouveau
+  `mergeComparisonSeries` (alignement des courbes, NaN = courbe incomplète).
+- **Undo/Redo** : `src/engine/history.ts` (pile 20 entrées, valeurs précédentes stockées — l'undo
+  v4.1 était un no-op), hook `useHistory`, boutons Annuler/Rétablir dans l'ActionBar, raccourcis
+  ⌘Z / ⌘⇧Z / ⌘Y (et Ctrl sur Windows) via `useKeyboardShortcuts` (champs de saisie exclus, Ctrl+D
+  pour le thème).
+- **Snapshots** : `src/engine/snapshots.ts` (CRUD pur, limite 8), persistance
+  `snowball_v5_snapshots` (migration best-effort depuis `snowball_pro_v41_state`), panneau
+  « Snapshots » en bas de la Sidebar (sauvegarder / charger / supprimer).
+- **Bugfix** : `FeeImpact` variable morte supprimée ; `.freebuff/` ignoré par ESLint et git.
+
+### Refonte pédagogique de l'interface (langage débutant)
+
+- **Objectif d'épargne** : onglet « Objectif inversé » renommé, cartes « Épargne mensuelle nécessaire »
+  et « Rendement nécessaire » expliquées, progression rebaptisée « Avec votre épargne actuelle »
+  (capital projeté affiché), tableau comparatif clarifié.
+- **Monte Carlo** : P90/P50/P10 reformulés en « Bonne période de bourse / Scénario moyen / Période
+  difficile » avec explications « 1 cas sur 10 », sous-titre explicatif du graphique, légende
+  complète, jargon (sigma, loi normale) supprimé.
+- **KPI** : labels réécrits sans jargon (Croissance/an, Gain par risque, Pire chute, Multiplié par,
+  Pour doubler, Part épargne, Part des gains, Après inflation, Perdu en frais, Frais payés) + 10
+  sous-titres explicatifs.
+- **Graphiques & cartes** : titres pédagogiques (« D'où vient votre argent ? », « Les baisses de
+  votre capital »), légendes « Année N », analyse et conseils reformulés (rendement visé explicite).
+- **Sidebar** : sections « Votre épargne », « Comment évolue la bourse ? », « Et si la bourse
+  s'effondrait ? », profils de crise « Krach éclair / Marché baissier / Stagnation + inflation »,
+  labels de frais simplifiés.
+- **Fiscal** : notes PFU/PS/IR et descriptions d'enveloppes réécrites en français clair (moteur
+  `taxes.ts`, textes de sortie uniquement), tableau « En € d'aujourd'hui ».
+- **Export CSV** : en-têtes lisibles (« Épargné (€) », « Capital (€) »…).
+
+### Persistance
+
+- `snowball_v5_settings` (A), `snowball_v5_settings_b` (B, rétabli au prochain lancement),
+  `snowball_v5_snapshots`, `snowball_v5_theme`, `snowball_v5_sidebar`.
+
+---
+
+## v5.0 — Architecture & Stack Technique
 
 - **Framework :** React 19.2 avec StrictMode + TypeScript 5.9 (strict)
 - **Bundler :** Vite 7.2 + plugin `vite-plugin-singlefile` (tout inline dans un unique `index.html`)
@@ -39,6 +82,9 @@
 - `kpis.ts` — indicateurs de performance
 - `validation.ts` — validation et sanitisation des entrées
 - `migration.ts` — `DEFAULT_INPUTS`, clés localStorage, mapping v4 → v5
+- `history.ts` — pile undo/redo (ajout v5.1)
+- `snapshots.ts` — CRUD snapshots (ajout v5.1)
+- `comparison.ts` — série comparée A/B (ajout v5.1)
 - `index.ts` — point d'entrée unique ré-exportant tout (via `src/engine.ts`)
 
 ### `src/App.tsx` — Coquille mince (~170 lignes)
@@ -63,9 +109,9 @@
 
 ---
 
-## Tests (38)
+## Tests (64)
 
-`src/__tests__/engine.test.ts` — math, formatting, fiscalité française, simulation, KPIs, goal solver, migration v4→v5.
+`src/__tests__/engine.test.ts` — math, formatting, fiscalité française, simulation, KPIs, goal solver, migration v4→v5, history (undo/redo), snapshots, comparaison A/B.
 
 ---
 

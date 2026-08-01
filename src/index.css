@@ -191,20 +191,24 @@
   --color-danger-light: #d04848;
   --color-value-gold: #996f09;
   --color-value-red: #b83a3a;
-  --color-glass: rgba(255, 255, 255, 0.8);
-  --color-glass-hover: rgba(255, 255, 255, 0.92);
+  --color-glass: rgba(250, 247, 241, 0.55);
+  --color-glass-hover: rgba(250, 247, 241, 0.75);
 }
 .light-mode .glass {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(250, 247, 241, 0.55);
   border-color: rgba(0, 0, 0, 0.06);
 }
 .light-mode .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(250, 247, 241, 0.75);
   border-color: rgba(0, 0, 0, 0.1);
 }
 .light-mode .glass-strong {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(252, 250, 246, 0.88);
   border-color: rgba(0, 0, 0, 0.08);
+}
+.light-mode aside.glass {
+  background: rgba(233, 228, 216, 0.75);
+  border-color: rgba(0, 0, 0, 0.07);
 }
 .light-mode body {
   background-color: var(--color-surface);
@@ -238,6 +242,43 @@
 }
 .light-mode ::selection {
   background: rgba(153, 111, 9, 0.3);
+}
+.light-mode .glass-gold {
+  background: linear-gradient(135deg, rgba(153, 111, 9, 0.06), rgba(124, 94, 10, 0.02));
+  border-color: rgba(153, 111, 9, 0.12);
+}
+.light-mode .glass-gold-hover:hover {
+  background: linear-gradient(135deg, rgba(153, 111, 9, 0.1), rgba(124, 94, 10, 0.04));
+}
+.light-mode .text-gradient {
+  background: linear-gradient(135deg, #7c5e0a 0%, #1a1816 40%, #7c5e0a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.light-mode .text-gradient-gold {
+  background: linear-gradient(135deg, #7c5e0a 0%, #996f09 50%, #624a08 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.light-mode .text-gradient-warm {
+  background: linear-gradient(135deg, #1a1816 0%, #5c564e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.light-mode .glow-gold {
+  box-shadow: 0 0 24px rgba(153, 111, 9, 0.1);
+}
+.light-mode .glow-gold-strong {
+  box-shadow: 0 0 40px rgba(153, 111, 9, 0.15);
+}
+.light-mode .border-gold {
+  border-color: rgba(153, 111, 9, 0.2);
+}
+.light-mode .bg-gold-subtle {
+  background: linear-gradient(135deg, rgba(153, 111, 9, 0.08), rgba(153, 111, 9, 0.02));
 }
 
 @keyframes animateIn {

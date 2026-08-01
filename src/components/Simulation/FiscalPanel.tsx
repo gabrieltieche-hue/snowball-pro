@@ -22,22 +22,22 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   )
 
   const lines: { label: string; value: number; strong?: boolean; tone?: string }[] = [
-    { label: "Gains bruts", value: taxInfo.grossGains, tone: GOLD },
+    { label: "Gains avant impôts", value: taxInfo.grossGains, tone: GOLD },
   ]
   if (taxInfo.socialCharges > 0) {
-    lines.push({ label: "Prélèvements sociaux", value: taxInfo.socialCharges, tone: RED })
+    lines.push({ label: "Cotisations sociales", value: taxInfo.socialCharges, tone: RED })
   }
   if (taxInfo.incomeTax > 0) {
     lines.push({ label: "Impôt sur le revenu", value: taxInfo.incomeTax, tone: RED })
   }
-  lines.push({ label: "Total impôts", value: taxInfo.totalTax, strong: true, tone: RED })
-  lines.push({ label: "Gains nets", value: taxInfo.netGains, strong: true, tone: GOLD })
+  lines.push({ label: "Total des impôts", value: taxInfo.totalTax, strong: true, tone: RED })
+  lines.push({ label: "Gains après impôts", value: taxInfo.netGains, strong: true, tone: GOLD })
 
   const totalBadge =
     taxInfo.flatTax > 0
-      ? "PFU"
+      ? "Impôt unique (PFU)"
       : taxInfo.socialCharges > 0 && taxInfo.incomeTax === 0
-        ? "PS uniquement"
+        ? "Cotisations sociales seules"
         : null
 
   return (
@@ -45,7 +45,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
       <div className="flex items-center gap-2 mb-2">
         <Shield size={14} className="text-text-dim" />
         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          Détail Fiscal — {ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.name || "CTO"}
+          Vos impôts — {ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.name || "CTO"}
         </span>
       </div>
       <div className="space-y-1.5">
@@ -53,7 +53,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           <div key={item.label} className="flex items-center justify-between py-1">
             <span className="text-[11px] text-text-muted flex items-center gap-1.5">
               {item.label}
-              {item.label === "Total impôts" && totalBadge && (
+              {item.label === "Total des impôts" && totalBadge && (
                 <span className="px-1.5 py-px rounded bg-danger/15 text-danger text-[8px] font-bold uppercase tracking-wider">
                   {totalBadge}
                 </span>
@@ -70,7 +70,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
       </div>
       <div className="h-px bg-border my-2" />
       <div className="flex justify-between items-center">
-        <span className="text-[10px] text-text-dim">Taux effectif d'imposition</span>
+        <span className="text-[10px] text-text-dim">Part de vos gains prise par les impôts</span>
         <span className="mono text-xs font-bold" style={{ color: "var(--color-value-red)" }}>
           {(taxInfo.effectiveRate * 100).toFixed(1)}%
         </span>

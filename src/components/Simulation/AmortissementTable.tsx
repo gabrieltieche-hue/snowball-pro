@@ -12,7 +12,7 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="border-b border-border">
-            {["Année", "Versé", "Intérêts", "Valeur", "Réelle", "Frais", "Net Fiscal"].map(h => (
+            {["Année", "Épargné", "Gains bourse", "Capital", "En € d'aujourd'hui", "Frais", "Après impôts"].map(h => (
               <th
                 key={h}
                 className="text-[9px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
@@ -31,7 +31,7 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
               transition={{ delay: i * 0.005 }}
               className="border-b border-border/30 hover:bg-glass transition-colors"
             >
-              <td className="py-2 px-3 text-text-dim whitespace-nowrap">An {row.year}</td>
+              <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
               <td className="py-2 px-3 mono text-text">{fmtCompact(row.investedNom)}</td>
               <td className="py-2 px-3 mono text-primary font-semibold">{fmtCompact(row.interestsNom)}</td>
               <td className="py-2 px-3 mono text-text font-semibold">{fmtCompact(row.nominal)}</td>

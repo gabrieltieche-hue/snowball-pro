@@ -33,13 +33,15 @@ export function BacktestSelector({ value, onChange }: BacktestSelectorProps) {
           onClick={() => onChange(idx.id)}
           className={cn(
             "rounded-xl p-3 border text-left transition-all",
-            value === idx.id ? "border-primary/60 bg-primary/15 shadow-gold" : "glass border-border hover:bg-glass-hover",
+            value === idx.id
+              ? "border-primary/60 bg-primary/15 shadow-gold"
+              : "glass border-border hover:bg-glass-hover",
           )}
           aria-pressed={value === idx.id}
         >
           <div className="text-xs font-bold text-text">{idx.label}</div>
           <div className="text-[10px] text-text-muted mt-1">
-            {idx.avg.toFixed(1)}% · Vol {idx.vol.toFixed(1)}%
+            {idx.avg.toFixed(1)} %/an en moyenne · Risque {idx.vol.toFixed(1)} %
           </div>
           <div className="text-[9px] text-text-dim mt-0.5">{idx.period}</div>
         </motion.button>

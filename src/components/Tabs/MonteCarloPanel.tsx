@@ -60,9 +60,24 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
 
   const scenarioCards = mcResult
     ? [
-        { label: "Scénario pessimiste (P10)", value: mcResult.p10[mcResult.p10.length - 1] ?? 0, tone: "#F87171", sub: "1 chance sur 10 de faire moins" },
-        { label: "Scénario médian (P50)", value: mcResult.p50[mcResult.p50.length - 1] ?? 0, tone: "var(--color-primary)", sub: "Résultat le plus probable" },
-        { label: "Scénario optimiste (P90)", value: mcResult.p90[mcResult.p90.length - 1] ?? 0, tone: "#4ADE80", sub: "1 chance sur 10 de faire mieux" },
+        {
+          label: "Mauvaise période de bourse (P10)",
+          value: mcResult.p10[mcResult.p10.length - 1] ?? 0,
+          tone: "#F87171",
+          sub: "1 cas sur 10 fait encore moins bien",
+        },
+        {
+          label: "Scénario moyen (P50)",
+          value: mcResult.p50[mcResult.p50.length - 1] ?? 0,
+          tone: "var(--color-primary)",
+          sub: "le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien",
+        },
+        {
+          label: "Bonne période de bourse (P90)",
+          value: mcResult.p90[mcResult.p90.length - 1] ?? 0,
+          tone: "#4ADE80",
+          sub: "1 cas sur 10 fait encore mieux",
+        },
       ]
     : []
 
@@ -73,8 +88,11 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
           <div>
             <h2 className="text-base font-bold mb-1">🎲 Simulation de Monte Carlo</h2>
             <p className="text-xs text-text-muted leading-relaxed max-w-xl">
-              {inputs.mcRuns.toLocaleString("fr-FR")} simulations avec un rendement aléatoire (loi normale, σ ≈{" "}
-              {(inputs.volatility * 100).toFixed(0)}%). Résultats : P10 (pessimiste), P50 (médian), P90 (optimiste).
+              L'avenir de la bourse est imprévisible : nous testons donc votre plan{" "}
+              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, avec des performances
+              différentes à chaque fois. Vous verrez le résultat de votre capital dans une{" "}
+              <strong className="text-text">mauvaise</strong>, une <strong className="text-text">moyenne</strong> et une{" "}
+              <strong className="text-text">bonne</strong> période de bourse.
             </p>
           </div>
           <button
@@ -95,7 +113,10 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         {!mcResult && (
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
             <div className="text-4xl">🎲</div>
-            <p className="text-xs font-semibold">Cliquez sur « Lancer » pour générer le nuage de probabilités</p>
+            <p className="text-xs font-semibold">
+              Cliquez sur « Lancer » pour tester votre plan dans {inputs.mcRuns.toLocaleString("fr-FR")} situations de
+              bourse différentes
+            </p>
           </div>
         )}
 
@@ -113,10 +134,13 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                 </div>
               ))}
               <div className="glass rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[#60A5FA]">Objectif atteint</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[#60A5FA]">
+                  Chances d'atteindre votre objectif
+                </p>
                 <p className="mono text-lg font-bold text-text">{mcResult.successRate.toFixed(0)}%</p>
                 <p className="text-[10px] text-text-dim mt-1.5">
-                  des scénarios ≥ {fmtCurrency(mcResult.goalTarget)}
+                  sur {mcResult.runs.toLocaleString("fr-FR")} cas, le capital final atteint au moins{" "}
+                  {fmtCurrency(mcResult.goalTarget)}
                 </p>
               </div>
             </div>
@@ -134,17 +158,19 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         <div
           className={cn(
             "rounded-2xl p-5 border border-[#8B3A3A]/30 border-l-2 border-l-danger",
-            darkMode ? "bg-gradient-to-br from-[#1a1210] to-[#160d0b]" : "bg-gradient-to-br from-[#fdf3ec] to-[#f9e9dd]",
+            darkMode
+              ? "bg-gradient-to-br from-[#1a1210] to-[#160d0b]"
+              : "bg-gradient-to-br from-[#fdf3ec] to-[#f9e9dd]",
           )}
         >
           <h3 className="text-xs font-bold text-danger uppercase tracking-wider mb-2.5">
-            ⚠️ Impact du krach simulé
+            ⚠️ Et si la bourse s'effondrait en année {inputs.crisisYear} ?
           </h3>
           <p className="text-xs text-text-muted leading-relaxed">
-            Un choc de <strong className="text-text">-{inputs.crisisAmplitude}%</strong> en année{" "}
-            <strong className="text-text">{inputs.crisisYear}</strong> est intégré. Le patrimoine final est de{" "}
+            Une chute brutale de <strong className="text-danger">-{inputs.crisisAmplitude}%</strong> est simulée en
+            année <strong className="text-text">{inputs.crisisYear}</strong>. Votre capital final serait de{" "}
             <strong className="text-danger">{fmtCurrency(lastRow?.nominal ?? 0)}</strong> au lieu de{" "}
-            <strong className="text-text">{fmtCurrency(noCrisisRow?.nominal ?? 0)}</strong> sans krach.
+            <strong className="text-text">{fmtCurrency(noCrisisRow?.nominal ?? 0)}</strong> sans cette chute.
           </p>
         </div>
       )}

@@ -1,11 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { V4_SETTINGS_KEY, SETTINGS_KEY, parseStoredInputs, runDecumulation, runSimulation, v4SettingsToInputs } from "./engine"
-import type { DecumulationResult, SimulationInputs } from "./types"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  V4_SETTINGS_KEY,
+  SETTINGS_KEY,
+  addSnapshot,
+  compareScenarios,
+  createSnapshot,
+  parseStoredInputs,
+  removeSnapshot,
+  runDecumulation,
+  runSimulation,
+  v4SettingsToInputs,
+} from "./engine"
+import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
+import { useHistory } from "./hooks/useHistory"
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { ActionBar } from "./components/Layout/ActionBar"
+import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar } from "./components/Layout/TabBar"
 import { SummaryStats } from "./components/Simulation/SummaryStats"
+import { ComparisonTab } from "./components/Tabs/ComparisonTab"
 import { GoalTab } from "./components/Tabs/GoalTab"
 import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "./components/Tabs/RenteRetraiteTab"
@@ -20,6 +36,7 @@ const TABS = [
 
 const THEME_KEY = "snowball_v5_theme"
 const SIDEBAR_KEY = "snowball_v5_sidebar"
+const SETTINGS_B_KEY = "snowball_v5_settings_b"
 
 function loadInitialDarkMode(): boolean {
   try {
@@ -56,6 +73,16 @@ function loadInitialInputs(): SimulationInputs {
   return parseStoredInputs(null)
 }
 
+function loadInitialInputsB(): SimulationInputs | null {
+  try {
+    const stored = localStorage.getItem(SETTINGS_B_KEY)
+    if (stored) return parseStoredInputs(stored)
+  } catch {
+    /* localStorage indisponible */
+  }
+  return null
+}
+
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const initial = loadInitialDarkMode()
@@ -63,20 +90,115 @@ export default function App() {
     return initial
   })
   const [inputs, setInputs] = useState<SimulationInputs>(loadInitialInputs)
+  const [inputsB, setInputsB] = useState<SimulationInputs | null>(loadInitialInputsB)
+  const [comparing, setComparing] = useState(false)
+  const [frozenA, setFrozenA] = useState<SimulationInputs | null>(null)
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadInitialSidebar)
+  const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(loadSnapshotsFromStorage)
+  const history = useHistory()
 
-  const rows = useMemo(() => runSimulation(inputs), [inputs])
+  const inputsRef = useRef(inputs)
+  const inputsBRef = useRef(inputsB)
+  const comparingRef = useRef(comparing)
+  inputsRef.current = inputs
+  inputsBRef.current = inputsB
+  comparingRef.current = comparing
+
+  const activeInputs = comparing && inputsB ? inputsB : inputs
+  const rows = useMemo(() => runSimulation(activeInputs), [activeInputs])
   const lastRow = rows[rows.length - 1]
 
-  const updateInput = useCallback(<K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => {
-    setInputs(prev => ({ ...prev, [key]: value }))
+  const rowsA = useMemo(() => (comparing && frozenA ? runSimulation(frozenA) : null), [comparing, frozenA])
+  const comparison = useMemo(
+    () => (comparing && rowsA && rows ? compareScenarios(rowsA, rows) : null),
+    [comparing, rowsA, rows],
+  )
+
+  const applyPatch = useCallback(
+    (patch: Partial<SimulationInputs>, record = true, scenario: "A" | "B" | null = null) => {
+      const target = scenario ?? (comparingRef.current ? "B" : "A")
+      const current = target === "B" ? inputsBRef.current : inputsRef.current
+      if (!current) return
+      if (record) history.record(current, patch, target)
+      const next = { ...current, ...patch }
+      if (target === "B") {
+        inputsBRef.current = next
+        setInputsB(next)
+      } else {
+        inputsRef.current = next
+        setInputs(next)
+      }
+    },
+    [history],
+  )
+
+  const updateInput = useCallback(
+    <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => {
+      applyPatch({ [key]: value } as Partial<SimulationInputs>)
+    },
+    [applyPatch],
+  )
+
+  const updateInputs = useCallback(
+    (partial: Partial<SimulationInputs>) => {
+      applyPatch(partial)
+    },
+    [applyPatch],
+  )
+
+  const handleUndo = useCallback(() => {
+    const result = history.undo()
+    if (result) applyPatch(result.patch, false, result.scenario)
+  }, [history, applyPatch])
+
+  const handleRedo = useCallback(() => {
+    const result = history.redo()
+    if (result) applyPatch(result.patch, false, result.scenario)
+  }, [history, applyPatch])
+
+  const toggleComparing = useCallback(() => {
+    if (comparingRef.current) {
+      setComparing(false)
+      setFrozenA(null)
+      return
+    }
+    setFrozenA({ ...inputsRef.current })
+    setInputsB(current => current ?? { ...inputsRef.current })
+    setComparing(true)
   }, [])
 
-  const updateInputs = useCallback((partial: Partial<SimulationInputs>) => {
-    setInputs(prev => ({ ...prev, ...partial }))
+  const handleSaveSnapshot = useCallback(() => {
+    const snapshot = createSnapshot(activeInputs, rows)
+    setSnapshots(prev => {
+      const next = addSnapshot(prev, snapshot)
+      saveSnapshotsToStorage(next)
+      return next
+    })
+  }, [activeInputs, rows])
+
+  const handleLoadSnapshot = useCallback(
+    (id: string) => {
+      const snapshot = snapshots.find(s => s.id === id)
+      if (snapshot) applyPatch(snapshot.inputs)
+    },
+    [snapshots, applyPatch],
+  )
+
+  const handleRemoveSnapshot = useCallback((id: string) => {
+    setSnapshots(prev => {
+      const next = removeSnapshot(prev, id)
+      saveSnapshotsToStorage(next)
+      return next
+    })
   }, [])
+
+  useKeyboardShortcuts({
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onToggleDarkMode: () => setDarkMode(d => !d),
+  })
 
   useEffect(() => {
     try {
@@ -85,6 +207,15 @@ export default function App() {
       /* localStorage indisponible */
     }
   }, [inputs])
+
+  useEffect(() => {
+    try {
+      if (inputsB) localStorage.setItem(SETTINGS_B_KEY, JSON.stringify(inputsB))
+      else localStorage.removeItem(SETTINGS_B_KEY)
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, [inputsB])
 
   useEffect(() => {
     applyThemeClass(darkMode)
@@ -117,8 +248,8 @@ export default function App() {
 
   const runDecum = useCallback(() => {
     if (!lastRow || lastRow.nominal <= 0) return
-    setDecumResult(runDecumulation(inputs, lastRow.nominal))
-  }, [inputs, lastRow])
+    setDecumResult(runDecumulation(activeInputs, lastRow.nominal))
+  }, [activeInputs, lastRow])
 
   return (
     <div className="min-h-screen bg-surface text-text">
@@ -129,24 +260,46 @@ export default function App() {
           }`}
         >
           <Sidebar
-            inputs={inputs}
+            inputs={activeInputs}
             rows={rows}
             updateInput={updateInput}
             updateInputs={updateInputs}
             collapsed={sidebarCollapsed}
+            scenarioLabel={comparing ? "Scénario B" : undefined}
+            snapshots={snapshots}
+            onSaveSnapshot={handleSaveSnapshot}
+            onLoadSnapshot={handleLoadSnapshot}
+            onRemoveSnapshot={handleRemoveSnapshot}
             onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           />
 
           <main className="space-y-5 min-w-0">
-            <ActionBar onExportCSV={exportCSV} onPrint={() => window.print()} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(d => !d)} />
-            <SummaryStats rows={rows} inputs={inputs} />
+            <ActionBar
+              onExportCSV={exportCSV}
+              onPrint={() => window.print()}
+              darkMode={darkMode}
+              onToggleDarkMode={() => setDarkMode(d => !d)}
+              comparing={comparing}
+              onToggleCompare={toggleComparing}
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+            />
+            <SummaryStats rows={rows} inputs={activeInputs} />
+            {comparing && <ComparisonBar onExit={toggleComparing} />}
             <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-            {activeTab === "simulator" && <SimulatorTab rows={rows} inputs={inputs} darkMode={darkMode} />}
-            {activeTab === "montecarlo" && <MonteCarloPanel inputs={inputs} darkMode={darkMode} />}
+            {activeTab === "simulator" &&
+              (comparing && comparison && rowsA ? (
+                <ComparisonTab rowsA={rowsA} rowsB={rows} inputs={activeInputs} darkMode={darkMode} comparison={comparison} />
+              ) : (
+                <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
+              ))}
+            {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
             {activeTab === "rente" && (
               <RenteRetraiteTab
-                inputs={inputs}
+                inputs={activeInputs}
                 decumResult={decumResult}
                 lastRow={lastRow}
                 darkMode={darkMode}
@@ -155,7 +308,7 @@ export default function App() {
                 runDecum={runDecum}
               />
             )}
-            {activeTab === "goal" && <GoalTab inputs={inputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />}
+            {activeTab === "goal" && <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />}
           </main>
         </div>
 

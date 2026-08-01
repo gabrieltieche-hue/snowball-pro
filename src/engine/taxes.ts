@@ -12,25 +12,37 @@ export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
     id: "cto",
     name: "Compte-titres ordinaire",
     shortLabel: "CTO",
-    desc: "PFU 30% sur plus-values et dividendes",
+    desc: "Impôt unique de 30 % sur vos gains",
     color: "var(--color-value-gold)",
   },
   {
     id: "pea",
     name: "Plan d'épargne en actions",
     shortLabel: "PEA",
-    desc: "Après 5 ans : PS 17,2% sur les gains",
+    desc: "Après 5 ans : 17,2 % de cotisations sociales seulement",
     color: "var(--color-warning)",
   },
   {
     id: "av",
     name: "Assurance-vie",
     shortLabel: "AV",
-    desc: "Après 8 ans : abattement puis 7,5% + PS",
+    desc: "Après 8 ans : abattement, puis 7,5 % + cotisations sociales",
     color: "var(--color-primary-light)",
   },
-  { id: "per", name: "PER / PERIN", shortLabel: "PER", desc: "Fiscalité simplifiée à la sortie", color: "var(--color-text-muted)" },
-  { id: "none", name: "Sans fiscalité", shortLabel: "BRUT", desc: "Projection brute avant impôts", color: "var(--color-text)" },
+  {
+    id: "per",
+    name: "PER / PERIN",
+    shortLabel: "PER",
+    desc: "Impôts simplifiés à la sortie",
+    color: "var(--color-text-muted)",
+  },
+  {
+    id: "none",
+    name: "Sans fiscalité",
+    shortLabel: "BRUT",
+    desc: "Projection avant impôts",
+    color: "var(--color-text)",
+  },
 ]
 
 export function roundCent(value: number): number {
@@ -68,7 +80,7 @@ export function computeTaxBreakdown(
       netGains: grossGains,
       totalTax: roundCent(dividendsTaxPaid),
       effectiveRate: grossGains > 0 ? dividendsTaxPaid / grossGains : 0,
-      notes: envelope === "none" ? ["Simulation brute, fiscalité neutralisée."] : notes,
+      notes: envelope === "none" ? ["Simulation sans impôts (aucun compte d'investissement choisi)."] : notes,
     }
   }
 
@@ -76,7 +88,9 @@ export function computeTaxBreakdown(
     socialCharges = grossGains * SOCIAL_TAX_RATE
     incomeTax = grossGains * PFU_INCOME_RATE
     flatTax = grossGains * PFU_RATE
-    notes.push("CTO : PFU 30% composé de 17,2% de PS et 12,8% d'IR.")
+    notes.push(
+      "CTO (compte-titres ordinaire) : impôt unique de 30 % = 17,2 % de cotisations sociales + 12,8 % d'impôt sur le revenu.",
+    )
   }
 
   if (envelope === "pea") {
@@ -84,16 +98,18 @@ export function computeTaxBreakdown(
       socialCharges = grossGains * SOCIAL_TAX_RATE
       incomeTax = 0
       flatTax = 0
-      notes.push("PEA mature (>5 ans) : exonération d'IR, PS 17,2% sur les gains.")
+      notes.push(
+        "PEA détenu plus de 5 ans : pas d'impôt sur le revenu, uniquement 17,2 % de cotisations sociales sur les gains.",
+      )
     } else {
       socialCharges = grossGains * SOCIAL_TAX_RATE
       incomeTax = grossGains * PFU_INCOME_RATE
       flatTax = grossGains * PFU_RATE
-      notes.push("PEA <5 ans : PFU 30% sur les gains.")
+      notes.push("PEA détenu moins de 5 ans : impôt unique de 30 % sur les gains.")
     }
     const cap = couple ? 300_000 : 150_000
     if (contributionBase > cap)
-      notes.push(`Plafond PEA dépassé : le plafond de versements est de ${(cap / 1000).toFixed(0)}k€.`)
+      notes.push(`Plafond PEA dépassé : ce compte est plafonné à ${(cap / 1000).toFixed(0)} k€ de versements au total.`)
   }
 
   if (envelope === "av") {
@@ -102,18 +118,22 @@ export function computeTaxBreakdown(
       const allowance = couple ? AV_IR_ALLOWANCE_COUPLE : AV_IR_ALLOWANCE_SINGLE
       taxableGains = Math.max(0, grossGains - allowance)
       incomeTax = taxableGains * AV_REDUCED_IR_RATE
-      notes.push(`AV >8 ans : PS sur tous les gains, abattement IR ${(allowance / 1000).toFixed(0)}k€/an.`)
+      notes.push(
+        `Assurance-vie détenue plus de 8 ans : cotisations sociales sur tous les gains + abattement de ${(
+          allowance / 1000
+        ).toFixed(0)} k€/an sur les gains imposés.`,
+      )
     } else {
       incomeTax = grossGains * PFU_INCOME_RATE
       flatTax = grossGains * PFU_RATE
-      notes.push("AV <8 ans : PFU 30%.")
+      notes.push("Assurance-vie détenue moins de 8 ans : impôt unique de 30 %.")
     }
   }
 
   if (envelope === "per") {
     socialCharges = grossGains * SOCIAL_TAX_RATE
     incomeTax = grossGains * (couple ? 0.11 : 0.14)
-    notes.push("PER : modèle simplifié de sortie en capital, hors économie d'impôt à l'entrée.")
+    notes.push("PER : sortie en capital modélisée simplement (l'avantage fiscal à l'entrée n'est pas simulé ici).")
   }
 
   const exitTax = socialCharges + incomeTax

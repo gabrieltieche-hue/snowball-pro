@@ -19,5 +19,16 @@ export { runDecumulation } from "./decumulation"
 export { computeKPIs, computeMilestones, solveGoal, compareScenarios } from "./kpis"
 export { validateInputs, sanitizeInputs } from "./validation"
 export type { ValidationError } from "./validation"
+export {
+  createHistory,
+  pushHistory,
+  undoHistory,
+  redoHistory,
+  HISTORY_LIMIT,
+} from "./history"
+export type { HistoryStack } from "./history"
+export { createSnapshot, addSnapshot, removeSnapshot, SNAPSHOT_LIMIT, SNAPSHOT_STORAGE_KEY, V41_STATE_KEY } from "./snapshots"
+export { mergeComparisonSeries } from "./comparison"
+export type { ComparisonSeriesRow } from "./comparison"
 export { getHistoricalDataset } from "./historical"
 export { getCrisisProfile, crisisAdjustment } from "./crisis"

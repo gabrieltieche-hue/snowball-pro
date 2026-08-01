@@ -1,4 +1,12 @@
-import type { SimulationInputs, YearRow, KPIs, Milestone, GoalResult, GoalDifficulty } from "../types"
+import type {
+  SimulationInputs,
+  YearRow,
+  KPIs,
+  Milestone,
+  GoalResult,
+  GoalDifficulty,
+  ScenarioComparison,
+} from "../types"
 import { roundCent } from "./taxes"
 import { calcMaxDrawdown, average, standardDeviation, PMTfromFV, monthlyRate, futureValue } from "./math"
 
@@ -144,7 +152,7 @@ export function solveGoal(inputs: SimulationInputs): GoalResult {
   }
 }
 
-export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[]) {
+export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[]): ScenarioComparison {
   const finalA = rowsA[rowsA.length - 1]?.taxNet ?? 0
   const finalB = rowsB[rowsB.length - 1]?.taxNet ?? 0
   const diffAbsolute = roundCent(finalB - finalA)
@@ -155,5 +163,5 @@ export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[]) {
     diffAbsolute,
     diffPercent,
     betterScenario: Math.abs(diffAbsolute) < 0.01 ? "equal" : diffAbsolute > 0 ? "B" : "A",
-  } as const
+  }
 }
