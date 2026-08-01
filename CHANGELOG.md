@@ -4,6 +4,26 @@
 
 ---
 
+## v5.1.2 — Suppression « Mois de début » + corrections release
+
+- **Suppression du réglage « Mois de début »** : le champ `startMonth` ne servait
+  qu'à décaler les dates affichées (valeur par défaut = janvier). Retiré de
+  `SimulationInputs`, de la migration v4→v5, de `NUMERIC_KEYS`, du moteur
+  (`simulation.ts`) et de la sidebar (section « Calendrier » supprimée). Les
+  projections recommencent toujours en janvier ; les réglages sauvegardés avec
+  un mois non nul sont ignorés (aucun changement sur les montants calculés).
+- **Service worker** : la purge de l'activation ne touche plus QUE les caches
+  `snowball-pro-*` (avant, elle supprimait les caches des autres applications
+  sur origine partagée) ; `CACHE_VERSION` bumpé à `snowball-pro-v5.1.2`.
+- **Typecheck** : `/// <reference types="vite/client" />` dans `src/main.tsx`
+  (résout l'erreur `ImportMeta.env`).
+- **Lint** : `URL` ajouté aux globals du service worker dans `eslint.config.js`.
+- **Tests** : assertion `escapeCsvCell` corrigée (préfixe `'` placé À
+  L'INTÉRIEUR des guillemets, anti-injection OWASP) ; test ajouté « la
+  projection démarre en janvier » ; timeouts Monte-Carlo élargis à 30 s.
+
+---
+
 ## v5.1.1 — Durcissement sécurité (audit complet)
 
 - **Dépendances** : `vite` 7.2.4 → 7.3.6 — élimine les 5 advisories connus
@@ -38,12 +58,11 @@
   **2,1 %/an** (l'inflation historique réelle des années 70 faussait les
   moyennes) appliquée au dataset, au mode historique et au défaut app.
   Backtest et Monte-Carlo gagnent 25 années de données supplémentaires.
-- **Données historiques** : série `msci-world` remplacée par le MSCI World Net
-  Return **EUR** 1970-2025 (56 ans, dividendes réinvestis — recoupée justETF /
-  Amundi / Curvo) au lieu de la série USD 1995+. Inflation forfaitaire à
-  **2,1 %/an** (l'inflation historique réelle des années 70 faussait les
-  moyennes) appliquée au dataset, au mode historique et au défaut app.
-  Backtest et Monte-Carlo gagnent 25 années de données supplémentaires.
+- **Hygiène** : `zustand` et `immer` supprimés des dépendances (0 import dans
+  `src/`, vestiges de la v4 — cf. AGENTS.md qui les annonçait déjà retirés).
+  Purge des caches du service worker ciblée sur `snowball-pro-*` uniquement
+  (jamais les caches d'autres apps sur une origine partagée). Timeouts des
+  tests Monte-Carlo élargis (30 s — machine lente).
 
 ---
 
@@ -152,7 +171,7 @@
 
 ---
 
-## Tests (64)
+## Tests (93)
 
 `src/__tests__/engine.test.ts` — math, formatting, fiscalité française, simulation, KPIs, goal solver, migration v4→v5, history (undo/redo), snapshots, comparaison A/B.
 
@@ -165,6 +184,6 @@ npm run dev         # Serveur de développement Vite
 npm run build       # Build production (singlefile → dist/index.html)
 npm run typecheck   # TypeScript strict
 npm run lint        # ESLint
-npm run test        # Vitest (38 tests)
+npm run test        # Vitest (93 tests)
 npm run format      # Prettier
 ```

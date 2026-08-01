@@ -4,6 +4,37 @@
 
 ---
 
+## SESSION — 2026-08-01 (v5.1.1 : durcissement sécurité + déploiement prod)
+
+### Résumé
+
+Audit de sécurité complet traité de bout en bout (Vite, CSP, en-têtes Vercel, service worker, CSV injection, CI, hooks tiers), puis commit et déploiement en production.
+
+### Modifications
+
+- **vite** 7.2.4 → 7.3.6 : les 5 advisories (3 High) éliminés — `npm audit` = 0 vuln.
+- **CSP** meta dans `index.html` + nouveau `vercel.json` (nosniff, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, Cache-Control contrôlé pour `/` et `/sw.js`). `script-src 'unsafe-inline'` assumé (build single-file : tout le JS est inliné) + `script-src-attr 'none'`.
+- **Service worker** activé en prod : cache `snowball-pro-v5`, navigation **network-first**, stale-while-revalidate, purge des caches **`snowball-pro-*` uniquement** (jamais ceux d'autres apps sur une origine partagée), `skipWaiting` + `clients.claim`. Enregistrement prod-only dans `main.tsx` (+ `/// <reference types="vite/client" />`).
+- **PWA** : icônes 192/512 générées (`scripts/generate-icons.mjs`), manifest + favicon câblés.
+- **Dev server** : `host: 127.0.0.1` (server + preview).
+- **CSV** : `escapeCsvCell` (OWASP CSV Injection) sur toutes les cellules de l'export.
+- **CI** : actions épinglées par SHA (`checkout@11d5960a`, `setup-node@49933ea5`), `permissions: contents: read`, étape `npm audit --audit-level=high`.
+- **Hooks tiers** : `.github/hooks/`, `.github/skills/`, `.agents/skills/` gitignorés (supply-chain) — toujours actifs localement (config globale), à retirer si le flux impeccable est inutilisé.
+- **Deps** : `zustand` + `immer` supprimés (0 imports, vestiges de la v4).
+- **Tests** : timeouts MC élargis à 30 s (machine lente — 12-15 s par test), assertion CSV corrigée (préfixe `'` à l'intérieur des guillemets).
+
+### Vérifications
+
+- Gate : npm audit 0 vuln ✓ typecheck ✓ lint ✓ **93/93 tests** ✓ build ✓ (dist 892 kB / 267 kB gzip).
+- Navigateur (dev + build prod servi statiquement) : zéro violation CSP (WebSocket HMR OK, fonts OK), SW `activated` avec cache `snowball-pro-v5`, page contrôlée.
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+### Notes
+
+- Le commit principal (`102da1a8`) a été créé en parallèle pendant la session (identity git de l'utilisateur) ; un second commit couvre les retouches (purge caches SW, types vite/client, lint sw.js, timeouts tests, cleanup deps, docs).
+
+---
+
 ## SESSION — 2026-08-01 (v5.1.0 : comparaison A/B, undo/redo, snapshots)
 
 ### Résumé

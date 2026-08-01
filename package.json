@@ -1,7 +1,7 @@
 {
   "name": "snowball-pro",
   "private": true,
-  "version": "5.1.1",
+  "version": "5.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,13 +19,11 @@
   "dependencies": {
     "clsx": "2.1.1",
     "framer-motion": "^12.42.2",
-    "immer": "^11.1.15",
     "lucide-react": "^1.25.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.9.2",
-    "tailwind-merge": "3.4.0",
-    "zustand": "^5.0.14"
+    "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -8,7 +8,7 @@
 | `npm run typecheck`    | `tsc --noEmit` (strict mode)                                                                                  |
 | `npm run lint`         | ESLint 10 + TypeScript strict + react-hooks                                                                   |
 | `npm run lint:fix`     | Auto-fix lint                                                                                                 |
-| `npm run test`         | `vitest run` (38 tests, node env)                                                                             |
+| `npm run test`         | `vitest run` (93 tests, node env)                                                                             |
 | `npm run test:watch`   | `vitest` watch mode                                                                                           |
 | `npm run test:ui`      | `vitest --ui`                                                                                                 |
 | `npm run format`       | Prettier (`semi: false`, `singleQuote: false`, `trailingComma: all`, `printWidth: 120`, `arrowParens: avoid`) |

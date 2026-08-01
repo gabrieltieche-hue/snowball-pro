@@ -13,7 +13,7 @@
  */
 // ⚠️ À faire correspondre à chaque release (cf. version dans package.json) :
 // sans bump, une ancienne version servie en cache peut survivre aux déploiements.
-const CACHE_VERSION = "snowball-pro-v5"
+const CACHE_VERSION = "snowball-pro-v5.1.2"
 const PRECACHE_URLS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"]
 
 self.addEventListener("install", event => {
@@ -29,7 +29,11 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches
       .keys()
-      .then(keys => Promise.all(keys.filter(key => !key.startsWith("snowball-pro-")).map(key => caches.delete(key))))
+      // Ne toucher QUE nos propres caches (snowball-pro-*) : sur une origine
+      // partagée, ne jamais supprimer les caches d'autres applications.
+      .then(keys =>
+        Promise.all(keys.filter(key => key.startsWith("snowball-pro-") && key !== CACHE_VERSION).map(key => caches.delete(key))),
+      )
       .then(() => self.clients.claim()),
   )
 })

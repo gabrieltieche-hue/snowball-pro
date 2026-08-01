@@ -24,6 +24,7 @@ export default tseslint.config(
         self: "readonly",
         caches: "readonly",
         fetch: "readonly",
+        URL: "readonly",
       },
     },
   },

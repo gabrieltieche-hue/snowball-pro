@@ -154,7 +154,9 @@ describe("escapeCsvCell — anti injection de formule (OWASP)", () => {
   })
 
   it("combine préfixe et quote quand les deux s'appliquent", () => {
-    expect(escapeCsvCell('=1+1;2')).toBe("'\"=1+1;2\"")
+    // Le préfixe ' est placé À L'INTÉRIEUR des guillemets : la valeur de champ
+    // lue par le tableur commence par ' → formule neutralisée.
+    expect(escapeCsvCell('=1+1;2')).toBe("\"'=1+1;2\"")
   })
 })
 
@@ -230,6 +232,11 @@ describe("runSimulation", () => {
     expect(rows.length).toBe(11) // year 0 + 10 years
     expect(rows[0].year).toBe(0)
     expect(rows[rows.length - 1].year).toBe(10)
+  })
+
+  it("démarre la projection en janvier (mois de début supprimé)", () => {
+    const rows = runSimulation(baseInputs)
+    expect(rows[0].date.startsWith("janv.")).toBe(true)
   })
 
   it("capital grows over time", () => {
@@ -1038,13 +1045,17 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
 })
 
 describe("runMonteCarlo — rééchantillonnage historique", () => {
+  // Les simulations Monte-Carlo sont volontairement lentes (chaque scénario
+  // rejoue une simulation mensuelle complète) : timeout élargi au-delà des 5 s.
+  const MC_TIMEOUT = 30_000
+
   it("produces deterministic results for a fixed seed", () => {
     const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10, returnMode: "historical" as const }
     const first = runMonteCarlo(inputs, 200)
     const second = runMonteCarlo(inputs, 200)
     expect(first.p50).toEqual(second.p50)
     expect(first.runs).toBe(200)
-  })
+  }, MC_TIMEOUT)
 
   it("produces distinct paths across the distribution", () => {
     const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10, returnMode: "historical" as const }
@@ -1053,14 +1064,14 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
     expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
     expect(result.p10[last]).toBeLessThan(result.p50[last] ?? 0)
     expect(result.bestCase).toBeGreaterThan(result.worstCase)
-  })
+  }, MC_TIMEOUT)
 
   it("random mode still runs and yields a success rate", () => {
     const inputs = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "random" as const, goalTarget: 10_000 }
     const result = runMonteCarlo(inputs, 150, 10_000)
     expect(result.successRate).toBeGreaterThanOrEqual(0)
     expect(result.successRate).toBeLessThanOrEqual(100)
-  })
+  }, MC_TIMEOUT)
 })
 
 describe("validateInputs — millésime fiscal", () => {
