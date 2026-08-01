@@ -4,7 +4,7 @@
 
 ---
 
-## SESSION — 2026-08-01 (v5.1.2 : durcissement sécurité + déploiement prod)
+## SESSION — 2026-08-01 (v5.1.1 : durcissement sécurité + déploiement prod)
 
 ### Résumé
 
