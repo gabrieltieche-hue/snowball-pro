@@ -163,6 +163,17 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
+  if (inputs.fiscalYear < 2020 || inputs.fiscalYear > 2032) {
+    errors.push({
+      field: "fiscalYear",
+      message: "Millésime fiscal hors bornes (2020–2032) — les règles affichées peuvent ne pas correspondre",
+      severity: "warning",
+      value: inputs.fiscalYear,
+      min: 2020,
+      max: 2032,
+    })
+  }
+
   return errors
 }
 
@@ -189,5 +200,6 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     goalTarget: Math.max(inputs.goalTarget, 1),
     goalAnnualReturn: clamp(inputs.goalAnnualReturn, -0.95, 10),
     seed: Math.abs(inputs.seed) || 1,
+    fiscalYear: Math.round(clamp(inputs.fiscalYear, 2020, 2032)),
   }
 }

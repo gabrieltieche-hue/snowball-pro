@@ -69,6 +69,7 @@ export interface DecumulationResult {
 
 export interface KPIs {
   cagr: number
+  xirr: number
   sharpe: number
   maxDrawdown: number
   maxDrawdownPct: number
@@ -132,7 +133,6 @@ export interface SimulationInputs {
   indexation: number
   inflation: number
   inflationMode: InflationMode
-  startMonth: number
   envelope: EnvelopeType
   taxCouple: boolean
   peaYearsHeld: number
@@ -162,6 +162,7 @@ export interface SimulationInputs {
   goalAnnualReturn: number
   mcRuns: number
   seed: number
+  fiscalYear: number
 }
 
 export interface HistoricalDataset {

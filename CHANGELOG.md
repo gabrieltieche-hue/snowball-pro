@@ -4,6 +4,49 @@
 
 ---
 
+## v5.1.1 — Durcissement sécurité (audit complet)
+
+- **Dépendances** : `vite` 7.2.4 → 7.3.6 — élimine les 5 advisories connus
+  (dont 3 High : bypass `server.fs.deny`, lecture de fichiers arbitraires via
+  le WebSocket du dev server, path traversal Windows). `npm audit` = 0 vuln.
+- **CSP** : meta Content-Security-Policy dans `index.html` (`default-src 'self'`,
+  `script-src-attr 'none'`, `object-src 'none'`, `base-uri 'self'`, `frame-src
+  'none'`, fonts Google whitelistées). `script-src 'unsafe-inline'` est requis
+  par le build single-file — commenté dans le HTML.
+- **En-têtes Vercel** : nouveau `vercel.json` — `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, cache
+  contrôlé pour `/` et `/sw.js`.
+- **Service worker** : activé et sécurisé — cache versionné `snowball-pro-v5`,
+  navigation network-first (plus jamais de version obsolète en cache),
+  stale-while-revalidate pour les assets, purge des caches v4, `skipWaiting` +
+  `clients.claim`, enregistrement en prod uniquement (`src/main.tsx`).
+- **PWA** : icônes 192/512 générées, manifest + favicon câblés.
+- **Dev server** : lié à `127.0.0.1` (les failles du dev server ne sont
+  exploitables que depuis le réseau).
+- **CSV** : `escapeCsvCell` (OWASP CSV Injection) appliqué à toutes les cellules
+  de l'export.
+- **CI** : actions épinglées par SHA (`checkout@11d5960a`, `setup-node@49933ea5`),
+  `permissions: contents: read`, étape `npm audit --audit-level=high`.
+- **Outillage tiers** : `.github/hooks/`, `.github/skills/` et `.agents/skills/`
+  (code non vérifié, accès réseau/clés) exclus du dépôt (`.gitignore`) — à
+  revoir ou retirer localement.
+- **Confidentialité** : le disclaimer précise que les données restent en
+  localStorage sur l'appareil (aucune transmission).
+- **Données historiques** : série `msci-world` remplacée par le MSCI World Net
+  Return **EUR** 1970-2025 (56 ans, dividendes réinvestis — recoupée justETF /
+  Amundi / Curvo) au lieu de la série USD 1995+. Inflation forfaitaire à
+  **2,1 %/an** (l'inflation historique réelle des années 70 faussait les
+  moyennes) appliquée au dataset, au mode historique et au défaut app.
+  Backtest et Monte-Carlo gagnent 25 années de données supplémentaires.
+- **Données historiques** : série `msci-world` remplacée par le MSCI World Net
+  Return **EUR** 1970-2025 (56 ans, dividendes réinvestis — recoupée justETF /
+  Amundi / Curvo) au lieu de la série USD 1995+. Inflation forfaitaire à
+  **2,1 %/an** (l'inflation historique réelle des années 70 faussait les
+  moyennes) appliquée au dataset, au mode historique et au défaut app.
+  Backtest et Monte-Carlo gagnent 25 années de données supplémentaires.
+
+---
+
 ## v5.1.0 — Réintroduction des fonctionnalités v4.1 (Comparaison, Undo/Redo, Snapshots)
 
 - **Comparaison A/B** : mode comparateur restauré — bouton « Comparer » dans l'ActionBar, bannière

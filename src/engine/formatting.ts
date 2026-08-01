@@ -21,6 +21,21 @@ export function fmtPercent(value: number, digits = 1): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`
 }
 
+/**
+ * Échappe une cellule CSV contre l'injection de formule (OWASP CSV Injection) :
+ * - préfixe `'` si la valeur commence par `=`, `+`, `-` ou `@` ;
+ * - quote la cellule (en doublant les guillemets) si elle contient `;`, `"`
+ *   ou un saut de ligne.
+ * Aujourd'hui toutes les cellules sont générées par le moteur, mais c'est une
+ * défense en profondeur si une saisie utilisateur libre y arrivait un jour.
+ */
+export function escapeCsvCell(value: string): string {
+  let out = value
+  if (/^[=+\-@]/.test(out)) out = `'${out}`
+  if (/[;"\n\r]/.test(out)) out = `"${out.replace(/"/g, '""')}"`
+  return out
+}
+
 export function parseCurrencyInput(raw: string): number {
   const compact = raw.trim().toLowerCase().replace(/\s/g, "").replace("€", "").replace(",", ".")
   const match = compact.match(/^(-?\d+(?:\.\d+)?)(k|m|md|b)?$/)

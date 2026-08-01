@@ -6,9 +6,11 @@ import { DrawdownChart } from "../Charts/DrawdownChart"
 import { CapitalAllocation } from "../Charts/CapitalAllocation"
 import { AIInsightCard } from "../Simulation/AIInsightCard"
 import { AmortissementTable } from "../Simulation/AmortissementTable"
+import { CashflowCalendar } from "../Simulation/CashflowCalendar"
 import { FeeImpact } from "../Simulation/FeeImpact"
 import { FiscalPanel } from "../Simulation/FiscalPanel"
 import { KpiGrid } from "../Simulation/KpiGrid"
+import { MethodologyPanel } from "../Simulation/MethodologyPanel"
 import { MilestoneTimeline } from "../Simulation/MilestoneTimeline"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -49,6 +51,10 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
       )}
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
+
+      <MethodologyPanel inputs={inputs} />
+
+      <CashflowCalendar rows={rows} />
 
       <div className="glass rounded-3xl overflow-hidden">
         <button

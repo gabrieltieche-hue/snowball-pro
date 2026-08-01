@@ -1,4 +1,4 @@
-import { Shield } from "lucide-react"
+import { Info, Shield } from "lucide-react"
 import { ENVELOPE_CONFIGS, computeTaxBreakdown, fmtCurrency } from "../../engine"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -21,8 +21,10 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
     inputs.taxCouple,
   )
 
+  const isLiquidationTheorique = inputs.envelope !== "none"
+
   const lines: { label: string; value: number; strong?: boolean; tone?: string }[] = [
-    { label: "Gains avant impôts", value: taxInfo.grossGains, tone: GOLD },
+    { label: "Gains avant impôts (brut)", value: taxInfo.grossGains, tone: GOLD },
   ]
   if (taxInfo.socialCharges > 0) {
     lines.push({ label: "Cotisations sociales", value: taxInfo.socialCharges, tone: RED })
@@ -42,10 +44,15 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
-      <div className="flex items-center gap-2 mb-2">
-        <Shield size={14} className="text-text-dim" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          Vos impôts — {ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.name || "CTO"}
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <Shield size={14} className="text-text-dim" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            Vos impôts — {ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.name || "CTO"}
+          </span>
+        </div>
+        <span className="text-[9px] mono font-bold text-text-dim bg-glass-hover px-1.5 py-0.5 rounded uppercase tracking-wider">
+          Règles {inputs.fiscalYear}
         </span>
       </div>
       <div className="space-y-1.5">
@@ -75,6 +82,16 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           {(taxInfo.effectiveRate * 100).toFixed(1)}%
         </span>
       </div>
+      {isLiquidationTheorique && (
+        <p className="text-[9px] text-text-dim leading-snug mt-2 flex items-start gap-1">
+          <Info size={10} className="shrink-0 mt-0.5 text-primary" />
+          <span>
+            <strong className="text-text-muted">Estimation</strong> : ces impôts supposent que vous liquidez tous vos
+            gains aujourd'hui (règles fiscales {inputs.fiscalYear}). Les gains latents ne sont taxés qu'à la revente
+            réelle.
+          </span>
+        </p>
+      )}
       {taxInfo.notes[0] && <p className="text-[9px] text-text-dim leading-snug mt-2">{taxInfo.notes[0]}</p>}
     </div>
   )

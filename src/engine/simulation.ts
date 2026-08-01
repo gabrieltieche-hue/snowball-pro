@@ -17,6 +17,17 @@ function annualReturnForYear(inputs: SimulationInputs, yearIndex: number): numbe
   return inputs.annualReturn
 }
 
+/**
+ * Variante Monte-Carlo : injecte une séquence de rendements annuels déjà
+ * rééchantillonnée (bootstrap historique) au lieu d'utiliser la logique
+ * interne de la simulation. C'est ce qui permet de rejouer les vrais
+ * rendements passés dans les milliers de scénarios.
+ */
+function annualReturnOverrideForYear(returns: number[], yearIndex: number, fallback: number): number {
+  if (!returns.length) return fallback
+  return returns[yearIndex % returns.length] ?? fallback
+}
+
 function annualInflationForYear(inputs: SimulationInputs, yearIndex: number): number {
   if (inputs.inflationMode === "historical")
     return INFLATION_SERIES[yearIndex % INFLATION_SERIES.length] ?? inputs.inflation
@@ -50,8 +61,9 @@ function taxYearsHeld(inputs: SimulationInputs, projectionYear: number): number 
   return projectionYear
 }
 
-export function runSimulation(rawInputs: SimulationInputs): YearRow[] {
+export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride?: number[]): YearRow[] {
   const inputs = sanitizeInputs(rawInputs)
+  const hasOverride = Boolean(annualReturnsOverride?.length)
   const totalMonths = Math.max(0, Math.round(inputs.duration * 12))
   const rows: YearRow[] = []
   const rng = mulberry32(inputs.seed)
@@ -73,7 +85,7 @@ export function runSimulation(rawInputs: SimulationInputs): YearRow[] {
 
   const pushRow = (month: number) => {
     const year = Math.round(month / 12)
-    const date = new Date(startYear, inputs.startMonth + month, 1).toLocaleDateString("fr-FR", {
+    const date = new Date(startYear, month, 1).toLocaleDateString("fr-FR", {
       month: "short",
       year: "numeric",
     })
@@ -134,7 +146,9 @@ export function runSimulation(rawInputs: SimulationInputs): YearRow[] {
       monthlyPayment = roundCent(monthlyPayment * (1 + inputs.indexation))
     }
 
-    const annualReturn = annualReturnForYear(inputs, yearIndex)
+    const annualReturn = hasOverride
+      ? annualReturnOverrideForYear(annualReturnsOverride ?? [], yearIndex, inputs.annualReturn)
+      : annualReturnForYear(inputs, yearIndex)
     const baseMarketReturn = sampledMonthlyReturn(inputs, annualReturn, month, rng)
     const crisis = crisisAdjustment(inputs, month)
     const totalMarketReturn = (1 + baseMarketReturn) * (1 + crisis.returnShock) - 1

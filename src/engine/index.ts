@@ -1,8 +1,16 @@
 export { mulberry32, gaussian } from "./rng"
 export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY, SETTINGS_KEY } from "./migration"
 export type { V4Settings } from "./migration"
-export { fmtCurrency, fmtCompact, fmtPercent, parseCurrencyInput } from "./formatting"
+export { fmtCurrency, fmtCompact, fmtPercent, parseCurrencyInput, escapeCsvCell } from "./formatting"
 export { roundCent, clamp, ENVELOPE_CONFIGS, computeTaxBreakdown, dividendTaxRate, calcXIRR } from "./taxes"
+export { buildCashFlows, computeXIRR } from "./kpis"
+export {
+  applyScenarioPatch,
+  enterComparison,
+  exitComparison,
+  resolveScenarioTarget,
+} from "./scenarios"
+export type { ScenarioState, ScenarioPatchResult } from "./scenarios"
 export {
   monthlyRate,
   annualFromMonthly,
@@ -14,7 +22,7 @@ export {
   calcMaxDrawdown,
 } from "./math"
 export { runSimulation } from "./simulation"
-export { runMonteCarlo } from "./montecarlo"
+export { runMonteCarlo, runMonteCarloAsync } from "./montecarlo"
 export { runDecumulation } from "./decumulation"
 export { computeKPIs, computeMilestones, solveGoal, compareScenarios } from "./kpis"
 export { validateInputs, sanitizeInputs } from "./validation"

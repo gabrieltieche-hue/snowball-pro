@@ -26,9 +26,10 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
       `${kpis.gainsPct.toFixed(0)}% de votre capital provient de la croissance de la bourse, pas de votre épargne.`,
     )
   }
-  if (kpis.cagr > inputs.annualReturn * 100) {
+  const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
+  if (effectiveReturn > inputs.annualReturn * 100) {
     insights.push(
-      `Votre croissance annuelle moyenne de ${kpis.cagr.toFixed(1)}% dépasse le rendement de ${(
+      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse le rendement de ${(
         inputs.annualReturn * 100
       ).toFixed(0)}% que vous aviez prévu.`,
     )

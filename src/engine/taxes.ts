@@ -158,20 +158,26 @@ export function dividendTaxRate(envelope: EnvelopeType): number {
 
 export function calcXIRR(cashFlows: number[], months: number[]): number {
   if (cashFlows.length < 2) return 0
+  // Convention standard : actualise les flux vers la DATE DU PREMIER flux
+  // (t0). La valeur finale positive compense les sorties → taux positif.
+  const t0 = months[0]
   let rate = 0.05
   for (let iter = 0; iter < 100; iter++) {
     let f = 0
     let fPrime = 0
-    const tMax = months[months.length - 1]
     for (let i = 0; i < cashFlows.length; i++) {
-      const t = tMax - months[i]
-      const disc = Math.pow(1 + rate, t / 12)
+      const t = (months[i] - t0) / 12
+      const disc = Math.pow(1 + rate, t)
       f += cashFlows[i] / disc
-      if (t !== 0) fPrime -= ((t / 12) * cashFlows[i]) / (disc * (1 + rate))
+      fPrime -= (t * cashFlows[i]) / (disc * (1 + rate))
     }
     if (Math.abs(f) < 1e-8) break
+    if (Math.abs(fPrime) < 1e-12) break // dérivée nulle : pas de racine unique exploitable
     const newRate = rate - f / fPrime
-    if (newRate <= -0.999) break
+    // Gardes symétriques : un taux < -99,9 % ou > 10 000 %/an indique un cas dégénéré.
+    // La borne haute reste large pour laisser converger des rendements légitimes
+    // élevés (crypto, fenêtres courtes) tout en bornant la divergence de Newton.
+    if (!Number.isFinite(newRate) || newRate <= -0.999 || newRate >= 100) break
     rate = newRate
   }
   return rate

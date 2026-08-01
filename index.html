@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Snowball Pro v5 — Simulateur Patrimonial</title>
+    <!--
+      CSP stricte adaptée au build single-file (vite-plugin-singlefile) :
+      - script-src 'unsafe-inline' est OBLIGATOIRE car tout le JS est inliné dans index.html.
+        La compensation : script-src-attr 'none' (aucun gestionnaire d'événement inline),
+        object-src 'none', et aucune origine tierce n'est autorisée pour le script/connect.
+      - Ne PAS retirer 'unsafe-inline' sans injecter un hash/nonce au build, sinon l'app casse.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'"
+    />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

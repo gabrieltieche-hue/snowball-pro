@@ -10,7 +10,6 @@ export interface V4Settings {
   t: number
   idx: number
   inf: number
-  month: number
   envelope: string
   kraschYear: number
   kraschPct: number
@@ -25,9 +24,8 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   volatility: 0.15,
   duration: 25,
   indexation: 0,
-  inflation: 0.02,
+  inflation: 0.021,
   inflationMode: "custom",
-  startMonth: 0,
   envelope: "cto",
   taxCouple: false,
   peaYearsHeld: 0,
@@ -57,6 +55,7 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   goalAnnualReturn: 0.07,
   mcRuns: 300,
   seed: 42,
+  fiscalYear: 2026,
 }
 
 const VALID_ENVELOPES: EnvelopeType[] = ["cto", "pea", "av", "per", "none"]
@@ -78,8 +77,7 @@ export function v4SettingsToInputs(s: Partial<V4Settings>): SimulationInputs {
     annualReturn: clamp(num(s.r, 8) / 100, -0.95, 10),
     duration: clamp(num(s.t, DEFAULT_INPUTS.duration), 1, 80),
     indexation: clamp(num(s.idx, 0) / 100, 0, 0.5),
-    inflation: clamp(num(s.inf, 2) / 100, -0.1, 1),
-    startMonth: clamp(Math.round(num(s.month, 0)), 0, 11),
+    inflation: clamp(num(s.inf, 2.1) / 100, -0.1, 1),
     envelope,
     crisisYear: clamp(num(s.kraschYear, DEFAULT_INPUTS.crisisYear), 1, 80),
     crisisAmplitude: clamp(num(s.kraschPct, DEFAULT_INPUTS.crisisAmplitude), 0, 70),
@@ -87,12 +85,87 @@ export function v4SettingsToInputs(s: Partial<V4Settings>): SimulationInputs {
   }
 }
 
+const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
+  "capitalInitial",
+  "monthlyPayment",
+  "annualReturn",
+  "volatility",
+  "duration",
+  "indexation",
+  "inflation",
+  "peaYearsHeld",
+  "avYearsHeld",
+  "crisisYear",
+  "crisisAmplitude",
+  "crisisDuration",
+  "etfFees",
+  "brokerageFees",
+  "insuranceFees",
+  "managementFees",
+  "dividendYield",
+  "withdrawalRate",
+  "withdrawalFixed",
+  "retirementYears",
+  "goalTarget",
+  "goalDuration",
+  "goalCapital",
+  "goalPayment",
+  "goalAnnualReturn",
+  "mcRuns",
+  "seed",
+  "fiscalYear",
+]
+
+const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
+  "taxCouple",
+  "showReal",
+  "withdrawalInflation",
+  "crisisEnabled",
+]
+
+const STRING_KEYS: (keyof SimulationInputs)[] = [
+  "inflationMode",
+  "envelope",
+  "returnMode",
+  "historicalIndex",
+  "crisisProfile",
+  "withdrawalModel",
+]
+
+const ENUM_VALUES: Record<string, string[]> = {
+  inflationMode: ["custom", "historical", "dynamic"],
+  envelope: ["cto", "pea", "av", "per", "none"],
+  returnMode: ["fixed", "random", "historical"],
+  historicalIndex: ["msci-world", "sp500", "nasdaq", "cac40", "bitcoin", "gold"],
+  crisisProfile: ["none", "flash-crash", "bear-market", "long-depression", "stagflation"],
+  withdrawalModel: ["rule-4", "ultra-safe", "optimistic", "custom"],
+}
+
 export function parseStoredInputs(raw: string | null): SimulationInputs {
   if (!raw) return DEFAULT_INPUTS
   try {
-    const parsed = JSON.parse(raw) as Partial<SimulationInputs>
-    if (typeof parsed !== "object" || parsed === null) return DEFAULT_INPUTS
-    return { ...DEFAULT_INPUTS, ...parsed }
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return DEFAULT_INPUTS
+
+    const merged = { ...DEFAULT_INPUTS } as SimulationInputs
+    const target = merged as unknown as Record<string, unknown>
+    for (const key of NUMERIC_KEYS) {
+      const v = parsed[key]
+      if (typeof v === "number" && Number.isFinite(v)) target[key] = v
+    }
+    for (const key of BOOLEAN_KEYS) {
+      const v = parsed[key]
+      if (typeof v === "boolean") target[key] = v
+    }
+    for (const key of STRING_KEYS) {
+      const v = parsed[key]
+      const allowed = ENUM_VALUES[key]
+      if (typeof v === "string" && allowed && allowed.includes(v)) target[key] = v
+    }
+    // Le millésime fiscal est borné dès le chargement pour rester cohérent
+    // avec les règles affichables (avant toute sanitisation par la simulation).
+    target.fiscalYear = clamp(num(parsed.fiscalYear, DEFAULT_INPUTS.fiscalYear), 2020, 2032)
+    return merged
   } catch {
     return DEFAULT_INPUTS
   }

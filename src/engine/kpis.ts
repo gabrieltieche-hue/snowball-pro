@@ -7,10 +7,55 @@ import type {
   GoalDifficulty,
   ScenarioComparison,
 } from "../types"
-import { roundCent } from "./taxes"
+import { roundCent, calcXIRR } from "./taxes"
 import { calcMaxDrawdown, average, standardDeviation, PMTfromFV, monthlyRate, futureValue } from "./math"
 
 const RISK_FREE_RATE = 0.03
+
+/**
+ * Construit les flux de trésorerie mensuels (capital initial + versements
+ * indexés) et la valeur finale pour calculer un rendement interne réel (XIRR).
+ * Le CAGR naïf ignore les versements périodiques ; le XIRR les prend en compte.
+ */
+export function buildCashFlows(inputs: SimulationInputs, finalValue: number): { flows: number[]; months: number[] } {
+  const totalMonths = Math.max(0, Math.round(inputs.duration * 12))
+  const flows: number[] = []
+  const months: number[] = []
+
+  // Capital initial : flux sortant à t=0
+  if (inputs.capitalInitial > 0) {
+    flows.push(-inputs.capitalInitial)
+    months.push(0)
+  }
+
+  // Versements mensuels (avec indexation annuelle, comme dans runSimulation)
+  let monthlyPayment = inputs.monthlyPayment
+  for (let m = 1; m <= totalMonths; m += 1) {
+    const monthInYear = (m - 1) % 12
+    if (monthInYear === 0 && m > 1) monthlyPayment = monthlyPayment * (1 + inputs.indexation)
+    if (monthlyPayment > 0) {
+      flows.push(-monthlyPayment)
+      months.push(m)
+    }
+  }
+
+  // Valeur finale : flux entrant à la fin
+  if (finalValue > 0) {
+    flows.push(finalValue)
+    months.push(totalMonths)
+  }
+  // Note : simplification documentée — le plafond de versements PEA
+  // (150/300 k€) n'est pas appliqué ici ; le XIRR reste très proche tant
+  // que la durée et les versements restent dans les bornes usuelles.
+  return { flows, months }
+}
+
+export function computeXIRR(inputs: SimulationInputs, finalValue: number): number {
+  const { flows, months } = buildCashFlows(inputs, finalValue)
+  if (flows.length < 2) return 0
+  const rate = calcXIRR(flows, months)
+  return Number.isFinite(rate) ? rate : 0
+}
 
 export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
   const last = rows[rows.length - 1]
@@ -18,6 +63,7 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
   if (!last || !first)
     return {
       cagr: 0,
+      xirr: 0,
       sharpe: 0,
       maxDrawdown: 0,
       maxDrawdownPct: 0,
@@ -35,6 +81,7 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
 
   const years = Math.max(1, inputs.duration)
   const cagr = first.nominal > 0 ? Math.pow(last.nominal / first.nominal, 1 / years) - 1 : 0
+  const xirr = computeXIRR(inputs, last.nominal)
   const netReturns = rows
     .slice(1)
     .map(r => r.yearlyReturn)
@@ -53,6 +100,7 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
 
   return {
     cagr: roundCent(cagr * 100),
+    xirr: roundCent(xirr * 100),
     sharpe: roundCent(sharpe),
     maxDrawdown: roundCent(drawdown.maxDrawdown),
     maxDrawdownPct: roundCent(drawdown.maxDrawdownPct * 100),

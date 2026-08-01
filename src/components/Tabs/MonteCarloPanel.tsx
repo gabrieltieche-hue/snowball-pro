@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, Play } from "lucide-react"
-import { fmtCurrency, runMonteCarlo, runSimulation } from "../../engine"
+import { fmtCurrency, getHistoricalDataset, runMonteCarloAsync, runSimulation } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { cn } from "../../utils/cn"
 import type { MonteCarloResult, SimulationInputs } from "../../types"
@@ -13,7 +13,10 @@ interface MonteCarloPanelProps {
 export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null)
   const [running, setRunning] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [computedFor, setComputedFor] = useState("")
+  const abortRef = useRef<AbortController | null>(null)
+  const mountedRef = useRef(true)
 
   const inputsHash = useMemo(
     () =>
@@ -37,19 +40,45 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         managementFees: inputs.managementFees,
         dividendYield: inputs.dividendYield,
         seed: inputs.seed,
+        mcRuns: inputs.mcRuns,
+        fiscalYear: inputs.fiscalYear,
       }),
     [inputs],
   )
 
   const isStale = mcResult !== null && computedFor !== inputsHash
 
-  const handleRun = () => {
+  // Nettoyage au démontage : annule la simulation en cours et évite les
+  // setState après unmount (setTimeout / promise en vol).
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  const handleRun = async () => {
+    if (running) return
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     setRunning(true)
-    setTimeout(() => {
-      setMcResult(runMonteCarlo(inputs, inputs.mcRuns))
+    setProgress(0)
+    setMcResult(null)
+    try {
+      const result = await runMonteCarloAsync(inputs, inputs.mcRuns, inputs.goalTarget, (done, total) => {
+        if (mountedRef.current) setProgress(Math.round((done / total) * 100))
+      }, controller.signal)
+      if (!mountedRef.current) return
+      setMcResult(result)
       setComputedFor(inputsHash)
-      setRunning(false)
-    }, 30)
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return
+      if (mountedRef.current) setMcResult(null)
+    } finally {
+      if (mountedRef.current) setRunning(false)
+    }
   }
 
   const lastRow = useMemo(() => runSimulation(inputs).slice(-1)[0], [inputs])
@@ -89,10 +118,22 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
             <h2 className="text-base font-bold mb-1">🎲 Simulation de Monte Carlo</h2>
             <p className="text-xs text-text-muted leading-relaxed max-w-xl">
               L'avenir de la bourse est imprévisible : nous testons donc votre plan{" "}
-              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, avec des performances
-              différentes à chaque fois. Vous verrez le résultat de votre capital dans une{" "}
-              <strong className="text-text">mauvaise</strong>, une <strong className="text-text">moyenne</strong> et une{" "}
-              <strong className="text-text">bonne</strong> période de bourse.
+              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>
+              {inputs.returnMode === "historical" ? (
+                <>
+                  , en rééchantillonnant les <strong className="text-text">rendements réels passés</strong> de l'indice{" "}
+                  <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> (les krachs
+                  et les bull markets réels sont rejoués).
+                </>
+              ) : (
+                <>
+                  , avec des performances
+                  différentes à chaque fois.
+                </>
+              )}{" "}
+              Vous verrez le résultat de votre capital dans une <strong className="text-text">mauvaise</strong>, une{" "}
+              <strong className="text-text">moyenne</strong> et une <strong className="text-text">bonne</strong> période
+              de bourse.
             </p>
           </div>
           <button
@@ -106,11 +147,24 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                 : "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary",
             )}
           >
-            <Play size={13} fill="currentColor" /> {running ? "Calcul..." : `Lancer ${inputs.mcRuns} simulations`}
+            <Play size={13} fill="currentColor" /> {running ? `Calcul... ${progress}%` : `Lancer ${inputs.mcRuns} simulations`}
           </button>
         </div>
 
-        {!mcResult && (
+        {/* Barre de progression : le calcul est découpé en chunks pour ne pas geler l'interface */}
+        {running && (
+          <div className="space-y-1.5">
+            <div className="h-1.5 rounded-full bg-text-dim/20 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-primary to-primary-light transition-all duration-200"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-text-dim text-right mono">{progress}% — interface fluide pendant le calcul</p>
+          </div>
+        )}
+
+        {!mcResult && !running && (
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
             <div className="text-4xl">🎲</div>
             <p className="text-xs font-semibold">

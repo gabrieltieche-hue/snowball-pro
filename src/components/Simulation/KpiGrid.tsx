@@ -14,11 +14,11 @@ export function KpiGrid({ kpis }: KpiGridProps) {
 
   const cards = [
     {
-      key: "cagr" as const,
-      label: "Croissance/an",
+      key: "xirr" as const,
+      label: "Rendement réel/an",
       suffix: "%",
       color: GOLD,
-      sub: "le rendement moyen de votre capital chaque année",
+      sub: "XIRR : rendement annuel calculé sur vos flux réels (versements compris)",
     },
     {
       key: "sharpe" as const,

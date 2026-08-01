@@ -29,28 +29,31 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
 
   const cards: StatCard[] = [
     {
+      label: "Valeur brute",
+      value: fmt(displayFinal),
+      color: "var(--color-text)",
+      sub: showReal ? "euros d'aujourd'hui (inflation déduite)" : "euros bruts, avant impôts",
+    },
+    {
+      label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
+      value: fmt(netAfterTax),
+      color: "var(--color-value-gold)",
+      sub:
+        envelope !== "none"
+          ? `Impôts estimés (règles ${inputs.fiscalYear}) : -${fmt(taxAmount)}`
+          : "Aucun impôt à payer",
+    },
+    {
+      label: "Pouvoir d'achat",
+      value: fmt(lastRow.real),
+      color: "var(--color-warning)",
+      sub: "capital net en euros d'aujourd'hui (inflation déduite)",
+    },
+    {
       label: "Total épargné",
       value: fmt(displayInvested),
       color: "var(--color-text-muted)",
-      sub: "tout l'argent que vous avez mis de côté",
-    },
-    {
-      label: "Gains générés",
-      value: `+${fmt(displayInterests)}`,
-      color: "var(--color-value-gold)",
-      sub: "la croissance de la bourse",
-    },
-    {
-      label: `Après impôts (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
-      value: fmt(netAfterTax),
-      color: "var(--color-value-gold)",
-      sub: envelope !== "none" ? `Impôts retirés : -${fmt(taxAmount)}` : "Aucun impôt à payer",
-    },
-    {
-      label: "Capital final",
-      value: fmt(displayFinal),
-      color: "var(--color-text)",
-      sub: showReal ? "en euros d'aujourd'hui (inflation déduite)" : "en euros bruts (inflation non déduite)",
+      sub: `Gains de la bourse : +${fmt(displayInterests)}`,
     },
   ]
 

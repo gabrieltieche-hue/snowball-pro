@@ -16,4 +16,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  // Sécurité : les vulnérabilités connues du dev server (lecture de fichiers
+  // arbitraires) ne sont exploitables que si le serveur est joignable depuis
+  // le réseau. Restriction au loopback — `npm run dev -- --host 0.0.0.0` pour
+  // l'exposer volontairement (non recommandé).
+  server: {
+    host: "127.0.0.1",
+  },
+  preview: {
+    host: "127.0.0.1",
+  },
 })

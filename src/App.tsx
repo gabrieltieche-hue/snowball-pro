@@ -3,13 +3,18 @@ import {
   V4_SETTINGS_KEY,
   SETTINGS_KEY,
   addSnapshot,
+  applyScenarioPatch,
   compareScenarios,
   createSnapshot,
+  enterComparison,
+  escapeCsvCell,
+  exitComparison,
   parseStoredInputs,
   removeSnapshot,
   runDecumulation,
   runSimulation,
   v4SettingsToInputs,
+  validateInputs,
 } from "./engine"
 import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
 import { useHistory } from "./hooks/useHistory"
@@ -35,22 +40,13 @@ const TABS = [
 ]
 
 const THEME_KEY = "snowball_v5_theme"
-const SIDEBAR_KEY = "snowball_v5_sidebar"
+const LEGACY_SIDEBAR_KEY = "snowball_v5_sidebar"
 const SETTINGS_B_KEY = "snowball_v5_settings_b"
 
 function loadInitialDarkMode(): boolean {
   try {
     const stored = localStorage.getItem(THEME_KEY)
     if (stored) return stored === "dark"
-  } catch {
-    /* localStorage indisponible */
-  }
-  return false
-}
-
-function loadInitialSidebar(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) === "collapsed"
   } catch {
     /* localStorage indisponible */
   }
@@ -95,7 +91,6 @@ export default function App() {
   const [frozenA, setFrozenA] = useState<SimulationInputs | null>(null)
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadInitialSidebar)
   const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(loadSnapshotsFromStorage)
   const history = useHistory()
 
@@ -116,20 +111,22 @@ export default function App() {
     [comparing, rowsA, rows],
   )
 
+  /**
+   * Applique un patch au bon scénario SANS jamais écraser l'autre :
+   * en mode comparaison → B, sinon → A (voir engine/scenarios.ts).
+   */
   const applyPatch = useCallback(
     (patch: Partial<SimulationInputs>, record = true, scenario: "A" | "B" | null = null) => {
-      const target = scenario ?? (comparingRef.current ? "B" : "A")
-      const current = target === "B" ? inputsBRef.current : inputsRef.current
-      if (!current) return
-      if (record) history.record(current, patch, target)
-      const next = { ...current, ...patch }
-      if (target === "B") {
-        inputsBRef.current = next
-        setInputsB(next)
-      } else {
-        inputsRef.current = next
-        setInputs(next)
+      const state = { A: inputsRef.current, B: inputsBRef.current }
+      const { state: nextState, target } = applyScenarioPatch(state, patch, comparingRef.current, scenario)
+      if (record) {
+        const current = target === "B" ? inputsBRef.current : inputsRef.current
+        if (current) history.record(current, patch, target)
       }
+      inputsRef.current = nextState.A
+      inputsBRef.current = nextState.B
+      setInputs(nextState.A)
+      setInputsB(nextState.B)
     },
     [history],
   )
@@ -160,12 +157,20 @@ export default function App() {
 
   const toggleComparing = useCallback(() => {
     if (comparingRef.current) {
+      const nextState = exitComparison({ A: inputsRef.current, B: inputsBRef.current })
+      inputsRef.current = nextState.A
+      inputsBRef.current = nextState.B
+      setInputs(nextState.A)
+      setInputsB(nextState.B)
       setComparing(false)
       setFrozenA(null)
       return
     }
-    setFrozenA({ ...inputsRef.current })
-    setInputsB(current => current ?? { ...inputsRef.current })
+    const nextState = enterComparison({ A: inputsRef.current, B: inputsBRef.current })
+    inputsRef.current = nextState.A
+    inputsBRef.current = nextState.B
+    setFrozenA({ ...nextState.A })
+    setInputsB(nextState.B)
     setComparing(true)
   }, [])
 
@@ -221,30 +226,64 @@ export default function App() {
     applyThemeClass(darkMode)
     try {
       localStorage.setItem(THEME_KEY, darkMode ? "dark" : "light")
+      localStorage.removeItem(LEGACY_SIDEBAR_KEY)
     } catch {
       /* localStorage indisponible */
     }
   }, [darkMode])
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? "collapsed" : "open")
-    } catch {
-      /* localStorage indisponible */
-    }
-  }, [sidebarCollapsed])
+  const fmtExportNumber = (v: number) =>
+    new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
 
   const exportCSV = () => {
-    let csv = "Annee;Date;Total Verse;Interets;Valeur Nominale;Valeur Reelle;Net Fiscal\n"
-    rows.forEach(r => {
-      csv += `${r.year};${r.date};${r.investedNom};${r.interestsNom};${r.nominal};${r.real};${r.taxNet}\n`
-    })
+    const header = [
+      "Annee",
+      "Date",
+      "Total Verse",
+      "Interets",
+      "Valeur Nominale",
+      "Valeur Reelle",
+      "Frais",
+      "Impot Dividendes",
+      "Net Fiscal",
+    ]
+    // Échappement anti-injection de formule (OWASP CSV Injection)
+    const esc = escapeCsvCell
+    const lines = rows.map(r =>
+      [
+        esc(String(r.year)),
+        esc(r.date),
+        esc(fmtExportNumber(r.investedNom)),
+        esc(fmtExportNumber(r.interestsNom)),
+        esc(fmtExportNumber(r.nominal)),
+        esc(fmtExportNumber(r.real)),
+        esc(fmtExportNumber(r.fees)),
+        esc(fmtExportNumber(r.dividendTax)),
+        esc(fmtExportNumber(r.taxNet)),
+      ].join(";"),
+    )
+    const csv = `\uFEFF${header.map(esc).join(";")}\n${lines.join("\n")}`
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
     link.setAttribute("download", "snowball_pro_v5_projection.csv")
     link.click()
   }
+
+  const exportJSON = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      inputs: activeInputs,
+      results: rows,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.setAttribute("download", "snowball_pro_v5_projection.json")
+    link.click()
+  }
+
+  const validationErrors = useMemo(() => validateInputs(activeInputs), [activeInputs])
 
   const runDecum = useCallback(() => {
     if (!lastRow || lastRow.nominal <= 0) return
@@ -254,28 +293,23 @@ export default function App() {
   return (
     <div className="min-h-screen bg-surface text-text">
       <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
-        <div
-          className={`grid grid-cols-1 gap-6 items-start ${
-            sidebarCollapsed ? "lg:grid-cols-[72px_1fr]" : "lg:grid-cols-[380px_1fr]"
-          }`}
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
           <Sidebar
             inputs={activeInputs}
             rows={rows}
             updateInput={updateInput}
             updateInputs={updateInputs}
-            collapsed={sidebarCollapsed}
             scenarioLabel={comparing ? "Scénario B" : undefined}
             snapshots={snapshots}
             onSaveSnapshot={handleSaveSnapshot}
             onLoadSnapshot={handleLoadSnapshot}
             onRemoveSnapshot={handleRemoveSnapshot}
-            onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           />
 
           <main className="space-y-5 min-w-0">
             <ActionBar
               onExportCSV={exportCSV}
+              onExportJSON={exportJSON}
               onPrint={() => window.print()}
               darkMode={darkMode}
               onToggleDarkMode={() => setDarkMode(d => !d)}
@@ -285,34 +319,60 @@ export default function App() {
               canRedo={history.canRedo}
               onUndo={handleUndo}
               onRedo={handleRedo}
+              validationErrors={validationErrors}
             />
             <SummaryStats rows={rows} inputs={activeInputs} />
+            {validationErrors.filter(e => e.severity === "error").length > 0 && (
+              <div
+                role="alert"
+                className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger"
+              >
+                ⚠️ Des valeurs saisies sortent des bornes acceptées ({validationErrors.filter(e => e.severity === "error").length}{" "}
+                erreur{validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
+                simulation fiable.
+              </div>
+            )}
             {comparing && <ComparisonBar onExit={toggleComparing} />}
             <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-            {activeTab === "simulator" &&
-              (comparing && comparison && rowsA ? (
-                <ComparisonTab rowsA={rowsA} rowsB={rows} inputs={activeInputs} darkMode={darkMode} comparison={comparison} />
-              ) : (
-                <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
-              ))}
-            {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
-            {activeTab === "rente" && (
-              <RenteRetraiteTab
-                inputs={activeInputs}
-                decumResult={decumResult}
-                lastRow={lastRow}
-                darkMode={darkMode}
-                updateInput={updateInput}
-                updateInputs={updateInputs}
-                runDecum={runDecum}
-              />
-            )}
-            {activeTab === "goal" && <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />}
+            <div
+              role="tabpanel"
+              id={`panel-${activeTab}`}
+              aria-labelledby={`tab-${activeTab}`}
+              className="focus:outline-none"
+            >
+              {activeTab === "simulator" &&
+                (comparing && comparison && rowsA ? (
+                  <ComparisonTab
+                    rowsA={rowsA}
+                    rowsB={rows}
+                    inputs={activeInputs}
+                    darkMode={darkMode}
+                    comparison={comparison}
+                  />
+                ) : (
+                  <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
+                ))}
+              {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
+              {activeTab === "rente" && (
+                <RenteRetraiteTab
+                  inputs={activeInputs}
+                  decumResult={decumResult}
+                  lastRow={lastRow}
+                  darkMode={darkMode}
+                  updateInput={updateInput}
+                  updateInputs={updateInputs}
+                  runDecum={runDecum}
+                />
+              )}
+              {activeTab === "goal" && (
+                <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
+              )}
+            </div>
           </main>
         </div>
 
-        <DisclaimerBar />
+        <DisclaimerBar fiscalYear={activeInputs.fiscalYear} />
       </div>
     </div>
   )

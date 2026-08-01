@@ -10,6 +10,7 @@ import {
   fmtCompact,
   fmtPercent,
   parseCurrencyInput,
+  escapeCsvCell,
   computeTaxBreakdown,
   runSimulation,
   computeKPIs,
@@ -30,6 +31,13 @@ import {
   compareScenarios,
   mergeComparisonSeries,
   SNAPSHOT_LIMIT,
+  buildCashFlows,
+  computeXIRR,
+  applyScenarioPatch,
+  resolveScenarioTarget,
+  enterComparison,
+  exitComparison,
+  runMonteCarlo,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -129,6 +137,27 @@ describe("parseCurrencyInput", () => {
   })
 })
 
+describe("escapeCsvCell — anti injection de formule (OWASP)", () => {
+  it("laisse une valeur neutre intacte", () => {
+    expect(escapeCsvCell("An 3")).toBe("An 3")
+    expect(escapeCsvCell("1 234,56")).toBe("1 234,56")
+  })
+
+  it.each(["=SUM(A1:A9)", "+12345", "-2+3", "@cmd"])("préfixe ' pour %s", v => {
+    expect(escapeCsvCell(v)).toBe(`'${v}`)
+  })
+
+  it("quote les cellules contenant un séparateur ou un guillemet", () => {
+    expect(escapeCsvCell("a;b")).toBe('"a;b"')
+    expect(escapeCsvCell('il a dit "oui"')).toBe('"il a dit ""oui"""')
+    expect(escapeCsvCell("a\nb")).toBe('"a\nb"')
+  })
+
+  it("combine préfixe et quote quand les deux s'appliquent", () => {
+    expect(escapeCsvCell('=1+1;2')).toBe("'\"=1+1;2\"")
+  })
+})
+
 describe("computeTaxBreakdown", () => {
   it("returns zero tax for 'none' envelope", () => {
     const result = computeTaxBreakdown(10000, "none", 10, false)
@@ -164,7 +193,6 @@ describe("runSimulation", () => {
     indexation: 0.02,
     inflation: 0.022,
     inflationMode: "custom",
-    startMonth: 0,
     envelope: "pea",
     taxCouple: false,
     peaYearsHeld: 5,
@@ -192,9 +220,10 @@ describe("runSimulation", () => {
     goalCapital: 25000,
     goalPayment: 1000,
     goalAnnualReturn: 0.07,
-    mcRuns: 100,
-    seed: 41041,
-  }
+  mcRuns: 100,
+  seed: 41041,
+  fiscalYear: 2026,
+}
 
   it("produces correct number of rows", () => {
     const rows = runSimulation(baseInputs)
@@ -261,13 +290,32 @@ describe("runSimulation", () => {
 })
 
 describe("getHistoricalDataset", () => {
-  it("couvre 1995–2025 pour les indices actions", () => {
-    for (const id of ["msci-world", "sp500", "nasdaq", "cac40"] as const) {
+  it("couvre 1970–2025 pour le MSCI World (série EUR Net Return)", () => {
+    const dataset = getHistoricalDataset("msci-world")
+    expect(dataset.years[0]?.year).toBe(1970)
+    expect(dataset.years[dataset.years.length - 1]?.year).toBe(2025)
+    expect(dataset.years.length).toBe(56)
+    // Quelques valeurs de référence vérifiées (justETF / MSCI NR EUR)
+    const byYear = new Map(dataset.years.map(y => [y.year, y.return]))
+    expect(byYear.get(1999)).toBeCloseTo(0.462, 3)
+    expect(byYear.get(2008)).toBeCloseTo(-0.3729, 3)
+    expect(byYear.get(2022)).toBeCloseTo(-0.1287, 3)
+    expect(byYear.get(2024)).toBeCloseTo(0.2633, 3)
+    expect(byYear.get(2025)).toBeCloseTo(0.0639, 3)
+  })
+
+  it("couvre 1995–2025 pour les autres indices actions", () => {
+    for (const id of ["sp500", "nasdaq", "cac40"] as const) {
       const dataset = getHistoricalDataset(id)
       expect(dataset.years[0]?.year).toBe(1995)
       expect(dataset.years[dataset.years.length - 1]?.year).toBe(2025)
       expect(dataset.years.length).toBe(31)
     }
+  })
+
+  it("applique une inflation forfaitaire de 2,1 % à chaque année", () => {
+    const dataset = getHistoricalDataset("msci-world")
+    for (const y of dataset.years) expect(y.inflation).toBeCloseTo(0.021, 4)
   })
 
   it("couvre 2011–2025 pour Bitcoin sans année future", () => {
@@ -303,7 +351,6 @@ describe("computeKPIs", () => {
     indexation: 0.02,
     inflation: 0.022,
     inflationMode: "custom",
-    startMonth: 0,
     envelope: "pea",
     taxCouple: false,
     peaYearsHeld: 5,
@@ -331,9 +378,10 @@ describe("computeKPIs", () => {
     goalCapital: 25000,
     goalPayment: 1000,
     goalAnnualReturn: 0.07,
-    mcRuns: 100,
-    seed: 41041,
-  }
+  mcRuns: 100,
+  seed: 41041,
+  fiscalYear: 2026,
+}
 
   it("produces KPIs with valid values", () => {
     const rows = runSimulation(baseInputs)
@@ -355,7 +403,6 @@ describe("solveGoal", () => {
       indexation: 0.02,
       inflation: 0.022,
       inflationMode: "custom",
-      startMonth: 0,
       envelope: "pea",
       taxCouple: false,
       peaYearsHeld: 5,
@@ -385,6 +432,7 @@ describe("solveGoal", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
+      fiscalYear: 2026,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -403,7 +451,6 @@ describe("validateInputs", () => {
       indexation: 0.02,
       inflation: 0.022,
       inflationMode: "custom",
-      startMonth: 0,
       envelope: "pea",
       taxCouple: false,
       peaYearsHeld: 5,
@@ -433,6 +480,7 @@ describe("validateInputs", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
+      fiscalYear: 2026,
     }
     const errors = validateInputs(base)
     expect(errors.length).toBe(0)
@@ -448,7 +496,6 @@ describe("validateInputs", () => {
       indexation: 0.02,
       inflation: 2,
       inflationMode: "custom",
-      startMonth: 0,
       envelope: "pea",
       taxCouple: false,
       peaYearsHeld: 5,
@@ -476,9 +523,10 @@ describe("validateInputs", () => {
       goalCapital: 25000,
       goalPayment: 1000,
       goalAnnualReturn: 0.07,
-      mcRuns: 5,
-      seed: 41041,
-    }
+  mcRuns: 5,
+  seed: 41041,
+  fiscalYear: 2026,
+}
     const errors = validateInputs(base)
     expect(errors.length).toBeGreaterThan(0)
   })
@@ -495,7 +543,6 @@ describe("solveGoal with goalAnnualReturn", () => {
       indexation: 0.02,
       inflation: 0.022,
       inflationMode: "custom",
-      startMonth: 0,
       envelope: "pea",
       taxCouple: false,
       peaYearsHeld: 5,
@@ -525,6 +572,7 @@ describe("solveGoal with goalAnnualReturn", () => {
       goalAnnualReturn: 0.09,
       mcRuns: 100,
       seed: 41041,
+      fiscalYear: 2026,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -543,7 +591,6 @@ describe("sanitizeInputs", () => {
       indexation: 2,
       inflation: 5,
       inflationMode: "custom",
-      startMonth: 0,
       envelope: "pea",
       taxCouple: false,
       peaYearsHeld: 200,
@@ -571,9 +618,10 @@ describe("sanitizeInputs", () => {
       goalCapital: 25000,
       goalPayment: 1000,
       goalAnnualReturn: -2,
-      mcRuns: 0,
-      seed: 0,
-    }
+  mcRuns: 0,
+  seed: 0,
+  fiscalYear: 2026,
+}
     const safe = sanitizeInputs(base)
     expect(safe.capitalInitial).toBeLessThanOrEqual(100_000_000)
     expect(safe.monthlyPayment).toBeLessThanOrEqual(200_000)
@@ -615,7 +663,6 @@ describe("v4SettingsToInputs", () => {
       t: 30,
       idx: 2,
       inf: 1.5,
-      month: 6,
       envelope: "pea",
       kraschYear: 12,
       kraschPct: 40,
@@ -627,7 +674,6 @@ describe("v4SettingsToInputs", () => {
     expect(inputs.duration).toBe(30)
     expect(inputs.indexation).toBeCloseTo(0.02)
     expect(inputs.inflation).toBeCloseTo(0.015)
-    expect(inputs.startMonth).toBe(6)
     expect(inputs.envelope).toBe("pea")
     expect(inputs.crisisYear).toBe(12)
     expect(inputs.crisisAmplitude).toBe(40)
@@ -645,9 +691,8 @@ describe("v4SettingsToInputs", () => {
   })
 
   it("clamps out-of-range values", () => {
-    const inputs = v4SettingsToInputs({ t: 500, month: 42, kraschPct: -10 })
+    const inputs = v4SettingsToInputs({ t: 500, kraschPct: -10 })
     expect(inputs.duration).toBe(80)
-    expect(inputs.startMonth).toBe(11)
     expect(inputs.crisisAmplitude).toBe(0)
   })
 
@@ -884,5 +929,143 @@ describe("compareScenarios / mergeComparisonSeries", () => {
     const real = mergeComparisonSeries(short, long, true)
     expect(real[0].A).toBe(short[0].real)
     expect(real[1].year).toBe("An 1")
+  })
+})
+
+describe("buildCashFlows / computeXIRR", () => {
+  it("builds monthly outflows and a final inflow", () => {
+    const { flows, months } = buildCashFlows({ ...DEFAULT_INPUTS, capitalInitial: 1000, monthlyPayment: 100, duration: 2 }, 5000)
+    expect(flows[0]).toBe(-1000)
+    expect(months[0]).toBe(0)
+    // 24 versements mensuels + capital initial + valeur finale
+    expect(flows.length).toBe(26)
+    expect(flows[flows.length - 1]).toBe(5000)
+    expect(months[months.length - 1]).toBe(24)
+  })
+
+  it("skips zero contributions", () => {
+    const { flows } = buildCashFlows({ ...DEFAULT_INPUTS, capitalInitial: 0, monthlyPayment: 0, duration: 5 }, 10_000)
+    expect(flows).toEqual([10000])
+  })
+
+  it("XIRR of a pure lump sum equals the return rate", () => {
+    // 1000 € pendant 2 ans, aucune épargne mensuelle → 1210 € = 10 %/an
+    const xirr = computeXIRR({ ...DEFAULT_INPUTS, capitalInitial: 1000, monthlyPayment: 0, duration: 2 }, 1210)
+    expect(xirr).toBeCloseTo(0.1, 2)
+  })
+
+  it("XIRR of a zero-investment scenario is 0", () => {
+    expect(computeXIRR({ ...DEFAULT_INPUTS, capitalInitial: 0, monthlyPayment: 0, duration: 5 }, 0)).toBe(0)
+  })
+
+  it("computeKPIs exposes xirr alongside cagr", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, duration: 10, monthlyPayment: 500 })
+    const kpis = computeKPIs(rows, { ...DEFAULT_INPUTS, duration: 10, monthlyPayment: 500 })
+    expect(kpis.xirr).toBeGreaterThan(0)
+    expect(kpis.cagr).toBeGreaterThan(0)
+  })
+})
+
+describe("scénario B — applyScenarioPatch / resolveScenarioTarget", () => {
+  const a = { ...DEFAULT_INPUTS, capitalInitial: 10_000 }
+  const b = { ...DEFAULT_INPUTS, capitalInitial: 99_999 }
+
+  it("routes edits to B when comparing, and to A otherwise", () => {
+    expect(resolveScenarioTarget(true, null)).toBe("B")
+    expect(resolveScenarioTarget(false, null)).toBe("A")
+    expect(resolveScenarioTarget(true, "A")).toBe("A")
+  })
+
+  it("NEVER overwrites scenario A when editing B", () => {
+    const result = applyScenarioPatch({ A: a, B: b }, { monthlyPayment: 2500 }, true)
+    expect(result.target).toBe("B")
+    expect(result.state.A).toBe(a) // A intact (référence non mutée)
+    expect(result.state.B?.monthlyPayment).toBe(2500)
+    expect(result.state.B?.capitalInitial).toBe(99_999)
+  })
+
+  it("edits A when not comparing and leaves B untouched", () => {
+    const result = applyScenarioPatch({ A: a, B: b }, { duration: 40 }, false)
+    expect(result.target).toBe("A")
+    expect(result.state.B).toBe(b)
+    expect(result.state.A.duration).toBe(40)
+  })
+
+  it("enterComparison freezes A and seeds B from A when absent", () => {
+    const state = enterComparison({ A: a, B: null })
+    expect(state.A.capitalInitial).toBe(10_000)
+    expect(state.B?.capitalInitial).toBe(10_000)
+    // A n'est pas muté après coup
+    const patched = applyScenarioPatch(state, { monthlyPayment: 111 }, true)
+    expect(patched.state.A.capitalInitial).toBe(10_000)
+    expect(patched.state.B?.monthlyPayment).toBe(111)
+  })
+
+  it("exitComparison keeps B for later re-entry", () => {
+    const state = exitComparison({ A: a, B: b })
+    expect(state.B).toBe(b)
+    expect(state.A).toBe(a)
+  })
+})
+
+describe("parseStoredInputs — validation stricte du schéma", () => {
+  it("rejects non-numeric values for numeric fields", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ capitalInitial: "50000", duration: "abc" }))
+    expect(inputs.capitalInitial).toBe(DEFAULT_INPUTS.capitalInitial)
+    expect(inputs.duration).toBe(DEFAULT_INPUTS.duration)
+  })
+
+  it("rejects invalid enum values and keeps defaults", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ envelope: "futures", returnMode: "quantum" }))
+    expect(inputs.envelope).toBe(DEFAULT_INPUTS.envelope)
+    expect(inputs.returnMode).toBe(DEFAULT_INPUTS.returnMode)
+  })
+
+  it("accepts valid numeric and enum values", () => {
+    const inputs = parseStoredInputs(
+      JSON.stringify({ capitalInitial: 42_000, envelope: "av", returnMode: "historical", fiscalYear: 2027 }),
+    )
+    expect(inputs.capitalInitial).toBe(42_000)
+    expect(inputs.envelope).toBe("av")
+    expect(inputs.returnMode).toBe("historical")
+    expect(inputs.fiscalYear).toBe(2027)
+  })
+
+  it("ignores unknown keys without crashing", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ foo: 1, bar: "x" }))
+    expect(inputs).toEqual(DEFAULT_INPUTS)
+  })
+})
+
+describe("runMonteCarlo — rééchantillonnage historique", () => {
+  it("produces deterministic results for a fixed seed", () => {
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10, returnMode: "historical" as const }
+    const first = runMonteCarlo(inputs, 200)
+    const second = runMonteCarlo(inputs, 200)
+    expect(first.p50).toEqual(second.p50)
+    expect(first.runs).toBe(200)
+  })
+
+  it("produces distinct paths across the distribution", () => {
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10, returnMode: "historical" as const }
+    const result = runMonteCarlo(inputs, 300)
+    const last = result.p50.length - 1
+    expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
+    expect(result.p10[last]).toBeLessThan(result.p50[last] ?? 0)
+    expect(result.bestCase).toBeGreaterThan(result.worstCase)
+  })
+
+  it("random mode still runs and yields a success rate", () => {
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "random" as const, goalTarget: 10_000 }
+    const result = runMonteCarlo(inputs, 150, 10_000)
+    expect(result.successRate).toBeGreaterThanOrEqual(0)
+    expect(result.successRate).toBeLessThanOrEqual(100)
+  })
+})
+
+describe("validateInputs — millésime fiscal", () => {
+  it("warns on out-of-range fiscal year", () => {
+    const errors = validateInputs({ ...DEFAULT_INPUTS, fiscalYear: 1990 })
+    expect(errors.some(e => e.field === "fiscalYear" && e.severity === "warning")).toBe(true)
   })
 })

@@ -10,10 +10,25 @@ interface SliderInputProps {
   suffix?: string
   prefix?: string
   color?: string
+  error?: string
+  warning?: string
   onChange: (v: number) => void
 }
 
-export function SliderInput({ label, id, value, min, max, step, suffix, onChange, color, prefix }: SliderInputProps) {
+export function SliderInput({
+  label,
+  id,
+  value,
+  min,
+  max,
+  step,
+  suffix,
+  onChange,
+  color,
+  prefix,
+  error,
+  warning,
+}: SliderInputProps) {
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-2">
@@ -41,6 +56,16 @@ export function SliderInput({ label, id, value, min, max, step, suffix, onChange
         style={color ? { accentColor: color } : undefined}
       />
       {suffix && <div className="text-[10px] text-text-dim mt-1 text-right">{suffix}</div>}
+      {error && (
+        <p role="alert" className="text-[10px] font-semibold text-danger mt-1 flex items-start gap-1">
+          <span aria-hidden>⚠️</span> {error}
+        </p>
+      )}
+      {!error && warning && (
+        <p className="text-[10px] font-semibold text-warning mt-1 flex items-start gap-1">
+          <span aria-hidden>⚠️</span> {warning}
+        </p>
+      )}
     </div>
   )
 }

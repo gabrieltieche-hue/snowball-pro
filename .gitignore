@@ -5,3 +5,9 @@ dist/
 .DS_Store
 .vercel
 .freebuff/
+
+# Outillage tiers non vérifié (hooks impeccable auto-exécutés, skills installés
+# via npx skills) — à NE PAS commiter sans revue ligne à ligne (supply-chain).
+.github/hooks/
+.github/skills/
+.agents/skills/

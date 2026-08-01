@@ -28,6 +28,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["dist/", "node_modules/", "*.config.*", ".freebuff/"],
+    ignores: ["dist/", "node_modules/", "*.config.*", ".freebuff/", ".github/skills/", ".agents/skills/", "scripts/"],
   },
 )

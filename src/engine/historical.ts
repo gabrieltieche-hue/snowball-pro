@@ -2,7 +2,7 @@ import type { HistoricalDataset, HistoricalIndex } from "../types"
 import { average, standardDeviation } from "./math"
 
 const DATASET_START: Record<HistoricalIndex, number> = {
-  "msci-world": 1995,
+  "msci-world": 1970,
   sp500: 1995,
   nasdaq: 1995,
   cac40: 1995,
@@ -11,9 +11,17 @@ const DATASET_START: Record<HistoricalIndex, number> = {
 }
 
 const RETURNS: Record<HistoricalIndex, number[]> = {
+  // MSCI World Net Return exprimé en EUR (dividendes nets réinvestis), 1970-2025.
+  // Vérifié : 2022-2025 = performances officielles du CW8 (justETF / Amundi,
+  // ISIN LU1681043599) ; antérieur = indice MSCI World NR EUR reconstitué
+  // (Curvo, factsheets Amundi/MSCI). Années marquantes : 1999 +46,2 %,
+  // 2008 -37,3 %, 2002 -32,7 %.
   "msci-world": [
-    0.184, 0.139, 0.157, 0.228, 0.243, -0.131, -0.183, -0.208, 0.31, 0.149, 0.098, 0.201, 0.071, -0.403, 0.292, 0.118,
-    -0.053, 0.162, 0.248, 0.181, -0.021, 0.082, 0.215, -0.094, 0.279, 0.163, 0.206, -0.134, 0.191, 0.234, 0.083,
+    -0.0309, 0.0571, 0.1986, -0.2958, -0.3128, 0.4209, 0.0308, -0.0913, 0.0183, 0.0691, 0.3893, 0.1362, 0.2457,
+    0.4145, 0.1974, 0.158, 0.1863, -0.0413, 0.3172, 0.1835, -0.2929, 0.2456, -0.0037, 0.3428, -0.0219, 0.1477,
+    0.1649, 0.2936, 0.176, 0.462, -0.0626, -0.1218, -0.3267, 0.1052, 0.0637, 0.2641, 0.0755, -0.0245, -0.3729,
+    0.2558, 0.1914, -0.0269, 0.1384, 0.2117, 0.1923, 0.1065, 0.1066, 0.0744, -0.0419, 0.2984, 0.0626, 0.3094,
+    -0.1287, 0.1946, 0.2633, 0.0639,
   ],
   sp500: [
     0.376, 0.23, 0.332, 0.285, 0.21, -0.091, -0.118, -0.221, 0.287, 0.108, 0.049, 0.158, 0.052, -0.37, 0.264, 0.15,
@@ -36,10 +44,10 @@ const RETURNS: Record<HistoricalIndex, number[]> = {
   ],
 }
 
-export const INFLATION_SERIES = [
-  0.017, 0.02, 0.012, 0.007, 0.005, 0.017, 0.016, 0.019, 0.021, 0.022, 0.019, 0.022, 0.027, 0.032, 0.001, 0.015, 0.021,
-  0.02, 0.009, 0.005, 0.0, 0.002, 0.011, 0.018, 0.011, 0.005, 0.016, 0.052, 0.049, 0.026, 0.021,
-]
+// Inflation forfaitaire : 2,1 %/an fixe. L'inflation historique réelle (pic à
+// plus de 10 %/an dans les années 1970) fausserait les moyennes de très long
+// terme : on lui préfère un taux unique et lisible (choix produit).
+export const INFLATION_SERIES = [0.021]
 
 export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset {
   const returns = RETURNS[index]
@@ -47,7 +55,7 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
   const years = returns.map((r, i) => ({
     year: startYear + i,
     return: r,
-    inflation: INFLATION_SERIES[i % INFLATION_SERIES.length] ?? 0.02,
+    inflation: INFLATION_SERIES[i % INFLATION_SERIES.length] ?? 0.021,
   }))
   return {
     id: index,
