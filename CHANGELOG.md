@@ -4,6 +4,36 @@
 
 ---
 
+## v5.1.3 — Suppression du « Millésime fiscal » + fiscalité TMI/barème
+
+- **Suppression du réglage « Millésime fiscal »** : le curseur 2020–2032 ne
+  changeait AUCUN calcul — le moteur (`taxes.ts`) utilise des constantes fixes
+  (17,2 % cotisations, 12,8 % IR, abattements AV 4 600/9 200 €) qui ne lisent
+  jamais `fiscalYear`. Le champ ne servait qu'à afficher des libellés (« Règles
+  2026 » → « Règles 2020 »). Retiré de `SimulationInputs`, de `NUMERIC_KEYS`,
+  de `validateInputs`/`sanitizeInputs`, de la sidebar (section « Compte
+  d'investissement » simplifiée) et du hash de fraîcheur Monte-Carlo (il
+  provoquait des « relancez pour mettre à jour » inutiles).
+- **Fiscalité CTO en barème progressif (TMI)** : nouveau champ `tmi` (tranche
+  marginale d'imposition, 0–45 %) et `ctoTaxMode` (« pfu » par défaut ou
+  « bareme »). En barème, les plus-values CTO sont taxées à la TMI avec
+  abattement de 40 % sur les dividendes ; le PER applique la TMI à la sortie
+  (abattement 10 %) et l'économie d'impôt à l'entrée est réinvestie ; les
+  plafonds de primes AV (150/300 k€) et le taux 12,8 % au-delà sont modélisés.
+- **Décaissement (Rente) réécrit** : rééchantillonnage par blocs des
+  rendements historiques réels (identique au Monte-Carlo), cumul mensuel des
+  retraits (indexation inflation prise en compte), 10 000 runs max.
+- **Libellés harmonisés** : les panneaux affichent désormais « règles en
+  vigueur » (FiscalPanel, MethodologyPanel, SummaryStats, DisclaimerBar) au
+  lieu d'une année figée qui serait devenue fausse.
+- **Service worker** : `CACHE_VERSION` bumpé à `snowball-pro-v5.1.3`.
+- **Tests** : 133 tests (fixtures et bloc « millésime fiscal » mis à jour,
+  - blocs TMI/barème, netYield, rééchantillonnage par blocs, + 10 tests
+    composants jsdom dans `components.test.tsx` : undo/redo, comparaison A/B,
+    snapshots, export CSV, ErrorBoundary, partage URL).
+
+---
+
 ## v5.1.2 — Suppression « Mois de début » + corrections release
 
 - **Suppression du réglage « Mois de début »** : le champ `startMonth` ne servait
@@ -31,7 +61,7 @@
   le WebSocket du dev server, path traversal Windows). `npm audit` = 0 vuln.
 - **CSP** : meta Content-Security-Policy dans `index.html` (`default-src 'self'`,
   `script-src-attr 'none'`, `object-src 'none'`, `base-uri 'self'`, `frame-src
-  'none'`, fonts Google whitelistées). `script-src 'unsafe-inline'` est requis
+'none'`, fonts Google whitelistées). `script-src 'unsafe-inline'` est requis
   par le build single-file — commenté dans le HTML.
 - **En-têtes Vercel** : nouveau `vercel.json` — `X-Content-Type-Options: nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, cache
@@ -171,7 +201,7 @@
 
 ---
 
-## Tests (93)
+## Tests (92)
 
 `src/__tests__/engine.test.ts` — math, formatting, fiscalité française, simulation, KPIs, goal solver, migration v4→v5, history (undo/redo), snapshots, comparaison A/B.
 
@@ -184,6 +214,6 @@ npm run dev         # Serveur de développement Vite
 npm run build       # Build production (singlefile → dist/index.html)
 npm run typecheck   # TypeScript strict
 npm run lint        # ESLint
-npm run test        # Vitest (93 tests)
+npm run test        # Vitest (133 tests : engine node + composants jsdom)
 npm run format      # Prettier
 ```

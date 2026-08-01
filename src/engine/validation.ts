@@ -143,6 +143,34 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
+  if (inputs.tmi < 0) {
+    errors.push({
+      field: "tmi",
+      message: "La tranche marginale d'imposition ne peut pas être négative",
+      severity: "error",
+      value: inputs.tmi,
+      min: 0,
+    })
+  }
+  if (inputs.tmi > 0.45) {
+    errors.push({
+      field: "tmi",
+      message: "TMI très élevée (>45 %) — vérifiez le barème en vigueur",
+      severity: "warning",
+      value: inputs.tmi,
+      max: 0.45,
+    })
+  }
+
+  if (inputs.ctoTaxMode !== "pfu" && inputs.ctoTaxMode !== "bareme") {
+    errors.push({
+      field: "ctoTaxMode",
+      message: "Mode fiscal CTO invalide (PFU ou barème progressif)",
+      severity: "error",
+      value: 0,
+    })
+  }
+
   if (inputs.goalTarget <= 0) {
     errors.push({
       field: "goalTarget",
@@ -152,25 +180,15 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
-  if (inputs.mcRuns < 10 || inputs.mcRuns > 50000) {
+  // Bornes réelles utilisées par runMonteCarlo / runDecumulation (alignées).
+  if (inputs.mcRuns < 100 || inputs.mcRuns > 10000) {
     errors.push({
       field: "mcRuns",
-      message: "Le nombre de runs MC doit être entre 10 et 50 000",
+      message: "Le nombre de simulations doit être entre 100 et 10 000",
       severity: "warning",
       value: inputs.mcRuns,
-      min: 10,
-      max: 50000,
-    })
-  }
-
-  if (inputs.fiscalYear < 2020 || inputs.fiscalYear > 2032) {
-    errors.push({
-      field: "fiscalYear",
-      message: "Millésime fiscal hors bornes (2020–2032) — les règles affichées peuvent ne pas correspondre",
-      severity: "warning",
-      value: inputs.fiscalYear,
-      min: 2020,
-      max: 2032,
+      min: 100,
+      max: 10000,
     })
   }
 
@@ -196,10 +214,11 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     dividendYield: clamp(inputs.dividendYield, 0, 1),
     crisisAmplitude: clamp(inputs.crisisAmplitude, 0, 85),
     crisisDuration: clamp(inputs.crisisDuration, 0.5, 10),
-    mcRuns: Math.round(clamp(inputs.mcRuns, 10, 50000)),
+    mcRuns: Math.round(clamp(inputs.mcRuns, 100, 10000)),
     goalTarget: Math.max(inputs.goalTarget, 1),
     goalAnnualReturn: clamp(inputs.goalAnnualReturn, -0.95, 10),
     seed: Math.abs(inputs.seed) || 1,
-    fiscalYear: Math.round(clamp(inputs.fiscalYear, 2020, 2032)),
+    tmi: clamp(inputs.tmi, 0, 0.45),
+    ctoTaxMode: inputs.ctoTaxMode === "bareme" ? "bareme" : "pfu",
   }
 }

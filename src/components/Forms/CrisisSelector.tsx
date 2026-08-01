@@ -36,11 +36,19 @@ export function CrisisSelector({
             onClick={() => onProfileChange(cp.id)}
             className={cn(
               "rounded-xl p-3 border text-left transition-all",
-              profile === cp.id ? "border-current bg-opacity-10" : "glass border-border hover:bg-glass-hover",
+              profile === cp.id ? "border-current" : "glass border-border hover:bg-glass-hover",
             )}
-            style={profile === cp.id ? { borderColor: cp.color, background: `${cp.color}15` } : undefined}
+            style={
+              profile === cp.id
+                ? {
+                    borderColor: cp.color,
+                    // color-mix évite la concaténation invalide `var(--x)15`
+                    background: `color-mix(in srgb, ${cp.color} 15%, transparent)`,
+                  }
+                : undefined
+            }
           >
-            <div className="text-xs font-bold" style={{ color: profile === cp.id ? cp.color : "#F5F0E8" }}>
+            <div className="text-xs font-bold text-text" style={profile === cp.id ? { color: cp.color } : undefined}>
               {cp.label}
             </div>
             <div className="text-[9px] text-text-dim mt-0.5">{cp.desc}</div>

@@ -14,9 +14,11 @@ import {
   computeTaxBreakdown,
   runSimulation,
   computeKPIs,
+  computeMilestones,
   solveGoal,
   validateInputs,
   sanitizeInputs,
+  runDecumulation,
   v4SettingsToInputs,
   parseStoredInputs,
   DEFAULT_INPUTS,
@@ -38,6 +40,8 @@ import {
   enterComparison,
   exitComparison,
   runMonteCarlo,
+  sampleHistoricalReturns,
+  mulberry32,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -156,7 +160,7 @@ describe("escapeCsvCell — anti injection de formule (OWASP)", () => {
   it("combine préfixe et quote quand les deux s'appliquent", () => {
     // Le préfixe ' est placé À L'INTÉRIEUR des guillemets : la valeur de champ
     // lue par le tableur commence par ' → formule neutralisée.
-    expect(escapeCsvCell('=1+1;2')).toBe("\"'=1+1;2\"")
+    expect(escapeCsvCell("=1+1;2")).toBe('"\'=1+1;2"')
   })
 })
 
@@ -222,10 +226,11 @@ describe("runSimulation", () => {
     goalCapital: 25000,
     goalPayment: 1000,
     goalAnnualReturn: 0.07,
-  mcRuns: 100,
-  seed: 41041,
-  fiscalYear: 2026,
-}
+    mcRuns: 100,
+    seed: 41041,
+    tmi: 0.3,
+    ctoTaxMode: "pfu",
+  }
 
   it("produces correct number of rows", () => {
     const rows = runSimulation(baseInputs)
@@ -385,10 +390,11 @@ describe("computeKPIs", () => {
     goalCapital: 25000,
     goalPayment: 1000,
     goalAnnualReturn: 0.07,
-  mcRuns: 100,
-  seed: 41041,
-  fiscalYear: 2026,
-}
+    mcRuns: 100,
+    seed: 41041,
+    tmi: 0.3,
+    ctoTaxMode: "pfu",
+  }
 
   it("produces KPIs with valid values", () => {
     const rows = runSimulation(baseInputs)
@@ -439,7 +445,8 @@ describe("solveGoal", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
-      fiscalYear: 2026,
+      tmi: 0.3,
+      ctoTaxMode: "pfu",
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -487,7 +494,8 @@ describe("validateInputs", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
-      fiscalYear: 2026,
+      tmi: 0.3,
+      ctoTaxMode: "pfu",
     }
     const errors = validateInputs(base)
     expect(errors.length).toBe(0)
@@ -530,10 +538,11 @@ describe("validateInputs", () => {
       goalCapital: 25000,
       goalPayment: 1000,
       goalAnnualReturn: 0.07,
-  mcRuns: 5,
-  seed: 41041,
-  fiscalYear: 2026,
-}
+      mcRuns: 5,
+      seed: 41041,
+      tmi: 0.3,
+      ctoTaxMode: "pfu",
+    }
     const errors = validateInputs(base)
     expect(errors.length).toBeGreaterThan(0)
   })
@@ -579,7 +588,8 @@ describe("solveGoal with goalAnnualReturn", () => {
       goalAnnualReturn: 0.09,
       mcRuns: 100,
       seed: 41041,
-      fiscalYear: 2026,
+      tmi: 0.3,
+      ctoTaxMode: "pfu",
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -625,10 +635,11 @@ describe("sanitizeInputs", () => {
       goalCapital: 25000,
       goalPayment: 1000,
       goalAnnualReturn: -2,
-  mcRuns: 0,
-  seed: 0,
-  fiscalYear: 2026,
-}
+      mcRuns: 0,
+      seed: 0,
+      tmi: 0.3,
+      ctoTaxMode: "pfu",
+    }
     const safe = sanitizeInputs(base)
     expect(safe.capitalInitial).toBeLessThanOrEqual(100_000_000)
     expect(safe.monthlyPayment).toBeLessThanOrEqual(200_000)
@@ -941,7 +952,10 @@ describe("compareScenarios / mergeComparisonSeries", () => {
 
 describe("buildCashFlows / computeXIRR", () => {
   it("builds monthly outflows and a final inflow", () => {
-    const { flows, months } = buildCashFlows({ ...DEFAULT_INPUTS, capitalInitial: 1000, monthlyPayment: 100, duration: 2 }, 5000)
+    const { flows, months } = buildCashFlows(
+      { ...DEFAULT_INPUTS, capitalInitial: 1000, monthlyPayment: 100, duration: 2 },
+      5000,
+    )
     expect(flows[0]).toBe(-1000)
     expect(months[0]).toBe(0)
     // 24 versements mensuels + capital initial + valeur finale
@@ -1030,12 +1044,11 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
 
   it("accepts valid numeric and enum values", () => {
     const inputs = parseStoredInputs(
-      JSON.stringify({ capitalInitial: 42_000, envelope: "av", returnMode: "historical", fiscalYear: 2027 }),
+      JSON.stringify({ capitalInitial: 42_000, envelope: "av", returnMode: "historical" }),
     )
     expect(inputs.capitalInitial).toBe(42_000)
     expect(inputs.envelope).toBe("av")
     expect(inputs.returnMode).toBe("historical")
-    expect(inputs.fiscalYear).toBe(2027)
   })
 
   it("ignores unknown keys without crashing", () => {
@@ -1044,39 +1057,308 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
   })
 })
 
+// Les simulations Monte-Carlo sont volontairement lentes (chaque scénario
+// rejoue une simulation mensuelle complète) : timeout élargi au-delà des 5 s.
+const MC_TIMEOUT = 30_000
+
 describe("runMonteCarlo — rééchantillonnage historique", () => {
-  // Les simulations Monte-Carlo sont volontairement lentes (chaque scénario
-  // rejoue une simulation mensuelle complète) : timeout élargi au-delà des 5 s.
-  const MC_TIMEOUT = 30_000
+  it(
+    "produces deterministic results for a fixed seed",
+    () => {
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10, returnMode: "historical" as const }
+      const first = runMonteCarlo(inputs, 200)
+      const second = runMonteCarlo(inputs, 200)
+      expect(first.p50).toEqual(second.p50)
+      expect(first.runs).toBe(200)
+    },
+    MC_TIMEOUT,
+  )
 
-  it("produces deterministic results for a fixed seed", () => {
-    const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10, returnMode: "historical" as const }
-    const first = runMonteCarlo(inputs, 200)
-    const second = runMonteCarlo(inputs, 200)
-    expect(first.p50).toEqual(second.p50)
-    expect(first.runs).toBe(200)
-  }, MC_TIMEOUT)
+  it(
+    "produces distinct paths across the distribution",
+    () => {
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10, returnMode: "historical" as const }
+      const result = runMonteCarlo(inputs, 300)
+      const last = result.p50.length - 1
+      expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
+      expect(result.p10[last]).toBeLessThan(result.p50[last] ?? 0)
+      expect(result.bestCase).toBeGreaterThan(result.worstCase)
+    },
+    MC_TIMEOUT,
+  )
 
-  it("produces distinct paths across the distribution", () => {
-    const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10, returnMode: "historical" as const }
-    const result = runMonteCarlo(inputs, 300)
-    const last = result.p50.length - 1
-    expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
-    expect(result.p10[last]).toBeLessThan(result.p50[last] ?? 0)
-    expect(result.bestCase).toBeGreaterThan(result.worstCase)
-  }, MC_TIMEOUT)
-
-  it("random mode still runs and yields a success rate", () => {
-    const inputs = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "random" as const, goalTarget: 10_000 }
-    const result = runMonteCarlo(inputs, 150, 10_000)
-    expect(result.successRate).toBeGreaterThanOrEqual(0)
-    expect(result.successRate).toBeLessThanOrEqual(100)
-  }, MC_TIMEOUT)
+  it(
+    "random mode still runs and yields a success rate",
+    () => {
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "random" as const, goalTarget: 10_000 }
+      const result = runMonteCarlo(inputs, 150, 10_000)
+      expect(result.successRate).toBeGreaterThanOrEqual(0)
+      expect(result.successRate).toBeLessThanOrEqual(100)
+    },
+    MC_TIMEOUT,
+  )
 })
 
-describe("validateInputs — millésime fiscal", () => {
-  it("warns on out-of-range fiscal year", () => {
-    const errors = validateInputs({ ...DEFAULT_INPUTS, fiscalYear: 1990 })
-    expect(errors.some(e => e.field === "fiscalYear" && e.severity === "warning")).toBe(true)
+describe("régressions — corrections de l'audit", () => {
+  it("parseCurrencyInput rejette une saisie malformée (NaN au lieu d'un 0 sournois)", () => {
+    expect(parseCurrencyInput("")).toBeNaN()
+    expect(parseCurrencyInput("10k5")).toBeNaN()
+    expect(parseCurrencyInput("abc")).toBeNaN()
+    expect(parseCurrencyInput("1.5k")).toBe(1500)
+    expect(parseCurrencyInput("2M")).toBe(2_000_000)
+  })
+
+  it("validateInputs aligne les bornes mcRuns sur le moteur (100–10 000)", () => {
+    const tooLow = validateInputs({ ...DEFAULT_INPUTS, mcRuns: 50 })
+    expect(tooLow.find(e => e.field === "mcRuns")?.severity).toBe("warning")
+    const tooHigh = validateInputs({ ...DEFAULT_INPUTS, mcRuns: 50_000 })
+    expect(tooHigh.find(e => e.field === "mcRuns")?.severity).toBe("warning")
+    const ok = validateInputs({ ...DEFAULT_INPUTS, mcRuns: 1000 })
+    expect(ok.find(e => e.field === "mcRuns")).toBeUndefined()
+  })
+
+  it("Sharpe vaut 0 (masqué) en mode fixe — plus de ratio explosé", () => {
+    const inputs = { ...DEFAULT_INPUTS, returnMode: "fixed" as const, duration: 10, volatility: 0.155 }
+    const kpis = computeKPIs(runSimulation(inputs), inputs)
+    expect(kpis.sharpe).toBe(0)
+  })
+
+  it("le temps de doublement découle du XIRR, pas du CAGR gonflé par les versements", () => {
+    const inputs = { ...DEFAULT_INPUTS, capitalInitial: 50_000, monthlyPayment: 0, duration: 10 }
+    const kpis = computeKPIs(runSimulation(inputs), inputs)
+    expect(kpis.xirr).toBeGreaterThan(0)
+    expect(kpis.doublingTime).not.toBeNull()
+    // log(2) / log(1 + xirr) ≈ 8,66 ans à ~8,3 %/an — et non ~4,4 ans
+    expect(kpis.doublingTime as number).toBeGreaterThan(7)
+    expect(kpis.doublingTime as number).toBeLessThan(11)
+  })
+
+  it("runDecumulation respecte un retrait personnalisé de 0 € (pas de fallback silencieux à 100 €)", () => {
+    const inputs = { ...DEFAULT_INPUTS, withdrawalModel: "custom" as const, withdrawalFixed: 0, retirementYears: 10 }
+    const result = runDecumulation(inputs, 100_000, 100)
+    expect(result.initialWithdrawal).toBe(0)
+  })
+
+  it("runDecumulation cumule les retraits mois par mois (pas « dernier retrait × 12 »)", () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "rule-4" as const,
+      withdrawalInflation: true,
+      inflation: 0.03,
+      retirementYears: 10,
+    }
+    const result = runDecumulation(inputs, 100_000, 100)
+    const yearly = result.withdrawals
+    // Avec indexation, le retrait annuel augmente au fil des années
+    expect(yearly[yearly.length - 1] ?? 0).toBeGreaterThan(yearly[1] ?? 0)
+    expect(yearly[1] ?? 0).toBeGreaterThan(0)
+  })
+
+  it("runDecumulation en mode historique rejoue les rendements réels (branche plus morte)", () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      returnMode: "historical" as const,
+      historicalIndex: "sp500" as const,
+      retirementYears: 10,
+    }
+    const result = runDecumulation(inputs, 100_000, 100)
+    expect(result.years.length).toBe(11)
+    expect(result.survivalProbability).toBeGreaterThanOrEqual(0)
+    expect(result.survivalProbability).toBeLessThanOrEqual(100)
+  })
+
+  it(
+    "runMonteCarlo en historique + krach ne double pas la chute (crise désactivée)",
+    () => {
+      const base = { ...DEFAULT_INPUTS, returnMode: "historical" as const, duration: 10, mcRuns: 100 }
+      const withCrisis = runMonteCarlo({ ...base, crisisEnabled: true }, 100)
+      const withoutCrisis = runMonteCarlo({ ...base, crisisEnabled: false }, 100)
+      expect(withCrisis.p50).toEqual(withoutCrisis.p50)
+    },
+    MC_TIMEOUT,
+  )
+
+  it("computeMilestones ne dépasse jamais l'horizon de projection", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, duration: 10, monthlyPayment: 5000 })
+    const lastYear = rows[rows.length - 1]?.year ?? 10
+    for (const m of computeMilestones(rows)) {
+      if (m.reached) expect(m.year).toBeLessThanOrEqual(lastYear)
+      else expect(m.year).toBe(-1)
+    }
+  })
+
+  it("enterComparison réinitialise TOUJOURS B depuis A (un ancien B mémorisé est ignoré)", () => {
+    const a = { ...DEFAULT_INPUTS, capitalInitial: 10_000 }
+    const oldB = { ...DEFAULT_INPUTS, capitalInitial: 0 }
+    const state = enterComparison({ A: a, B: oldB })
+    expect(state.B?.capitalInitial).toBe(10_000)
+    expect(state.A.capitalInitial).toBe(10_000)
+  })
+
+  it("compareScenarios : diffPercent est déjà un pourcentage (pas un ratio)", () => {
+    const a = runSimulation({ ...DEFAULT_INPUTS, monthlyPayment: 500, duration: 10 })
+    const b = runSimulation({ ...DEFAULT_INPUTS, monthlyPayment: 2000, duration: 10 })
+    const result = compareScenarios(a, b)
+    const expectedPct = ((result.finalB - result.finalA) / result.finalA) * 100
+    expect(result.diffPercent).toBeCloseTo(expectedPct, 2)
+    expect(Math.abs(result.diffPercent)).toBeGreaterThan(1) // ex : -12,3 % et non -0,123
+  })
+})
+
+describe("PER — tranche marginale d'imposition (TMI)", () => {
+  it("sortie en capital : gains taxés à TMI après abattement de 10 %", () => {
+    const result = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.3 })
+    // social 17,2 % + IR = gains × (1 - 10 %) × TMI = 10000 × 0,9 × 0,3
+    expect(result.socialCharges).toBeCloseTo(1720, 0)
+    expect(result.incomeTax).toBeCloseTo(2700, 0)
+    expect(result.flatTax).toBe(0)
+    expect(result.totalTax).toBeCloseTo(4420, 0)
+  })
+
+  it("la TMI change l'impôt de sortie", () => {
+    const low = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.11 })
+    const high = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.41 })
+    expect(low.incomeTax).toBeCloseTo(990, 0)
+    expect(high.incomeTax).toBeCloseTo(3690, 0)
+    expect(high.incomeTax).toBeGreaterThan(low.incomeTax)
+  })
+
+  it("l'économie d'impôt à l'entrée est réinvestie dans le capital", () => {
+    const noTmi = runSimulation({ ...DEFAULT_INPUTS, envelope: "per", tmi: 0, duration: 10, monthlyPayment: 1000 })
+    const withTmi = runSimulation({ ...DEFAULT_INPUTS, envelope: "per", tmi: 0.3, duration: 10, monthlyPayment: 1000 })
+    const lastNo = noTmi[noTmi.length - 1]?.nominal ?? 0
+    const lastWith = withTmi[withTmi.length - 1]?.nominal ?? 0
+    expect(lastWith).toBeGreaterThan(lastNo)
+  })
+})
+
+describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
+  it("au-delà du plafond de primes, les gains passent de 7,5 % à 12,8 %", () => {
+    // 200 k€ de primes (célibataire, plafond 150 k€) → 75 % des gains à 7,5 %,
+    // 25 % à 12,8 %, après abattement de 4 600 €.
+    const result = computeTaxBreakdown(100000, "av", 10, false, 0, 200_000)
+    const allowance = 4600
+    const taxable = 100000 - allowance
+    const expected = taxable * 0.75 * 0.075 + taxable * 0.25 * 0.128
+    expect(result.incomeTax).toBeCloseTo(expected, 0)
+    expect(result.incomeTax).toBeGreaterThan(taxable * 0.075) // plus cher que le taux réduit pur
+  })
+
+  it("sous le plafond, le taux réduit de 7,5 % s'applique intégralement", () => {
+    const result = computeTaxBreakdown(10000, "av", 10, false, 0, 100_000)
+    expect(result.incomeTax).toBeCloseTo((10000 - 4600) * 0.075, 0)
+  })
+
+  it("le plafond double pour un couple (300 k€)", () => {
+    const single = computeTaxBreakdown(100000, "av", 10, false, 0, 200_000)
+    const couple = computeTaxBreakdown(100000, "av", 10, true, 0, 200_000)
+    expect(couple.incomeTax).toBeLessThan(single.incomeTax)
+  })
+})
+
+describe("CTO — option barème progressif vs PFU", () => {
+  it("PFU (défaut) : impôt unique de 30 %", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "pfu" })
+    expect(result.flatTax).toBeCloseTo(3000, 0)
+  })
+
+  it("barème : 17,2 % de social + TMI sur les gains, sans PFU", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
+    expect(result.flatTax).toBe(0)
+    expect(result.socialCharges).toBeCloseTo(1720, 0)
+    expect(result.incomeTax).toBeCloseTo(3000, 0) // 10000 × 30 %
+  })
+
+  it("barème : abattement de 40 % sur les dividendes reçus", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, {
+      ctoTaxMode: "bareme",
+      tmi: 0.3,
+      dividendsGross: 5000,
+    })
+    // gains imposables = 10000 - 40 % × 5000 = 8000 → IR = 8000 × 30 %
+    expect(result.incomeTax).toBeCloseTo(2400, 0)
+  })
+
+  it("dividendTaxRate suit le mode CTO", () => {
+    const pfu = computeTaxBreakdown(10000, "cto", 1, false)
+    const bareme = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
+    expect(pfu.flatTax).toBeCloseTo(3000, 0)
+    expect(bareme.flatTax).toBe(0)
+  })
+})
+
+describe("netYield — rendement net de l'année (ratio, comme yearlyReturn)", () => {
+  it("est un ratio cohérent, pas un montant en euros", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, envelope: "none", duration: 10 })
+    const last = rows[rows.length - 1]
+    expect(last?.netYield).toBeGreaterThan(-2)
+    expect(last?.netYield).toBeLessThan(100)
+    // Verrouille l'unité : un ratio (0,08 = 8 %) et non un pourcentage (8)
+    expect(last?.netYield).toBeLessThan(1)
+    expect(last?.netYield).not.toBe(last?.netGains) // plus de doublon netGains
+  })
+
+  it("vaut 0 en année 0", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    expect(rows[0]?.netYield).toBe(0)
+  })
+
+  it("sans fiscalité, netYield ≈ yearlyReturn", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, envelope: "none", duration: 5, monthlyPayment: 0 })
+    const last = rows[rows.length - 1]
+    // netYield et yearlyReturn sont stockés dans la même unité (ratio, ex :
+    // 0,08 = 8 %) : comparaison directe.
+    expect(last?.netYield).toBeCloseTo(last?.yearlyReturn ?? 0, 1)
+  })
+})
+
+describe("sampleHistoricalReturns — bootstrap par blocs non chevauchants", () => {
+  const inputs = { ...DEFAULT_INPUTS, returnMode: "historical" as const, historicalIndex: "msci-world" as const }
+  const returns = getHistoricalDataset("msci-world").years.map(y => y.return)
+
+  it("un bloc de 5 ans est une fenêtre contiguë réelle, sans rebouclage 2025→1970", () => {
+    const seq = sampleHistoricalReturns(inputs, 5, mulberry32(42))
+    expect(seq).toHaveLength(5)
+    const start = returns.indexOf(seq[0] ?? -1)
+    expect(start).toBeGreaterThanOrEqual(0)
+    expect(start + 4).toBeLessThan(returns.length) // jamais de wrap à la fin
+    expect(seq).toEqual(returns.slice(start, start + 5))
+  })
+
+  it("reste déterministe pour une graine donnée", () => {
+    const a = sampleHistoricalReturns(inputs, 40, mulberry32(7))
+    const b = sampleHistoricalReturns(inputs, 40, mulberry32(7))
+    expect(a).toEqual(b)
+  })
+
+  it("remplit une durée supérieure à l'historique avec des blocs entiers", () => {
+    const seq = sampleHistoricalReturns(inputs, 60, mulberry32(3))
+    expect(seq).toHaveLength(60)
+    for (const v of seq) expect(returns).toContain(v)
+  })
+})
+
+describe("tmi / ctoTaxMode — persistance et validation", () => {
+  it("parseStoredInputs restaure tmi et ctoTaxMode", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ tmi: 0.41, ctoTaxMode: "bareme" }))
+    expect(inputs.tmi).toBe(0.41)
+    expect(inputs.ctoTaxMode).toBe("bareme")
+  })
+
+  it("rejette un ctoTaxMode invalide (retour au défaut)", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ ctoTaxMode: "quantum" }))
+    expect(inputs.ctoTaxMode).toBe("pfu")
+  })
+
+  it("validateInputs signale une TMI négative ou hors barème", () => {
+    const negative = validateInputs({ ...DEFAULT_INPUTS, tmi: -0.1 })
+    expect(negative.find(e => e.field === "tmi")?.severity).toBe("error")
+    const excessive = validateInputs({ ...DEFAULT_INPUTS, tmi: 0.5 })
+    expect(excessive.find(e => e.field === "tmi")?.severity).toBe("warning")
+  })
+
+  it("sanitizeInputs borne la TMI à 45 %", () => {
+    const safe = sanitizeInputs({ ...DEFAULT_INPUTS, tmi: 2 })
+    expect(safe.tmi).toBe(0.45)
   })
 })

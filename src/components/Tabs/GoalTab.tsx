@@ -79,6 +79,17 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
             onChange={v => updateInput("goalAnnualReturn", v / 100)}
           />
+          <SliderInput
+            label="Épargne mensuelle de référence (€)"
+            id="goal-payment"
+            value={inputs.goalPayment}
+            min={0}
+            max={10000}
+            step={50}
+            color="#6366F1"
+            suffix="utilisée pour calculer le rendement nécessaire"
+            onChange={v => updateInput("goalPayment", v)}
+          />
         </div>
 
         {/* Résultats */}

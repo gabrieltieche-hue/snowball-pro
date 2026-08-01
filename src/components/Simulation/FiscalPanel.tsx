@@ -17,8 +17,19 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   const taxInfo = computeTaxBreakdown(
     lastRow.interestsNom,
     inputs.envelope,
-    inputs.envelope === "pea" ? inputs.peaYearsHeld : inputs.envelope === "av" ? inputs.avYearsHeld : inputs.duration,
+    // Années de détention COHÉRENTES avec la simulation : les années déjà
+    // détenues + la durée de projection (ex: PEA détenu 5 ans + 25 ans de
+    // projection → 30 ans, pas 5 ans — sinon le panneau afficherait 30 % de
+    // PFU alors que la table calcule 17,2 %).
+    inputs.envelope === "pea"
+      ? inputs.peaYearsHeld + inputs.duration
+      : inputs.envelope === "av"
+        ? inputs.avYearsHeld + inputs.duration
+        : inputs.duration,
     inputs.taxCouple,
+    lastRow.dividendTax,
+    lastRow.investedNom,
+    { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, dividendsGross: lastRow.dividendsGross },
   )
 
   const isLiquidationTheorique = inputs.envelope !== "none"
@@ -36,11 +47,13 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   lines.push({ label: "Gains après impôts", value: taxInfo.netGains, strong: true, tone: GOLD })
 
   const totalBadge =
-    taxInfo.flatTax > 0
-      ? "Impôt unique (PFU)"
-      : taxInfo.socialCharges > 0 && taxInfo.incomeTax === 0
-        ? "Cotisations sociales seules"
-        : null
+    inputs.envelope === "cto" && inputs.ctoTaxMode === "bareme"
+      ? "Barème progressif (TMI)"
+      : taxInfo.flatTax > 0
+        ? "Impôt unique (PFU)"
+        : taxInfo.socialCharges > 0 && taxInfo.incomeTax === 0
+          ? "Cotisations sociales seules"
+          : null
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
@@ -52,7 +65,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           </span>
         </div>
         <span className="text-[9px] mono font-bold text-text-dim bg-glass-hover px-1.5 py-0.5 rounded uppercase tracking-wider">
-          Règles {inputs.fiscalYear}
+          Règles en vigueur
         </span>
       </div>
       <div className="space-y-1.5">
@@ -87,7 +100,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           <Info size={10} className="shrink-0 mt-0.5 text-primary" />
           <span>
             <strong className="text-text-muted">Estimation</strong> : ces impôts supposent que vous liquidez tous vos
-            gains aujourd'hui (règles fiscales {inputs.fiscalYear}). Les gains latents ne sont taxés qu'à la revente
+            gains aujourd'hui (selon les règles fiscales en vigueur). Les gains latents ne sont taxés qu'à la revente
             réelle.
           </span>
         </p>

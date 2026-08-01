@@ -41,7 +41,17 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         dividendYield: inputs.dividendYield,
         seed: inputs.seed,
         mcRuns: inputs.mcRuns,
-        fiscalYear: inputs.fiscalYear,
+        // Paramètres qui changent aussi le résultat (taux de succès, fiscalité,
+        // inflation, années de détention, durée de la crise) : sans eux,
+        // l'avertissement « relancez » ne se déclenchait pas à la modification.
+        goalTarget: inputs.goalTarget,
+        inflation: inputs.inflation,
+        taxCouple: inputs.taxCouple,
+        peaYearsHeld: inputs.peaYearsHeld,
+        avYearsHeld: inputs.avYearsHeld,
+        crisisDuration: inputs.crisisDuration,
+        tmi: inputs.tmi,
+        ctoTaxMode: inputs.ctoTaxMode,
       }),
     [inputs],
   )
@@ -67,9 +77,15 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
     setProgress(0)
     setMcResult(null)
     try {
-      const result = await runMonteCarloAsync(inputs, inputs.mcRuns, inputs.goalTarget, (done, total) => {
-        if (mountedRef.current) setProgress(Math.round((done / total) * 100))
-      }, controller.signal)
+      const result = await runMonteCarloAsync(
+        inputs,
+        inputs.mcRuns,
+        inputs.goalTarget,
+        (done, total) => {
+          if (mountedRef.current) setProgress(Math.round((done / total) * 100))
+        },
+        controller.signal,
+      )
       if (!mountedRef.current) return
       setMcResult(result)
       setComputedFor(inputsHash)
@@ -126,10 +142,7 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                   et les bull markets réels sont rejoués).
                 </>
               ) : (
-                <>
-                  , avec des performances
-                  différentes à chaque fois.
-                </>
+                <>, avec des performances différentes à chaque fois.</>
               )}{" "}
               Vous verrez le résultat de votre capital dans une <strong className="text-text">mauvaise</strong>, une{" "}
               <strong className="text-text">moyenne</strong> et une <strong className="text-text">bonne</strong> période
@@ -147,7 +160,8 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                 : "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary",
             )}
           >
-            <Play size={13} fill="currentColor" /> {running ? `Calcul... ${progress}%` : `Lancer ${inputs.mcRuns} simulations`}
+            <Play size={13} fill="currentColor" />{" "}
+            {running ? `Calcul... ${progress}%` : `Lancer ${inputs.mcRuns} simulations`}
           </button>
         </div>
 
@@ -160,7 +174,9 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-[10px] text-text-dim text-right mono">{progress}% — interface fluide pendant le calcul</p>
+            <p className="text-[10px] text-text-dim text-right mono">
+              {progress}% — interface fluide pendant le calcul
+            </p>
           </div>
         )}
 

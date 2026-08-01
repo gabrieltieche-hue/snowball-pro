@@ -7,11 +7,7 @@ export interface ComparisonSeriesRow {
   B: number | null
 }
 
-export function mergeComparisonSeries(
-  rowsA: YearRow[],
-  rowsB: YearRow[],
-  showReal: boolean,
-): ComparisonSeriesRow[] {
+export function mergeComparisonSeries(rowsA: YearRow[], rowsB: YearRow[], showReal: boolean): ComparisonSeriesRow[] {
   const maxYears = Math.max(rowsA.length, rowsB.length)
   const series: ComparisonSeriesRow[] = []
   for (let i = 0; i < maxYears; i += 1) {

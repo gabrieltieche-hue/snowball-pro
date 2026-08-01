@@ -26,7 +26,15 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const displayInterests = Math.max(0, displayFinal - displayInvested)
   const netAfterTax = lastRow.taxNet
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
+  // Pouvoir d'achat = capital NET (impôts déduits) converti en euros d'aujourd'hui.
+  // lastRow.real est le brut déflaté : on applique le même facteur au net fiscal.
+  const deflationFactor = lastRow.nominal > 0 ? lastRow.real / lastRow.nominal : 1
+  const realNet = netAfterTax * deflationFactor
 
+  // Le « Net fiscal » reste exprimé en euros courants (c'est le montant réel
+  // après impôts) ; le « Pouvoir d'achat » le convertit en euros d'aujourd'hui.
+  // Les deux cartes sont donc toujours distinctes, quel que soit le mode
+  // d'affichage — pas de doublon ni d'échelles mélangées.
   const cards: StatCard[] = [
     {
       label: "Valeur brute",
@@ -40,14 +48,14 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       color: "var(--color-value-gold)",
       sub:
         envelope !== "none"
-          ? `Impôts estimés (règles ${inputs.fiscalYear}) : -${fmt(taxAmount)}`
+          ? `${showReal ? "Euros courants — " : ""}Impôts estimés (règles en vigueur) : -${fmt(taxAmount)}`
           : "Aucun impôt à payer",
     },
     {
       label: "Pouvoir d'achat",
-      value: fmt(lastRow.real),
+      value: fmt(realNet),
       color: "var(--color-warning)",
-      sub: "capital net en euros d'aujourd'hui (inflation déduite)",
+      sub: "capital net en euros d'aujourd'hui (impôts et inflation déduits)",
     },
     {
       label: "Total épargné",

@@ -6,6 +6,14 @@ export type CrisisProfile = "none" | "flash-crash" | "bear-market" | "long-depre
 export type WithdrawalModel = "rule-4" | "ultra-safe" | "optimistic" | "custom"
 export type InflationMode = "custom" | "historical" | "dynamic"
 export type GoalDifficulty = "easy" | "moderate" | "ambitious" | "impossible"
+export type CtoTaxMode = "pfu" | "bareme"
+
+/** Options de calcul fiscal transmises à computeTaxBreakdown. */
+export interface TaxBreakdownOptions {
+  tmi?: number
+  ctoTaxMode?: CtoTaxMode
+  dividendsGross?: number
+}
 
 export interface YearRow {
   year: number
@@ -63,7 +71,6 @@ export interface DecumulationResult {
   runs: number
   capital: number[]
   success: boolean
-  ruinAge: number | null
   withdrawal: number[]
 }
 
@@ -162,7 +169,8 @@ export interface SimulationInputs {
   goalAnnualReturn: number
   mcRuns: number
   seed: number
-  fiscalYear: number
+  tmi: number
+  ctoTaxMode: CtoTaxMode
 }
 
 export interface HistoricalDataset {

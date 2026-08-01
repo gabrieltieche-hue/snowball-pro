@@ -8,7 +8,7 @@
 | `npm run typecheck`    | `tsc --noEmit` (strict mode)                                                                                  |
 | `npm run lint`         | ESLint 10 + TypeScript strict + react-hooks                                                                   |
 | `npm run lint:fix`     | Auto-fix lint                                                                                                 |
-| `npm run test`         | `vitest run` (93 tests, node env)                                                                             |
+| `npm run test`         | `vitest run` (133 tests : engine node + composants jsdom)                                                     |
 | `npm run test:watch`   | `vitest` watch mode                                                                                           |
 | `npm run test:ui`      | `vitest --ui`                                                                                                 |
 | `npm run format`       | Prettier (`semi: false`, `singleQuote: false`, `trailingComma: all`, `printWidth: 120`, `arrowParens: avoid`) |
@@ -27,10 +27,10 @@
 
 ## Testing
 
-- Tests in `src/__tests__/` using Vitest with `globals: true`, `environment: "node"`
-- Cover: math, formatting, French taxes, simulation, KPIs, goal solver
+- Tests in `src/__tests__/` using Vitest with `globals: true`, `environment: "node"` (engine) et `jsdom` (composants, via pragma `@vitest-environment jsdom` dans `components.test.tsx`)
+- Cover: math, formatting, French taxes, simulation, KPIs, goal solver, composants React (undo/redo, comparaison A/B, snapshots, export CSV, ErrorBoundary, partage URL)
 - Add a test for every new engine function
-- Single test file: `src/__tests__/engine.test.ts`
+- Test files: `src/__tests__/engine.test.ts` (engine pur) et `src/__tests__/components.test.tsx` (UI, recharts/framer-motion mockés)
 
 ## Key conventions
 

@@ -16,8 +16,15 @@ export function SmartInput({ value, onChange, className, ...props }: SmartInputP
   }, [value])
 
   const handleBlur = () => {
-    const parsed = parseCurrencyInput(text)
-    if (!isNaN(parsed) && parsed >= 0) onChange(parsed)
+    const trimmed = text.trim()
+    // Champ vidé ou saisie invalide → on conserve la valeur précédente au lieu
+    // d'écraser silencieusement la simulation par 0.
+    if (trimmed === "") {
+      setText(value.toLocaleString("fr-FR"))
+      return
+    }
+    const parsed = parseCurrencyInput(trimmed)
+    if (Number.isFinite(parsed) && parsed >= 0) onChange(parsed)
     else setText(value.toLocaleString("fr-FR"))
   }
 

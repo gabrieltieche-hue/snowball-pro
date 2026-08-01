@@ -1,11 +1,16 @@
-import type { EnvelopeType, TaxBreakdown, EnvelopeConfig } from "../types"
+import type { CtoTaxMode, EnvelopeType, TaxBreakdown, EnvelopeConfig, TaxBreakdownOptions } from "../types"
 
 const SOCIAL_TAX_RATE = 0.172
 const PFU_INCOME_RATE = 0.128
 const PFU_RATE = SOCIAL_TAX_RATE + PFU_INCOME_RATE
 const AV_REDUCED_IR_RATE = 0.075
+const AV_EXCESS_IR_RATE = 0.128
 const AV_IR_ALLOWANCE_SINGLE = 4_600
 const AV_IR_ALLOWANCE_COUPLE = 9_200
+const AV_PREMIUM_CAP_SINGLE = 150_000
+const AV_PREMIUM_CAP_COUPLE = 300_000
+const PER_EXIT_ABATTEMENT = 0.1
+const DIVIDEND_ABATTEMENT_BAREME = 0.4
 
 export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
   {
@@ -33,7 +38,7 @@ export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
     id: "per",
     name: "PER / PERIN",
     shortLabel: "PER",
-    desc: "Impôts simplifiés à la sortie",
+    desc: "Versements déductibles (TMI) à l'entrée, sortie allégée",
     color: "var(--color-text-muted)",
   },
   {
@@ -61,8 +66,12 @@ export function computeTaxBreakdown(
   couple: boolean,
   dividendsTaxPaid = 0,
   contributionBase = 0,
+  opts: TaxBreakdownOptions = {},
 ): TaxBreakdown {
   const grossGains = Math.max(0, grossGainsInput)
+  const tmi = opts.tmi ?? 0.3
+  const ctoTaxMode = opts.ctoTaxMode ?? "pfu"
+  const dividendsGross = opts.dividendsGross ?? 0
   const notes: string[] = []
   let taxableGains = grossGains
   let socialCharges = 0
@@ -86,11 +95,23 @@ export function computeTaxBreakdown(
 
   if (envelope === "cto") {
     socialCharges = grossGains * SOCIAL_TAX_RATE
-    incomeTax = grossGains * PFU_INCOME_RATE
-    flatTax = grossGains * PFU_RATE
-    notes.push(
-      "CTO (compte-titres ordinaire) : impôt unique de 30 % = 17,2 % de cotisations sociales + 12,8 % d'impôt sur le revenu.",
-    )
+    if (ctoTaxMode === "bareme") {
+      taxableGains = Math.max(0, grossGains - DIVIDEND_ABATTEMENT_BAREME * dividendsGross)
+      incomeTax = taxableGains * tmi
+      notes.push(
+        `CTO en barème progressif : 17,2 % de cotisations sociales + impôt sur le revenu à votre TMI de ${(
+          tmi * 100
+        ).toFixed(
+          0,
+        )} %, avec un abattement de 40 % sur les dividendes (prélevés à la source chaque mois, puis réinvestis nets).`,
+      )
+    } else {
+      incomeTax = grossGains * PFU_INCOME_RATE
+      flatTax = grossGains * PFU_RATE
+      notes.push(
+        "CTO (compte-titres ordinaire) : impôt unique de 30 % = 17,2 % de cotisations sociales + 12,8 % d'impôt sur le revenu.",
+      )
+    }
   }
 
   if (envelope === "pea") {
@@ -116,12 +137,20 @@ export function computeTaxBreakdown(
     socialCharges = grossGains * SOCIAL_TAX_RATE
     if (yearsHeld >= 8) {
       const allowance = couple ? AV_IR_ALLOWANCE_COUPLE : AV_IR_ALLOWANCE_SINGLE
+      const cap = couple ? AV_PREMIUM_CAP_COUPLE : AV_PREMIUM_CAP_SINGLE
       taxableGains = Math.max(0, grossGains - allowance)
-      incomeTax = taxableGains * AV_REDUCED_IR_RATE
+      // Les gains sont répartis au prorata des primes : jusqu'au plafond de
+      // primes (150 k€ célibataire / 300 k€ couple), le taux réduit de 7,5 %
+      // s'applique ; au-delà, les gains sont taxés à 12,8 %.
+      const withinFraction = contributionBase > 0 ? Math.min(1, cap / contributionBase) : 1
+      incomeTax =
+        taxableGains * withinFraction * AV_REDUCED_IR_RATE + taxableGains * (1 - withinFraction) * AV_EXCESS_IR_RATE
       notes.push(
         `Assurance-vie détenue plus de 8 ans : cotisations sociales sur tous les gains + abattement de ${(
           allowance / 1000
-        ).toFixed(0)} k€/an sur les gains imposés.`,
+        ).toFixed(0)} k€/an. Les gains sur les primes jusqu'à ${(cap / 1000).toFixed(
+          0,
+        )} k€ sont taxés à 7,5 %, au-delà à 12,8 %.`,
       )
     } else {
       incomeTax = grossGains * PFU_INCOME_RATE
@@ -132,8 +161,17 @@ export function computeTaxBreakdown(
 
   if (envelope === "per") {
     socialCharges = grossGains * SOCIAL_TAX_RATE
-    incomeTax = grossGains * (couple ? 0.11 : 0.14)
-    notes.push("PER : sortie en capital modélisée simplement (l'avantage fiscal à l'entrée n'est pas simulé ici).")
+    // Sortie en capital modélisée simplement : les gains sont taxés à la TMI
+    // après abattement de 10 % (l'économie d'impôt à l'entrée est déjà
+    // réinvestie dans la simulation, à hauteur de TMI × versements).
+    incomeTax = Math.max(0, grossGains * (1 - PER_EXIT_ABATTEMENT)) * tmi
+    notes.push(
+      `PER : vos versements sont déduits de vos revenus imposables (économie d'impôt de ${(tmi * 100).toFixed(
+        0,
+      )} % réinvestie dans la simulation). À la sortie, les gains sont taxés à votre TMI de ${(tmi * 100).toFixed(
+        0,
+      )} % après un abattement de 10 %.`,
+    )
   }
 
   const exitTax = socialCharges + incomeTax
@@ -152,8 +190,12 @@ export function computeTaxBreakdown(
   }
 }
 
-export function dividendTaxRate(envelope: EnvelopeType): number {
-  return envelope === "cto" ? PFU_RATE : envelope === "none" ? 0 : SOCIAL_TAX_RATE
+export function dividendTaxRate(envelope: EnvelopeType, ctoTaxMode: CtoTaxMode = "pfu", tmi = 0.3): number {
+  if (envelope === "cto") {
+    if (ctoTaxMode === "bareme") return SOCIAL_TAX_RATE + tmi * (1 - DIVIDEND_ABATTEMENT_BAREME)
+    return PFU_RATE
+  }
+  return envelope === "none" ? 0 : SOCIAL_TAX_RATE
 }
 
 export function calcXIRR(cashFlows: number[], months: number[]): number {

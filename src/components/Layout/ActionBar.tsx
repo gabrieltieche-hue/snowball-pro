@@ -1,4 +1,15 @@
-import { AlertTriangle, Download, FileJson, GitCompareArrows, Moon, Printer, Redo2, Sun, Undo2 } from "lucide-react"
+import {
+  AlertTriangle,
+  Download,
+  FileJson,
+  GitCompareArrows,
+  Link2,
+  Moon,
+  Printer,
+  Redo2,
+  Sun,
+  Undo2,
+} from "lucide-react"
 import type { ValidationError } from "../../engine"
 
 interface ActionBarProps {
@@ -14,6 +25,8 @@ interface ActionBarProps {
   onUndo: () => void
   onRedo: () => void
   validationErrors: ValidationError[]
+  onCopyLink: () => void
+  linkCopied: boolean
 }
 
 export function ActionBar({
@@ -29,6 +42,8 @@ export function ActionBar({
   onUndo,
   onRedo,
   validationErrors,
+  onCopyLink,
+  linkCopied,
 }: ActionBarProps) {
   const errorCount = validationErrors.filter(e => e.severity === "error").length
   const warningCount = validationErrors.filter(e => e.severity === "warning").length
@@ -43,7 +58,9 @@ export function ActionBar({
           }`}
         >
           <AlertTriangle size={11} />
-          {errorCount > 0 ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}` : `${warningCount} avertissement${warningCount > 1 ? "s" : ""}`}
+          {errorCount > 0
+            ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}`
+            : `${warningCount} avertissement${warningCount > 1 ? "s" : ""}`}
         </span>
       )}
       <button
@@ -77,6 +94,17 @@ export function ActionBar({
         }`}
       >
         <GitCompareArrows size={12} /> {comparing ? "Quitter" : "Comparer"}
+      </button>
+      <button
+        type="button"
+        onClick={onCopyLink}
+        title="Copier le lien de partage de la simulation"
+        aria-label="Copier le lien de partage"
+        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold transition-colors ${
+          linkCopied ? "bg-success/15 text-success border border-success/40" : "glass hover:bg-glass-hover"
+        }`}
+      >
+        <Link2 size={12} /> {linkCopied ? "Lien copié !" : "Partager"}
       </button>
       <button
         type="button"

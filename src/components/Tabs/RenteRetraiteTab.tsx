@@ -84,6 +84,7 @@ interface RenteRetraiteTabProps {
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
   updateInputs: (partial: Partial<SimulationInputs>) => void
   runDecum: () => void
+  isStale?: boolean
 }
 
 export function RenteRetraiteTab({
@@ -94,6 +95,7 @@ export function RenteRetraiteTab({
   updateInput,
   updateInputs,
   runDecum,
+  isStale = false,
 }: RenteRetraiteTabProps) {
   const theme = chartTheme(darkMode)
   const startingCapital = lastRow?.nominal && lastRow.nominal > 0 ? lastRow.nominal : inputs.capitalInitial
@@ -320,7 +322,15 @@ export function RenteRetraiteTab({
           Résultats de la simulation
          ────────────────────────────────────────────────────────── */}
       {decumResult ? (
-        <ResultsSection decumResult={decumResult} theme={theme} />
+        <div className="space-y-3">
+          {isStale && (
+            <p className="text-[10px] text-warning flex items-center gap-1">
+              <AlertTriangle size={11} /> Paramètres modifiés depuis le lancement — relancez la simulation pour mettre à
+              jour les résultats.
+            </p>
+          )}
+          <ResultsSection decumResult={decumResult} theme={theme} />
+        </div>
       ) : (
         <EmptyState hasAccumulation={!!lastRow} />
       )}

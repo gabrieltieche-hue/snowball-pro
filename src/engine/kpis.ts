@@ -86,16 +86,23 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
     .slice(1)
     .map(r => r.yearlyReturn)
     .filter(v => Number.isFinite(v))
+  // Le Sharpe n'a de sens qu'en mode aléatoire : en mode fixe/historique les
+  // rendements sont (quasi) déterministes → écart-type ~0 et ratio explosé.
   const sharpe =
-    standardDeviation(netReturns) > 0 ? (average(netReturns) - RISK_FREE_RATE) / standardDeviation(netReturns) : 0
+    inputs.returnMode === "random" && standardDeviation(netReturns) > 0
+      ? (average(netReturns) - RISK_FREE_RATE) / standardDeviation(netReturns)
+      : 0
   const drawdown = calcMaxDrawdown(rows.map(r => r.nominal))
   const contributionPct = last.nominal > 0 ? last.investedNom / last.nominal : 0
   const realReturn = (1 + inputs.annualReturn) / (1 + inputs.inflation) - 1
   const totalWithFees = last.nominal + last.feesLost
   const feeImpactPct = totalWithFees > 0 ? last.feesLost / totalWithFees : 0
 
+  // Le temps de doublement doit refléter le RENDEMENT RÉEL du capital (XIRR,
+  // versements compris), pas le CAGR brut gonflé par les versements mensuels.
+  // À 8 %/an : ~9 ans — l'affichage « 4,4 ans » d'avant était trompeur.
   let doublingTime: number | null = null
-  if (cagr > 0) doublingTime = roundCent(Math.log(2) / Math.log(1 + cagr))
+  if (xirr > 0) doublingTime = roundCent(Math.log(2) / Math.log(1 + xirr))
   if (doublingTime !== null && (doublingTime > 200 || !Number.isFinite(doublingTime))) doublingTime = null
 
   return {

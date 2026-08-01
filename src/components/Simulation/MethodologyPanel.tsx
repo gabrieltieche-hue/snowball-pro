@@ -34,7 +34,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
     },
     {
       label: "Enveloppe fiscale",
-      value: `${envelope?.name ?? "CTO"} — abattements et taux de ${inputs.fiscalYear} appliqués`,
+      value: `${envelope?.name ?? "CTO"} — taux et abattements en vigueur`,
     },
     {
       label: "Rendement interne (XIRR)",
@@ -42,14 +42,15 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
     },
     {
       label: "Frais",
-      value: [
-        inputs.etfFees > 0 ? `${(inputs.etfFees * 100).toFixed(2)} % ETF` : null,
-        inputs.brokerageFees > 0 ? `${(inputs.brokerageFees * 100).toFixed(2)} % courtage` : null,
-        inputs.insuranceFees > 0 ? `${(inputs.insuranceFees * 100).toFixed(2)} % assurance` : null,
-        inputs.managementFees > 0 ? `${(inputs.managementFees * 100).toFixed(2)} % gestion` : null,
-      ]
-        .filter(Boolean)
-        .join(" + ") || "Aucun frais",
+      value:
+        [
+          inputs.etfFees > 0 ? `${(inputs.etfFees * 100).toFixed(2)} % ETF` : null,
+          inputs.brokerageFees > 0 ? `${(inputs.brokerageFees * 100).toFixed(2)} % courtage` : null,
+          inputs.insuranceFees > 0 ? `${(inputs.insuranceFees * 100).toFixed(2)} % assurance` : null,
+          inputs.managementFees > 0 ? `${(inputs.managementFees * 100).toFixed(2)} % gestion` : null,
+        ]
+          .filter(Boolean)
+          .join(" + ") || "Aucun frais",
     },
     {
       label: "Fiscalité en cours de route",
@@ -81,10 +82,10 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
             </div>
           ))}
           <p className="text-[9px] text-text-dim italic leading-relaxed pt-2 border-t border-border/50">
-            Les impôts affichés sont une <strong>estimation</strong> fondée sur la législation fiscale de{" "}
-            {inputs.fiscalYear} (prélèvement forfaitaire unique, abattements assurance-vie, cotisations sociales) et
-            modélisée comme une liquidation théorique à la fin de la projection. Les gains latents ne sont taxés qu'à la
-            revente réelle — les montants « après impôts » sont donc une projection, pas une réalité comptable.
+            Les impôts affichés sont une <strong>estimation</strong> fondée sur la législation fiscale en vigueur
+            (prélèvement forfaitaire unique, abattements assurance-vie, cotisations sociales) et modélisée comme une
+            liquidation théorique à la fin de la projection. Les gains latents ne sont taxés qu'à la revente réelle —
+            les montants « après impôts » sont donc une projection, pas une réalité comptable.
           </p>
         </div>
       )}

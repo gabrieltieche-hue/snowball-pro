@@ -13,10 +13,7 @@ interface ComparisonChartProps {
 
 export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonChartProps) {
   const theme = chartTheme(darkMode)
-  const data = useMemo(
-    () => mergeComparisonSeries(rowsA, rowsB, inputs.showReal),
-    [rowsA, rowsB, inputs.showReal],
-  )
+  const data = useMemo(() => mergeComparisonSeries(rowsA, rowsB, inputs.showReal), [rowsA, rowsB, inputs.showReal])
   const colorA = theme.invested
   const colorB = theme.gains
 

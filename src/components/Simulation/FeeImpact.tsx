@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Percent } from "lucide-react"
 import { runSimulation as reRunSim, fmtCurrency } from "../../engine"
 import type { SimulationInputs, YearRow } from "../../types"
@@ -8,11 +9,15 @@ interface FeeImpactProps {
 }
 
 export function FeeImpact({ rows, inputs }: FeeImpactProps) {
+  // Hook appelé inconditionnellement (les règles de React l'exigent) : le
+  // retour anticipé sans rows vient après.
+  const noFeeFinal = useMemo(
+    () => reRunSim({ ...inputs, etfFees: 0, brokerageFees: 0, managementFees: 0 }).slice(-1)[0]?.nominal || 0,
+    [inputs],
+  )
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
-  const noFeeRows = reRunSim({ ...inputs, etfFees: 0, brokerageFees: 0, managementFees: 0 })
-  const noFeeFinal = noFeeRows[noFeeRows.length - 1]?.nominal || 0
   const feeImpact = noFeeFinal - lastRow.nominal
 
   return (

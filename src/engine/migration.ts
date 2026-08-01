@@ -55,13 +55,13 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   goalAnnualReturn: 0.07,
   mcRuns: 300,
   seed: 42,
-  fiscalYear: 2026,
+  tmi: 0.3,
+  ctoTaxMode: "pfu",
 }
 
 const VALID_ENVELOPES: EnvelopeType[] = ["cto", "pea", "av", "per", "none"]
 
-const num = (v: unknown, fallback: number): number =>
-  typeof v === "number" && Number.isFinite(v) ? v : fallback
+const num = (v: unknown, fallback: number): number => (typeof v === "number" && Number.isFinite(v) ? v : fallback)
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v))
 
@@ -113,15 +113,10 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "goalAnnualReturn",
   "mcRuns",
   "seed",
-  "fiscalYear",
+  "tmi",
 ]
 
-const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
-  "taxCouple",
-  "showReal",
-  "withdrawalInflation",
-  "crisisEnabled",
-]
+const BOOLEAN_KEYS: (keyof SimulationInputs)[] = ["taxCouple", "showReal", "withdrawalInflation", "crisisEnabled"]
 
 const STRING_KEYS: (keyof SimulationInputs)[] = [
   "inflationMode",
@@ -130,6 +125,7 @@ const STRING_KEYS: (keyof SimulationInputs)[] = [
   "historicalIndex",
   "crisisProfile",
   "withdrawalModel",
+  "ctoTaxMode",
 ]
 
 const ENUM_VALUES: Record<string, string[]> = {
@@ -139,6 +135,7 @@ const ENUM_VALUES: Record<string, string[]> = {
   historicalIndex: ["msci-world", "sp500", "nasdaq", "cac40", "bitcoin", "gold"],
   crisisProfile: ["none", "flash-crash", "bear-market", "long-depression", "stagflation"],
   withdrawalModel: ["rule-4", "ultra-safe", "optimistic", "custom"],
+  ctoTaxMode: ["pfu", "bareme"],
 }
 
 export function parseStoredInputs(raw: string | null): SimulationInputs {
@@ -162,9 +159,6 @@ export function parseStoredInputs(raw: string | null): SimulationInputs {
       const allowed = ENUM_VALUES[key]
       if (typeof v === "string" && allowed && allowed.includes(v)) target[key] = v
     }
-    // Le millésime fiscal est borné dès le chargement pour rester cohérent
-    // avec les règles affichables (avant toute sanitisation par la simulation).
-    target.fiscalYear = clamp(num(parsed.fiscalYear, DEFAULT_INPUTS.fiscalYear), 2020, 2032)
     return merged
   } catch {
     return DEFAULT_INPUTS

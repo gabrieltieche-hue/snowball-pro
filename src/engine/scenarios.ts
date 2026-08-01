@@ -37,11 +37,14 @@ export function applyScenarioPatch(
   return { state: { A: { ...state.A, ...patch }, B: state.B }, target }
 }
 
-/** Entre en mode comparaison : fige A, initialise B à partir de A si besoin. */
+/**
+ * Entre en mode comparaison : fige A et réinitialise B DEPUIS A. Un ancien B
+ * mémorisé (localStorage) serait obsolète — repartir de A évite les surprises.
+ */
 export function enterComparison(state: ScenarioState): ScenarioState {
   return {
     A: { ...state.A },
-    B: state.B ? { ...state.B } : { ...state.A },
+    B: { ...state.A },
   }
 }
 

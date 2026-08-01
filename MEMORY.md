@@ -4,6 +4,35 @@
 
 ---
 
+## SESSION — 2026-08-01 (v5.1.3 : suppression « Millésime fiscal » + fiscalité TMI/barème + déploiement prod)
+
+### Résumé
+
+Suppression complète du curseur « Millésime fiscal » (2020–2032) : il ne modifiait AUCUN calcul — le moteur `taxes.ts` utilise des constantes fixes qui ne lisent jamais `fiscalYear`. Le worktree contenait aussi un WIP non commité (fiscalité TMI/barème, décaissement réécrit, KpiGrid refait, SegmentedControl) complété en parallèle pendant la session : les types manquants (`CtoTaxMode`, `TaxBreakdownOptions`, `tmi`, `ctoTaxMode`) ont été ajoutés, une erreur d'export `TaxBreakdownOptions` dans `engine/index.ts` corrigée, un hook `useMemo` placé avant un early-return dans `FeeImpact.tsx`, et un test `netYield` unité ratio/% corrigé. Version 5.1.2 → 5.1.3 partout (package.json, sw.js, CHANGELOG), commit du worktree complet et déploiement production.
+
+### Modifications
+
+- **Suppression `fiscalYear`** : `types.ts` (champ retiré), `migration.ts` (default, `NUMERIC_KEYS`, clamp au chargement), `validation.ts` (bloc validation + sanitize), `Sidebar.tsx` (curseur retiré), `App.tsx`/`DisclaimerBar.tsx` (prop supprimée, texte « règles fiscales en vigueur »), `FiscalPanel.tsx`/`MethodologyPanel.tsx`/`SummaryStats.tsx` (libellés « en vigueur »), `MonteCarloPanel.tsx` (retiré du hash de fraîcheur — évite les « relancez » inutiles).
+- **Fiscalité TMI/barème** (WIP complété) : champs `tmi` + `ctoTaxMode` câblés dans types, migration (défauts + clés), validation (bornes 0–45 % + mode pfu/bareme), `taxes.ts` (barème CTO avec abattement 40 % dividendes, PER TMI à la sortie avec abattement 10 %, plafonds AV 150/300 k€, taux 12,8 % au-delà).
+- **Décaissement (Rente) réécrit** : rééchantillonnage par blocs des rendements historiques, cumul mensuel des retraits (indexation inflation), 10 000 runs max.
+- **Corrections gate** : `engine/index.ts` export `TaxBreakdownOptions` depuis `../types` (TS2459) ; `FeeImpact.tsx` `useMemo` avant le early-return (rules-of-hooks) ; test `netYield` aligné sur l'unité ratio de l'engine.
+- **Version 5.1.3** : `package.json`, `public/sw.js` (`CACHE_VERSION` → `snowball-pro-v5.1.3`, impératif pour la purge PWA), CHANGELOG (entrée v5.1.3, compte tests 133), AGENTS.md (92 → 133 tests).
+- **Nouveaux tests composants** (WIP parallèle) : `components.test.tsx` (jsdom) — undo/redo, comparaison A/B, snapshots, export CSV (BOM vérifié sur octets bruts), ErrorBoundary, partage URL ; `ErrorBoundary.tsx`, `utils/urlState.ts` ajoutés.
+- **KpiGrid refait** (préexistant, non commité) : « Statistiques clés » avec icône Gauge, cartes masquées selon la simulation (sharpe/multiple/doubling/DD/frais conditionnels).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **133/133 tests** ✓ build ✓ (dist 905 kB / 271 kB gzip) ; revue code (code-reviewer) sans finding bloquant.
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+### Notes
+
+- Le millésime était purement décoratif : les taux (17,2 % + 12,8 %, abattements 4 600/9 200 €) sont des constantes — d'où le libellé « règles en vigueur » choisi (une année figée serait devenue fausse).
+- Anciens snapshots en localStorage peuvent contenir une clé `fiscalYear` fantôme : ignorée sans effet (les clés inconnues sont filtrées).
+- Le worktree était édité en parallèle pendant la session (mtimes 18:39–18:50) : les validations ont été relancées après chaque évolution pour ne commiter qu'un état vert.
+
+---
+
 ## SESSION — 2026-08-01 (v5.1.1 : durcissement sécurité + déploiement prod)
 
 ### Résumé

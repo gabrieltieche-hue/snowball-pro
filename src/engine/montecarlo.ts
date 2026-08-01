@@ -9,17 +9,39 @@ import { getHistoricalDataset } from "./historical"
 const CHUNK_SIZE = 150
 
 /**
- * Rééchantillonnage par blocs : choisit un point de départ aléatoire puis
- * rejoue des années consécutives (avec rebouclage) issues des rendements
- * réels de l'indice. Préserve la séquence des krachs et des bull markets
- * au lieu d'inventer une loi gaussienne artificielle.
+ * Longueur d'un bloc pour le rééchantillonnage : 5 années consécutives
+ * conservent la séquence krach → reprise sans jamais créer de transition
+ * artificielle entre la fin et le début de l'historique (2025 → 1970).
  */
-function sampleHistoricalReturns(inputs: SimulationInputs, duration: number, rng: () => number): number[] {
+const BLOCK_LENGTH = 5
+
+/**
+ * Rééchantillonnage par blocs NON CHEVAUCHANTS : l'historique est découpé en
+ * blocs de BLOCK_LENGTH années consécutives, puis des blocs entiers sont tirés
+ * avec remise. Chaque bloc reste une fenêtre réelle et contiguë du passé, ce
+ * qui préserve la séquence des krachs et des bull markets SANS jamais reboucler
+ * la fin vers le début de la série (contrairement au modulo (start + i) % len).
+ */
+export function sampleHistoricalReturns(inputs: SimulationInputs, duration: number, rng: () => number): number[] {
   const dataset = getHistoricalDataset(inputs.historicalIndex)
   const returns = dataset.years.map(y => y.return)
   const len = returns.length
-  const start = Math.floor(rng() * len)
-  return Array.from({ length: duration }, (_, i) => returns[(start + i) % len] ?? inputs.annualReturn)
+  if (len === 0) return Array.from({ length: duration }, () => inputs.annualReturn)
+
+  const blocks: number[][] = []
+  for (let start = 0; start < len; start += BLOCK_LENGTH) {
+    blocks.push(returns.slice(start, start + BLOCK_LENGTH))
+  }
+
+  const out: number[] = []
+  while (out.length < duration) {
+    const block = blocks[Math.floor(rng() * blocks.length)] ?? returns
+    for (const r of block) {
+      if (out.length >= duration) break
+      out.push(r)
+    }
+  }
+  return out
 }
 
 function runSinglePath(inputs: SimulationInputs, sim: number): number[] {
@@ -27,7 +49,9 @@ function runSinglePath(inputs: SimulationInputs, sim: number): number[] {
   const duration = Math.max(1, inputs.duration)
   if (inputs.returnMode === "historical") {
     const annualReturns = sampleHistoricalReturns(inputs, duration, rng)
-    const simRows = runSimulation({ ...inputs, returnMode: "historical" }, annualReturns)
+    // En mode historique, les krachs réels sont DÉJÀ dans les rendements
+    // rejoués : on désactive la crise synthétique pour éviter un double comptage.
+    const simRows = runSimulation({ ...inputs, returnMode: "historical", crisisEnabled: false }, annualReturns)
     return simRows.map(row => row.taxNet)
   }
   const simRows = runSimulation({

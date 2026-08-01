@@ -44,10 +44,16 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
 
   const items = useMemo(() => {
     if (!lastRow) return []
+    // Le camembert doit totaliser le capital réel (nominal). Les impôts sont
+    // une perte SUR les gains : gains nets = gains bruts − impôts (les frais
+    // sont déjà déduits du capital par la simulation). Total = épargné + gains
+    // nets + impôts = capital nominal.
+    const grossGains = lastRow.interestsNom
+    const taxes = Math.max(0, Math.min(grossGains, lastRow.tax))
     return [
       { label: "Argent épargné", value: lastRow.investedNom, color: palette.invested },
-      { label: "Croissance de la bourse", value: lastRow.interestsNom, color: palette.gains },
-      { label: "Perdu en frais / impôts", value: lastRow.tax + lastRow.feesLost, color: palette.losses },
+      { label: "Gains nets (après impôts)", value: Math.max(0, grossGains - taxes), color: palette.gains },
+      { label: "Impôts (liquidation théorique)", value: taxes, color: palette.losses },
     ]
   }, [lastRow, palette])
 

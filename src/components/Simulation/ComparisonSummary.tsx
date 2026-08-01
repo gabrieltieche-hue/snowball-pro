@@ -37,10 +37,12 @@ export function ComparisonSummary({ comparison }: ComparisonSummaryProps) {
           ) : (
             <ArrowDownRight size={16} />
           )}
-          {better === "equal" ? "Égal" : `${comparison.diffAbsolute > 0 ? "+" : ""}${fmtCurrency(comparison.diffAbsolute)}`}
+          {better === "equal"
+            ? "Égal"
+            : `${comparison.diffAbsolute > 0 ? "+" : ""}${fmtCurrency(comparison.diffAbsolute)}`}
         </div>
         <div className="text-[10px] text-text-dim mt-0.5">
-          {better === "equal" ? "aucune différence" : `${fmtPercent(comparison.diffPercent / 100)} par rapport à A`}
+          {better === "equal" ? "aucune différence" : `${fmtPercent(comparison.diffPercent)} par rapport à A`}
         </div>
       </div>
     </div>

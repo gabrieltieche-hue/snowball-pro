@@ -52,9 +52,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             onKeyDown={e => handleKeyDown(e, index)}
             className={cn(
               "flex-1 min-w-[110px] px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus-visible:outline-2 focus-visible:outline-primary",
-              selected
-                ? "bg-primary text-white shadow-gold"
-                : "text-text-muted hover:bg-glass-hover hover:text-text",
+              selected ? "bg-primary text-white shadow-gold" : "text-text-muted hover:bg-glass-hover hover:text-text",
             )}
           >
             {tab.label}

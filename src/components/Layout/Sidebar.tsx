@@ -5,11 +5,20 @@ import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
 import { SnapshotPanel } from "./SnapshotPanel"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
+import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
 import { fmtCurrency, getHistoricalDataset, validateInputs } from "../../engine"
 import type { ValidationError } from "../../engine"
-import type { CrisisProfile, HistoricalIndex, SavedSnapshot, SimulationInputs, YearRow } from "../../types"
+import type {
+  CrisisProfile,
+  HistoricalIndex,
+  InflationMode,
+  ReturnMode,
+  SavedSnapshot,
+  SimulationInputs,
+  YearRow,
+} from "../../types"
 
 interface SidebarProps {
   inputs: SimulationInputs
@@ -47,6 +56,20 @@ export function Sidebar({
     validationErrors.find(e => e.field === field && e.severity === "error")
   const fieldWarning = (field: keyof SimulationInputs): ValidationError | undefined =>
     validationErrors.find(e => e.field === field && e.severity === "warning")
+
+  // Le mode « Aléatoire » (rendements volatils) était injoignable depuis
+  // l'interface : le toggle ne proposait que fixe ↔ historique. Trois modes :
+  // fixe (déterministe), aléatoire (gaussien ± volatilité), historique (réel).
+  const RETURN_MODES: { id: ReturnMode; label: string; sub: string }[] = [
+    { id: "fixed", label: "Constante", sub: "rendement fixe chaque année" },
+    { id: "random", label: "Aléatoire", sub: "hauts et bas autour du rendement" },
+    { id: "historical", label: "Historique", sub: `réel : ${historical.name}` },
+  ]
+  const INFLATION_MODES: { id: InflationMode; label: string; sub: string }[] = [
+    { id: "custom", label: "Personnalisée", sub: "le taux ci-dessous" },
+    { id: "historical", label: "Historique", sub: "inflation réelle passée" },
+    { id: "dynamic", label: "Cyclique", sub: "variations sur la durée" },
+  ]
 
   return (
     <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium lg:sticky lg:top-6 overflow-hidden">
@@ -123,17 +146,53 @@ export function Sidebar({
 
       {/* Mode de rendement */}
       <CollapsibleSection title="Comment évolue la bourse ?" icon={<RefreshCcw size={12} />}>
-        <Toggle
-          checked={inputs.returnMode === "historical"}
-          onChange={v => updateInputs({ returnMode: v ? "historical" : "fixed" })}
-          label="Bourse réelle (historique)"
-          sub={`Utilise les performances réelles passées : ${historicalPeriod}`}
+        <SegmentedControl
+          value={inputs.returnMode}
+          onChange={v => updateInputs({ returnMode: v })}
+          ariaLabel="Mode d'évolution de la bourse"
+          options={RETURN_MODES}
         />
         {inputs.returnMode === "historical" && (
           <div className="mt-3 animate-fade-in">
             <BacktestSelector
               value={inputs.historicalIndex}
               onChange={v => updateInput("historicalIndex", v as HistoricalIndex)}
+            />
+            <p className="text-[9px] text-text-dim mt-2 leading-snug">{historicalPeriod}</p>
+          </div>
+        )}
+        {inputs.returnMode === "random" && (
+          <div className="mt-3 space-y-3 animate-fade-in">
+            <SliderInput
+              label="Volatilité annuelle (%)"
+              id="volatility"
+              value={inputs.volatility * 100}
+              min={1}
+              max={60}
+              step={0.5}
+              suffix="amplitude des variations autour du rendement"
+              error={fieldError("volatility")?.message}
+              warning={fieldWarning("volatility")?.message}
+              onChange={v => updateInput("volatility", v / 100)}
+            />
+          </div>
+        )}
+        {/* Les dividendes s'appliquent dans TOUS les modes (le moteur les
+            verse chaque mois quelle que soit la façon dont évolue la bourse) :
+            le contrôle reste accessible hors du mode historique. */}
+        {inputs.returnMode !== "historical" && (
+          <div className="mt-3 space-y-3 animate-fade-in">
+            <SliderInput
+              label="Rendement des dividendes (%)"
+              id="dividend-yield"
+              value={inputs.dividendYield * 100}
+              min={0}
+              max={8}
+              step={0.1}
+              suffix="versés chaque mois puis réinvestis"
+              error={fieldError("dividendYield")?.message}
+              warning={fieldWarning("dividendYield")?.message}
+              onChange={v => updateInput("dividendYield", v / 100)}
             />
           </div>
         )}
@@ -153,16 +212,39 @@ export function Sidebar({
           warning={fieldWarning("indexation")?.message}
           onChange={v => updateInput("indexation", v / 100)}
         />
+        <div className="space-y-1.5">
+          <span className="text-[10px] font-semibold text-text-muted">Inflation</span>
+          <SegmentedControl
+            value={inputs.inflationMode}
+            onChange={v => updateInputs({ inflationMode: v })}
+            ariaLabel="Mode d'inflation"
+            options={INFLATION_MODES}
+          />
+        </div>
+        {inputs.inflationMode === "custom" && (
+          <SliderInput
+            label="Inflation annuelle (%)"
+            id="inflation"
+            value={inputs.inflation * 100}
+            min={0}
+            max={10}
+            step={0.1}
+            error={fieldError("inflation")?.message}
+            warning={fieldWarning("inflation")?.message}
+            onChange={v => updateInput("inflation", v / 100)}
+          />
+        )}
         <SliderInput
-          label="Inflation annuelle (%)"
-          id="inflation"
-          value={inputs.inflation * 100}
-          min={0}
-          max={10}
-          step={0.1}
-          error={fieldError("inflation")?.message}
-          warning={fieldWarning("inflation")?.message}
-          onChange={v => updateInput("inflation", v / 100)}
+          label="Simulations Monte Carlo"
+          id="mc-runs"
+          value={inputs.mcRuns}
+          min={100}
+          max={10000}
+          step={100}
+          suffix="nombre de scénarios testés (Monte Carlo & Rente)"
+          error={fieldError("mcRuns")?.message}
+          warning={fieldWarning("mcRuns")?.message}
+          onChange={v => updateInput("mcRuns", Math.round(v))}
         />
         <Toggle
           checked={inputs.showReal}
@@ -175,17 +257,73 @@ export function Sidebar({
       {/* Enveloppe fiscale */}
       <CollapsibleSection title="Compte d'investissement" icon={<Landmark size={12} />}>
         <EnvelopeSelector value={inputs.envelope} onChange={v => updateInput("envelope", v)} />
+        {inputs.envelope === "pea" && (
+          <div className="mt-3 animate-fade-in">
+            <SliderInput
+              label="Années de détention du PEA"
+              id="pea-years"
+              value={inputs.peaYearsHeld}
+              min={0}
+              max={30}
+              step={1}
+              suffix="au-delà de 5 ans : taux réduit (17,2 %)"
+              onChange={v => updateInput("peaYearsHeld", v)}
+            />
+          </div>
+        )}
+        {inputs.envelope === "av" && (
+          <div className="mt-3 animate-fade-in">
+            <SliderInput
+              label="Années de détention de l'AV"
+              id="av-years"
+              value={inputs.avYearsHeld}
+              min={0}
+              max={30}
+              step={1}
+              suffix="au-delà de 8 ans : abattement annuel"
+              onChange={v => updateInput("avYearsHeld", v)}
+            />
+          </div>
+        )}
+        {inputs.envelope === "cto" && (
+          <div className="mt-3 space-y-2 animate-fade-in">
+            <SegmentedControl
+              value={inputs.ctoTaxMode}
+              onChange={v => updateInput("ctoTaxMode", v)}
+              ariaLabel="Fiscalité du CTO"
+              options={[
+                { id: "pfu", label: "PFU 30 %", sub: "impôt unique" },
+                { id: "bareme", label: "Barème", sub: "TMI + abattement 40 % dividendes" },
+              ]}
+            />
+          </div>
+        )}
+        {(inputs.envelope === "per" || (inputs.envelope === "cto" && inputs.ctoTaxMode === "bareme")) && (
+          <div className="mt-3 animate-fade-in">
+            <SliderInput
+              label="Tranche marginale d'imposition (%)"
+              id="tmi"
+              value={inputs.tmi * 100}
+              min={0}
+              max={45}
+              step={1}
+              suffix={
+                inputs.envelope === "per"
+                  ? "Versements déduits à ce taux ; sortie taxée à TMI − 10 %"
+                  : "Impôt appliqué à vos gains CTO (barème)"
+              }
+              error={fieldError("tmi")?.message}
+              warning={fieldWarning("tmi")?.message}
+              onChange={v => updateInput("tmi", v / 100)}
+            />
+          </div>
+        )}
         <div className="mt-3">
-          <SliderInput
-            label="Millésime fiscal"
-            id="fiscal-year"
-            value={inputs.fiscalYear}
-            min={2020}
-            max={2032}
-            step={1}
-            suffix="Année des règles fiscales appliquées (PFU, abattements AV, cotisations sociales)"
-            warning={fieldWarning("fiscalYear")?.message}
-            onChange={v => updateInput("fiscalYear", v)}
+          <Toggle
+            checked={inputs.taxCouple}
+            onChange={v => updateInput("taxCouple", v)}
+            label="Fiscalité en couple"
+            sub="Plafond de versements PEA doublé (300 000 €)"
           />
         </div>
       </CollapsibleSection>

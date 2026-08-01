@@ -82,6 +82,7 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
   let dividendTaxPaid = 0
   let peak = Math.max(capital, 0.01)
   let previousCapitalExContribution = capital
+  let previousTaxNetExContribution = capital
 
   const pushRow = (month: number) => {
     const year = Math.round(month / 12)
@@ -97,6 +98,7 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       inputs.taxCouple,
       dividendTaxPaid,
       investedNom,
+      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, dividendsGross },
     )
     const exitTax = Math.max(0, tax.totalTax - tax.dividendTax)
     const taxNet = Math.max(0, capital - exitTax)
@@ -106,6 +108,13 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       month === 0 || previousCapitalExContribution <= 0
         ? 0
         : (capital - annualContribution) / previousCapitalExContribution - 1
+    // Rendement net de l'année en % : croissance de la valeur nette d'impôts
+    // (taxNet) hors versements, rapportée à la valeur nette de fin d'année
+    // précédente. Il s'agit d'un taux (0,085 = 8,5 %), pas d'un montant.
+    const netYield =
+      month === 0 || previousTaxNetExContribution <= 0
+        ? 0
+        : (taxNet - annualContribution) / previousTaxNetExContribution - 1
     rows.push({
       year,
       month,
@@ -127,12 +136,15 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       dividendsNet: roundCent(dividendsNet),
       annualContribution: roundCent(annualContribution),
       yearlyReturn: roundCent(yearlyReturn * 100) / 100,
-      netYield: roundCent(tax.netGains),
+      // Même unité que yearlyReturn (ratio, ex : 0,08 = 8 %) : netYield et
+      // yearlyReturn doivent être comparables (tests + cohérence moteur).
+      netYield: roundCent(netYield * 100) / 100,
       drawdownPct: roundCent(drawdownPct * 10000) / 100,
       investedReal: roundCent(investedNom / inflationIndex),
       interestsReal: roundCent(Math.max(0, capital / inflationIndex - investedNom / inflationIndex)),
     })
     previousCapitalExContribution = capital
+    previousTaxNetExContribution = taxNet
     annualFees = 0
     annualContribution = 0
   }
@@ -152,12 +164,15 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     const baseMarketReturn = sampledMonthlyReturn(inputs, annualReturn, month, rng)
     const crisis = crisisAdjustment(inputs, month)
     const totalMarketReturn = (1 + baseMarketReturn) * (1 + crisis.returnShock) - 1
-    const monthlyDividendRate = Math.max(0, monthlyRate(inputs.dividendYield))
+    // En mode historique, les rendements réels de l'indice incluent DÉJÀ les
+    // dividendes : appliquer le rendement de dividendes par-dessus les
+    // compterait deux fois (et taxerait deux fois). On les neutralise.
+    const monthlyDividendRate = inputs.returnMode === "historical" ? 0 : Math.max(0, monthlyRate(inputs.dividendYield))
     const priceReturn = (1 + totalMarketReturn) / (1 + monthlyDividendRate) - 1
 
     capital = roundCent(Math.max(0, capital * (1 + priceReturn)))
     const grossDividend = roundCent(Math.max(0, capital * monthlyDividendRate))
-    const divTax = roundCent(grossDividend * dividendTaxRate(inputs.envelope))
+    const divTax = roundCent(grossDividend * dividendTaxRate(inputs.envelope, inputs.ctoTaxMode, inputs.tmi))
     capital = roundCent(Math.max(0, capital + grossDividend - divTax))
     dividendsGross = roundCent(dividendsGross + grossDividend)
     dividendsNet = roundCent(dividendsNet + grossDividend - divTax)
@@ -173,7 +188,11 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
 
     const allowedPayment = Math.max(0, Math.min(monthlyPayment, peaCap - investedNom))
     const brokerFee = roundCent(allowedPayment * Math.max(0, inputs.brokerageFees))
-    capital = roundCent(Math.max(0, capital + allowedPayment - brokerFee))
+    // PER : l'économie d'impôt à l'entrée (TMI × versement) est réinvestie
+    // dans le plan. Elle n'entre pas dans investedNom (ce n'est pas un
+    // versement personnel) mais compose, puis sera imposée à la sortie.
+    const perTaxSaving = inputs.envelope === "per" ? roundCent(allowedPayment * inputs.tmi) : 0
+    capital = roundCent(Math.max(0, capital + allowedPayment + perTaxSaving - brokerFee))
     investedNom = roundCent(investedNom + allowedPayment)
     annualContribution = roundCent(annualContribution + allowedPayment)
     feesLost = roundCent(feesLost + brokerFee)

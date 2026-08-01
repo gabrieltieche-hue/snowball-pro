@@ -37,7 +37,9 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
             </div>
             <div>
               <p className="text-xs font-semibold text-text">{m.label}</p>
-              <p className="text-[10px] text-text-dim">Atteint en année {m.year + 1}</p>
+              <p className="text-[10px] text-text-dim">
+                {m.year <= 0 ? "Atteint dès aujourd'hui" : `Atteint en année ${m.year}`}
+              </p>
             </div>
           </motion.div>
         ))}

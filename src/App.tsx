@@ -20,11 +20,13 @@ import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./type
 import { useHistory } from "./hooks/useHistory"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
+import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
 import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar } from "./components/Layout/TabBar"
+import { ErrorBoundary } from "./components/shared/ErrorBoundary"
 import { SummaryStats } from "./components/Simulation/SummaryStats"
 import { ComparisonTab } from "./components/Tabs/ComparisonTab"
 import { GoalTab } from "./components/Tabs/GoalTab"
@@ -58,6 +60,10 @@ function applyThemeClass(darkMode: boolean) {
 }
 
 function loadInitialInputs(): SimulationInputs {
+  // Un lien partagé (#s=…) prime sur la sauvegarde locale : c'est l'état
+  // explicitement demandé par l'utilisateur à l'ouverture.
+  const shared = readSharedState()
+  if (shared) return shared
   try {
     const stored = localStorage.getItem(SETTINGS_KEY)
     if (stored) return parseStoredInputs(stored)
@@ -92,6 +98,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
   const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(loadSnapshotsFromStorage)
+  const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
+  const [linkCopied, setLinkCopied] = useState(false)
   const history = useHistory()
 
   const inputsRef = useRef(inputs)
@@ -205,22 +213,49 @@ export default function App() {
     onToggleDarkMode: () => setDarkMode(d => !d),
   })
 
+  // Persistance débouncée (500 ms) : on n'écrit pas dans localStorage à
+  // chaque keystroke d'un slider — le quota reste sain sur les longues
+  // sessions et l'écriture est groupée.
   useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(inputs))
-    } catch {
-      /* localStorage indisponible */
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(inputs))
+      } catch {
+        /* localStorage indisponible */
+      }
+    }, 500)
+    return () => clearTimeout(timer)
   }, [inputs])
 
   useEffect(() => {
-    try {
-      if (inputsB) localStorage.setItem(SETTINGS_B_KEY, JSON.stringify(inputsB))
-      else localStorage.removeItem(SETTINGS_B_KEY)
-    } catch {
-      /* localStorage indisponible */
-    }
+    const timer = setTimeout(() => {
+      try {
+        if (inputsB) localStorage.setItem(SETTINGS_B_KEY, JSON.stringify(inputsB))
+        else localStorage.removeItem(SETTINGS_B_KEY)
+      } catch {
+        /* localStorage indisponible */
+      }
+    }, 500)
+    return () => clearTimeout(timer)
   }, [inputsB])
+
+  // Partage par URL : le hash reflète l'état actif (replaceState, pas de
+  // pollution d'historique), lui aussi débouncé pour éviter un hash à chaque
+  // pixel de slider.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      writeSharedState(activeInputs)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [activeInputs])
+
+  const handleCopyLink = useCallback(async () => {
+    const ok = await copyTextToClipboard(buildShareUrl(activeInputs))
+    if (ok) {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    }
+  }, [activeInputs])
 
   useEffect(() => {
     applyThemeClass(darkMode)
@@ -264,10 +299,15 @@ export default function App() {
     )
     const csv = `\uFEFF${header.map(esc).join(";")}\n${lines.join("\n")}`
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
+    link.href = url
     link.setAttribute("download", "snowball_pro_v5_projection.csv")
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    // Libère l'URL objet (fuite mémoire légère à chaque export sinon)
+    setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   const exportJSON = () => {
@@ -277,34 +317,72 @@ export default function App() {
       results: rows,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
+    link.href = url
     link.setAttribute("download", "snowball_pro_v5_projection.json")
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   const validationErrors = useMemo(() => validateInputs(activeInputs), [activeInputs])
 
+  // Détection « résultats obsolètes » pour l'onglet Rente : si un paramètre
+  // qui influe sur le décaissement change après un lancement, on prévient
+  // l'utilisateur (comme le fait déjà l'onglet Monte Carlo).
+  const [decumComputedFor, setDecumComputedFor] = useState<string>("")
+  const decumParamsHash = useMemo(
+    () =>
+      JSON.stringify({
+        startingCapital: lastRow?.nominal ?? 0,
+        withdrawalModel: activeInputs.withdrawalModel,
+        withdrawalFixed: activeInputs.withdrawalFixed,
+        withdrawalInflation: activeInputs.withdrawalInflation,
+        retirementYears: activeInputs.retirementYears,
+        annualReturn: activeInputs.annualReturn,
+        volatility: activeInputs.volatility,
+        returnMode: activeInputs.returnMode,
+        historicalIndex: activeInputs.historicalIndex,
+        inflation: activeInputs.inflation,
+        mcRuns: activeInputs.mcRuns,
+        seed: activeInputs.seed,
+        crisisEnabled: activeInputs.crisisEnabled,
+        crisisProfile: activeInputs.crisisProfile,
+        crisisYear: activeInputs.crisisYear,
+        crisisAmplitude: activeInputs.crisisAmplitude,
+        crisisDuration: activeInputs.crisisDuration,
+      }),
+    [activeInputs, lastRow],
+  )
+  const decumStale = decumResult !== null && decumComputedFor !== decumParamsHash
+
   const runDecum = useCallback(() => {
     if (!lastRow || lastRow.nominal <= 0) return
     setDecumResult(runDecumulation(activeInputs, lastRow.nominal))
-  }, [activeInputs, lastRow])
+    // Réutilise le hash mémorisé (une seule source de vérité, pas de copie
+    // dupliquée qui risquerait de dériver).
+    setDecumComputedFor(decumParamsHash)
+  }, [activeInputs, lastRow, decumParamsHash])
 
   return (
     <div className="min-h-screen bg-surface text-text">
       <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-          <Sidebar
-            inputs={activeInputs}
-            rows={rows}
-            updateInput={updateInput}
-            updateInputs={updateInputs}
-            scenarioLabel={comparing ? "Scénario B" : undefined}
-            snapshots={snapshots}
-            onSaveSnapshot={handleSaveSnapshot}
-            onLoadSnapshot={handleLoadSnapshot}
-            onRemoveSnapshot={handleRemoveSnapshot}
-          />
+          <ErrorBoundary label="les réglages">
+            <Sidebar
+              inputs={activeInputs}
+              rows={rows}
+              updateInput={updateInput}
+              updateInputs={updateInputs}
+              scenarioLabel={comparing ? "Scénario B" : undefined}
+              snapshots={snapshots}
+              onSaveSnapshot={handleSaveSnapshot}
+              onLoadSnapshot={handleLoadSnapshot}
+              onRemoveSnapshot={handleRemoveSnapshot}
+            />
+          </ErrorBoundary>
 
           <main className="space-y-5 min-w-0">
             <ActionBar
@@ -320,15 +398,34 @@ export default function App() {
               onUndo={handleUndo}
               onRedo={handleRedo}
               validationErrors={validationErrors}
+              onCopyLink={handleCopyLink}
+              linkCopied={linkCopied}
             />
+            {sharedLinkLoaded && (
+              <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3 border-l-2 border-primary/60">
+                <p className="text-[11px] text-text-muted">
+                  🔗 Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
+                  sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSharedLinkLoaded(false)}
+                  aria-label="Fermer le bandeau lien partagé"
+                  className="text-text-muted hover:text-text transition-colors shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <SummaryStats rows={rows} inputs={activeInputs} />
             {validationErrors.filter(e => e.severity === "error").length > 0 && (
               <div
                 role="alert"
                 className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger"
               >
-                ⚠️ Des valeurs saisies sortent des bornes acceptées ({validationErrors.filter(e => e.severity === "error").length}{" "}
-                erreur{validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
+                ⚠️ Des valeurs saisies sortent des bornes acceptées (
+                {validationErrors.filter(e => e.severity === "error").length} erreur
+                {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
                 simulation fiable.
               </div>
             )}
@@ -341,38 +438,47 @@ export default function App() {
               aria-labelledby={`tab-${activeTab}`}
               className="focus:outline-none"
             >
-              {activeTab === "simulator" &&
-                (comparing && comparison && rowsA ? (
-                  <ComparisonTab
-                    rowsA={rowsA}
-                    rowsB={rows}
+              {/* Garde-fou par onglet : un graphe Recharts qui explose ne fait
+                  jamais tomber toute l'application (clé = onglet → re-render
+                  propre après un crash dans un autre onglet). */}
+              <ErrorBoundary
+                key={activeTab}
+                label={`l'onglet ${TABS.find(t => t.id === activeTab)?.label ?? activeTab}`}
+              >
+                {activeTab === "simulator" &&
+                  (comparing && comparison && rowsA ? (
+                    <ComparisonTab
+                      rowsA={rowsA}
+                      rowsB={rows}
+                      inputs={activeInputs}
+                      darkMode={darkMode}
+                      comparison={comparison}
+                    />
+                  ) : (
+                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
+                  ))}
+                {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
+                {activeTab === "rente" && (
+                  <RenteRetraiteTab
                     inputs={activeInputs}
+                    decumResult={decumResult}
+                    lastRow={lastRow}
                     darkMode={darkMode}
-                    comparison={comparison}
+                    updateInput={updateInput}
+                    updateInputs={updateInputs}
+                    runDecum={runDecum}
+                    isStale={decumStale}
                   />
-                ) : (
-                  <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
-                ))}
-              {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
-              {activeTab === "rente" && (
-                <RenteRetraiteTab
-                  inputs={activeInputs}
-                  decumResult={decumResult}
-                  lastRow={lastRow}
-                  darkMode={darkMode}
-                  updateInput={updateInput}
-                  updateInputs={updateInputs}
-                  runDecum={runDecum}
-                />
-              )}
-              {activeTab === "goal" && (
-                <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
-              )}
+                )}
+                {activeTab === "goal" && (
+                  <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
+                )}
+              </ErrorBoundary>
             </div>
           </main>
         </div>
 
-        <DisclaimerBar fiscalYear={activeInputs.fiscalYear} />
+        <DisclaimerBar />
       </div>
     </div>
   )

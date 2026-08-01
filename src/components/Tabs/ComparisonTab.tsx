@@ -20,8 +20,12 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
       Array.from({ length: maxYears }, (_, i) => {
         const a = rowsA[i]
         const b = rowsB[i]
-        const aVal = a?.nominal ?? 0
-        const bVal = b?.nominal ?? 0
+        // Au-delà de la durée du scénario le plus court, on reporte la DERNIÈRE
+        // valeur connue au lieu d'un faux « 0 » (chute à zéro trompeuse).
+        const aRef = a ?? rowsA[rowsA.length - 1]
+        const bRef = b ?? rowsB[rowsB.length - 1]
+        const aVal = aRef?.nominal ?? 0
+        const bVal = bRef?.nominal ?? 0
         return {
           year: a?.year ?? b?.year ?? i,
           A: aVal,

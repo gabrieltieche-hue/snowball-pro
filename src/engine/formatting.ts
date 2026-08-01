@@ -39,7 +39,9 @@ export function escapeCsvCell(value: string): string {
 export function parseCurrencyInput(raw: string): number {
   const compact = raw.trim().toLowerCase().replace(/\s/g, "").replace("€", "").replace(",", ".")
   const match = compact.match(/^(-?\d+(?:\.\d+)?)(k|m|md|b)?$/)
-  if (!match) return Number.parseFloat(compact) || 0
+  // Entrée malformée (ou vide) : on retourne NaN au lieu d'un 0 sournois —
+  // l'appelant (SmartInput) peut alors conserver la valeur précédente.
+  if (!match) return Number.NaN
   const v = Number.parseFloat(match[1] ?? "0")
   const s = match[2]
   if (s === "k") return v * 1_000
