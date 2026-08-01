@@ -4,6 +4,28 @@
 
 ---
 
+## SESSION — 2026-08-01 (v5.1.3 : audit 27 bugs — vérification runtime 20/20 + finalisation)
+
+### Résumé
+
+Fin de session d'audit : les 27 constats du rapport (6 critiques, 12 importants, 9 mineurs) ont été traités — données correctes (écart %, jalons, fiscal, pouvoir d'achat net, décumulation historique), logique/cohérence (camembert, Sharpe, KPI, krach MC, tableau comparatif, scénario B, retraits), UX (mode Aléatoire accessible, contrôles complétés, bandeaux obsolètes) et mineurs (millésime fiscal supprimé, objectURL révoqués, parseCurrencyInput strict). Gate 100 % vert et vérification navigateur 20/20.
+
+### Modifications
+
+- **Vérification runtime Playwright (20/20)** : chargement, slider → KPI mis à jour, undo/redo, comparaison A/B (entrée, édition B, durée 30 ans, sortie), onglets Monte Carlo / Rente / Objectif, lancement MC 300 runs (cartes P10/P50/P90 + chances d'atteindre l'objectif), calcul Rente, dark mode, export CSV téléchargé, console 0 erreur.
+- **Sonde supprimée** : `probe-audit.test.ts` (fichier non suivi, 4 timeouts + `require` CJS incompatible ESM) retiré — ne faisait pas partie de la suite.
+- **Timeouts vitest** : arbre ré-aligné sur l'état commité (hiérarchie documentée : global 20 s < par-fichier 30 s < par-test 30 s) ; ma variante de session (scoped uniquement) révertée au profit du design déjà commité `f7fb69e9`.
+- **Docs** : AGENTS.md (133 tests) et CHANGELOG (133 tests) déjà synchronisés ; addendum présent dans MEMORY.md.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **133/133 tests** ✓ build ✓ (dist 905 kB / 271 kB gzip).
+- Runtime : 20/20 checks Playwright, console 0 erreur.
+- Prod : https://v4-three-beige.vercel.app — HTTP 200, `CACHE_VERSION = "snowball-pro-v5.1.3"`, en-têtes HSTS / nosniff / X-Frame-Options DENY / Referrer-Policy présents.
+- Revue code (code-reviewer) : GO — aucune régression résiduelle.
+
+---
+
 ## SESSION — 2026-08-01 (v5.1.3 : addendum tests + re-déploiement prod)
 
 ### Résumé
