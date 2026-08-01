@@ -3,6 +3,9 @@
   "private": true,
   "version": "5.1.2",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
