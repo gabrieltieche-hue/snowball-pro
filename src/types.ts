@@ -179,6 +179,8 @@ export interface HistoricalDataset {
   id: HistoricalIndex
   name: string
   avgReturn: number
+  /** Rendement moyen net d'inflation (affiché en complément du brut). */
+  netReturn: number
   volatility: number
   years: { year: number; return: number; inflation: number }[]
 }

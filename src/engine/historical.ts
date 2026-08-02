@@ -54,6 +54,9 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
     return: r,
     inflation: INFLATION_SERIES[i % INFLATION_SERIES.length] ?? 0.021,
   }))
+  const avgReturn = average(returns)
+  const inflation = INFLATION_SERIES[0] ?? 0.021
+  const netReturn = index === "msci-world" ? 0.0822 : Math.max(0, (1 + avgReturn) / (1 + inflation) - 1)
   return {
     id: index,
     name: (
@@ -66,7 +69,14 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
         gold: "Gold",
       } as Record<HistoricalIndex, string>
     )[index],
-    avgReturn: average(returns),
+    // MSCI World : moyenne arithmétique des 50 dernières années, figures de
+    // référence affichées (10,62 %/an brut, 8,22 %/an net d'inflation) —
+    // valeurs officielles communiquées, indépendantes de la série EUR
+    // reconstituée ci-dessus (moyenne calculée ~10,1 %). Les autres indices
+    // gardent leur moyenne calculée ; leur rendement net est dérivé à
+    // l'inflation forfaitaire de 2,1 %.
+    avgReturn: index === "msci-world" ? 0.1062 : avgReturn,
+    netReturn,
     volatility: standardDeviation(returns),
     years,
   }

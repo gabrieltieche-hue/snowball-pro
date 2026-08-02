@@ -1,5 +1,4 @@
-import { Coins, Landmark, Percent, RefreshCcw, Settings2, TrendingDown, Wallet } from "lucide-react"
-import { BacktestSelector } from "../Forms/BacktestSelector"
+import { Coins, Landmark, Percent, RefreshCcw, Settings2, TrendingDown, TrendingUp, Wallet } from "lucide-react"
 import { CrisisSelector } from "../Forms/CrisisSelector"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
@@ -10,14 +9,7 @@ import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
 import { fmtCurrency, getHistoricalDataset, validateInputs } from "../../engine"
 import type { ValidationError } from "../../engine"
-import type {
-  CrisisProfile,
-  HistoricalIndex,
-  ReturnMode,
-  SavedSnapshot,
-  SimulationInputs,
-  YearRow,
-} from "../../types"
+import type { CrisisProfile, ReturnMode, SavedSnapshot, SimulationInputs, YearRow } from "../../types"
 
 interface SidebarProps {
   inputs: SimulationInputs
@@ -56,12 +48,13 @@ export function Sidebar({
   const fieldWarning = (field: keyof SimulationInputs): ValidationError | undefined =>
     validationErrors.find(e => e.field === field && e.severity === "warning")
 
-  // Le mode « Aléatoire » (rendements volatils) était injoignable depuis
-  // l'interface : le toggle ne proposait que fixe ↔ historique. Trois modes :
-  // fixe (déterministe), aléatoire (gaussien ± volatilité), historique (réel).
+  // Ménage UX v5.3 : deux modes seulement. « Taux défini » reprend le
+  // rendement annuel saisi dans « Votre épargne » (le demander deux fois était
+  // redondant) ; « Historique » rejoue les vrais rendements du MSCI World
+  // (sélecteur d'indices supprimé — seul le MSCI World reste). Le mode
+  // « Aléatoire » (gaussien ± volatilité) a été supprimé de l'interface.
   const RETURN_MODES: { id: ReturnMode; label: string; sub: string }[] = [
-    { id: "fixed", label: "Constante", sub: "rendement fixe chaque année" },
-    { id: "random", label: "Aléatoire", sub: "hauts et bas autour du rendement" },
+    { id: "fixed", label: "Taux défini", sub: "reprend le rendement annuel ci-dessus" },
     { id: "historical", label: "Historique", sub: `réel : ${historical.name}` },
   ]
   return (
@@ -149,28 +142,20 @@ export function Sidebar({
           options={RETURN_MODES}
         />
         {inputs.returnMode === "historical" && (
-          <div className="mt-3 animate-fade-in">
-            <BacktestSelector
-              value={inputs.historicalIndex}
-              onChange={v => updateInput("historicalIndex", v as HistoricalIndex)}
-            />
-            <p className="text-[10px] text-text-dim mt-2 leading-snug">{historicalPeriod}</p>
-          </div>
-        )}
-        {inputs.returnMode === "random" && (
-          <div className="mt-3 space-y-3 animate-fade-in">
-            <SliderInput
-              label="Volatilité annuelle (%)"
-              id="volatility"
-              value={inputs.volatility * 100}
-              min={1}
-              max={60}
-              step={0.5}
-              suffix="amplitude des variations autour du rendement"
-              error={fieldError("volatility")?.message}
-              warning={fieldWarning("volatility")?.message}
-              onChange={v => updateInput("volatility", v / 100)}
-            />
+          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 animate-fade-in">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-primary" />
+              <span className="text-xs font-bold text-text">MSCI World</span>
+            </div>
+            <p className="text-[10px] text-text-muted mt-1.5 leading-snug">
+              Moyenne arithmétique des 50 dernières années :{" "}
+              <strong className="text-text">{(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
+              (brut) · <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
+              net d'inflation
+            </p>
+            <p className="text-[10px] text-text-dim mt-1 leading-snug">
+              Chiffres de référence officiels · série rejouée {historicalPeriod.replace(`${historical.name} · `, "")}
+            </p>
           </div>
         )}
         {/* Les dividendes s'appliquent dans TOUS les modes (le moteur les

@@ -164,6 +164,13 @@ export function parseStoredInputs(raw: string | null): SimulationInputs {
     // curseur (défaut 2,1 %/an). Un état stocké ou partagé qui contenait un
     // ancien mode est normalisé pour rester cohérent avec l'UI.
     target.inflationMode = "custom"
+    // Le mode « Aléatoire » a été supprimé de l'interface (le seul choix est
+    // désormais Taux défini / Historique) : un état stocké qui le contenait est
+    // normalisé vers le mode fixe.
+    if (target.returnMode === "random") target.returnMode = "fixed"
+    // Le sélecteur d'indices a été supprimé : l'historique est TOUJOURS le
+    // MSCI World. Un index stocké différent est normalisé.
+    target.historicalIndex = "msci-world"
     return merged
   } catch {
     return DEFAULT_INPUTS

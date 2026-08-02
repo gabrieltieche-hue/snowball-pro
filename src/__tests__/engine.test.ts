@@ -410,6 +410,19 @@ describe("getHistoricalDataset", () => {
     expect(dataset.avgReturn).toBeCloseTo(expectedAvg, 10)
     expect(dataset.volatility).toBeGreaterThan(0)
   })
+
+  it("MSCI World expose les figures de référence : 10,62 %/an brut, 8,22 %/an net d'inflation", () => {
+    const dataset = getHistoricalDataset("msci-world")
+    expect(dataset.avgReturn).toBeCloseTo(0.1062, 4)
+    expect(dataset.netReturn).toBeCloseTo(0.0822, 4)
+    expect(dataset.volatility).toBeGreaterThan(0)
+  })
+
+  it("netReturn des autres indices est dérivé à l'inflation forfaitaire de 2,1 %", () => {
+    const dataset = getHistoricalDataset("sp500")
+    const expectedNet = Math.max(0, (1 + dataset.avgReturn) / 1.021 - 1)
+    expect(dataset.netReturn).toBeCloseTo(expectedNet, 6)
+  })
 })
 
 describe("computeKPIs", () => {
@@ -1109,6 +1122,12 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
     expect(inputs.capitalInitial).toBe(42_000)
     expect(inputs.envelope).toBe("av")
     expect(inputs.returnMode).toBe("historical")
+  })
+
+  it("normalise le mode Aléatoire supprimé vers « fixed » et verrouille l'indice sur le MSCI World", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ returnMode: "random", historicalIndex: "sp500" }))
+    expect(inputs.returnMode).toBe("fixed")
+    expect(inputs.historicalIndex).toBe("msci-world")
   })
 
   it("ignores unknown keys without crashing", () => {
