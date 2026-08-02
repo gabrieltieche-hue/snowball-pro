@@ -18,7 +18,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
       label: "Rendement",
       value:
         inputs.returnMode === "historical" && historical
-          ? `Historique réel ${historical.name} (référence : ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation)`
+          ? `Historique réel ${historical.name} (moyenne : ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation)`
           : `${(inputs.annualReturn * 100).toFixed(1)} %/an — taux défini dans « Votre épargne »`,
     },
     {

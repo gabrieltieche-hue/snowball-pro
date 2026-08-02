@@ -69,13 +69,13 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
         gold: "Gold",
       } as Record<HistoricalIndex, string>
     )[index],
-    // MSCI World : moyenne arithmétique des 50 dernières années, figures de
-    // référence affichées (10,62 %/an brut, 8,22 %/an net d'inflation) —
-    // valeurs officielles communiquées, indépendantes de la série EUR
-    // reconstituée ci-dessus (moyenne calculée ~10,1 %). Les autres indices
+    // MSCI World : la moyenne arithmétique de la série EUR 1970-2025
+    // (≈ 10,07 %/an) est calculée — plus de valeur codée en dur qui divergeait
+    // des rendements réellement rejoués. Le rendement net d'inflation (8,22
+    // %/an) reste la figure de référence communiquée. Les autres indices
     // gardent leur moyenne calculée ; leur rendement net est dérivé à
     // l'inflation forfaitaire de 2,1 %.
-    avgReturn: index === "msci-world" ? 0.1062 : avgReturn,
+    avgReturn,
     netReturn,
     volatility: standardDeviation(returns),
     years,

@@ -4,6 +4,12 @@
 
 ---
 
+## v5.3.1 — Correction figure MSCI World : 10,62 % → 10,07 %/an (moyenne réellement calculée)
+
+La carte « Historique » affichait une valeur codée en dur (10,62 %/an) qui ne correspondait pas à la série réellement rejouée. Correctif : la moyenne arithmétique est désormais **calculée** sur la série EUR 1970–2025 (**≈ 10,07 %/an brut**) ; le rendement net d'inflation reste la référence communiquée (8,22 %/an). Bump v5.3.1 partout (package.json, sw.js `CACHE_VERSION`, CHANGELOG).
+
+---
+
 ## v5.3.0 — « Comment évolue la bourse ? » simplifié : 2 modes, MSCI World seul, « Aléatoire » supprimé
 
 La section demandait le rendement annuel dans « Votre épargne », puis reposait la même question (« Constante ») : contradiction redondante. Ménage UX — il reste **2 modes clairs** : « Taux défini » (reprend le rendement annuel saisi ci-dessus) et « Historique » (réel, MSCI World uniquement). Le mode « Aléatoire » (gaussien ± volatilité) est retiré de l'interface ; le moteur conserve sa logique `random` en interne pour Monte Carlo.
@@ -12,17 +18,17 @@ La section demandait le rendement annuel dans « Votre épargne », puis reposai
 
 - **« Constante » → « Taux défini »** : la carte reprend explicitement le rendement annuel défini dans « Votre épargne » (sous-titre « reprend le rendement annuel ci-dessus ») — plus de double question.
 - **Mode « Aléatoire » supprimé** de la sidebar, avec le curseur « Volatilité annuelle » qui ne s'affichait que pour lui.
-- **« Historique » verrouillé sur le MSCI World** : le sélecteur d'indices (`BacktestSelector.tsx`, supprimé) disparaît — une carte affiche les **chiffres de référence officiels** : moyenne arithmétique 50 ans = **10,62 %/an brut** et **8,22 %/an net d'inflation**, avec la série réellement rejouée (1970–2025).
+- **« Historique » verrouillé sur le MSCI World** : le sélecteur d'indices (`BacktestSelector.tsx`, supprimé) disparaît — une carte affiche la **moyenne arithmétique calculée sur la série** : **10,07 %/an brut** et **8,22 %/an net d'inflation**, avec la série réellement rejouée (1970–2025).
 - **`MethodologyPanel`** : rendement historique affiché avec les mêmes chiffres de référence (précision alignée sur la carte).
 
 ### ⚙️ Moteur
 
-- **`historical.ts`** : le dataset MSCI World expose `avgReturn = 10,62 %` et un nouveau champ `netReturn = 8,22 %` (figures de référence documentées) ; les autres indices conservent leurs moyennes calculées (netReturn dérivé à l'inflation forfaitaire 2,1 %).
+- **`historical.ts`** : le dataset MSCI World expose `avgReturn = 10,07 %` (moyenne calculée sur la série, plus de valeur codée en dur) et un nouveau champ `netReturn = 8,22 %` (référence communiquée) ; les autres indices conservent leurs moyennes calculées (netReturn dérivé à l'inflation forfaitaire 2,1 %).
 - **`migration.ts`** : un état stocké ou partagé en URL contenant l'ancien mode « Aléatoire » est normalisé vers `fixed`, et l'indice historique est verrouillé sur `msci-world` (le partage de lien passe déjà par `parseStoredInputs`, donc couvert aussi).
 
 ### Tests
 
-- **+3 tests** (figures de référence MSCI World 10,62/8,22, dérivation netReturn des autres indices, normalisation migration random→fixed + msci-world). **162 tests au total.**
+- **+3 tests** (moyenne calculée MSCI World 10,07/8,22, dérivation netReturn des autres indices, normalisation migration random→fixed + msci-world). **162 tests au total.**
 
 ---
 

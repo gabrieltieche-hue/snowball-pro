@@ -148,13 +148,13 @@ export function Sidebar({
               <span className="text-xs font-bold text-text">MSCI World</span>
             </div>
             <p className="text-[10px] text-text-muted mt-1.5 leading-snug">
-              Moyenne arithmétique des 50 dernières années :{" "}
+              Moyenne arithmétique de la série :{" "}
               <strong className="text-text">{(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
               (brut) · <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
               net d'inflation
             </p>
             <p className="text-[10px] text-text-dim mt-1 leading-snug">
-              Chiffres de référence officiels · série rejouée {historicalPeriod.replace(`${historical.name} · `, "")}
+              Moyenne calculée sur la série rejouée {historicalPeriod.replace(`${historical.name} · `, "")}
             </p>
           </div>
         )}

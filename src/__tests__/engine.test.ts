@@ -411,9 +411,14 @@ describe("getHistoricalDataset", () => {
     expect(dataset.volatility).toBeGreaterThan(0)
   })
 
-  it("MSCI World expose les figures de référence : 10,62 %/an brut, 8,22 %/an net d'inflation", () => {
+  it("MSCI World : moyenne arithmétique calculée de la série (≈ 10,07 %/an brut, 8,22 %/an net d'inflation)", () => {
     const dataset = getHistoricalDataset("msci-world")
-    expect(dataset.avgReturn).toBeCloseTo(0.1062, 4)
+    // La moyenne affichée est désormais CALCULÉE sur la série EUR 1970-2025
+    // (≈ 10,07 %/an) — plus de valeur codée en dur divergente des rendements
+    // réellement rejoués. Le net (8,22 %/an) reste la référence communiquée.
+    const expectedAvg = dataset.years.reduce((s, y) => s + y.return, 0) / dataset.years.length
+    expect(dataset.avgReturn).toBeCloseTo(expectedAvg, 10)
+    expect(dataset.avgReturn).toBeCloseTo(0.1007, 3)
     expect(dataset.netReturn).toBeCloseTo(0.0822, 4)
     expect(dataset.volatility).toBeGreaterThan(0)
   })
