@@ -134,15 +134,6 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
-  if (inputs.dividendYield < 0 || inputs.dividendYield > 1) {
-    errors.push({
-      field: "dividendYield",
-      message: "Le rendement des dividendes devrait être entre 0% et 100%",
-      severity: "warning",
-      value: inputs.dividendYield,
-    })
-  }
-
   if (inputs.tmi < 0) {
     errors.push({
       field: "tmi",
@@ -224,7 +215,6 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     insuranceFees: clamp(inputs.insuranceFees, 0, 0.5),
     peaYearsHeld: clamp(inputs.peaYearsHeld, 0, 50),
     avYearsHeld: clamp(inputs.avYearsHeld, 0, 50),
-    dividendYield: clamp(inputs.dividendYield, 0, 1),
     crisisAmplitude: clamp(inputs.crisisAmplitude, 0, 85),
     crisisDuration: clamp(inputs.crisisDuration, 0.5, 10),
     mcRuns: Math.round(clamp(inputs.mcRuns, 100, 10000)),

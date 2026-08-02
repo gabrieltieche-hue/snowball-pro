@@ -294,7 +294,6 @@ export default function App() {
       "Valeur Nominale",
       "Valeur Reelle",
       "Frais",
-      "Impot Dividendes",
       "Net Fiscal",
     ]
     // Échappement anti-injection de formule (OWASP CSV Injection)
@@ -308,7 +307,6 @@ export default function App() {
         esc(fmtExportNumber(r.nominal)),
         esc(fmtExportNumber(r.real)),
         esc(fmtExportNumber(r.fees)),
-        esc(fmtExportNumber(r.dividendTax)),
         esc(fmtExportNumber(r.taxNet)),
       ].join(";"),
     )

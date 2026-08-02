@@ -50,10 +50,6 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
           .filter(Boolean)
           .join(" + ") || "Aucun frais",
     },
-    {
-      label: "Fiscalité en cours de route",
-      value: `${(inputs.dividendYield * 100).toFixed(1)} % de dividendes taxés chaque année`,
-    },
   ]
 
   return (

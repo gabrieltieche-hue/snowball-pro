@@ -1,4 +1,4 @@
-import type { CtoTaxMode, EnvelopeType, TaxBreakdown, EnvelopeConfig, TaxBreakdownOptions } from "../types"
+import type { EnvelopeType, TaxBreakdown, EnvelopeConfig, TaxBreakdownOptions } from "../types"
 
 const SOCIAL_TAX_RATE = 0.172
 const PFU_INCOME_RATE = 0.128
@@ -10,7 +10,6 @@ const AV_IR_ALLOWANCE_COUPLE = 9_200
 const AV_PREMIUM_CAP_SINGLE = 150_000
 const AV_PREMIUM_CAP_COUPLE = 300_000
 const PER_EXIT_ABATTEMENT = 0.1
-const DIVIDEND_ABATTEMENT_BAREME = 0.4
 
 export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
   {
@@ -64,14 +63,12 @@ export function computeTaxBreakdown(
   envelope: EnvelopeType,
   yearsHeld: number,
   couple: boolean,
-  dividendsTaxPaid = 0,
   contributionBase = 0,
   opts: TaxBreakdownOptions = {},
 ): TaxBreakdown {
   const grossGains = Math.max(0, grossGainsInput)
   const tmi = opts.tmi ?? 0.3
   const ctoTaxMode = opts.ctoTaxMode ?? "pfu"
-  const dividendsGross = opts.dividendsGross ?? 0
   const notes: string[] = []
   let taxableGains = grossGains
   let socialCharges = 0
@@ -84,11 +81,10 @@ export function computeTaxBreakdown(
       taxableGains: 0,
       socialCharges: 0,
       incomeTax: 0,
-      dividendTax: roundCent(dividendsTaxPaid),
       flatTax: 0,
       netGains: grossGains,
-      totalTax: roundCent(dividendsTaxPaid),
-      effectiveRate: grossGains > 0 ? dividendsTaxPaid / grossGains : 0,
+      totalTax: 0,
+      effectiveRate: 0,
       notes: envelope === "none" ? ["Simulation sans impôts (aucun compte d'investissement choisi)."] : notes,
     }
   }
@@ -96,14 +92,12 @@ export function computeTaxBreakdown(
   if (envelope === "cto") {
     socialCharges = grossGains * SOCIAL_TAX_RATE
     if (ctoTaxMode === "bareme") {
-      taxableGains = Math.max(0, grossGains - DIVIDEND_ABATTEMENT_BAREME * dividendsGross)
+      taxableGains = grossGains
       incomeTax = taxableGains * tmi
       notes.push(
         `CTO en barème progressif : 17,2 % de cotisations sociales + impôt sur le revenu à votre TMI de ${(
           tmi * 100
-        ).toFixed(
-          0,
-        )} %, avec un abattement de 40 % sur les dividendes (prélevés à la source chaque mois, puis réinvestis nets).`,
+        ).toFixed(0)} %.`,
       )
     } else {
       incomeTax = grossGains * PFU_INCOME_RATE
@@ -175,27 +169,17 @@ export function computeTaxBreakdown(
   }
 
   const exitTax = socialCharges + incomeTax
-  const totalTax = exitTax + dividendsTaxPaid
   return {
     grossGains: roundCent(grossGains),
     taxableGains: roundCent(taxableGains),
     socialCharges: roundCent(socialCharges),
     incomeTax: roundCent(incomeTax),
-    dividendTax: roundCent(dividendsTaxPaid),
     flatTax: roundCent(flatTax),
     netGains: roundCent(Math.max(0, grossGains - exitTax)),
-    totalTax: roundCent(totalTax),
-    effectiveRate: grossGains > 0 ? totalTax / grossGains : 0,
+    totalTax: roundCent(exitTax),
+    effectiveRate: grossGains > 0 ? exitTax / grossGains : 0,
     notes,
   }
-}
-
-export function dividendTaxRate(envelope: EnvelopeType, ctoTaxMode: CtoTaxMode = "pfu", tmi = 0.3): number {
-  if (envelope === "cto") {
-    if (ctoTaxMode === "bareme") return SOCIAL_TAX_RATE + tmi * (1 - DIVIDEND_ABATTEMENT_BAREME)
-    return PFU_RATE
-  }
-  return envelope === "none" ? 0 : SOCIAL_TAX_RATE
 }
 
 export function calcXIRR(cashFlows: number[], months: number[]): number {

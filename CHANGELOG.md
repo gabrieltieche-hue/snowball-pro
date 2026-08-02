@@ -4,6 +4,20 @@
 
 ---
 
+## v5.4.0 — Suppression du rendement des dividendes (MSCI World capitalisant)
+
+Le curseur « Rendement des dividendes » est **supprimé** : l'indice MSCI World est un indice **capitalisant** (les dividendes sont réinvestis dans l'indice, rendement total) — un rendement de dividendes séparé additionné par-dessus les rendements historiques **comptait les dividendes deux fois** et sur-taxait. Nettoyage complet :
+
+- **`Sidebar.tsx`** : curseur « Rendement des dividendes (%) » retiré (avec sa mention « versés chaque mois puis réinvestis ») — remplacé par un commentaire documentant la décision.
+- **`simulation.ts`** : suppression de la mécanique mensuelle des dividendes (`priceReturn`, `grossDividend`, `divTax`) — le capital croît directement au rendement total du marché.
+- **`taxes.ts`** : suppression de `dividendTaxRate()` et de l'abattement de 40 % sur les dividendes en barème CTO ; `computeTaxBreakdown` retrouve une signature à 6 paramètres (plus de `dividendsTaxPaid`).
+- **`types.ts`** : champs retirés (`dividendYield`, `dividendsGross/Net`, `dividendTax`, `TaxBreakdown.dividendTax`).
+- **UI alignée** : `FiscalPanel` (ligne « Impôts sur dividendes (déjà prélevés) »), `CashflowCalendar` (colonne « Dividendes nets »), `MethodologyPanel` (ligne fiscalité courante), CSV (`Impot Dividendes`), `MonteCarloPanel`, `CapitalAllocation` — tous nettoyés.
+- **Migration** : `dividendYield` retiré de `DEFAULT_INPUTS` et des clés numériques (les états stockés qui le contiennent sont ignorés proprement).
+- **Tests** : fixtures mises à jour, tests dividendes remplacés (CTO barème sans abattement 40 %, identité « brut − impôts = net » sans dividende). **161 tests au total.**
+
+---
+
 ## v5.3.1 — Correction figure MSCI World : 10,62 % → 10,07 %/an (moyenne réellement calculée)
 
 La carte « Historique » affichait une valeur codée en dur (10,62 %/an) qui ne correspondait pas à la série réellement rejouée. Correctif : la moyenne arithmétique est désormais **calculée** sur la série EUR 1970–2025 (**≈ 10,07 %/an brut**) ; le rendement net d'inflation reste la référence communiquée (8,22 %/an). Bump v5.3.1 partout (package.json, sw.js `CACHE_VERSION`, CHANGELOG).

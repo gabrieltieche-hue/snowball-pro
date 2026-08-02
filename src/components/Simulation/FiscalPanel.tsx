@@ -30,9 +30,8 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
         ? inputs.avYearsHeld + inputs.duration
         : inputs.duration,
     inputs.taxCouple,
-    lastRow.dividendTax,
     lastRow.investedNom,
-    { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, dividendsGross: lastRow.dividendsGross },
+    { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
   )
 
   // Même échelle que les cartes du haut (SummaryStats) : quand l'affichage
@@ -46,12 +45,8 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   const isLiquidationTheorique = inputs.envelope !== "none"
 
   // Impôts de liquidation = exit tax (social + impôt sur le revenu) : c'est le
-  // montant réellement dû si on liquide aujourd'hui. Les dividendes, eux, ont
-  // déjà été taxés chaque mois pendant la simulation (prélevés à la source et
-  // réinvestis nets) : les ajouter au total les compterait DEUX FOIS — c'était
-  // le bug d'échelle entre le panneau (totalTax) et la carte « Impôts »
-  // (nominal − taxNet), audit v5.2.2.
-  const exitTax = Math.max(0, taxInfo.totalTax - taxInfo.dividendTax)
+  // montant réellement dû si on liquide aujourd'hui.
+  const exitTax = Math.max(0, taxInfo.totalTax)
   const lines: { label: string; value: number; strong?: boolean; tone?: string }[] = [
     { label: "Gains avant impôts (brut)", value: show(taxInfo.grossGains), tone: GOLD },
   ]
@@ -60,9 +55,6 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   }
   if (taxInfo.incomeTax > 0) {
     lines.push({ label: "Impôt sur le revenu", value: show(taxInfo.incomeTax), tone: RED })
-  }
-  if (taxInfo.dividendTax > 0) {
-    lines.push({ label: "Impôts sur dividendes (déjà prélevés)", value: show(taxInfo.dividendTax), tone: RED })
   }
   lines.push({ label: "Total des impôts", value: show(exitTax), strong: true, tone: RED })
   lines.push({ label: "Gains après impôts", value: show(taxInfo.netGains), strong: true, tone: GOLD })

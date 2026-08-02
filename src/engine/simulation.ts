@@ -1,7 +1,7 @@
 import type { SimulationInputs, YearRow } from "../types"
 import { mulberry32, gaussian } from "./rng"
 import { monthlyRate } from "./math"
-import { roundCent, clamp, computeTaxBreakdown, dividendTaxRate } from "./taxes"
+import { roundCent, clamp, computeTaxBreakdown } from "./taxes"
 import { crisisAdjustment } from "./crisis"
 import { getHistoricalDataset, INFLATION_SERIES } from "./historical"
 import { sanitizeInputs } from "./validation"
@@ -100,9 +100,6 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
   let feesLost = 0
   let annualFees = 0
   let annualContribution = 0
-  let dividendsGross = 0
-  let dividendsNet = 0
-  let dividendTaxPaid = 0
   let peak = Math.max(capital, 0.01)
   let previousCapitalExContribution = capital
   let previousTaxNetExContribution = capital
@@ -124,11 +121,10 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       inputs.envelope,
       taxYearsHeld(inputs, year),
       inputs.taxCouple,
-      dividendTaxPaid,
       investedNom,
-      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, dividendsGross },
+      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
     )
-    const exitTax = Math.max(0, tax.totalTax - tax.dividendTax)
+    const exitTax = Math.max(0, tax.totalTax)
     const taxNet = Math.max(0, capital - exitTax)
     peak = Math.max(peak, capital)
     const drawdownPct = peak > 0 ? (capital - peak) / peak : 0
@@ -159,12 +155,9 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       tax: tax.totalTax,
       socialCharges: tax.socialCharges,
       incomeTax: tax.incomeTax,
-      dividendTax: tax.dividendTax,
       taxNet: roundCent(taxNet),
       fees: roundCent(annualFees),
       feesLost: roundCent(feesLost),
-      dividendsGross: roundCent(dividendsGross),
-      dividendsNet: roundCent(dividendsNet),
       annualContribution: roundCent(annualContribution),
       yearlyReturn: roundCent(yearlyReturn * 100) / 100,
       // Même unité que yearlyReturn (ratio, ex : 0,08 = 8 %) : netYield et
@@ -199,19 +192,9 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     const crisis =
       inputs.returnMode === "historical" ? { returnShock: 0, volMultiplier: 1 } : crisisAdjustment(inputs, month)
     const totalMarketReturn = (1 + baseMarketReturn) * (1 + crisis.returnShock) - 1
-    // En mode historique, les rendements réels de l'indice incluent DÉJÀ les
-    // dividendes : appliquer le rendement de dividendes par-dessus les
-    // compterait deux fois (et taxerait deux fois). On les neutralise.
-    const monthlyDividendRate = inputs.returnMode === "historical" ? 0 : Math.max(0, monthlyRate(inputs.dividendYield))
-    const priceReturn = (1 + totalMarketReturn) / (1 + monthlyDividendRate) - 1
-
-    capital = roundCent(Math.max(0, capital * (1 + priceReturn)))
-    const grossDividend = roundCent(Math.max(0, capital * monthlyDividendRate))
-    const divTax = roundCent(grossDividend * dividendTaxRate(inputs.envelope, inputs.ctoTaxMode, inputs.tmi))
-    capital = roundCent(Math.max(0, capital + grossDividend - divTax))
-    dividendsGross = roundCent(dividendsGross + grossDividend)
-    dividendsNet = roundCent(dividendsNet + grossDividend - divTax)
-    dividendTaxPaid = roundCent(dividendTaxPaid + divTax)
+    // Plus de rendement de dividendes séparé : le MSCI World est capitalisant
+    // (les dividendes sont réinvestis dans l'indice, rendement total).
+    capital = roundCent(Math.max(0, capital * (1 + totalMarketReturn)))
 
     const aumFeeRate = monthlyRate(
       Math.max(0, inputs.etfFees + inputs.managementFees + (inputs.envelope === "av" ? inputs.insuranceFees : 0)),

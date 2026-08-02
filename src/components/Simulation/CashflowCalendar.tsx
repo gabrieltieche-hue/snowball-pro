@@ -17,7 +17,6 @@ interface FlowLine {
   versements: number
   frais: number
   impots: number
-  dividendes: number
   net: number
 }
 
@@ -35,11 +34,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
       frais: r.fees * factor,
       // Impôts de LIQUIDATION (exit tax = nominal − taxNet), MÊME base que la
       // carte « Impôts », le camembert, le graphique et le panneau fiscal.
-      // r.tax inclurait en plus les dividendes déjà prélevés chaque mois → la
-      // colonne « Impôts » afficherait un montant différent de la carte (audit
-      // v5.2.2).
       impots: Math.max(0, r.nominal - r.taxNet) * factor,
-      dividendes: r.dividendsNet * factor,
       net: r.taxNet * factor,
     }
   })
@@ -49,9 +44,8 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
       versements: acc.versements + f.versements,
       frais: acc.frais + f.frais,
       impots: acc.impots + f.impots,
-      dividendes: acc.dividendes + f.dividendes,
     }),
-    { versements: 0, frais: 0, impots: 0, dividendes: 0 },
+    { versements: 0, frais: 0, impots: 0 },
   )
 
   return (
@@ -73,7 +67,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border">
-                  {["Année", "Date", "Versements", "Frais", "Impôts", "Dividendes nets", "Capital net"].map(h => (
+                  {["Année", "Date", "Versements", "Frais", "Impôts", "Capital net"].map(h => (
                     <th
                       key={h}
                       className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2 px-3 text-left whitespace-nowrap"
@@ -91,7 +85,6 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                     <td className="py-2 px-3 mono text-text">{fmtCompact(row.versements)}</td>
                     <td className="py-2 px-3 mono text-danger">{fmtCompact(row.frais)}</td>
                     <td className="py-2 px-3 mono text-danger">{fmtCompact(row.impots)}</td>
-                    <td className="py-2 px-3 mono text-warning">{fmtCompact(row.dividendes)}</td>
                     <td className="py-2 px-3 mono text-primary font-semibold">{fmtCompact(row.net)}</td>
                   </tr>
                 ))}
@@ -104,7 +97,6 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                   <td className="py-2 px-3 mono text-[11px] font-bold text-text">{fmtCompact(totals.versements)}</td>
                   <td className="py-2 px-3 mono text-[11px] font-bold text-danger">{fmtCompact(totals.frais)}</td>
                   <td className="py-2 px-3 mono text-[11px] font-bold text-danger">{fmtCompact(totals.impots)}</td>
-                  <td className="py-2 px-3 mono text-[11px] font-bold text-warning">{fmtCompact(totals.dividendes)}</td>
                   <td className="py-2 px-3" />
                 </tr>
               </tfoot>

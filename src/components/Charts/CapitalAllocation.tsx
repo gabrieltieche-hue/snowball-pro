@@ -54,10 +54,8 @@ export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalA
     // affichait 303 k€ d'impôts nominaux à côté d'une carte à 176 k€).
     const factor = showReal ? deflationFactor(lastRow) : 1
     const grossGains = lastRow.interestsNom * factor
-    // MÊME base que les cartes et le graphique d'équité : impôts de LIQUIDATION
-    // = nominal − taxNet (exit tax), pas totalTax (qui inclurait en plus les
-    // dividendes déjà prélevés chaque mois → camembert ≠ carte dès que
-    // dividendYield > 0, audit v5.2.2).
+    // MÊME base que les cartes et le graphique d'équité : impôts de
+    // LIQUIDATION = nominal − taxNet (exit tax), pas totalTax.
     const exitTax = Math.max(0, lastRow.nominal - lastRow.taxNet) * factor
     const taxes = Math.max(0, Math.min(grossGains, exitTax))
     return [

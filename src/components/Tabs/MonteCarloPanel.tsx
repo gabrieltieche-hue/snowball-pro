@@ -38,7 +38,6 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         brokerageFees: inputs.brokerageFees,
         insuranceFees: inputs.insuranceFees,
         managementFees: inputs.managementFees,
-        dividendYield: inputs.dividendYield,
         seed: inputs.seed,
         mcRuns: inputs.mcRuns,
         // Paramètres qui changent aussi le résultat (taux de succès, fiscalité,

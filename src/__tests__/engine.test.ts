@@ -273,7 +273,6 @@ describe("runSimulation", () => {
     brokerageFees: 0.001,
     insuranceFees: 0.006,
     managementFees: 0,
-    dividendYield: 0.018,
     showReal: true,
     withdrawalModel: "rule-4",
     withdrawalRate: 4,
@@ -347,7 +346,6 @@ describe("runSimulation", () => {
       returnMode: "historical",
       historicalIndex: "sp500",
       monthlyPayment: 0,
-      dividendYield: 0,
       etfFees: 0,
       brokerageFees: 0,
       insuranceFees: 0,
@@ -455,7 +453,6 @@ describe("computeKPIs", () => {
     brokerageFees: 0.001,
     insuranceFees: 0.006,
     managementFees: 0,
-    dividendYield: 0.018,
     showReal: true,
     withdrawalModel: "rule-4",
     withdrawalRate: 4,
@@ -508,7 +505,6 @@ describe("solveGoal", () => {
       brokerageFees: 0.001,
       insuranceFees: 0.006,
       managementFees: 0,
-      dividendYield: 0.018,
       showReal: true,
       withdrawalModel: "rule-4",
       withdrawalRate: 4,
@@ -557,7 +553,6 @@ describe("validateInputs", () => {
       brokerageFees: 0.001,
       insuranceFees: 0.006,
       managementFees: 0,
-      dividendYield: 0.018,
       showReal: true,
       withdrawalModel: "rule-4",
       withdrawalRate: 4,
@@ -603,7 +598,6 @@ describe("validateInputs", () => {
       brokerageFees: 0.001,
       insuranceFees: 0.006,
       managementFees: 0,
-      dividendYield: -0.05,
       showReal: true,
       withdrawalModel: "rule-4",
       withdrawalRate: 4,
@@ -651,7 +645,6 @@ describe("solveGoal with goalAnnualReturn", () => {
       brokerageFees: 0.001,
       insuranceFees: 0.006,
       managementFees: 0,
-      dividendYield: 0.018,
       showReal: true,
       withdrawalModel: "rule-4",
       withdrawalRate: 4,
@@ -700,7 +693,6 @@ describe("sanitizeInputs", () => {
       brokerageFees: -1,
       insuranceFees: -1,
       managementFees: -1,
-      dividendYield: -1,
       showReal: true,
       withdrawalModel: "rule-4",
       withdrawalRate: 4,
@@ -1303,7 +1295,7 @@ describe("régressions — corrections de l'audit", () => {
 
 describe("PER — tranche marginale d'imposition (TMI)", () => {
   it("sortie en capital : gains taxés à TMI après abattement de 10 %", () => {
-    const result = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.3 })
+    const result = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.3 })
     // social 17,2 % + IR = gains × (1 - 10 %) × TMI = 10000 × 0,9 × 0,3
     expect(result.socialCharges).toBeCloseTo(1720, 0)
     expect(result.incomeTax).toBeCloseTo(2700, 0)
@@ -1312,8 +1304,8 @@ describe("PER — tranche marginale d'imposition (TMI)", () => {
   })
 
   it("la TMI change l'impôt de sortie", () => {
-    const low = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.11 })
-    const high = computeTaxBreakdown(10000, "per", 10, false, 0, 0, { tmi: 0.41 })
+    const low = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.11 })
+    const high = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.41 })
     expect(low.incomeTax).toBeCloseTo(990, 0)
     expect(high.incomeTax).toBeCloseTo(3690, 0)
     expect(high.incomeTax).toBeGreaterThan(low.incomeTax)
@@ -1332,7 +1324,7 @@ describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
   it("au-delà du plafond de primes, les gains passent de 7,5 % à 12,8 %", () => {
     // 200 k€ de primes (célibataire, plafond 150 k€) → 75 % des gains à 7,5 %,
     // 25 % à 12,8 %, après abattement de 4 600 €.
-    const result = computeTaxBreakdown(100000, "av", 10, false, 0, 200_000)
+    const result = computeTaxBreakdown(100000, "av", 10, false, 200_000)
     const allowance = 4600
     const taxable = 100000 - allowance
     const expected = taxable * 0.75 * 0.075 + taxable * 0.25 * 0.128
@@ -1341,45 +1333,42 @@ describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
   })
 
   it("sous le plafond, le taux réduit de 7,5 % s'applique intégralement", () => {
-    const result = computeTaxBreakdown(10000, "av", 10, false, 0, 100_000)
+    const result = computeTaxBreakdown(10000, "av", 10, false, 100_000)
     expect(result.incomeTax).toBeCloseTo((10000 - 4600) * 0.075, 0)
   })
 
   it("le plafond double pour un couple (300 k€)", () => {
-    const single = computeTaxBreakdown(100000, "av", 10, false, 0, 200_000)
-    const couple = computeTaxBreakdown(100000, "av", 10, true, 0, 200_000)
+    const single = computeTaxBreakdown(100000, "av", 10, false, 200_000)
+    const couple = computeTaxBreakdown(100000, "av", 10, true, 200_000)
     expect(couple.incomeTax).toBeLessThan(single.incomeTax)
   })
 })
 
 describe("CTO — option barème progressif vs PFU", () => {
   it("PFU (défaut) : impôt unique de 30 %", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "pfu" })
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "pfu" })
     expect(result.flatTax).toBeCloseTo(3000, 0)
   })
 
   it("barème : 17,2 % de social + TMI sur les gains, sans PFU", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
     expect(result.flatTax).toBe(0)
     expect(result.socialCharges).toBeCloseTo(1720, 0)
     expect(result.incomeTax).toBeCloseTo(3000, 0) // 10000 × 30 %
   })
 
-  it("barème : abattement de 40 % sur les dividendes reçus", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, {
+  it("le mode fiscal du CTO est pris en compte par la simulation", () => {
+    const pfuRows = runSimulation({ ...DEFAULT_INPUTS, envelope: "cto" as const, ctoTaxMode: "pfu", duration: 10 })
+    const baremeRows = runSimulation({
+      ...DEFAULT_INPUTS,
+      envelope: "cto" as const,
       ctoTaxMode: "bareme",
       tmi: 0.3,
-      dividendsGross: 5000,
+      duration: 10,
     })
-    // gains imposables = 10000 - 40 % × 5000 = 8000 → IR = 8000 × 30 %
-    expect(result.incomeTax).toBeCloseTo(2400, 0)
-  })
-
-  it("dividendTaxRate suit le mode CTO", () => {
-    const pfu = computeTaxBreakdown(10000, "cto", 1, false)
-    const bareme = computeTaxBreakdown(10000, "cto", 1, false, 0, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
-    expect(pfu.flatTax).toBeCloseTo(3000, 0)
-    expect(bareme.flatTax).toBe(0)
+    expect(pfuRows[pfuRows.length - 1].taxNet).toBeGreaterThan(0)
+    // Barème = 17,2 % + TMI → plus d'impôts que le PFU seul (même capital)
+    expect(baremeRows[baremeRows.length - 1].tax).toBeGreaterThan(pfuRows[pfuRows.length - 1].tax)
   })
 })
 
@@ -1540,7 +1529,6 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
       brokerageFees: 0,
       insuranceFees: 0,
       managementFees: 0,
-      dividendYield: 0,
     })
     for (const row of rows) {
       expect(row.yearlyReturn).toBeGreaterThanOrEqual(-1)
@@ -1612,7 +1600,6 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
       historicalIndex: "sp500" as const,
       monthlyPayment: 0,
       envelope: "none" as const,
-      dividendYield: 0,
       etfFees: 0,
       brokerageFees: 0,
       insuranceFees: 0,
@@ -1635,26 +1622,23 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
     expect(Math.abs(kpis.realReturn / 100 - naive)).toBeGreaterThan(0.001)
   })
 
-  it("impôts affichés = exit tax (brut − net) : les dividendes déjà taxés ne sont pas re-comptés", () => {
-    // Avec des dividendes, row.tax = exitTax + dividendTax. La carte « Impôts »
-    // et le camembert affichent exitTax = nominal − taxNet : l'identité
-    // « brut − impôts = net » doit tenir, et dividendTax doit rester à part.
+  it("impôts affichés = exit tax (brut − net) : plus de dividendes à re-comptabiliser", () => {
+    // Sans rendement de dividendes séparé (MSCI World capitalisant), row.tax
+    // = totalTax = exitTax = social + impôt sur le revenu. L'identité
+    // « brut − impôts = net » affichée par les cartes et le camembert tient.
     const rows = runSimulation({
       ...DEFAULT_INPUTS,
       envelope: "cto" as const,
-      dividendYield: 0.03,
       duration: 10,
     })
     const last = rows[rows.length - 1]
     const exitTax = Math.max(0, last.nominal - last.taxNet)
     // brut − exitTax = net (identité affichée par les cartes)
     expect(last.nominal - exitTax).toBeCloseTo(last.taxNet, 2)
-    // exitTax = social + impôt sur le revenu (pas les dividendes)
+    // exitTax = social + impôt sur le revenu
     expect(exitTax).toBeCloseTo(last.socialCharges + last.incomeTax, 2)
-    // totalTax = exitTax + dividendTax : la version « totale » sur-compte les
-    // dividendes déjà prélevés → c'est bien elle qu'on n'affiche plus
-    expect(last.tax).toBeCloseTo(exitTax + last.dividendTax, 2)
-    expect(last.dividendTax).toBeGreaterThan(0) // le scénario a bien des dividendes
+    // row.tax = totalTax = exitTax (plus de composante dividendes)
+    expect(last.tax).toBeCloseTo(exitTax, 2)
   })
 
   it("interestsReal est le rendement réel net d'inflation (même échelle que real)", () => {

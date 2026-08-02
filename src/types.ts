@@ -12,7 +12,6 @@ export type CtoTaxMode = "pfu" | "bareme"
 export interface TaxBreakdownOptions {
   tmi?: number
   ctoTaxMode?: CtoTaxMode
-  dividendsGross?: number
 }
 
 export interface YearRow {
@@ -30,12 +29,9 @@ export interface YearRow {
   tax: number
   socialCharges: number
   incomeTax: number
-  dividendTax: number
   taxNet: number
   fees: number
   feesLost: number
-  dividendsGross: number
-  dividendsNet: number
   annualContribution: number
   yearlyReturn: number
   netYield: number
@@ -125,7 +121,6 @@ export interface TaxBreakdown {
   taxableGains: number
   socialCharges: number
   incomeTax: number
-  dividendTax: number
   flatTax: number
   netGains: number
   totalTax: number
@@ -157,7 +152,6 @@ export interface SimulationInputs {
   brokerageFees: number
   insuranceFees: number
   managementFees: number
-  dividendYield: number
   showReal: boolean
   withdrawalModel: WithdrawalModel
   withdrawalRate: number

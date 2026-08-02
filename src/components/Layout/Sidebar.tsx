@@ -158,25 +158,10 @@ export function Sidebar({
             </p>
           </div>
         )}
-        {/* Les dividendes s'appliquent dans TOUS les modes (le moteur les
-            verse chaque mois quelle que soit la façon dont évolue la bourse) :
-            le contrôle reste accessible hors du mode historique. */}
-        {inputs.returnMode !== "historical" && (
-          <div className="mt-3 space-y-3 animate-fade-in">
-            <SliderInput
-              label="Rendement des dividendes (%)"
-              id="dividend-yield"
-              value={inputs.dividendYield * 100}
-              min={0}
-              max={8}
-              step={0.1}
-              suffix="versés chaque mois puis réinvestis"
-              error={fieldError("dividendYield")?.message}
-              warning={fieldWarning("dividendYield")?.message}
-              onChange={v => updateInput("dividendYield", v / 100)}
-            />
-          </div>
-        )}
+        {/* Le rendement des dividendes a été supprimé : le MSCI World est
+            capitalisant (dividendes réinvestis dans l'indice, rendement
+            total) — un rendement de dividendes séparé serait un double
+            comptage. */}
       </CollapsibleSection>
 
       {/* Paramètres avancés */}
@@ -271,7 +256,7 @@ export function Sidebar({
               ariaLabel="Fiscalité du CTO"
               options={[
                 { id: "pfu", label: "PFU 30 %", sub: "impôt unique" },
-                { id: "bareme", label: "Barème", sub: "TMI + abattement 40 % dividendes" },
+                { id: "bareme", label: "Barème", sub: "17,2 % + impôt à votre TMI" },
               ]}
             />
           </div>
