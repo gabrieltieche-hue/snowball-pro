@@ -53,7 +53,7 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   goalCapital: 10000,
   goalPayment: 500,
   goalAnnualReturn: 0.07,
-  mcRuns: 300,
+  mcRuns: 5000,
   seed: 42,
   tmi: 0.3,
   ctoTaxMode: "pfu",
@@ -159,6 +159,11 @@ export function parseStoredInputs(raw: string | null): SimulationInputs {
       const allowed = ENUM_VALUES[key]
       if (typeof v === "string" && allowed && allowed.includes(v)) target[key] = v
     }
+    // Les modes d'inflation « Historique » et « Cyclique » ont été supprimés de
+    // l'interface : l'inflation est désormais TOUJOURS le taux personnalisé du
+    // curseur (défaut 2,1 %/an). Un état stocké ou partagé qui contenait un
+    // ancien mode est normalisé pour rester cohérent avec l'UI.
+    target.inflationMode = "custom"
     return merged
   } catch {
     return DEFAULT_INPUTS

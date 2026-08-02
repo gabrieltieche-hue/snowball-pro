@@ -72,7 +72,14 @@ function sampledMonthlyReturn(
 }
 
 function taxYearsHeld(inputs: SimulationInputs, projectionYear: number): number {
-  if (inputs.envelope === "pea") return inputs.peaYearsHeld + projectionYear
+  // PEA : le taux d'imposition dépend de la détention ACTUELLE (curseur
+  // « Années de détention du PEA ») : moins de 5 ans → PFU 30 %, au-delà →
+  // 17,2 % de cotisations sociales seules. Avant le correctif, la durée de
+  // projection était ajoutée (peaYearsHeld + année) : dès qu'elle dépassait
+  // 5 ans, le taux réduit s'appliquait même avec 0 an détenu, et le curseur
+  // ne changeait aucun chiffre. L'AV conserve, elle, la détention cumulée
+  // (abattement annuel de 4 600 €/an).
+  if (inputs.envelope === "pea") return inputs.peaYearsHeld
   if (inputs.envelope === "av") return inputs.avYearsHeld + projectionYear
   return projectionYear
 }

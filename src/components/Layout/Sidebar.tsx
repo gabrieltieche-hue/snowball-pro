@@ -13,7 +13,6 @@ import type { ValidationError } from "../../engine"
 import type {
   CrisisProfile,
   HistoricalIndex,
-  InflationMode,
   ReturnMode,
   SavedSnapshot,
   SimulationInputs,
@@ -65,12 +64,6 @@ export function Sidebar({
     { id: "random", label: "Aléatoire", sub: "hauts et bas autour du rendement" },
     { id: "historical", label: "Historique", sub: `réel : ${historical.name}` },
   ]
-  const INFLATION_MODES: { id: InflationMode; label: string; sub: string }[] = [
-    { id: "custom", label: "Personnalisée", sub: "le taux ci-dessous" },
-    { id: "historical", label: "Historique", sub: "inflation réelle passée" },
-    { id: "dynamic", label: "Cyclique", sub: "variations sur la durée" },
-  ]
-
   return (
     <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium overflow-hidden">
       {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
@@ -215,28 +208,21 @@ export function Sidebar({
           warning={fieldWarning("indexation")?.message}
           onChange={v => updateInput("indexation", v / 100)}
         />
-        <div className="space-y-1.5">
-          <span className="text-[10px] font-semibold text-text-muted">Inflation</span>
-          <SegmentedControl
-            value={inputs.inflationMode}
-            onChange={v => updateInputs({ inflationMode: v })}
-            ariaLabel="Mode d'inflation"
-            options={INFLATION_MODES}
-          />
-        </div>
-        {inputs.inflationMode === "custom" && (
-          <SliderInput
-            label="Inflation annuelle (%)"
-            id="inflation"
-            value={inputs.inflation * 100}
-            min={0}
-            max={10}
-            step={0.1}
-            error={fieldError("inflation")?.message}
-            warning={fieldWarning("inflation")?.message}
-            onChange={v => updateInput("inflation", v / 100)}
-          />
-        )}
+        {/* Les 3 modes d'inflation (Personnalisée/Historique/Cyclique) ont été
+            supprimés : l'inflation est toujours le taux personnalisé du
+            curseur (défaut 2,1 %/an), librement modifiable. */}
+        <SliderInput
+          label="Inflation annuelle (%)"
+          id="inflation"
+          value={inputs.inflation * 100}
+          min={0}
+          max={10}
+          step={0.1}
+          suffix="défaut 2,1 %/an — taux personnalisé"
+          error={fieldError("inflation")?.message}
+          warning={fieldWarning("inflation")?.message}
+          onChange={v => updateInput("inflation", v / 100)}
+        />
         <SliderInput
           label="Simulations Monte Carlo"
           id="mc-runs"
@@ -269,7 +255,11 @@ export function Sidebar({
               min={0}
               max={30}
               step={1}
-              suffix="au-delà de 5 ans : taux réduit (17,2 %)"
+              suffix={
+                inputs.peaYearsHeld < 5
+                  ? "moins de 5 ans : PFU 30 %"
+                  : "au-delà de 5 ans : taux réduit (17,2 %)"
+              }
               onChange={v => updateInput("peaYearsHeld", v)}
             />
           </div>
@@ -321,14 +311,18 @@ export function Sidebar({
             />
           </div>
         )}
-        <div className="mt-3">
-          <Toggle
-            checked={inputs.taxCouple}
-            onChange={v => updateInput("taxCouple", v)}
-            label="Fiscalité en couple"
-            sub="Plafond de versements PEA doublé (300 000 €)"
-          />
-        </div>
+        {/* La fiscalité en couple (plafond PEA doublé) ne concerne QUE le PEA :
+            elle n'apparaît plus sur les autres comptes (CTO, AV, PER, BRUT). */}
+        {inputs.envelope === "pea" && (
+          <div className="mt-3">
+            <Toggle
+              checked={inputs.taxCouple}
+              onChange={v => updateInput("taxCouple", v)}
+              label="Fiscalité en couple"
+              sub="Plafond de versements PEA doublé (300 000 €)"
+            />
+          </div>
+        )}
       </CollapsibleSection>
 
       {/* Stress test */}

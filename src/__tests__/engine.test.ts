@@ -190,6 +190,64 @@ describe("computeTaxBreakdown", () => {
   })
 })
 
+describe("PEA — la durée de détention change l'imposition (correctif v5.2.4)", () => {
+  it("détenu moins de 5 ans : le PFU 30 % s'applique dans la simulation", () => {
+    const rows = runSimulation({
+      ...DEFAULT_INPUTS,
+      envelope: "pea" as const,
+      peaYearsHeld: 2,
+      duration: 25,
+      monthlyPayment: 1000,
+    })
+    const last = rows[rows.length - 1]
+    // Moins de 5 ans → impôt sur le revenu (12,8 %) en plus du social 17,2 %
+    expect(last.incomeTax).toBeGreaterThan(0)
+    expect(last.socialCharges).toBeGreaterThan(0)
+  })
+
+  it("détenu au moins 5 ans : taux réduit (aucun impôt sur le revenu)", () => {
+    const rows = runSimulation({
+      ...DEFAULT_INPUTS,
+      envelope: "pea" as const,
+      peaYearsHeld: 5,
+      duration: 25,
+      monthlyPayment: 1000,
+    })
+    const last = rows[rows.length - 1]
+    expect(last.incomeTax).toBe(0)
+    expect(last.socialCharges).toBeGreaterThan(0)
+  })
+
+  it("le curseur change les chiffres (avant : identiques quelle que soit la durée)", () => {
+    const base = { ...DEFAULT_INPUTS, envelope: "pea" as const, duration: 25, monthlyPayment: 1000 }
+    const held2 = runSimulation({ ...base, peaYearsHeld: 2 })
+    const held10 = runSimulation({ ...base, peaYearsHeld: 10 })
+    const last2 = held2[held2.length - 1]
+    const last10 = held10[held10.length - 1]
+    // Net fiscal différent selon la détention : 30 % (2 ans) > 17,2 % (10 ans)
+    // (assertion de magnitude, pas d'égalité — plus robuste)
+    expect(Math.abs(last2.taxNet - last10.taxNet)).toBeGreaterThan(1000)
+    expect(last2.taxNet).toBeLessThan(last10.taxNet)
+    expect(last2.incomeTax).toBeGreaterThan(0)
+    expect(last10.incomeTax).toBe(0)
+  })
+})
+
+describe("défauts — inflation 2,1 % et Monte Carlo 5 000", () => {
+  it("le défaut d'inflation annuelle est 2,1 %", () => {
+    expect(DEFAULT_INPUTS.inflation).toBeCloseTo(0.021)
+  })
+
+  it("le défaut Monte Carlo est 5 000 simulations", () => {
+    expect(DEFAULT_INPUTS.mcRuns).toBe(5000)
+  })
+
+  it("parseStoredInputs force le mode d'inflation personnalisé (modes supprimés)", () => {
+    const inputs = parseStoredInputs(JSON.stringify({ ...DEFAULT_INPUTS, inflationMode: "historical" }))
+    expect(inputs.inflationMode).toBe("custom")
+  })
+})
+
 describe("runSimulation", () => {
   const baseInputs: SimulationInputs = {
     capitalInitial: 25000,

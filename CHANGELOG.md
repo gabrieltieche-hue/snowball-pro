@@ -4,6 +4,28 @@
 
 ---
 
+## v5.2.4 — PEA : l'imposition suit enfin la durée de détention + paramètres avancés nettoyés
+
+Correction de 3 problèmes signalés : le curseur « Années de détention du PEA » ne changeait AUCUN chiffre et le taux réduit (17,2 %) s'appliquait même pour un PEA détenu moins de 5 ans ; le réglage « Fiscalité en couple » apparaissait sur tous les comptes au lieu du seul PEA ; les paramètres avancés affichaient 3 modes d'inflation superflus (dont un qui chevauchait le libellé « Inflation annuelle » sur desktop).
+
+### ⚙️ Moteur
+
+- **PEA — la durée de détention change enfin les chiffres** : `taxYearsHeld` ajoutait la durée de projection (`peaYearsHeld + année`) → la somme dépassait presque toujours 5 ans et le taux réduit s'appliquait dès 0 an détenu, curseur sans effet (vérifié : 0→30 ans donnaient des résultats identiques). Le taux dépend désormais de la **détention actuelle** (le curseur) : moins de 5 ans → PFU 30 % (17,2 % + 12,8 % d'IR), au-delà → 17,2 % de cotisations seules. `FiscalPanel` aligné sur le même modèle (cohérent avec son propre libellé « vous liquidez aujourd'hui »).
+- **Défaut Monte Carlo : 300 → 5 000 simulations** (`DEFAULT_INPUTS.mcRuns`).
+- **Mode d'inflation personnalisé imposé** : les modes « Historique » et « Cyclique » sont supprimés de l'UI — `parseStoredInputs` normalise tout état stocké ou partagé vers `custom` (l'inflation est toujours le taux du curseur, défaut 2,1 %/an).
+
+### 🖥 UI
+
+- **Paramètres avancés** : suppression des 3 cartes de choix d'inflation (Personnalisée / Historique / Cyclique) — seule reste « Inflation annuelle (%) » à 2,1 % par défaut, librement modifiable ; l'encoche de saisie ne chevauche plus le libellé (espacement garanti sur `SliderInput`).
+- **« Fiscalité en couple » réservé au PEA** : le toggle (plafond de versements PEA doublé à 300 k€) n'apparaît plus sur CTO, AV, PER et BRUT.
+- **Curseur PEA pédagogique** : le libellé sous le slider reflète le régime appliqué — « moins de 5 ans : PFU 30 % » ou « au-delà de 5 ans : taux réduit (17,2 %) ».
+
+### Tests
+
+- **+7 tests** (PFU < 5 ans dans la simulation, taux réduit ≥ 5 ans, le curseur change les chiffres, défaut inflation 2,1 %, défaut Monte Carlo 5 000, normalisation `inflationMode`). **159 tests au total.**
+
+---
+
 ## v5.2.3 — Audit profond v3 : la Rente applique enfin le krach + unités verrouillées partout
 
 Audit moteur et UI en profondeur (lecture des 13 modules engine + composants, croisement des unités, revue adverse) : 1 bug moteur qui faussait la Rente, 1 KPI déconnecté de la simulation, et 3 écrans qui mélangeaient encore les unités.

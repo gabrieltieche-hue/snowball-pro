@@ -31,10 +31,10 @@ export function SliderInput({
 }: SliderInputProps) {
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
         <label
           htmlFor={id}
-          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted"
+          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted min-w-0 leading-snug"
           style={color ? { color } : undefined}
         >
           {label}

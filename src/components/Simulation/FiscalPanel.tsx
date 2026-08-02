@@ -17,12 +17,15 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   const taxInfo = computeTaxBreakdown(
     lastRow.interestsNom,
     inputs.envelope,
-    // Années de détention COHÉRENTES avec la simulation : les années déjà
-    // détenues + la durée de projection (ex: PEA détenu 5 ans + 25 ans de
-    // projection → 30 ans, pas 5 ans — sinon le panneau afficherait 30 % de
-    // PFU alors que la table calcule 17,2 %).
+    // Années de détention COHÉRENTES avec le moteur (correctif v5.2.4) : pour
+    // le PEA, le taux dépend de la détention ACTUELLE affichée par le curseur
+    // « Années de détention du PEA » (moins de 5 ans → PFU 30 %, au-delà →
+    // 17,2 %). Avant, on ajoutait la durée de projection : la somme dépassait
+    // presque toujours 5 ans et le taux réduit s'appliquait même pour un PEA
+    // détenu moins de 5 ans. L'AV conserve la détention cumulée (abattement
+    // annuel de 4 600 €/an).
     inputs.envelope === "pea"
-      ? inputs.peaYearsHeld + inputs.duration
+      ? inputs.peaYearsHeld
       : inputs.envelope === "av"
         ? inputs.avYearsHeld + inputs.duration
         : inputs.duration,
