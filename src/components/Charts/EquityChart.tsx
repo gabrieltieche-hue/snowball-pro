@@ -35,6 +35,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
   const theme = chartTheme(darkMode)
   const chartRef = useChartA11y("Projection de votre capital — montants par année")
   const coarse = useIsCoarsePointer()
+  const lastRow = rows[rows.length - 1]
 
   const data = useMemo(() => buildEquitySeries(rows, showReal, inputs.envelope), [rows, showReal, inputs.envelope])
 
@@ -67,6 +68,16 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
           )}
         </div>
       </div>
+
+      {/* Quand les courbes sont en euros d'aujourd'hui, la valeur qui sera
+          réellement sur le compte reste affichée : l'utilisateur ne perd jamais
+          de vue le montant nominal (demande utilisateur). */}
+      {showReal && lastRow && (
+        <p className="text-[10px] text-text-dim italic leading-snug -mt-2 mb-4">
+          Courbes en euros d'aujourd'hui — sur le compte, le capital final serait de{" "}
+          <strong className="text-text not-italic">{fmtCurrency(lastRow.nominal)}</strong>
+        </p>
+      )}
 
       <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">

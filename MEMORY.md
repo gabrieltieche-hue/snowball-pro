@@ -4,6 +4,43 @@
 
 ---
 
+## SESSION — 2026-08-02 (v5.4.1 : rendement BRUT par défaut 10,07 % + double échelle affichée partout)
+
+### Résumé
+
+Demande utilisateur centrée sur la clarté : (1) afficher **en même temps** le montant sur le compte (euros courants) ET sa valeur en pouvoir d'achat (euros d'aujourd'hui) — le toggle « Euros d'aujourd'hui » ne fait plus que choisir laquelle est mise en avant, il ne cache plus jamais la valeur du compte ; (2) rendre explicite que le rendement saisi est **TOUJOURS brut** avec défaut = 10,07 %/an (moyenne MSCI World 1970-2025) et fourchette recommandée 7-12 %/an. Workflow APEX -a -x -v + fable-mode + oneshot + ultrathink + webapp-testing. **167 tests**, gate 100 % vert, déploiement Vercel.
+
+### Modifications — double échelle (partie 1)
+
+- **`DualAmount.tsx` (nouveau, composant partagé)** : affiche simultanément la valeur sur le compte (€ courants) et son pouvoir d'achat (€ d'aujourd'hui) — `aria-label` accessible, libellé « sur le compte en YYYY » qui rend la lecture évidente.
+- **`SummaryStats.tsx`** : les 4 cartes (Valeur brute/réelle, Net fiscal, Impôts, Total épargné) montrent les deux valeurs — **aucune carte ni indicateur supprimé** (demande explicite). Libellé « Valeur réelle » vs « Valeur brute » suit toujours l'échelle mise en avant (régression audit v5.1.4 évitée).
+- **`Sidebar.tsx`** : capital final de la carte insight en double échelle + libellé du toggle clarifié (« Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout »).
+- **`EquityChart.tsx`** : note sous le titre quand `showReal` actif rappelant le capital final sur le compte (note sortie du conteneur flex). **`FiscalPanel.tsx`** : ligne « Capital net (impôts déduits) » en double échelle.
+- **Tests** : 3 tests `DualAmount` (normalisation espace insécable `\u202F` dans `textContent`).
+
+### Modifications — rendement brut (partie 2)
+
+- **`migration.ts`** : défaut `annualReturn` ET `goalAnnualReturn` = **0.1007 (10,07 %/an brut)** ; fallback v4 aligné (10,07 au lieu de 8).
+- **`validation.ts`** : constantes partagées `RECOMMENDED_RETURN_MIN/MAX` (7 %/12 %) — warning hors fourchette (« Rendement hors fourchette recommandée (7-12 %/an brut) — moyenne MSCI World : 10,07 %/an ») ; exportées via le barrel `engine/index.ts`.
+- **`HelpTip.tsx` (nouveau)** + prop `help` sur `SliderInput` : infobulle « ? » expliquant « Rendement BRUT = rendement réel du marché avant inflation… ne saisissez jamais un taux déjà net d'inflation ».
+- **`Sidebar.tsx`** : libellé « (% brut) », note sous le curseur (7-12 %/an · défaut 10,07 %/an MSCI World), message dans la carte insight quand le rendement est hors fourchette (risque de **double déduction de l'inflation** si le taux saisi était déjà net).
+- **`GoalTab.tsx`** : label « (% brut) » + note identique + infobulle — cohérence parfaite entre onglets (demande TRUC 1).
+- **Tests** : défaut 10,07 % > net d'inflation (8,22 %), validation silencieuse à 10,07 %, warning hors fourchette ; tolérance d'arrondi assouplie sur `interestsReal` (écart 1 centime devenu visible avec le rendement plus élevé).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **167/167 tests** ✓ (dont 3 DualAmount + 2 rendement brut).
+- Revue adverse (code-reviewer) : régression audit v5.1.4 (libellé « brut » sur montant net d'inflation), note EquityChart sortie du flex, aria-label DualAmount — toutes corrigées.
+- Navigateur (preview réelle, toggle off → on) : dans les deux états chaque carte et le panneau fiscal affichent « X € sur le compte en YYYY » ET « Y € en euros d'aujourd'hui » ; curseur à 10,07 % après nettoyage du hash/localStorage ; note « brut » et infobulle visibles.
+- Version 5.4.0 → 5.4.1 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`), CHANGELOG (entrée v5.4.1).
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+### Notes
+
+- ⚠️ Refactor **parallèle non commité** présent dans le worktree (MonteCarloPanel.tsx, decumulation.ts, montecarlo.ts — « Monte Carlo rejoue toujours les rendements réels ») : **ne pas écraser, ne pas committer sans accord** — le commit de cette session ne couvre que les fichiers de la demande.
+
+---
+
 ## SESSION — 2026-08-02 (v5.2.3 : audit profond v3 — la Rente applique enfin le krach + unités verrouillées)
 
 ### Résumé

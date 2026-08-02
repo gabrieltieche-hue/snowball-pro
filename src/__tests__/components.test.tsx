@@ -6,6 +6,9 @@ import "@testing-library/jest-dom/vitest"
 import App from "../App"
 import { ErrorBoundary } from "../components/shared/ErrorBoundary"
 import { buildEquitySeries } from "../components/Charts/EquityChart"
+import { DualAmount } from "../components/shared/DualAmount"
+import { GoalTab } from "../components/Tabs/GoalTab"
+import { SliderInput } from "../components/shared/SliderInput"
 import { DEFAULT_INPUTS, runSimulation } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 
@@ -14,8 +17,12 @@ import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
  * On rend juste un div, les flux logiques restent entièrement testés. */
 vi.mock("recharts", async () => {
   const React = await import("react")
+  // Les vrais composants Recharts rendent un <svg> : en rendant les enfants
+  // dans un <div>, les balises SVG qu'ils contiennent (defs, linearGradient,
+  // stop…) étaient créées dans le namespace HTML → warnings
+  // « <linearGradient> is unrecognized » dans stderr. On rend un <svg>.
   const stub = ({ children }: { children?: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "chart-stub" }, children)
+    React.createElement("svg", { "data-testid": "chart-stub" }, children)
   const names = [
     "ResponsiveContainer",
     "AreaChart",
@@ -46,31 +53,78 @@ vi.mock("recharts", async () => {
  * parallèle) : on relève le timeout pour tout ce fichier. */
 vi.setConfig({ testTimeout: 30_000 })
 
-/* framer-motion n'apporte rien de testable en jsdom : motion.xxx devient un
- * simple div, AnimatePresence passe les enfants tels quels.
+/* framer-motion n'apporte rien de testable en jsdom : motion.xxx devient
+ * l'élément DOM dont il porte le nom, AnimatePresence passe les enfants tels
+ * quels. Rendue en <div> générique, motion.tr (tableaux de ComparisonTab et
+ * AmortissementTable) produisait du HTML invalide en test — warnings
+ * « <td> dans <div> » / « <div> dans <tbody> » dans stderr. On rend donc la
+ * VRAIE balise, comme framer-motion en production.
  *
- * IMPORTANT : le Proxy retourne une fonction STABLE pour chaque propriété.
- * Un getter créant une nouvelle fonction par accès ferait croire à React que
- * le type d'élément change à chaque rendu → remontage du sous-arbre entier à
- * chaque render (tempête de remounts, tests 10× plus lents, timeouts flaky). */
+ * IMPORTANT : le Proxy retourne une fonction STABLE par balise (mise en
+ * cache). Un getter créant une nouvelle fonction par accès ferait croire à
+ * React que le type d'élément change à chaque rendu → remontage du sous-arbre
+ * entier à chaque render (tempête de remounts, tests 10× plus lents, timeouts
+ * flaky). */
 vi.mock("framer-motion", async () => {
   const React = await import("react")
-  // Les props spécifiques à framer-motion (initial/animate/whileTap…) seraient
-  // passées telles quelles à un <div> brut → warnings React dans la sortie de
-  // test. On les destructure pour ne garder que les props DOM réelles.
-  const Stub = ({
-    children,
-    initial: _i,
-    animate: _a,
-    exit: _e,
-    whileHover: _wh,
-    whileTap: _wt,
-    whileInView: _wv,
-    transition: _t,
-    variants: _v,
-    ...rest
-  }: Record<string, unknown>) => React.createElement("div", rest, children as React.ReactNode)
-  const motion = new Proxy({}, { get: () => Stub })
+  // Props spécifiques à framer-motion qui ne doivent PAS finir sur l'élément
+  // DOM réel : React avertirait « does not recognize the `layout` prop » sur
+  // une balise HTML. Filtrer par liste explicite évite de dépendre d'un
+  // destructuring à maintenir à la main (layout/drag/whileFocus… ajoutés
+  // plus tard dans l'app le feraient resurgir les warnings).
+  const FRAMER_PROPS = new Set([
+    "animate",
+    "custom",
+    "drag",
+    "dragConstraints",
+    "dragDirectionLock",
+    "dragElastic",
+    "dragListener",
+    "dragMomentum",
+    "dragPropagation",
+    "dragTransition",
+    "exit",
+    "initial",
+    "layout",
+    "layoutId",
+    "onAnimationComplete",
+    "onAnimationRepeat",
+    "onAnimationStart",
+    "onDrag",
+    "onDragEnd",
+    "onDragStart",
+    "onDragTransitionEnd",
+    "onViewportEnter",
+    "onViewportLeave",
+    "transition",
+    "variants",
+    "viewport",
+    "whileDrag",
+    "whileFocus",
+    "whileHover",
+    "whileInView",
+    "whileTap",
+  ])
+  const stubs = new Map<string, (props: Record<string, unknown>) => React.ReactNode>()
+  const motion = new Proxy(
+    {},
+    {
+      get: (_target, tag) => {
+        if (typeof tag !== "string") return undefined
+        if (!stubs.has(tag)) {
+          const Stub = ({ children, ...rest }: Record<string, unknown>) => {
+            const domProps: Record<string, unknown> = {}
+            for (const [key, value] of Object.entries(rest)) {
+              if (!FRAMER_PROPS.has(key)) domProps[key] = value
+            }
+            return React.createElement(tag, domProps, children as React.ReactNode)
+          }
+          stubs.set(tag, Stub)
+        }
+        return stubs.get(tag)
+      },
+    },
+  )
   return {
     motion,
     AnimatePresence: ({ children }: { children?: React.ReactNode }) =>
@@ -212,6 +266,87 @@ describe("buildEquitySeries — même échelle pour tout le graphique (audit v5.
   })
 })
 
+describe("DualAmount — les deux échelles toujours affichées (demande utilisateur)", () => {
+  // toLocaleString("fr-FR") insère une espace insécable (U+202F) dans les
+  // milliers : on normalise en espace simple avant de comparer.
+  const text = (container: HTMLElement) =>
+    (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+
+  it("affiche la valeur du compte ET le pouvoir d'achat quand showReal est inactif", () => {
+    const { container } = render(<DualAmount nominal={46610} real={30700} showReal={false} />)
+    const t = text(container)
+    // La valeur nominale est le grand chiffre…
+    expect(t).toContain("46 610 €")
+    // …et l'équivalent en euros d'aujourd'hui reste visible en dessous.
+    expect(t).toContain("en euros d'aujourd'hui")
+    expect(t).toContain("30 700 €")
+  })
+
+  it("garde la valeur du compte visible même quand showReal est actif", () => {
+    const { container } = render(<DualAmount nominal={46610} real={30700} showReal={true} endYear="2046" />)
+    const t = text(container)
+    // Le pouvoir d'achat devient le grand chiffre…
+    expect(t).toContain("30 700 €")
+    // …mais la valeur sur le compte n'est PLUS cachée : elle reste affichée.
+    expect(t).toContain("46 610 €")
+    expect(t).toContain("sur le compte en 2046")
+  })
+
+  it("sans fin de projection, le libellé secondaire reste générique", () => {
+    const { container } = render(<DualAmount nominal={1000} real={800} showReal={true} />)
+    expect(text(container)).toContain("sur le compte")
+  })
+})
+
+describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)", () => {
+  it("GoalTab : label « (% brut) » + note taux recommandé 7-12 %/an · défaut 10,07 %", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    render(
+      <GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />,
+    )
+    expect(screen.getByText("Rendement de la bourse (% brut)")).toBeInTheDocument()
+    expect(screen.getByText(/défaut 10,07 %\/an \(moyenne MSCI World\)/)).toBeInTheDocument()
+    expect(screen.getByText(/taux recommandé :/)).toBeInTheDocument()
+    // Le curseur Objectif démarre sur le défaut 10,07 % (valeur en %)
+    expect(screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" })).toHaveValue("10.07")
+  })
+
+  it("Sidebar : message d'alerte double déduction dans la carte insight hors fourchette", () => {
+    render(<App />)
+    // Rendement hors fourchette recommandée (7-12 %)
+    fireEvent.change(screen.getByRole("slider", { name: "Rendement annuel de la bourse (% brut)" }), {
+      target: { value: "15" },
+    })
+    // L'insight avertit du risque de double déduction si le taux était déjà net
+    expect(screen.getByText(/double déduction|serait déduite|trop pessimiste/i)).toBeInTheDocument()
+  })
+
+  it("Sidebar : aucune alerte hors fourchette quand le rendement est dans 7-12 %", () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole("slider", { name: "Rendement annuel de la bourse (% brut)" }), {
+      target: { value: "10.07" },
+    })
+    expect(screen.queryByText(/serait déduite.*deux fois/i)).not.toBeInTheDocument()
+  })
+
+  it("SliderInput : l'infobulle « ? » explique la règle du rendement BRUT", () => {
+    render(
+      <SliderInput
+        label="Rendement annuel de la bourse (% brut)"
+        id="annual-return-test"
+        value={10.07}
+        min={0.1}
+        max={20}
+        step={0.1}
+        help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). Ne saisissez jamais un taux déjà net d'inflation."
+        onChange={() => {}}
+      />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Aide" }))
+    expect(screen.getByRole("tooltip")).toHaveTextContent(/ne saisissez jamais un taux déjà net d'inflation/i)
+  })
+})
+
 describe("menu Export — toutes les fonctionnalités d'export dans un bouton", () => {
   it("ouvre un popup avec CSV, JSON et Rapport PDF au clic", () => {
     render(<App />)
@@ -327,4 +462,20 @@ describe("partage par URL (hash)", () => {
     },
     APP_TIMEOUT,
   )
+})
+
+describe("régression — stderr propre pendant les tests (audit v5.4.0)", () => {
+  it("un rendu complet d'App ne déclenche ni console.error ni console.warn", () => {
+    // Les mocks framer-motion/Recharts rendent désormais les vraies balises :
+    // un rendu d'App entier doit être totalement silencieux (plus de
+    // « <linearGradient> is unrecognized », « <td> cannot be a child of
+    // <div> »…). Garde-fou contre toute régression future.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    render(<App />)
+
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
 })

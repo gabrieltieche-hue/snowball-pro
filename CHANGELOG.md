@@ -4,6 +4,19 @@
 
 ---
 
+## v5.4.1 — Rendement BRUT par défaut : 10,07 %/an (moyenne MSCI World) + clarté pédagogique
+
+À la demande de l'utilisateur, l'app rend explicite le point le plus source de confusion : **le rendement saisi est TOUJOURS brut** (avant inflation — l'inflation est déduite séparément par le moteur, jamais saisie nette sous peine de double déduction).
+
+- **Défaut de rendement = 10,07 %/an brut** (`migration.ts`) : moyenne arithmétique MSCI World 1970-2025 (déjà corrigée en v5.3.1). Aligné sur `annualReturn` **et** `goalAnnualReturn` (onglet Objectif Inversé) ; fallback v4 aligné (10,07 % au lieu de 8 %).
+- **Libellés explicites « (% brut) »** : curseur principal (`Sidebar`) **et** onglet Objectif Inversé (`GoalTab`) affichent désormais « Rendement de la bourse (% brut) ».
+- **Note sous le curseur** (les deux onglets) : *« Rendement brut (avant inflation) — taux recommandé : 7 à 12 %/an · défaut 10,07 %/an (moyenne MSCI World) »*.
+- **Infobulle « ? »** (`HelpTip.tsx`, nouveau composant partagé + prop `help` sur `SliderInput`) : explique en une phrase la règle « brut avant inflation, ne saisissez jamais un taux déjà net ».
+- **Avertissement hors fourchette** (`validation.ts`, constantes partagées `RECOMMENDED_RETURN_MIN/MAX` = 7 %/12 %) : warning sous le curseur + message dans la carte insight de la Sidebar expliquant le **risque de double déduction de l'inflation** si le taux saisi était déjà net.
+- **Tests** : défaut 10,07 % > net d'inflation (8,22 %), validation silencieuse à 10,07 % et warning hors fourchette, tolérance d'arrondi assouplie sur un test existant. **167 tests au total.**
+
+---
+
 ## v5.4.0 — Suppression du rendement des dividendes (MSCI World capitalisant)
 
 Le curseur « Rendement des dividendes » est **supprimé** : l'indice MSCI World est un indice **capitalisant** (les dividendes sont réinvestis dans l'indice, rendement total) — un rendement de dividendes séparé additionné par-dessus les rendements historiques **comptait les dividendes deux fois** et sur-taxait. Nettoyage complet :

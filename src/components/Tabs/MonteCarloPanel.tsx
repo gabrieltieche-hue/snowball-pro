@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, Play } from "lucide-react"
-import { fmtCurrency, getHistoricalDataset, runMonteCarloAsync, runSimulation } from "../../engine"
+import { fmtCurrency, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { cn } from "../../utils/cn"
 import type { MonteCarloResult, SimulationInputs } from "../../types"
@@ -23,26 +23,23 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
       JSON.stringify({
         capitalInitial: inputs.capitalInitial,
         monthlyPayment: inputs.monthlyPayment,
-        annualReturn: inputs.annualReturn,
-        volatility: inputs.volatility,
         duration: inputs.duration,
         indexation: inputs.indexation,
         envelope: inputs.envelope,
-        returnMode: inputs.returnMode,
         historicalIndex: inputs.historicalIndex,
-        crisisEnabled: inputs.crisisEnabled,
-        crisisProfile: inputs.crisisProfile,
-        crisisYear: inputs.crisisYear,
-        crisisAmplitude: inputs.crisisAmplitude,
         etfFees: inputs.etfFees,
         brokerageFees: inputs.brokerageFees,
         insuranceFees: inputs.insuranceFees,
         managementFees: inputs.managementFees,
         seed: inputs.seed,
         mcRuns: inputs.mcRuns,
+        // Monte Carlo rejoue TOUJOURS les rendements réels passés (quel que
+        // soit le mode de rendement) : annualReturn, volatility, returnMode et
+        // la crise synthétique n'influencent plus le résultat — les exclure du
+        // hash évite de faux avertissements « relancez » à leur modification.
         // Paramètres qui changent aussi le résultat (taux de succès, fiscalité,
-        // inflation, années de détention, durée de la crise) : sans eux,
-        // l'avertissement « relancez » ne se déclenchait pas à la modification.
+        // inflation, années de détention) : sans eux, l'avertissement
+        // « relancez » ne se déclenchait pas à la modification.
         goalTarget: inputs.goalTarget,
         inflation: inputs.inflation,
         // Mode d'inflation (custom/historique/dynamique) : il change le
@@ -52,7 +49,6 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         taxCouple: inputs.taxCouple,
         peaYearsHeld: inputs.peaYearsHeld,
         avYearsHeld: inputs.avYearsHeld,
-        crisisDuration: inputs.crisisDuration,
         tmi: inputs.tmi,
         ctoTaxMode: inputs.ctoTaxMode,
       }),
@@ -100,12 +96,6 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
     }
   }
 
-  const lastRow = useMemo(() => runSimulation(inputs).slice(-1)[0], [inputs])
-  const noCrisisRow = useMemo(
-    () => (inputs.crisisEnabled ? runSimulation({ ...inputs, crisisEnabled: false }).slice(-1)[0] : undefined),
-    [inputs],
-  )
-
   const scenarioCards = mcResult
     ? [
         {
@@ -137,19 +127,13 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
             <h2 className="text-base font-bold mb-1">🎲 Simulation de Monte Carlo</h2>
             <p className="text-xs text-text-muted leading-relaxed max-w-xl">
               L'avenir de la bourse est imprévisible : nous testons donc votre plan{" "}
-              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>
-              {inputs.returnMode === "historical" ? (
-                <>
-                  , en rééchantillonnant les <strong className="text-text">rendements réels passés</strong> de l'indice{" "}
-                  <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> (les krachs
-                  et les bull markets réels sont rejoués).
-                </>
-              ) : (
-                <>, avec des performances différentes à chaque fois.</>
-              )}{" "}
-              Vous verrez le résultat de votre capital dans une <strong className="text-text">mauvaise</strong>, une{" "}
-              <strong className="text-text">moyenne</strong> et une <strong className="text-text">bonne</strong> période
-              de bourse.
+              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, en rééchantillonnant
+              les <strong className="text-text">rendements réels passés</strong> de l'indice{" "}
+              <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> (les krachs et
+              les bull markets réels sont rejoués), quel que soit le mode de rendement choisi. Vous verrez le résultat
+              de votre capital dans une <strong className="text-text">mauvaise</strong>, une{" "}
+              <strong className="text-text">moyenne</strong> et une <strong className="text-text">bonne</strong>{" "}
+              période de bourse.
             </p>
           </div>
           <button
@@ -239,24 +223,12 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
           <h3 className="text-xs font-bold text-danger uppercase tracking-wider mb-2.5">
             ⚠️ Et si la bourse s'effondrait en année {inputs.crisisYear} ?
           </h3>
-          {inputs.returnMode === "historical" ? (
-            <p className="text-xs text-text-muted leading-relaxed">
-              En mode <strong className="text-text">historique</strong>, les krachs réels de l'indice{" "}
-              <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> sont déjà
-              rejoués dans les rendements : la crise synthétique ne s'applique pas ici (elle est désactivée pour
-              éviter un double comptage, comme dans l'onglet Monte Carlo et la Rente).
-            </p>
-          ) : (
-            lastRow &&
-            noCrisisRow && (
-              <p className="text-xs text-text-muted leading-relaxed">
-                Une chute brutale de <strong className="text-danger">-{inputs.crisisAmplitude}%</strong> est simulée en
-                année <strong className="text-text">{inputs.crisisYear}</strong>. Votre capital final serait de{" "}
-                <strong className="text-danger">{fmtCurrency(lastRow?.nominal ?? 0)}</strong> au lieu de{" "}
-                <strong className="text-text">{fmtCurrency(noCrisisRow?.nominal ?? 0)}</strong> sans cette chute.
-              </p>
-            )
-          )}
+          <p className="text-xs text-text-muted leading-relaxed">
+            Monte Carlo rejoue <strong className="text-text">toujours les rendements réels passés</strong> de l'indice{" "}
+            <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> : les krachs
+            réels (2000, 2008, 2022…) sont déjà dans les scénarios rejoués. La crise synthétique configurée ici ne
+            s'applique donc pas à Monte Carlo — elle serait comptée deux fois.
+          </p>
         </div>
       )}
     </div>

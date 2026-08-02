@@ -1,6 +1,12 @@
 import type { SimulationInputs } from "../types"
 import { clamp } from "./taxes"
 
+// Fourchette recommandée pour le rendement annuel saisi (TOUJOURS brut, avant
+// inflation) : moyenne MSCI World 1970-2025 ≈ 10,07 %/an. Une seule source de
+// vérité — utilisée par la validation ET la carte insight de la Sidebar.
+export const RECOMMENDED_RETURN_MIN = 0.07
+export const RECOMMENDED_RETURN_MAX = 0.12
+
 export interface ValidationError {
   field: keyof SimulationInputs
   message: string
@@ -84,6 +90,19 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
       severity: "warning",
       value: inputs.annualReturn,
       max: 10,
+    })
+  }
+  // Le rendement saisi est TOUJOURS brut (avant inflation) : hors de la
+  // fourchette recommandée (7-12 %/an), on le signale pour éviter de saisir un
+  // rendement déjà net d'inflation (qui serait déduit deux fois) ou irréaliste.
+  if (inputs.annualReturn < RECOMMENDED_RETURN_MIN || inputs.annualReturn > RECOMMENDED_RETURN_MAX) {
+    errors.push({
+      field: "annualReturn",
+      message: "Rendement hors fourchette recommandée (7-12 %/an brut) — moyenne MSCI World : 10,07 %/an",
+      severity: "warning",
+      value: inputs.annualReturn,
+      min: RECOMMENDED_RETURN_MIN,
+      max: RECOMMENDED_RETURN_MAX,
     })
   }
 

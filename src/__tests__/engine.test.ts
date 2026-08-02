@@ -233,13 +233,28 @@ describe("PEA — la durée de détention change l'imposition (correctif v5.2.4)
   })
 })
 
-describe("défauts — inflation 2,1 % et Monte Carlo 5 000", () => {
+describe("défauts — inflation 2,1 %, rendement brut 10,07 % et Monte Carlo 10 000", () => {
   it("le défaut d'inflation annuelle est 2,1 %", () => {
     expect(DEFAULT_INPUTS.inflation).toBeCloseTo(0.021)
   })
 
-  it("le défaut Monte Carlo est 5 000 simulations", () => {
-    expect(DEFAULT_INPUTS.mcRuns).toBe(5000)
+  it("le défaut de rendement annuel est 10,07 % BRUT (moyenne MSCI World)", () => {
+    expect(DEFAULT_INPUTS.annualReturn).toBeCloseTo(0.1007, 4)
+    // Le rendement saisi est TOUJOURS brut : il reste supérieur au net
+    // d'inflation (8,22 %) — jamais un rendement net saisi par l'utilisateur.
+    expect(DEFAULT_INPUTS.annualReturn).toBeGreaterThan(0.0822)
+  })
+
+  it("l'onglet Objectif démarre aussi à 10,07 % brut (goalAnnualReturn aligné)", () => {
+    // Cohérence parfaite entre les onglets (demande TRUC 1) : le rendement de
+    // l'Objectif Inversé est aligné sur l'onglet principal — 10,07 %/an BRUT.
+    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeCloseTo(0.1007, 4)
+    expect(DEFAULT_INPUTS.goalAnnualReturn).toBe(DEFAULT_INPUTS.annualReturn)
+    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeGreaterThan(0.0822)
+  })
+
+  it("le défaut Monte Carlo est 10 000 simulations", () => {
+    expect(DEFAULT_INPUTS.mcRuns).toBe(10000)
   })
 
   it("parseStoredInputs force le mode d'inflation personnalisé (modes supprimés)", () => {
@@ -1164,12 +1179,20 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
   )
 
   it(
-    "random mode still runs and yields a success rate",
+    "rejoue TOUJOURS l'historique réel, même en mode « taux défini » (demande utilisateur)",
     () => {
-      const inputs = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "random" as const, goalTarget: 10_000 }
-      const result = runMonteCarlo(inputs, 150, 10_000)
-      expect(result.successRate).toBeGreaterThanOrEqual(0)
-      expect(result.successRate).toBeLessThanOrEqual(100)
+      // Le mode de rendement ne doit PLUS influencer Monte Carlo : le moteur
+      // rééchantillonne toujours les rendements réels passés. Deux modes
+      // différents avec la même graine doivent produire des résultats
+      // strictement identiques.
+      const fixed = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "fixed" as const, goalTarget: 10_000 }
+      const hist = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "historical" as const, goalTarget: 10_000 }
+      const fromFixed = runMonteCarlo(fixed, 150, 10_000)
+      const fromHist = runMonteCarlo(hist, 150, 10_000)
+      expect(fromFixed.p50).toEqual(fromHist.p50)
+      expect(fromFixed.successRate).toBe(fromHist.successRate)
+      expect(fromFixed.successRate).toBeGreaterThanOrEqual(0)
+      expect(fromFixed.successRate).toBeLessThanOrEqual(100)
     },
     MC_TIMEOUT,
   )
@@ -1191,6 +1214,16 @@ describe("régressions — corrections de l'audit", () => {
     expect(tooHigh.find(e => e.field === "mcRuns")?.severity).toBe("warning")
     const ok = validateInputs({ ...DEFAULT_INPUTS, mcRuns: 1000 })
     expect(ok.find(e => e.field === "mcRuns")).toBeUndefined()
+  })
+
+  it("validateInputs recommande 7-12 %/an brut (hors fourchette → warning)", () => {
+    const low = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.04 })
+    expect(low.find(e => e.field === "annualReturn")?.severity).toBe("warning")
+    const high = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.15 })
+    expect(high.find(e => e.field === "annualReturn")?.severity).toBe("warning")
+    // Dans la fourchette recommandée → pas de warning
+    const ok = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.1007 })
+    expect(ok.find(e => e.field === "annualReturn")).toBeUndefined()
   })
 
   it("validateInputs signale une crise programmée après la fin de la simulation", () => {
@@ -1253,6 +1286,20 @@ describe("régressions — corrections de l'audit", () => {
     expect(result.years.length).toBe(11)
     expect(result.survivalProbability).toBeGreaterThanOrEqual(0)
     expect(result.survivalProbability).toBeLessThanOrEqual(100)
+  })
+
+  it("runDecumulation rejoue TOUJOURS l'historique réel, même en mode « taux défini »", () => {
+    // Comme l'onglet Monte Carlo, la Rente ne doit plus dépendre du mode de
+    // rendement : les deux modes avec la même graine donnent des résultats
+    // strictement identiques (rendements réels passés rééchantillonnés).
+    const fixed = runDecumulation({ ...DEFAULT_INPUTS, returnMode: "fixed" as const, retirementYears: 10 }, 100_000, 100)
+    const hist = runDecumulation(
+      { ...DEFAULT_INPUTS, returnMode: "historical" as const, retirementYears: 10 },
+      100_000,
+      100,
+    )
+    expect(fixed.p50).toEqual(hist.p50)
+    expect(fixed.survivalProbability).toBe(hist.survivalProbability)
   })
 
   it(
@@ -1559,12 +1606,12 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
 })
 
 describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)", () => {
-  it("la Rente applique ENFIN le krach : returnShock de la crise sur le décumul", () => {
-    // Avant l'audit v5.2.2, sampledMonthlyReturnFn n'utilisait que le
-    // volMultiplier de la crise : le capital décumulé « tremblait » sans jamais
-    // s'effondrer. Avec un krach de -50 % en année 3, la médiane P50 à l'année
-    // 3 doit être nettement inférieure à celle sans crise (même seed → mêmes
-    // aléas, seul le choc diffère).
+  it("la Rente ne double plus le krach : la crise synthétique est neutralisée (comme Monte Carlo)", () => {
+    // Depuis la demande utilisateur, la Rente (comme Monte Carlo) rééchantillonne
+    // TOUJOURS les rendements réels passés, quel que soit le mode sélectionné.
+    // Les krachs réels sont déjà dans les rendements rejoués : appliquer la
+    // crise synthétique par-dessus les compterait deux fois. Avec la même
+    // graine, crise activée ou non doit produire des résultats identiques.
     const base = {
       ...DEFAULT_INPUTS,
       returnMode: "fixed" as const,
@@ -1587,8 +1634,7 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
       100_000,
       300,
     )
-    // P50 à la fin de l'année 3 (index 3) : le krach doit avoir entamé le capital
-    expect(crisis.p50[3] ?? 0).toBeLessThan((noCrisis.p50[3] ?? 0) * 0.7)
+    expect(crisis.p50).toEqual(noCrisis.p50)
   })
 
   it("realReturn reflète la SIMULATION (XIRR déflaté par l'inflation réelle), pas les inputs", () => {
@@ -1644,7 +1690,11 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
   it("interestsReal est le rendement réel net d'inflation (même échelle que real)", () => {
     const rows = runSimulation({ ...DEFAULT_INPUTS, envelope: "none" as const, duration: 8 })
     const last = rows[rows.length - 1]
-    expect(last.interestsReal).toBeCloseTo(last.real - last.investedReal, 2)
+    // interestsReal est un arrondi GLOBAL (real − invested, arrondi en une
+    // passe) alors que real − investedReal est la différence de deux arrondis
+    // séparés : tolérance 1 décimale (0,05 €) pour absorber l'écart d'un
+    // centime — la relation d'échelle reste vérifiée sur des dizaines de k€.
+    expect(last.interestsReal).toBeCloseTo(last.real - last.investedReal, 1)
     // interestsNom / interestsReal = facteur d'inflation cumulé
     if (last.interestsReal > 0 && last.interestsNom > 0) {
       expect(last.interestsNom / last.interestsReal).toBeCloseTo(last.nominal / last.real, 2)

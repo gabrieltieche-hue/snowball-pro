@@ -1,4 +1,5 @@
 import { SmartInput } from "./SmartInput"
+import { HelpTip } from "./HelpTip"
 
 interface SliderInputProps {
   label: string
@@ -10,6 +11,8 @@ interface SliderInputProps {
   suffix?: string
   prefix?: string
   color?: string
+  /** Texte d'aide affiché via une infobulle « ? » à côté du libellé. */
+  help?: string
   error?: string
   warning?: string
   onChange: (v: number) => void
@@ -26,6 +29,7 @@ export function SliderInput({
   onChange,
   color,
   prefix,
+  help,
   error,
   warning,
 }: SliderInputProps) {
@@ -34,10 +38,11 @@ export function SliderInput({
       <div className="flex items-center justify-between gap-2 mb-2">
         <label
           htmlFor={id}
-          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted min-w-0 leading-snug"
+          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted min-w-0 leading-snug flex items-center gap-1.5"
           style={color ? { color } : undefined}
         >
           {label}
+          {help && <HelpTip text={help} className="shrink-0" />}
         </label>
         <div className="flex items-center gap-1 min-w-0">
           {prefix && <span className="text-[11px] text-text-dim">{prefix}</span>}

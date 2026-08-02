@@ -7,7 +7,7 @@ import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
-import { fmtCurrency, getHistoricalDataset, validateInputs } from "../../engine"
+import { DEFAULT_INPUTS, fmtCurrency, getHistoricalDataset, RECOMMENDED_RETURN_MAX, RECOMMENDED_RETURN_MIN, validateInputs } from "../../engine"
 import type { ValidationError } from "../../engine"
 import type { CrisisProfile, ReturnMode, SavedSnapshot, SimulationInputs, YearRow } from "../../types"
 
@@ -35,7 +35,12 @@ export function Sidebar({
   updateInputs,
 }: SidebarProps) {
   const lastRow = rows[rows.length - 1]
-  const displayFinal = lastRow ? (inputs.showReal ? lastRow.real : lastRow.nominal) : 0
+  // Les deux échelles sont TOUJOURS affichées côte à côte : le montant qui
+  // sera sur le compte (euros courants) et son pouvoir d'achat en euros
+  // d'aujourd'hui. Le toggle ne fait plus que choisir laquelle est mise en
+  // avant — il ne cache plus jamais la valeur du compte (demande utilisateur).
+  const displayNominal = lastRow ? lastRow.nominal : 0
+  const displayReal = lastRow ? lastRow.real : 0
   const historical = getHistoricalDataset(inputs.historicalIndex)
   const historicalPeriod =
     historical.years.length > 0
@@ -109,17 +114,28 @@ export function Sidebar({
           onChange={v => updateInput("monthlyPayment", v)}
         />
         <SliderInput
-          label="Rendement annuel de la bourse (%)"
+          label="Rendement annuel de la bourse (% brut)"
           id="annual-return"
           value={inputs.annualReturn * 100}
           min={0.1}
           max={20}
           step={0.1}
+          help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur — ne saisissez jamais un taux déjà net d'inflation."
           suffix={`Soit ${((inputs.annualReturn * 100) / 12).toFixed(3)} % par mois`}
           error={fieldError("annualReturn")?.message}
           warning={fieldWarning("annualReturn")?.message}
           onChange={v => updateInput("annualReturn", v / 100)}
         />
+        {/* Le rendement saisi est TOUJOURS brut (avant inflation) : l'inflation
+            est déduite séparément par le moteur. Défaut = moyenne MSCI World
+            1970-2025 (10,07 %/an brut). Taux recommandé : 7 à 12 %/an. */}
+        <p className="text-[10px] text-text-dim leading-snug -mt-2 mb-3">
+          Rendement <strong className="text-text">brut</strong> (avant inflation) — taux recommandé :{" "}
+          <strong className="text-text">
+            {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
+          </strong>{" "}
+          · défaut {(DEFAULT_INPUTS.annualReturn * 100).toFixed(2).replace(".", ",")} %/an (moyenne MSCI World)
+        </p>
         <SliderInput
           label="Durée (années)"
           id="duration"
@@ -209,7 +225,7 @@ export function Sidebar({
           checked={inputs.showReal}
           onChange={v => updateInput("showReal", v)}
           label="Euros d'aujourd'hui"
-          sub="Affiche les montants corrigés de l'inflation"
+          sub="Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout"
         />
       </CollapsibleSection>
 
@@ -334,8 +350,8 @@ export function Sidebar({
       <div className="mb-5 glass-gold rounded-2xl p-4 border-l-2 border-primary/50">
         <p className="text-xs leading-relaxed text-text-muted">
           Projection sur <strong className="text-text">{inputs.duration} ans</strong>. Capital final :{" "}
-          <strong className="text-primary">{fmtCurrency(displayFinal)}</strong>{" "}
-          {inputs.showReal ? "en euros d'aujourd'hui" : "en euros bruts (inflation non déduite)"}.
+          <strong className="text-primary">{fmtCurrency(displayNominal)}</strong> sur le compte (fin de projet) ·{" "}
+          <strong className="text-primary">{fmtCurrency(displayReal)}</strong> en euros d'aujourd'hui.
           {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>}
           {inputs.crisisEnabled && inputs.returnMode !== "historical" && inputs.crisisYear <= inputs.duration && (
             <span className="text-danger">
@@ -343,6 +359,16 @@ export function Sidebar({
               ⚠️ Chute de la bourse en année {inputs.crisisYear} (-{inputs.crisisAmplitude}%).
             </span>
           )}
+          {inputs.annualReturn > 0 &&
+            (inputs.annualReturn < RECOMMENDED_RETURN_MIN || inputs.annualReturn > RECOMMENDED_RETURN_MAX) && (
+              <span className="block mt-2 text-[11px] text-warning leading-snug">
+                ⚠️ Rendement hors fourchette recommandée ({
+                  (RECOMMENDED_RETURN_MIN * 100).toFixed(0)
+                }–{(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an brut). Si ce taux était déjà net
+                d'inflation, l'inflation serait déduite <strong>deux fois</strong> par le simulateur et le
+                capital final serait trop pessimiste.
+              </span>
+            )}
         </p>
       </div>
 

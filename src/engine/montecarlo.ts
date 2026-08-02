@@ -47,18 +47,14 @@ export function sampleHistoricalReturns(inputs: SimulationInputs, duration: numb
 function runSinglePath(inputs: SimulationInputs, sim: number): number[] {
   const rng = mulberry32(inputs.seed * 2654435761 + sim * 7919 + 17)
   const duration = Math.max(1, inputs.duration)
-  if (inputs.returnMode === "historical") {
-    const annualReturns = sampleHistoricalReturns(inputs, duration, rng)
-    // En mode historique, les krachs réels sont DÉJÀ dans les rendements
-    // rejoués : on désactive la crise synthétique pour éviter un double comptage.
-    const simRows = runSimulation({ ...inputs, returnMode: "historical", crisisEnabled: false }, annualReturns)
-    return simRows.map(row => row.taxNet)
-  }
-  const simRows = runSimulation({
-    ...inputs,
-    returnMode: "random",
-    seed: inputs.seed + sim * 7919 + 17,
-  })
+  // Monte Carlo rejoue TOUJOURS les rendements réels passés, quel que soit le
+  // mode de rendement sélectionné (taux défini inclus) : c'est ce qui donne
+  // une distribution crédible (les krachs et les bull markets réels sont
+  // rejoués). La crise synthétique est désactivée — les krachs réels sont
+  // déjà dans les rendements rejoués, l'appliquer reviendrait à les compter
+  // deux fois.
+  const annualReturns = sampleHistoricalReturns(inputs, duration, rng)
+  const simRows = runSimulation({ ...inputs, returnMode: "historical", crisisEnabled: false }, annualReturns)
   return simRows.map(row => row.taxNet)
 }
 

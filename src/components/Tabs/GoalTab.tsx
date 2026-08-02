@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { fmtCurrency, solveGoal } from "../../engine"
+import { DEFAULT_INPUTS, fmtCurrency, RECOMMENDED_RETURN_MAX, RECOMMENDED_RETURN_MIN, solveGoal } from "../../engine"
 import { GoalProgress } from "../Simulation/GoalProgress"
 import { SliderInput } from "../shared/SliderInput"
 import { cn } from "../../utils/cn"
@@ -69,13 +69,14 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             onChange={v => updateInput("goalDuration", v)}
           />
           <SliderInput
-            label="Rendement de la bourse (%)"
+            label="Rendement de la bourse (% brut)"
             id="goal-rate"
             value={inputs.goalAnnualReturn * 100}
             min={0.1}
             max={20}
             step={0.1}
             color="#6366F1"
+            help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur — ne saisissez jamais un taux déjà net d'inflation."
             suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
             onChange={v => updateInput("goalAnnualReturn", v / 100)}
           />
@@ -91,6 +92,16 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             onChange={v => updateInput("goalPayment", v)}
           />
         </div>
+
+        {/* Cohérence avec l'onglet principal : rendement TOUJOURS brut, défaut
+            MSCI World (10,07 %/an), fourchette recommandée 7-12 %/an. */}
+        <p className="text-[10px] text-text-dim leading-snug -mt-4">
+          Rendement <strong className="text-text">brut</strong> (avant inflation) — taux recommandé :{" "}
+          <strong className="text-text">
+            {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
+          </strong>{" "}
+          · défaut {(DEFAULT_INPUTS.goalAnnualReturn * 100).toFixed(2).replace(".", ",")} %/an (moyenne MSCI World)
+        </p>
 
         {/* Résultats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,8 +1,7 @@
 import type { SimulationInputs, DecumulationResult } from "../types"
-import { mulberry32, gaussian } from "./rng"
+import { mulberry32 } from "./rng"
 import { monthlyRate, percentile } from "./math"
 import { roundCent, clamp } from "./taxes"
-import { crisisAdjustment } from "./crisis"
 // Rééchantillonnage par blocs NON CHEVAUCHANTS partagé avec l'onglet Monte
 // Carlo (une seule implémentation, pas de copie locale qui dérive) : des blocs
 // de 5 années consécutives réelles sont tirés avec remise, sans jamais
@@ -12,27 +11,6 @@ import { sampleHistoricalReturns } from "./montecarlo"
 // Taille de chunk de la variante asynchrone : laisse le thread principal
 // respirer entre deux tranches (même principe que runMonteCarloAsync).
 const DECUM_CHUNK_SIZE = 150
-
-/**
- * Rendement mensuel stochastique autour du rendement annuel attendu. Le
- * décaissement est un Monte-Carlo : on échantillonne toujours de l'aléa
- * (même en mode « fixe », l'avenir de la bourse reste incertain). En mode
- * « historique », la séquence de rendements réels est rejouée à la place
- * (voir runDecumulation) — jamais les deux à la fois.
- */
-function sampledMonthlyReturnFn(
-  inputs: SimulationInputs,
-  annualExpectedReturn: number,
-  monthIndex: number,
-  rng: () => number,
-): number {
-  const crisis = crisisAdjustment(inputs, monthIndex)
-  const sigma = clamp(inputs.volatility * crisis.volMultiplier, 0.001, 1.4)
-  const zBase = gaussian(rng)
-  const z = rng() < 0.08 ? zBase * 2.35 : zBase
-  const drift = Math.log1p(clamp(annualExpectedReturn, -0.8, 1.6)) - 0.5 * sigma * sigma
-  return Math.exp(drift / 12 + (sigma / Math.sqrt(12)) * z) - 1
-}
 
 /**
  * Retrait mensuel de base selon le modèle choisi (règle de Bengen sur le
@@ -70,7 +48,12 @@ function runDecumulationRange(
 ): void {
   for (let sim = simStart; sim < simStart + simCount; sim += 1) {
     const rng = mulberry32(inputs.seed + 100_003 + sim * 3571)
-    const historicalReturns = inputs.returnMode === "historical" ? sampleHistoricalReturns(inputs, years, rng) : null
+    // Le décaissement est un Monte-Carlo : les rendements réels passés sont
+    // TOUJOURS rééchantillonnés (taux défini inclus, comme l'onglet Monte
+    // Carlo) — les krachs et les bull markets réels sont rejoués. La crise
+    // synthétique est neutralisée : les krachs réels sont déjà dans les
+    // rendements rejoués (règle identique à runSimulation).
+    const historicalReturns = sampleHistoricalReturns(inputs, years, rng)
     const capitalPath: number[] = [roundCent(startingCapital)]
     let capital = startingCapital
     let monthlyWithdrawal = baseWithdrawal
@@ -78,23 +61,9 @@ function runDecumulationRange(
 
     for (let month = 1; month <= years * 12; month += 1) {
       const yearIndex = Math.floor((month - 1) / 12)
-      const annualReturn = historicalReturns
-        ? (historicalReturns[yearIndex] ?? inputs.annualReturn)
-        : inputs.annualReturn
-      // Historique : rendement réel de l'année, lissé au mois (comme runSimulation).
-      // Autrement : échantillonnage stochastique mensuel.
-      const marketReturn = historicalReturns
-        ? monthlyRate(annualReturn)
-        : sampledMonthlyReturnFn(inputs, annualReturn, month, rng)
-      // CRISE : le choc de rendement (le krach lui-même) doit aussi frapper le
-      // décumul. Avant l'audit v5.2.2, sampledMonthlyReturnFn n'appliquait que
-      // le multiplicateur de volatilité — la Rente voyait la bourse « trembler »
-      // sans jamais s'effondrer, incohérent avec le Simulateur et Monte Carlo.
-      // En mode historique, les krachs réels sont déjà dans les rendements
-      // rejoués : on neutralise (règle identique à runSimulation).
-      const shock = historicalReturns ? 0 : crisisAdjustment(inputs, month).returnShock
-      const returnWithShock = (1 + marketReturn) * (1 + shock) - 1
-      const capitalAfterReturn = roundCent(capital * (1 + returnWithShock))
+      // Rendement réel de l'année rejouée, lissé au mois (comme runSimulation).
+      const marketReturn = monthlyRate(historicalReturns[yearIndex] ?? inputs.annualReturn)
+      const capitalAfterReturn = roundCent(capital * (1 + marketReturn))
       // On ne peut retirer que ce qui existe : si le capital ne couvre pas le
       // retrait prévu, seule la part disponible est réellement retirée (le
       // reste serait retiré d'un capital inexistant — retraits « fantômes »,

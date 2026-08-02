@@ -1,5 +1,6 @@
 import { Info, Shield } from "lucide-react"
 import { computeTaxBreakdown, deflationFactor, ENVELOPE_CONFIGS, fmtCurrency } from "../../engine"
+import { DualAmount } from "../shared/DualAmount"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface FiscalPanelProps {
@@ -105,12 +106,18 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
       </div>
       <div className="h-px bg-border my-2" />
       {/* Capital net = carte « Net fiscal » du haut, même valeur, même échelle :
-          le panneau et les cartes racontent la même histoire (audit v5.1.4). */}
-      <div className="flex items-center justify-between">
+          le panneau et les cartes racontent la même histoire (audit v5.1.4).
+          Les DEUX échelles sont affichées (DualAmount) : la valeur du compte
+          reste visible même quand le panneau est en euros d'aujourd'hui. */}
+      <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] font-semibold text-text-muted">Capital net (impôts déduits)</span>
-        <span className="mono text-sm font-bold" style={{ color: GOLD }}>
-          {fmtCurrency(show(lastRow.taxNet))}
-        </span>
+        <DualAmount
+          nominal={lastRow.taxNet}
+          real={lastRow.taxNet * deflationFactor(lastRow)}
+          showReal={inputs.showReal}
+          color={GOLD}
+          endYear={lastRow.date.split(" ")[1]?.replace(".", "")}
+        />
       </div>
       <div className="flex justify-between items-center">
         <span className="text-[10px] text-text-dim">Part de vos gains prise par les impôts</span>
