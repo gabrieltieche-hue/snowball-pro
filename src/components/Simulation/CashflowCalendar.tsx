@@ -1,11 +1,14 @@
 import { useState } from "react"
 import { CalendarRange, ChevronDown } from "lucide-react"
-import { fmtCompact } from "../../engine"
+import { deflationFactor, fmtCompact } from "../../engine"
 import { cn } from "../../utils/cn"
 import type { YearRow } from "../../types"
 
 interface CashflowCalendarProps {
   rows: YearRow[]
+  /** Affichage en euros d'aujourd'hui : les flux sont déflatés (même échelle
+   *  que les cartes du haut — audit v5.2.2). */
+  showReal?: boolean
 }
 
 interface FlowLine {
@@ -18,17 +21,28 @@ interface FlowLine {
   net: number
 }
 
-export function CashflowCalendar({ rows }: CashflowCalendarProps) {
+export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarProps) {
   const [open, setOpen] = useState(false)
-  const flows: FlowLine[] = rows.map(r => ({
-    year: r.year,
-    date: r.date,
-    versements: r.annualContribution,
-    frais: r.fees,
-    impots: r.tax,
-    dividendes: r.dividendsNet,
-    net: r.taxNet,
-  }))
+  const flows: FlowLine[] = rows.map(r => {
+    // Déflation PAR ANNÉE : chaque flux est converti avec le facteur de
+    // l'année où il a eu lieu (real/nominal de cette ligne), pas un facteur
+    // unique de fin de projection.
+    const factor = showReal ? deflationFactor(r) : 1
+    return {
+      year: r.year,
+      date: r.date,
+      versements: r.annualContribution * factor,
+      frais: r.fees * factor,
+      // Impôts de LIQUIDATION (exit tax = nominal − taxNet), MÊME base que la
+      // carte « Impôts », le camembert, le graphique et le panneau fiscal.
+      // r.tax inclurait en plus les dividendes déjà prélevés chaque mois → la
+      // colonne « Impôts » afficherait un montant différent de la carte (audit
+      // v5.2.2).
+      impots: Math.max(0, r.nominal - r.taxNet) * factor,
+      dividendes: r.dividendsNet * factor,
+      net: r.taxNet * factor,
+    }
+  })
 
   const totals = flows.reduce(
     (acc, f) => ({
@@ -62,7 +76,7 @@ export function CashflowCalendar({ rows }: CashflowCalendarProps) {
                   {["Année", "Date", "Versements", "Frais", "Impôts", "Dividendes nets", "Capital net"].map(h => (
                     <th
                       key={h}
-                      className="text-[9px] font-bold uppercase tracking-wider text-text-dim py-2 px-3 text-left whitespace-nowrap"
+                      className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2 px-3 text-left whitespace-nowrap"
                     >
                       {h}
                     </th>
@@ -96,7 +110,7 @@ export function CashflowCalendar({ rows }: CashflowCalendarProps) {
               </tfoot>
             </table>
           </div>
-          <p className="text-[9px] text-text-dim italic mt-2">
+          <p className="text-[10px] text-text-dim italic mt-2">
             Les impôts cumulés sont une estimation de liquidation théorique (fiscalité de l'année courante) — ils ne
             sont réellement dus qu'à la revente.
           </p>

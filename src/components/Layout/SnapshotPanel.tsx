@@ -1,3 +1,4 @@
+import { useRef, useState } from "react"
 import { Camera, RotateCcw, Trash2 } from "lucide-react"
 import { fmtCurrency } from "../../engine"
 import type { SavedSnapshot } from "../../types"
@@ -10,6 +11,23 @@ interface SnapshotPanelProps {
 }
 
 export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotPanelProps) {
+  // M2 — suppression en deux temps : un premier clic arme la confirmation,
+  // le second exécute. Évite de détruire un scénario d'un simple tap (pas
+  // d'undo sur les snapshots).
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const confirmTimerRef = useRef<number | null>(null)
+
+  const requestRemove = (snap: SavedSnapshot) => {
+    if (confirmingId === snap.id) {
+      onRemove(snap.id)
+      setConfirmingId(null)
+      if (confirmTimerRef.current) window.clearTimeout(confirmTimerRef.current)
+      return
+    }
+    setConfirmingId(snap.id)
+    if (confirmTimerRef.current) window.clearTimeout(confirmTimerRef.current)
+    confirmTimerRef.current = window.setTimeout(() => setConfirmingId(c => (c === snap.id ? null : c)), 3500)
+  }
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -33,7 +51,7 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
             <li key={snap.id} className="flex items-center justify-between gap-2 glass rounded-xl px-3 py-2">
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold text-text truncate">{snap.name}</div>
-                <div className="text-[9px] text-text-dim mono truncate">{fmtCurrency(snap.finalCapital)}</div>
+                <div className="text-[10px] text-text-dim mono truncate">{fmtCurrency(snap.finalCapital)}</div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button
@@ -46,11 +64,24 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRemove(snap.id)}
-                  title="Supprimer ce snapshot"
-                  className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                  onClick={() => requestRemove(snap)}
+                  title={confirmingId === snap.id ? "Confirmer la suppression" : "Supprimer ce snapshot"}
+                  aria-label={
+                    confirmingId === snap.id
+                      ? `Confirmer la suppression de ${snap.name}`
+                      : `Supprimer ce snapshot`
+                  }
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    confirmingId === snap.id
+                      ? "bg-danger/20 text-danger animate-pulse"
+                      : "text-text-muted hover:text-danger hover:bg-danger/10"
+                  }`}
                 >
-                  <Trash2 size={12} />
+                  {confirmingId === snap.id ? (
+                    <span className="text-[10px] font-bold px-0.5">Confirmer ?</span>
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
                 </button>
               </div>
             </li>

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import { Sparkles } from "lucide-react"
-import { fmtCurrency } from "../../engine"
+import { deflationFactor, fmtCurrency } from "../../engine"
 import type { SimulationInputs, YearRow, KPIs } from "../../types"
 
 interface AIInsightCardProps {
@@ -14,10 +14,16 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
   if (!lastRow || !kpis) return null
 
   const insights: string[] = []
+  // Même échelle que les cartes du haut : quand l'affichage est en euros
+  // d'aujourd'hui, les montants cités sont déflatés (audit v5.2.2).
+  // NOTE : la déflation est UNIFORME par ligne (real/nominal identique pour
+  // toutes les colonnes) → comparer interestsNom/investedNom en nominal ou en
+  // réel donne le même résultat ; on ne déflate que l'affichage du montant.
+  const interests = inputs.showReal ? lastRow.interestsNom * deflationFactor(lastRow) : lastRow.interestsNom
   if (lastRow.interestsNom > lastRow.investedNom) {
     insights.push(
       `Votre argent a rapporté plus que ce que vous avez mis de côté : ${fmtCurrency(
-        lastRow.interestsNom,
+        interests,
       )} proviennent de la croissance de la bourse.`,
     )
   }
@@ -34,7 +40,9 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
       ).toFixed(0)}% que vous aviez prévu.`,
     )
   }
-  if (inputs.crisisEnabled) {
+  // En mode historique, la crise synthétique ne s'applique pas (les krachs
+  // réels sont déjà rejoués) — ne pas annoncer un krach qui n'est pas simulé.
+  if (inputs.crisisEnabled && inputs.returnMode !== "historical") {
     insights.push("Un krach boursier est simulé. Diversifiez vos placements pour réduire l'impact.")
   }
   if (insights.length === 0) {
@@ -61,7 +69,7 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
           {text}
         </p>
       ))}
-      <p className="text-[9px] text-text-dim mt-3 italic">
+      <p className="text-[10px] text-text-dim mt-3 italic">
         Projections hypothétiques. Les performances passées ne préjugent pas des résultats futurs.
       </p>
     </motion.div>

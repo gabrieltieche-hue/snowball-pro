@@ -81,7 +81,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
               <span className="text-[11px] text-text-muted text-right leading-snug">{row.value}</span>
             </div>
           ))}
-          <p className="text-[9px] text-text-dim italic leading-relaxed pt-2 border-t border-border/50">
+          <p className="text-[10px] text-text-dim italic leading-relaxed pt-2 border-t border-border/50">
             Les impôts affichés sont une <strong>estimation</strong> fondée sur la législation fiscale en vigueur
             (prélèvement forfaitaire unique, abattements assurance-vie, cotisations sociales) et modélisée comme une
             liquidation théorique à la fin de la projection. Les gains latents ne sont taxés qu'à la revente réelle —

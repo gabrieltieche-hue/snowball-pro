@@ -39,6 +39,7 @@ export interface YearRow {
   annualContribution: number
   yearlyReturn: number
   netYield: number
+  /** % NÉGATIF par rapport au pic (ex : -94 = -94 %), convention du graphique (courbe sous zéro). */
   drawdownPct: number
 }
 
@@ -79,6 +80,7 @@ export interface KPIs {
   xirr: number
   sharpe: number
   maxDrawdown: number
+  /** % POSITIF (ex : 94 = 94 %) — signe OPPOSÉ à YearRow.drawdownPct, ne pas comparer sans inverser. */
   maxDrawdownPct: number
   capitalMultiple: number
   doublingTime: number | null

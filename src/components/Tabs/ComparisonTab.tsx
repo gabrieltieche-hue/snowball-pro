@@ -52,7 +52,7 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
                 {["Année", "Scénario A", "Scénario B", "Écart (B − A)"].map(h => (
                   <th
                     key={h}
-                    className="text-[9px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
+                    className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
                   >
                     {h}
                   </th>

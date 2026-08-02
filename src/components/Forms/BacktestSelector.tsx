@@ -43,7 +43,7 @@ export function BacktestSelector({ value, onChange }: BacktestSelectorProps) {
           <div className="text-[10px] text-text-muted mt-1">
             {idx.avg.toFixed(1)} %/an en moyenne · Risque {idx.vol.toFixed(1)} %
           </div>
-          <div className="text-[9px] text-text-dim mt-0.5">{idx.period}</div>
+          <div className="text-[10px] text-text-dim mt-0.5">{idx.period}</div>
         </motion.button>
       ))}
     </div>

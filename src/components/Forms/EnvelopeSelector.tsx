@@ -42,7 +42,7 @@ export function EnvelopeSelector({ value, onChange }: EnvelopeSelectorProps) {
           >
             <Icon size={16} style={{ color: isActive ? env.color : "var(--color-text-muted)" }} />
             <span
-              className="text-[9px] font-bold uppercase tracking-wider"
+              className="text-[10px] font-bold uppercase tracking-wider"
               style={{ color: isActive ? env.color : "var(--color-text-muted)" }}
             >
               {env.shortLabel}

@@ -4,6 +4,132 @@
 
 ---
 
+## v5.2.3 — Audit profond v3 : la Rente applique enfin le krach + unités verrouillées partout
+
+Audit moteur et UI en profondeur (lecture des 13 modules engine + composants, croisement des unités, revue adverse) : 1 bug moteur qui faussait la Rente, 1 KPI déconnecté de la simulation, et 3 écrans qui mélangeaient encore les unités.
+
+### ⚙️ Moteur
+
+- **C1 — La Rente ignorait le krach** : `decumulation.ts` n'appliquait que le `volMultiplier` de la crise — la bourse « tremblait » mais ne s'effondrait jamais (incohérent avec le Simulateur et Monte Carlo). Le `returnShock` est désormais appliqué mois par mois (neutralisé en mode historique, règle identique à `runSimulation`).
+- **C2 — KPI « Après inflation » déconnecté de la simulation** : `realReturn` utilisait `(1+annualReturn)/(1+inflation)−1` (les inputs), faux dès que le mode était historique ou aléatoire. Il est maintenant calculé sur le **XIRR réellement simulé** déflaté par l'inflation RÉELLEMENT appliquée (dérivée du rapport nominal/réel cumulé de la projection).
+- **C3 — Camembert ≠ carte** : `CapitalAllocation` affichait `totalTax` (dividendes inclus) quand les cartes et le graphique affichent l'**exit tax** (nominal − taxNet). Aligné sur la même base.
+
+### 📏 Unités
+
+- **`FiscalPanel`** : « Total des impôts » = exit tax (social + IR) — plus de double comptage des dividendes déjà prélevés chaque mois ; nouvelle ligne « Impôts sur dividendes (déjà prélevés) » ; taux effectif recalculé sur la base affichée.
+- **`CashflowCalendar`** : colonne « Impôts » alignée sur l'exit tax (comme les cartes) et respect de `showReal` (déflation par année).
+- **`FeeImpact`** : les frais affichés suivent `showReal` (déflatés en euros d'aujourd'hui).
+- **`AIInsightCard`** : montant des gains déflaté quand `showReal` (et suppression d'une branche logiquement morte détectée en revue).
+
+### Tests
+
+- **+5 tests de non-régression** (krach sur la Rente, realReturn simulé, identité brut − impôts = net, interestsReal, déflation FeeImpact). **153 tests au total.**
+- Revue adverse (code-reviewer) : 2 points intégrés (branche morte AIInsightCard, colonne Impôts du calendrier) + test tautologique nettoyé.
+
+---
+
+## v5.2.2 — Audit moteur v2 : 10 bugs corrigés, Rente asynchrone, a11y des graphiques
+
+Deuxième passe d'audit en profondeur (test moteur + runtime Playwright + revue adverse) : corrections moteur, performance, accessibilité — et un fix bloquant de chaîne de build.
+
+### 🚨 Critique — typecheck cassé (lucide-react)
+
+- `lucide-react@^1.25.0` montait vers 1.28.0 qui **ne fournit plus `dist/lucide-react.d.ts`** → 20 erreurs TS7016, CI rouge. **Épinglé à `1.25.0` exact** (vérifié : types présents dans le tarball). `package.json` + `package-lock.json`.
+
+### ⚙️ Moteur
+
+- **B1 — Monte Carlo lent (130 s à 10k runs)** : `toLocaleDateString("fr-FR")` appelé dans la boucle chaude (`simulation.ts`) → **mémoïsé** via un cache module-level clé `(startYear, month)` (10 000×26 appels réduits à ~26).
+- **B2 — Gel main-thread de la Rente (5,4 s à 10k)** : `decumulation.ts` réécrit — cœur partagé `runDecumulationRange` + **`runDecumulationAsync` chunké (150) avec `AbortController`** et `onProgress`, résultats bit-à-bit identiques au synchrone. `App.tsx` câblé en async avec garde anti-race ; `RenteRetraiteTab` : bouton « Calcul… X% » + barre de progression.
+- **B3 — Crise doublée en mode historique** : `runSimulation` n'applique plus le choc synthétique quand `returnMode === "historical"` (les krachs réels sont déjà rejoués). UI alignée : Sidebar, recap Monte-Carlo, AIInsightCard, composante inflation stagflation neutralisée. Vérifié runtime : capital final inchangé à l'activation.
+- **B4 — XIRR dégénéré (4 700 %/an)** : garde `finalValue <= 0 → 0` dans `computeXIRR`.
+- **B5 — Onglet Objectif contradictoire** : `totalGains` clampé à 0 (plus de -400 k€) ; `achievable` cohérent avec `difficulty` (un objectif « impossible » n'est plus « atteignable »).
+- **B6 — Retraits fantômes** : on ne retient que `min(retrait, capital disponible)` — la courbe de retraits ne grimpe plus après l'épuisement (+ retrait partiel exact au mois de ruine).
+- **B7 — Rendement < -100 %** : `yearlyReturn`/`netYield` bornés à -1 (ratio).
+- **B8 — Cache MC incomplet** : `inflationMode` ajouté à `inputsHash` → l'avertissement « relancez » se déclenche à la bascule custom/historique/cyclique.
+- **B9 — Conventions drawdownPct** : signe/unité documentés dans `types.ts`.
+
+### ♿ Accessibilité
+
+- **`useChartA11y` corrigé** : Recharts ré-applique `role="application"` à chaque re-render après le montage — un simple `useEffect` ne tenait pas. Le hook utilise désormais un **`MutationObserver`** (converge, `aria-label` stable, observer nettoyé au démontage). Vérifié runtime : `role=img` stable au chargement ET après re-render.
+
+### Tests
+
+- **+9 tests de non-régression** (B2–B7 : async chunké + abort, crise historique, XIRR, solveGoal, retraits, clamps). **148 tests au total** (engine node + composants jsdom).
+- Vérification runtime Playwright : **16/16 checks** (Rente historique, partage URL roundtrip, raccourcis ⌘Z/⌘⇧Z, stale warning, exports, snapshots 2-clics, dark mode, reduced-motion, console propre).
+
+---
+
+## v5.2.1 — Exports groupés + échelle « euros d'aujourd'hui » cohérente partout
+
+Audit utilisateur : les 4 écrans qui affichaient des montants ne racontaient pas la même histoire selon le toggle « euros d'aujourd'hui ». Aucun changement de logique moteur — uniquement la couche d'affichage.
+
+### 🗂 Exports regroupés dans un menu
+
+- **Un seul bouton « Exporter »** (doré, avec chevron) remplace les trois boutons CSV / JSON / PDF de l'ActionBar. Au clic, un popup propose **Export CSV**, **Export JSON** et **Rapport PDF** (icône + description). Fermeture au clic extérieur ou à Échap ; `role=menu`/`menuitem` + `aria-expanded` (accessibilité). Nouveau composant `src/components/Layout/ExportMenu.tsx`.
+
+### 📏 Échelle « euros d'aujourd'hui » cohérente sur tous les écrans
+
+Le toggle `showReal` (euros d'aujourd'hui vs euros courants) était appliqué de façon inégale : la carte « Valeur brute » basculait, mais « Net fiscal » restait en euros courants → net (1 176 k€) affiché PLUS ÉLEVÉ que le brut (862 k€), absurde. Même incohérence entre la carte « Impôts » (176 k€) et le tooltip du graphique (303 k€).
+
+- **`SummaryStats`** : libellé « Valeur brute » → **« Valeur réelle »** quand l'affichage est en euros d'aujourd'hui (plus de contradiction brut/inflation). Toutes les cartes suivent désormais la même échelle (`Net fiscal`, nouvelle carte **« Impôts »** qui remplace « Pouvoir d'achat » — doublon du Net fiscal dès que showReal est actif). Sous-texte « Impôts estimés (règles en vigueur) : -x € » supprimé (hérité du millésime fiscal retiré en v5.1.3).
+- **`FiscalPanel`** : déflate ses montants quand showReal est actif (badge « € d'aujourd'hui ») et ajoute la ligne de synthèse **« Capital net (impôts déduits) »** — exactement la valeur de la carte « Net fiscal » : le panneau et les cartes racontent la même histoire. Paragraphe « règles fiscales en vigueur » simplifié.
+- **`EquityChart`** : la courbe/tooltip « Impôts payés » est déflatée comme l'épargne et les gains (`buildEquitySeries`, fonction pure). Plus de tooltip à 303 458 € à côté d'une carte à 176 778 €.
+- **`CapitalAllocation`** (camembert « D'où vient votre argent ? ») : la légende déflate aussi quand showReal est actif (prop `showReal`).
+- **Helper partagé `deflationFactor(row)`** dans `engine/math.ts` : une seule source de vérité pour convertir euros courants → euros d'aujourd'hui (avant : facteur recalculé à l'identique dans 4 composants, source de dérive).
+
+### Tests
+
+- `buildEquitySeries` : 3 tests (déflation des impôts en showReal, euros courants sinon, zéro sans enveloppe fiscale).
+- Menu Export : 2 tests composants (popup CSV/JSON/PDF, fermeture au clic extérieur).
+- 148 tests au total (engine node + composants jsdom).
+
+---
+
+## v5.2.0 — Audit UI/UX : contraste WCAG AA, accessibilité, lisibilité, mobile
+
+Correction intégrale du rapport d'audit UI/UX (2 critiques, 8 importants, 10 moyens) — aucun changement de logique moteur, uniquement la couche visuelle et l'accessibilité.
+
+### 🟥 Critiques
+
+- **C1 — Contraste or/sombre (WCAG AA)** : le texte blanc sur l'or `#d4af37` ne faisait que **2.1:1** en mode sombre. Nouvelle classe `.btn-gold-text` (texte sombre sur or en sombre → 8.6:1, blanc en clair) appliquée à « Rapport PDF », onglet actif, « Comparer » actif, « Lancer » (Monte Carlo & Rente), « Recharger ». Rail de toggle `.toggle-on` assombri (`#8a6d1f`) pour le point blanc (3:1 non-textuel).
+- **C2 — Champs numériques sans nom accessible** : `SliderInput` — le `<input type=range>` porte désormais `id` (le `label htmlFor` fonctionne, le clic focus le slider) et la saisie directe `SmartInput` reçoit un `aria-label` (les 6 textboxes sont maintenant nommées).
+
+### 🟧 Importants
+
+- **I1 — Sidebar sticky supprimée** : haute de 2 225 px dépliée, elle épinglait ses sections basses (Frais, Snapshots) sous le pli pendant tout le scroll — elle suit désormais le document.
+- **I2 — Crise au-delà de la durée** : `validateInputs` signale un warning `crisisYear > duration` (« elle ne sera pas appliquée »), le curseur « Année de la chute » est borné à la durée, et l'encart sidebar n'annonce plus un krach non simulé.
+- **I3 — Contraste `text-dim`** : `#7a7265` → `#a39a8c` (sombre, 4.0→6.8:1) et `#8a847a` → `#6f6a5f` (clair, 3.3→4.9:1). Ticks Recharts alignés.
+- **I4 — Tailles de police** : tous les textes à 8/9 px passent à 10 px (badges fiscal, en-têtes de table, chips), labels de sliders à 11 px, ticks de graphiques à 11 px — plus aucun élément à 8/9 px.
+- **I5 — « Rapport PDF » en mode sombre** : le CSS `@media print` force désormais ticks/grille/courbes Recharts en encres sombres sur papier blanc.
+- **I6 — Hiérarchie de titres** : `h1` sr-only en tête de page + graphiques principaux en `h2` (Projection, Baisses, Répartition, Comparaison).
+- **I7 — Focus visible** : outline `#60a5fa` (clair) / `#1e40af` (sombre) — plus jamais or-sur-or invisible ; anneau de focus bleu sur les sliders (`:focus-visible`).
+- **I8 — Surcharge de l'onglet Simulateur** : la table « Détail année par année » (26 lignes) est repliée par défaut.
+
+### 🟨 Moyens
+
+- **M1** — Tooltips tactiles : sur pointeur coarse (mobile), les tooltips Recharts passent en déclenchement au clic (`useIsCoarsePointer`).
+- **M2** — Suppression de snapshot en deux temps : 1ᵉʳ clic arme la confirmation (3,5 s), le 2ᵉ supprime — plus de destruction par un simple tap.
+- **M3** — `aria-label` sur la saisie du montant fixe de la Rente.
+- **M4** — `prefers-reduced-motion` : coupe animations CSS + `<MotionConfig reducedMotion="user">` (framer-motion) dans `main.tsx`.
+- **M5** — `title` sur les valeurs tronquées de `SummaryStats` (montant toujours lisible en survol).
+- **M6** — ActionBar : retour à la ligne gauche-alignée sur mobile (`max-sm:justify-start`), espacement resserré.
+- **M7** — Recharts `role="application"` remplacé par `role="img"` + `aria-label` non focusable (`useChartA11y`) — tabulation clavier nettoyée.
+- **M8** — `backdrop-filter` 28/32 px → 16/20 px + fallback `@supports` (moins de jank au scroll).
+- **M9** — Animations Recharts désactivées sur les graphes en direct (Épargne, Baisses) : plus de lag pendant le drag des sliders.
+- **M10** — Bordures du mode clair renforcées (0.06 → 0.12/0.14/0.16) — fini le rendu délavé.
+
+### Bruit
+
+- Bornes min/max affichées sous chaque slider (cohérence avec l'onglet Rente).
+- `SegmentedControl` : roving tabindex + flèches ←/→/Home/End (pattern radiogroup ARIA).
+- Meta description + `theme-color` (clair/sombre) dans `index.html`.
+
+### Divers
+
+- Tests : +1 test moteur (crise > durée), test snapshot adapté à la confirmation 2 temps. Version 5.1.3 → 5.2.0 (package.json, sw.js `CACHE_VERSION`).
+
+---
+
 ## v5.1.3 — Suppression du « Millésime fiscal » + fiscalité TMI/barème
 
 - **Suppression du réglage « Millésime fiscal »** : le curseur 2020–2032 ne

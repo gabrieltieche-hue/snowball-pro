@@ -31,6 +31,8 @@ import {
 import { fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { cn } from "@/utils/cn"
+import { useChartA11y } from "../../hooks/useChartA11y"
+import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
 
 import type { DecumulationResult, SimulationInputs, WithdrawalModel, YearRow } from "../../types"
 
@@ -85,6 +87,8 @@ interface RenteRetraiteTabProps {
   updateInputs: (partial: Partial<SimulationInputs>) => void
   runDecum: () => void
   isStale?: boolean
+  running?: boolean
+  progress?: number
 }
 
 export function RenteRetraiteTab({
@@ -96,6 +100,8 @@ export function RenteRetraiteTab({
   updateInputs,
   runDecum,
   isStale = false,
+  running = false,
+  progress = 0,
 }: RenteRetraiteTabProps) {
   const theme = chartTheme(darkMode)
   const startingCapital = lastRow?.nominal && lastRow.nominal > 0 ? lastRow.nominal : inputs.capitalInitial
@@ -227,6 +233,7 @@ export function RenteRetraiteTab({
                     step={50}
                     value={inputs.withdrawalFixed}
                     onChange={e => updateInput("withdrawalFixed", Math.max(0, Number(e.target.value) || 0))}
+                    aria-label="Montant de la rente fixe en euros par mois"
                     className="mono text-base font-bold bg-glass border border-border rounded-lg px-2 py-1 outline-none focus:border-primary/50 transition-colors w-32"
                   />
                   <span className="text-xs text-text-dim">€ / mois</span>
@@ -261,7 +268,7 @@ export function RenteRetraiteTab({
                 aria-label="Durée de la rente en années"
                 style={{ accentColor: "var(--color-primary)" }}
               />
-              <div className="flex justify-between text-[9px] text-text-dim mt-1">
+              <div className="flex justify-between text-[10px] text-text-dim mt-1">
                 <span>5 ans</span>
                 <span>60 ans</span>
               </div>
@@ -287,7 +294,7 @@ export function RenteRetraiteTab({
               <div
                 className={cn(
                   "relative w-10 h-5 rounded-full transition-colors duration-300 flex-shrink-0",
-                  inputs.withdrawalInflation ? "bg-primary" : "bg-text-dim/30",
+                  inputs.withdrawalInflation ? "toggle-on" : "bg-text-dim/30",
                 )}
               >
                 <motion.div
@@ -303,17 +310,34 @@ export function RenteRetraiteTab({
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               onClick={runDecum}
-              disabled={!lastRow || lastRow.nominal <= 0}
+              disabled={!lastRow || lastRow.nominal <= 0 || running}
               className={cn(
                 "w-full rounded-xl py-3.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors",
-                lastRow && lastRow.nominal > 0
-                  ? "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary"
+                lastRow && lastRow.nominal > 0 && !running
+                  ? "bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary"
                   : "bg-text-dim/20 text-text-dim cursor-not-allowed",
               )}
             >
-              <Play size={13} fill="currentColor" /> Lancer la simulation Monte-Carlo
-              {decumResult && <RefreshCw size={11} className="opacity-70" />}
+              <Play size={13} fill="currentColor" />{" "}
+              {running ? `Calcul... ${progress}%` : "Lancer la simulation Monte-Carlo"}
+              {!running && decumResult && <RefreshCw size={11} className="opacity-70" />}
             </motion.button>
+
+            {/* Barre de progression : le calcul est découpé en chunks pour ne
+                pas geler l'interface (comme l'onglet Monte Carlo) */}
+            {running && (
+              <div className="space-y-1.5">
+                <div className="h-1.5 rounded-full bg-text-dim/20 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-primary-light transition-all duration-200"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-text-dim text-right mono">
+                  {progress}% — interface fluide pendant le calcul
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -362,7 +386,7 @@ export function RenteRetraiteTab({
                     Taux {(rate * 100).toFixed(1).replace(/\.0$/, "")} %
                   </span>
                   {isCurrent && (
-                    <span className="text-[9px] mono font-bold text-primary uppercase tracking-wider">Actuel</span>
+                    <span className="text-[10px] mono font-bold text-primary uppercase tracking-wider">Actuel</span>
                   )}
                 </div>
                 <div className="mono text-lg sm:text-xl font-bold" style={{ color: tone }}>
@@ -413,6 +437,8 @@ function ResultsSection({
   const finalSurvival = finalMedian > 0
   const success = survival >= 85
   const [showGuide, setShowGuide] = useState(false)
+  const chartRef = useChartA11y("Votre capital pendant la retraite — P10, P50 et P90")
+  const coarse = useIsCoarsePointer()
 
   return (
     <motion.div
@@ -575,7 +601,7 @@ function ResultsSection({
               </p>
             </div>
           )}
-          <div className="h-72 sm:h-80">
+          <div ref={chartRef} className="h-72 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 margin={{ top: 10, right: 16, bottom: 8, left: 8 }}
@@ -601,11 +627,12 @@ function ResultsSection({
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
                 <XAxis
                   dataKey="year"
-                  tick={{ fill: theme.tick, fontSize: 10 }}
+                  tick={{ fill: theme.tick, fontSize: 11 }}
                   interval={Math.max(0, Math.floor(decumResult.years.length / 10))}
                 />
-                <YAxis tick={{ fill: theme.tick, fontSize: 10 }} tickFormatter={(v: number) => fmtCompact(v)} />
+                <YAxis tick={{ fill: theme.tick, fontSize: 11 }} tickFormatter={(v: number) => fmtCompact(v)} />
                 <Tooltip
+                  trigger={coarse ? "click" : "hover"}
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null
                     return (

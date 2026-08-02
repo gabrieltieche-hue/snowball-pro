@@ -1,3 +1,15 @@
+import type { YearRow } from "../types"
+
+/**
+ * Facteur de conversion euros courants → euros d'aujourd'hui (real/nominal).
+ * Source unique de déflation pour les cartes, le panneau fiscal et les
+ * graphiques : sans lui, chaque écran recalculait son propre facteur et les
+ * montants dérivaient (303 k€ d'impôts nominaux à côté d'une carte à 176 k€).
+ */
+export function deflationFactor(row: YearRow): number {
+  return row.nominal > 0 ? row.real / row.nominal : 1
+}
+
 export function monthlyRate(annualRate: number): number {
   const safeRate = Math.max(annualRate, -0.95)
   return Math.pow(1 + safeRate, 1 / 12) - 1

@@ -46,6 +46,10 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         // l'avertissement « relancez » ne se déclenchait pas à la modification.
         goalTarget: inputs.goalTarget,
         inflation: inputs.inflation,
+        // Mode d'inflation (custom/historique/dynamique) : il change le
+        // résultat via annualInflationForYear — son absence rendait le cache
+        // « à jour » à tort après un basculement (audit B8).
+        inflationMode: inputs.inflationMode,
         taxCouple: inputs.taxCouple,
         peaYearsHeld: inputs.peaYearsHeld,
         avYearsHeld: inputs.avYearsHeld,
@@ -157,7 +161,7 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
               "inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-colors whitespace-nowrap",
               running
                 ? "bg-text-dim/20 text-text-dim cursor-not-allowed"
-                : "bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary",
+                : "bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary",
             )}
           >
             <Play size={13} fill="currentColor" />{" "}
@@ -224,7 +228,7 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
       </div>
 
       {/* Krach recap */}
-      {inputs.crisisEnabled && lastRow && noCrisisRow && (
+      {inputs.crisisEnabled && (
         <div
           className={cn(
             "rounded-2xl p-5 border border-[#8B3A3A]/30 border-l-2 border-l-danger",
@@ -236,12 +240,24 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
           <h3 className="text-xs font-bold text-danger uppercase tracking-wider mb-2.5">
             ⚠️ Et si la bourse s'effondrait en année {inputs.crisisYear} ?
           </h3>
-          <p className="text-xs text-text-muted leading-relaxed">
-            Une chute brutale de <strong className="text-danger">-{inputs.crisisAmplitude}%</strong> est simulée en
-            année <strong className="text-text">{inputs.crisisYear}</strong>. Votre capital final serait de{" "}
-            <strong className="text-danger">{fmtCurrency(lastRow?.nominal ?? 0)}</strong> au lieu de{" "}
-            <strong className="text-text">{fmtCurrency(noCrisisRow?.nominal ?? 0)}</strong> sans cette chute.
-          </p>
+          {inputs.returnMode === "historical" ? (
+            <p className="text-xs text-text-muted leading-relaxed">
+              En mode <strong className="text-text">historique</strong>, les krachs réels de l'indice{" "}
+              <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> sont déjà
+              rejoués dans les rendements : la crise synthétique ne s'applique pas ici (elle est désactivée pour
+              éviter un double comptage, comme dans l'onglet Monte Carlo et la Rente).
+            </p>
+          ) : (
+            lastRow &&
+            noCrisisRow && (
+              <p className="text-xs text-text-muted leading-relaxed">
+                Une chute brutale de <strong className="text-danger">-{inputs.crisisAmplitude}%</strong> est simulée en
+                année <strong className="text-text">{inputs.crisisYear}</strong>. Votre capital final serait de{" "}
+                <strong className="text-danger">{fmtCurrency(lastRow?.nominal ?? 0)}</strong> au lieu de{" "}
+                <strong className="text-text">{fmtCurrency(noCrisisRow?.nominal ?? 0)}</strong> sans cette chute.
+              </p>
+            )
+          )}
         </div>
       )}
     </div>

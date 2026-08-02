@@ -23,7 +23,7 @@ interface SimulatorTabProps {
 export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const milestones = useMemo(() => computeMilestones(rows), [rows])
-  const [tableOpen, setTableOpen] = useState(true)
+  const [tableOpen, setTableOpen] = useState(false)
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -44,17 +44,17 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
       {inputs.crisisEnabled ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DrawdownChart rows={rows} darkMode={darkMode} />
-          <CapitalAllocation rows={rows} darkMode={darkMode} />
+          <CapitalAllocation rows={rows} darkMode={darkMode} showReal={inputs.showReal} />
         </div>
       ) : (
-        <CapitalAllocation rows={rows} darkMode={darkMode} />
+        <CapitalAllocation rows={rows} darkMode={darkMode} showReal={inputs.showReal} />
       )}
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
 
       <MethodologyPanel inputs={inputs} />
 
-      <CashflowCalendar rows={rows} />
+      <CashflowCalendar rows={rows} showReal={inputs.showReal} />
 
       <div className="glass rounded-3xl overflow-hidden">
         <button

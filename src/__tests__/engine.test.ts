@@ -19,6 +19,7 @@ import {
   validateInputs,
   sanitizeInputs,
   runDecumulation,
+  runDecumulationAsync,
   v4SettingsToInputs,
   parseStoredInputs,
   DEFAULT_INPUTS,
@@ -659,7 +660,8 @@ describe("chartTheme", () => {
   it("returns dark colors when darkMode is true", () => {
     const theme = chartTheme(true)
     expect(theme.grid).toBe("rgba(255,255,255,0.04)")
-    expect(theme.tick).toBe("#7A7265")
+    // I3 — tick aligné sur --color-text-dim (WCAG AA 4.5:1) : #A39A8C
+    expect(theme.tick).toBe("#A39A8C")
   })
 
   it("returns theme-safe series colors", () => {
@@ -1117,6 +1119,18 @@ describe("régressions — corrections de l'audit", () => {
     expect(ok.find(e => e.field === "mcRuns")).toBeUndefined()
   })
 
+  it("validateInputs signale une crise programmée après la fin de la simulation", () => {
+    const base = { ...DEFAULT_INPUTS, duration: 10, crisisEnabled: true, crisisYear: 15 }
+    const crisis = validateInputs(base).find(e => e.field === "crisisYear")
+    expect(crisis?.severity).toBe("warning")
+    expect(crisis?.max).toBe(10)
+    // Pas de faux positif : crise dans la durée, ou crise désactivée
+    const inRange = validateInputs({ ...base, crisisYear: 8 })
+    expect(inRange.find(e => e.field === "crisisYear")).toBeUndefined()
+    const disabled = validateInputs({ ...base, crisisEnabled: false })
+    expect(disabled.find(e => e.field === "crisisYear")).toBeUndefined()
+  })
+
   it("Sharpe vaut 0 (masqué) en mode fixe — plus de ratio explosé", () => {
     const inputs = { ...DEFAULT_INPUTS, returnMode: "fixed" as const, duration: 10, volatility: 0.155 }
     const kpis = computeKPIs(runSimulation(inputs), inputs)
@@ -1360,5 +1374,232 @@ describe("tmi / ctoTaxMode — persistance et validation", () => {
   it("sanitizeInputs borne la TMI à 45 %", () => {
     const safe = sanitizeInputs({ ...DEFAULT_INPUTS, tmi: 2 })
     expect(safe.tmi).toBe(0.45)
+  })
+})
+
+describe("régressions — audit v2 (perf & logique moteur)", () => {
+  it("XIRR dégénéré : valeur finale 0 → rendement 0 (plus de 4 700 %/an absurde)", () => {
+    const xirr = computeXIRR({ ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 10 }, 0)
+    expect(xirr).toBe(0)
+  })
+
+  it("solveGoal : capital de départ > objectif → gains nuls (plus de -400 k€)", () => {
+    const result = solveGoal({ ...DEFAULT_INPUTS, goalTarget: 500_000, goalCapital: 1_000_000, goalDuration: 10 })
+    expect(result.totalGains).toBe(0)
+    expect(result.totalGains as number).toBeGreaterThanOrEqual(0)
+  })
+
+  it("solveGoal : objectif irréaliste → achievable=false cohérent avec difficulty=impossible", () => {
+    const result = solveGoal({ ...DEFAULT_INPUTS, goalTarget: 100_000_000, goalPayment: 500, goalDuration: 50 })
+    expect(result.difficulty).toBe("impossible")
+    expect(result.achievable).toBe(false)
+  })
+
+  it("solveGoal : objectif réaliste → achievable=true cohérent avec la difficulté", () => {
+    const result = solveGoal({
+      ...DEFAULT_INPUTS,
+      goalTarget: 1_000_000,
+      goalCapital: 25_000,
+      goalPayment: 1000,
+      goalDuration: 20,
+      goalAnnualReturn: 0.09,
+    })
+    expect(result.achievable).toBe(true)
+    expect(result.difficulty).not.toBe("impossible")
+  })
+
+  it("runDecumulation : plus de retraits fantômes après l'épuisement du capital", () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      returnMode: "fixed" as const,
+      annualReturn: 0.01,
+      withdrawalModel: "custom" as const,
+      withdrawalFixed: 5_000,
+      withdrawalInflation: false,
+      retirementYears: 30,
+      mcRuns: 100,
+    }
+    const result = runDecumulation(inputs, 10_000, 100)
+    // 10 k€ retirés à 5 k€/mois → ruiné dans l'année 1. Avant le correctif,
+    // la courbe de retraits continuait de grimper (5 000 €/mois « retirés »
+    // d'un capital inexistant) : ici elle doit rester à 0 après la ruine.
+    expect(result.withdrawals[5]).toBe(0)
+    expect(result.withdrawals[result.withdrawals.length - 1]).toBe(0)
+  })
+
+  it("crise historique : plus de double comptage (Simulateur cohérent avec MC/Rente)", () => {
+    const base = {
+      ...DEFAULT_INPUTS,
+      returnMode: "historical" as const,
+      historicalIndex: "sp500" as const,
+      duration: 10,
+      monthlyPayment: 0,
+      envelope: "none" as const,
+      crisisEnabled: true,
+      crisisProfile: "bear-market" as const,
+      crisisYear: 3,
+      crisisAmplitude: 50,
+      crisisDuration: 2,
+    }
+    const withCrisis = runSimulation(base)
+    const withoutCrisis = runSimulation({ ...base, crisisEnabled: false })
+    expect(withCrisis.map(r => r.nominal)).toEqual(withoutCrisis.map(r => r.nominal))
+  })
+
+  it("yearlyReturn / netYield bornés à -100 % (plus de -515 % impossible)", () => {
+    const rows = runSimulation({
+      ...DEFAULT_INPUTS,
+      annualReturn: -0.95,
+      monthlyPayment: 1000,
+      indexation: 0.5,
+      duration: 2,
+      envelope: "none",
+      etfFees: 0,
+      brokerageFees: 0,
+      insuranceFees: 0,
+      managementFees: 0,
+      dividendYield: 0,
+    })
+    for (const row of rows) {
+      expect(row.yearlyReturn).toBeGreaterThanOrEqual(-1)
+      expect(row.netYield).toBeGreaterThanOrEqual(-1)
+    }
+  })
+
+  it("runDecumulationAsync produit des résultats identiques à runDecumulation", async () => {
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 100, retirementYears: 15 }
+    const syncResult = runDecumulation(inputs, 100_000, 100)
+    const asyncResult = await runDecumulationAsync(inputs, 100_000, 100)
+    expect(asyncResult.p50).toEqual(syncResult.p50)
+    expect(asyncResult.withdrawals).toEqual(syncResult.withdrawals)
+    expect(asyncResult.ruinProbability).toBe(syncResult.ruinProbability)
+    expect(asyncResult.runs).toBe(syncResult.runs)
+  })
+
+  it("runDecumulationAsync supporte l'annulation (AbortController)", async () => {
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 10_000, retirementYears: 40 }
+    const controller = new AbortController()
+    controller.abort()
+    // Le message du DOMException est français (« Décaissement annulé ») : on
+    // vérifie le name ("AbortError"), pas le message.
+    await expect(runDecumulationAsync(inputs, 100_000, 10_000, undefined, controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    })
+  })
+})
+
+describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)", () => {
+  it("la Rente applique ENFIN le krach : returnShock de la crise sur le décumul", () => {
+    // Avant l'audit v5.2.2, sampledMonthlyReturnFn n'utilisait que le
+    // volMultiplier de la crise : le capital décumulé « tremblait » sans jamais
+    // s'effondrer. Avec un krach de -50 % en année 3, la médiane P50 à l'année
+    // 3 doit être nettement inférieure à celle sans crise (même seed → mêmes
+    // aléas, seul le choc diffère).
+    const base = {
+      ...DEFAULT_INPUTS,
+      returnMode: "fixed" as const,
+      annualReturn: 0.05,
+      withdrawalModel: "rule-4" as const,
+      withdrawalInflation: false,
+      retirementYears: 15,
+      mcRuns: 300,
+    }
+    const noCrisis = runDecumulation(base, 100_000, 300)
+    const crisis = runDecumulation(
+      {
+        ...base,
+        crisisEnabled: true,
+        crisisProfile: "flash-crash" as const,
+        crisisYear: 3,
+        crisisAmplitude: 50,
+        crisisDuration: 1,
+      },
+      100_000,
+      300,
+    )
+    // P50 à la fin de l'année 3 (index 3) : le krach doit avoir entamé le capital
+    expect(crisis.p50[3] ?? 0).toBeLessThan((noCrisis.p50[3] ?? 0) * 0.7)
+  })
+
+  it("realReturn reflète la SIMULATION (XIRR déflaté par l'inflation réelle), pas les inputs", () => {
+    // En mode historique, le rendement saisi (annualReturn) n'est PAS celui
+    // rejoué : l'ancien calcul (1+annualReturn)/(1+inflation)−1 était faux.
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      returnMode: "historical" as const,
+      historicalIndex: "sp500" as const,
+      monthlyPayment: 0,
+      envelope: "none" as const,
+      dividendYield: 0,
+      etfFees: 0,
+      brokerageFees: 0,
+      insuranceFees: 0,
+      managementFees: 0,
+      inflation: 0.02,
+      duration: 5,
+      annualReturn: 0.08, // rendement saisi ≠ rendements réels rejoués
+    }
+    const rows = runSimulation(inputs)
+    const kpis = computeKPIs(rows, inputs)
+    // Invariant : realReturn = (1+xirr)/(1+inflation réelle) − 1, avec
+    // l'inflation réelle dérivée du rapport nominal/réel de la projection.
+    const last = rows[rows.length - 1]
+    const cumulativeInfl = last.nominal / last.real
+    const avgInfl = Math.pow(cumulativeInfl, 1 / 5) - 1
+    const expected = (1 + kpis.xirr / 100) / (1 + avgInfl) - 1
+    expect(kpis.realReturn).toBeCloseTo(expected * 100, 0)
+    // Et surtout : ce n'est plus (1+annualReturn)/(1+inflation)−1
+    const naive = (1 + inputs.annualReturn) / (1 + inputs.inflation) - 1
+    expect(Math.abs(kpis.realReturn / 100 - naive)).toBeGreaterThan(0.001)
+  })
+
+  it("impôts affichés = exit tax (brut − net) : les dividendes déjà taxés ne sont pas re-comptés", () => {
+    // Avec des dividendes, row.tax = exitTax + dividendTax. La carte « Impôts »
+    // et le camembert affichent exitTax = nominal − taxNet : l'identité
+    // « brut − impôts = net » doit tenir, et dividendTax doit rester à part.
+    const rows = runSimulation({
+      ...DEFAULT_INPUTS,
+      envelope: "cto" as const,
+      dividendYield: 0.03,
+      duration: 10,
+    })
+    const last = rows[rows.length - 1]
+    const exitTax = Math.max(0, last.nominal - last.taxNet)
+    // brut − exitTax = net (identité affichée par les cartes)
+    expect(last.nominal - exitTax).toBeCloseTo(last.taxNet, 2)
+    // exitTax = social + impôt sur le revenu (pas les dividendes)
+    expect(exitTax).toBeCloseTo(last.socialCharges + last.incomeTax, 2)
+    // totalTax = exitTax + dividendTax : la version « totale » sur-compte les
+    // dividendes déjà prélevés → c'est bien elle qu'on n'affiche plus
+    expect(last.tax).toBeCloseTo(exitTax + last.dividendTax, 2)
+    expect(last.dividendTax).toBeGreaterThan(0) // le scénario a bien des dividendes
+  })
+
+  it("interestsReal est le rendement réel net d'inflation (même échelle que real)", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, envelope: "none" as const, duration: 8 })
+    const last = rows[rows.length - 1]
+    expect(last.interestsReal).toBeCloseTo(last.real - last.investedReal, 2)
+    // interestsNom / interestsReal = facteur d'inflation cumulé
+    if (last.interestsReal > 0 && last.interestsNom > 0) {
+      expect(last.interestsNom / last.interestsReal).toBeCloseTo(last.nominal / last.real, 2)
+    }
+  })
+
+  it("FeeImpact : l'impact des frais est déflaté quand showReal est actif (même unité que les cartes)", () => {
+    const inputs = { ...DEFAULT_INPUTS, showReal: true, etfFees: 0.005, duration: 15 }
+    const rows = runSimulation(inputs)
+    const last = rows[rows.length - 1]
+    const factor = last.real / last.nominal
+    // Le facteur de déflation est réellement inférieur à 1 (inflation positive)
+    expect(factor).toBeLessThan(1)
+    expect(factor).toBeGreaterThan(0)
+    // Les frais payés affichés (FeeImpact) doivent être déflatés : le montant
+    // affiché en euros d'aujourd'hui est strictement inférieur au nominal
+    expect(last.feesLost * factor).toBeLessThan(last.feesLost)
+    // Et ce montant déflaté est bien cohérent avec la valeur réelle du capital
+    // (même facteur real/nominal que la carte « Valeur réelle »)
+    const realFeesRatio = (last.feesLost * factor) / last.real
+    const nominalFeesRatio = last.feesLost / last.nominal
+    expect(realFeesRatio).toBeCloseTo(nominalFeesRatio, 6)
   })
 })

@@ -1,16 +1,6 @@
-import {
-  AlertTriangle,
-  Download,
-  FileJson,
-  GitCompareArrows,
-  Link2,
-  Moon,
-  Printer,
-  Redo2,
-  Sun,
-  Undo2,
-} from "lucide-react"
+import { AlertTriangle, GitCompareArrows, Link2, Moon, Redo2, Sun, Undo2 } from "lucide-react"
 import type { ValidationError } from "../../engine"
+import { ExportMenu } from "./ExportMenu"
 
 interface ActionBarProps {
   onExportCSV: () => void
@@ -49,7 +39,7 @@ export function ActionBar({
   const warningCount = validationErrors.filter(e => e.severity === "warning").length
 
   return (
-    <div className="flex gap-2.5 justify-end flex-wrap no-print items-center">
+    <div className="flex gap-2 sm:gap-2.5 justify-end flex-wrap no-print items-center max-sm:justify-start">
       {(errorCount > 0 || warningCount > 0) && (
         <span
           title={validationErrors.map(e => e.message).join(" · ")}
@@ -89,7 +79,7 @@ export function ActionBar({
         title="Comparer deux scénarios"
         className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold transition-colors ${
           comparing
-            ? "bg-primary text-white shadow-gold"
+            ? "bg-primary btn-gold-text shadow-gold"
             : "glass hover:bg-glass-hover text-primary border border-primary/30"
         }`}
       >
@@ -115,27 +105,7 @@ export function ActionBar({
       >
         {darkMode ? <Sun size={12} /> : <Moon size={12} />} {darkMode ? "Clair" : "Sombre"}
       </button>
-      <button
-        type="button"
-        onClick={onExportCSV}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
-      >
-        <Download size={12} /> Export CSV
-      </button>
-      <button
-        type="button"
-        onClick={onExportJSON}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
-      >
-        <FileJson size={12} /> Export JSON
-      </button>
-      <button
-        type="button"
-        onClick={onPrint}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary transition-all"
-      >
-        <Printer size={12} /> Rapport PDF
-      </button>
+      <ExportMenu onExportCSV={onExportCSV} onExportJSON={onExportJSON} onPrint={onPrint} />
     </div>
   )
 }

@@ -6,6 +6,13 @@ import { crisisAdjustment } from "./crisis"
 import { getHistoricalDataset, INFLATION_SERIES } from "./historical"
 import { sanitizeInputs } from "./validation"
 
+// Mémoïsation de la date affichée : elle ne dépend que de (startYear, month)
+// et est identique pour les milliers de simulations Monte-Carlo. Sans cache,
+// chaque appel toLocaleDateString (ICU) dominait le coût des 10 000 scénarios
+// (mesuré : ~30 ms/simulation en Node, ~130 s pour 10 000 runs dans le
+// navigateur). Le cache reste borné (une entrée par année × runSimulation).
+const dateCache = new Map<string, string>()
+
 function annualReturnForYear(inputs: SimulationInputs, yearIndex: number): number {
   if (inputs.returnMode === "historical") {
     const dataset = getHistoricalDataset(inputs.historicalIndex)
@@ -33,8 +40,17 @@ function annualInflationForYear(inputs: SimulationInputs, yearIndex: number): nu
     return INFLATION_SERIES[yearIndex % INFLATION_SERIES.length] ?? inputs.inflation
   if (inputs.inflationMode === "dynamic") {
     const cycle = Math.sin((yearIndex / 7) * Math.PI * 2) * 0.006
+    // La crise synthétique est inerte en mode historique (les krachs réels
+    // sont déjà rejoués) : sa composante inflation (stagflation) ne doit pas
+    // non plus s'appliquer, pour rester cohérent avec la désactivation des
+    // rendements (audit B3).
     const crisisBoost =
-      inputs.crisisEnabled && inputs.crisisProfile === "stagflation" && yearIndex + 1 >= inputs.crisisYear ? 0.035 : 0
+      inputs.crisisEnabled &&
+      inputs.returnMode !== "historical" &&
+      inputs.crisisProfile === "stagflation" &&
+      yearIndex + 1 >= inputs.crisisYear
+        ? 0.035
+        : 0
     return clamp(inputs.inflation + cycle + crisisBoost, -0.01, 0.12)
   }
   return inputs.inflation
@@ -86,10 +102,15 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
 
   const pushRow = (month: number) => {
     const year = Math.round(month / 12)
-    const date = new Date(startYear, month, 1).toLocaleDateString("fr-FR", {
-      month: "short",
-      year: "numeric",
-    })
+    const dateKey = `${startYear}-${month}`
+    let date = dateCache.get(dateKey)
+    if (date === undefined) {
+      date = new Date(startYear, month, 1).toLocaleDateString("fr-FR", {
+        month: "short",
+        year: "numeric",
+      })
+      dateCache.set(dateKey, date)
+    }
     const grossGains = Math.max(0, capital - investedNom)
     const tax = computeTaxBreakdown(
       grossGains,
@@ -104,17 +125,20 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     const taxNet = Math.max(0, capital - exitTax)
     peak = Math.max(peak, capital)
     const drawdownPct = peak > 0 ? (capital - peak) / peak : 0
+    // Une perte annuelle ne peut pas dépasser -100 % du capital : si des
+    // versements abondent un capital anéanti, la formule brute donnerait des
+    // taux absurdes (-515 %) — on borne à -1 (ratio).
     const yearlyReturn =
       month === 0 || previousCapitalExContribution <= 0
         ? 0
-        : (capital - annualContribution) / previousCapitalExContribution - 1
+        : Math.max(-1, (capital - annualContribution) / previousCapitalExContribution - 1)
     // Rendement net de l'année en % : croissance de la valeur nette d'impôts
     // (taxNet) hors versements, rapportée à la valeur nette de fin d'année
     // précédente. Il s'agit d'un taux (0,085 = 8,5 %), pas d'un montant.
     const netYield =
       month === 0 || previousTaxNetExContribution <= 0
         ? 0
-        : (taxNet - annualContribution) / previousTaxNetExContribution - 1
+        : Math.max(-1, (taxNet - annualContribution) / previousTaxNetExContribution - 1)
     rows.push({
       year,
       month,
@@ -162,7 +186,11 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       ? annualReturnOverrideForYear(annualReturnsOverride ?? [], yearIndex, inputs.annualReturn)
       : annualReturnForYear(inputs, yearIndex)
     const baseMarketReturn = sampledMonthlyReturn(inputs, annualReturn, month, rng)
-    const crisis = crisisAdjustment(inputs, month)
+    // En mode historique, les rendements réels rejoués contiennent DÉJÀ les
+    // krachs : appliquer la crise synthétique par-dessus les compterait deux
+    // fois (incohérent avec Monte Carlo et la Rente, qui la désactivent).
+    const crisis =
+      inputs.returnMode === "historical" ? { returnShock: 0, volMultiplier: 1 } : crisisAdjustment(inputs, month)
     const totalMarketReturn = (1 + baseMarketReturn) * (1 + crisis.returnShock) - 1
     // En mode historique, les rendements réels de l'indice incluent DÉJÀ les
     // dividendes : appliquer le rendement de dividendes par-dessus les

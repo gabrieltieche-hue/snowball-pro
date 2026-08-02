@@ -11,7 +11,7 @@ import {
   exitComparison,
   parseStoredInputs,
   removeSnapshot,
-  runDecumulation,
+  runDecumulationAsync,
   runSimulation,
   v4SettingsToInputs,
   validateInputs,
@@ -97,6 +97,11 @@ export default function App() {
   const [frozenA, setFrozenA] = useState<SimulationInputs | null>(null)
   const [activeTab, setActiveTab] = useState("simulator")
   const [decumResult, setDecumResult] = useState<DecumulationResult | null>(null)
+  const [decumRunning, setDecumRunning] = useState(false)
+  const [decumProgress, setDecumProgress] = useState(0)
+  const decumAbortRef = useRef<AbortController | null>(null)
+  const decumRunningRef = useRef(false)
+  const decumMountedRef = useRef(true)
   const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(loadSnapshotsFromStorage)
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -212,6 +217,16 @@ export default function App() {
     onRedo: handleRedo,
     onToggleDarkMode: () => setDarkMode(d => !d),
   })
+
+  // Annule un décaissement en cours au démontage (jamais de setState après
+  // unmount, jamais de calcul fantôme qui continue en arrière-plan).
+  useEffect(() => {
+    decumMountedRef.current = true
+    return () => {
+      decumMountedRef.current = false
+      decumAbortRef.current?.abort()
+    }
+  }, [])
 
   // Persistance débouncée (500 ms) : on n'écrit pas dans localStorage à
   // chaque keystroke d'un slider — le quota reste sain sur les longues
@@ -358,16 +373,52 @@ export default function App() {
   )
   const decumStale = decumResult !== null && decumComputedFor !== decumParamsHash
 
-  const runDecum = useCallback(() => {
-    if (!lastRow || lastRow.nominal <= 0) return
-    setDecumResult(runDecumulation(activeInputs, lastRow.nominal))
-    // Réutilise le hash mémorisé (une seule source de vérité, pas de copie
-    // dupliquée qui risquerait de dériver).
-    setDecumComputedFor(decumParamsHash)
+  // Le décaissement est chunké et asynchrone (runDecumulationAsync) : même à
+  // 10 000 runs, l'interface ne se fige plus (audit B2 — le calcul synchrone
+  // gelait le thread principal ~5 s). Résultats identiques à la version
+  // synchrone, avec progression et annulation propres.
+  const runDecum = useCallback(async () => {
+    if (!lastRow || lastRow.nominal <= 0 || decumRunningRef.current) return
+    decumAbortRef.current?.abort()
+    const controller = new AbortController()
+    decumAbortRef.current = controller
+    decumRunningRef.current = true
+    setDecumRunning(true)
+    setDecumProgress(0)
+    try {
+      const result = await runDecumulationAsync(
+        activeInputs,
+        lastRow.nominal,
+        activeInputs.mcRuns,
+        (done, total) => {
+          if (decumMountedRef.current) setDecumProgress(Math.round((done / total) * 100))
+        },
+        controller.signal,
+      )
+      // Seul le run le plus récent peut écrire les résultats (un run annulé
+      // par une relance ne doit pas écraser les nouveaux résultats).
+      if (decumMountedRef.current && decumAbortRef.current === controller) {
+        setDecumResult(result)
+        // Réutilise le hash mémorisé (une seule source de vérité, pas de copie
+        // dupliquée qui risquerait de dériver).
+        setDecumComputedFor(decumParamsHash)
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return
+      if (decumMountedRef.current && decumAbortRef.current === controller) setDecumResult(null)
+    } finally {
+      if (decumMountedRef.current && decumAbortRef.current === controller) {
+        decumRunningRef.current = false
+        setDecumRunning(false)
+      }
+    }
   }, [activeInputs, lastRow, decumParamsHash])
 
   return (
     <div className="min-h-screen bg-surface text-text">
+      {/* I6 — hiérarchie de titres : h1 de page (visuellement masqué), les
+          sections s'enchaînent ensuite en h2/h3 dans les onglets. */}
+      <h1 className="sr-only">Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)</h1>
       <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
           <ErrorBoundary label="les réglages">
@@ -468,6 +519,8 @@ export default function App() {
                     updateInputs={updateInputs}
                     runDecum={runDecum}
                     isStale={decumStale}
+                    running={decumRunning}
+                    progress={decumProgress}
                   />
                 )}
                 {activeTab === "goal" && (

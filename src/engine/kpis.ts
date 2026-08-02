@@ -51,6 +51,10 @@ export function buildCashFlows(inputs: SimulationInputs, finalValue: number): { 
 }
 
 export function computeXIRR(inputs: SimulationInputs, finalValue: number): number {
+  // Valeur finale nulle ou négative → flux uniquement sortants : le XIRR n'a
+  // pas de racine et Newton diverge vers des taux absurdes (~4 700 %/an). On
+  // renvoie 0, même sémantique que le cas « aucun flux » (audit B4).
+  if (finalValue <= 0) return 0
   const { flows, months } = buildCashFlows(inputs, finalValue)
   if (flows.length < 2) return 0
   const rate = calcXIRR(flows, months)
@@ -94,7 +98,16 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
       : 0
   const drawdown = calcMaxDrawdown(rows.map(r => r.nominal))
   const contributionPct = last.nominal > 0 ? last.investedNom / last.nominal : 0
-  const realReturn = (1 + inputs.annualReturn) / (1 + inputs.inflation) - 1
+  // Rendement RÉEL mesuré sur la simulation, pas sur les inputs : le XIRR
+  // (rendement annualisé des flux réels) déflaté par l'inflation RÉELLEMENT
+  // appliquée pendant la projection (rapport nominal/réel cumulé). Avant
+  // l'audit v5.2.2, on utilisait (1+annualReturn)/(1+inflation)−1, ce qui
+  // donnait un chiffre faux dès que le mode était historique ou aléatoire
+  // (le rendement saisi n'est pas celui rejoué), et ignorait les modes
+  // d'inflation historique/cyclique.
+  const cumulativeInflationFactor = last.nominal > 0 && last.real > 0 ? last.nominal / last.real : 1 + inputs.inflation
+  const avgAnnualInflation = Math.pow(Math.max(0.05, cumulativeInflationFactor), 1 / years) - 1
+  const realReturn = xirr > -0.99 && avgAnnualInflation > -0.99 ? (1 + xirr) / (1 + avgAnnualInflation) - 1 : 0
   const totalWithFees = last.nominal + last.feesLost
   const feeImpactPct = totalWithFees > 0 ? last.feesLost / totalWithFees : 0
 
@@ -162,7 +175,10 @@ export function solveGoal(inputs: SimulationInputs): GoalResult {
   const pmt = PMTfromFV(target, inputs.goalCapital, monthly, periods)
   const pmtPerMonth = pmt > 0 && Number.isFinite(pmt) ? roundCent(pmt) : 0
   const totalInvested = roundCent(inputs.goalCapital + pmtPerMonth * periods)
-  const totalGains = roundCent(target - totalInvested)
+  // Des gains « négatifs » n'ont pas de sens : si le capital de départ dépasse
+  // déjà l'objectif, il n'y a aucun gain à générer (0 €), pas une perte
+  // inventée de -400 k€ (audit B5).
+  const totalGains = roundCent(Math.max(0, target - totalInvested))
 
   const requiredRate = (() => {
     if (futureValue(inputs.goalCapital, inputs.goalPayment, 0, periods) >= target) return 0
@@ -202,7 +218,10 @@ export function solveGoal(inputs: SimulationInputs): GoalResult {
     requiredYears,
     totalInvested,
     totalGains,
-    achievable: requiredRate !== null,
+    // Cohérent avec difficulty : au-delà de 14 %/an requis (ou taux non
+    // convergent), l'objectif est « impossible » — il ne peut pas être à la
+    // fois impossible et atteignable (contradiction signalée par l'audit).
+    achievable: difficulty !== "impossible",
     difficulty,
   }
 }

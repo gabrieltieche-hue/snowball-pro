@@ -34,18 +34,21 @@ export function SliderInput({
       <div className="flex items-center justify-between mb-2">
         <label
           htmlFor={id}
-          className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted"
+          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted"
           style={color ? { color } : undefined}
         >
           {label}
         </label>
         <div className="flex items-center gap-1 min-w-0">
-          {prefix && <span className="text-[10px] text-text-dim">{prefix}</span>}
-          <SmartInput value={value} onChange={onChange} />
+          {prefix && <span className="text-[11px] text-text-dim">{prefix}</span>}
+          {/* C2 — la saisie directe doit avoir un nom accessible (le label
+              htmlFor pointe sur le slider, pas sur cette textbox) */}
+          <SmartInput value={value} onChange={onChange} aria-label={`${label} (saisie directe)`} />
         </div>
       </div>
       <input
         type="range"
+        id={id}
         min={min}
         max={max}
         step={step}
@@ -55,14 +58,19 @@ export function SliderInput({
         aria-label={label}
         style={color ? { accentColor: color } : undefined}
       />
-      {suffix && <div className="text-[10px] text-text-dim mt-1 text-right">{suffix}</div>}
+      {/* Bornes min/max affichées (cohérence avec l'onglet Rente « 5 ans / 60 ans ») */}
+      <div className="flex items-center justify-between gap-2 text-[10px] text-text-dim mt-1">
+        <span className="shrink-0">{min}</span>
+        {suffix ? <span className="truncate text-right">{suffix}</span> : <span />}
+        <span className="shrink-0">{max}</span>
+      </div>
       {error && (
-        <p role="alert" className="text-[10px] font-semibold text-danger mt-1 flex items-start gap-1">
+        <p role="alert" className="text-[11px] font-semibold text-danger mt-1 flex items-start gap-1">
           <span aria-hidden>⚠️</span> {error}
         </p>
       )}
       {!error && warning && (
-        <p className="text-[10px] font-semibold text-warning mt-1 flex items-start gap-1">
+        <p className="text-[11px] font-semibold text-warning mt-1 flex items-start gap-1">
           <span aria-hidden>⚠️</span> {warning}
         </p>
       )}

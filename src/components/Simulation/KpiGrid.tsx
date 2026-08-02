@@ -112,13 +112,13 @@ export function KpiGrid({ kpis }: KpiGridProps) {
               key={kpi.key}
               className="glass rounded-2xl p-3 hover:bg-glass-hover transition-colors flex flex-col min-w-0"
             >
-              <div className="text-[9px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-h-[2.75em]">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-h-[2.75em]">
                 {kpi.label}
               </div>
               <div className="mono text-sm font-bold mt-1.5 leading-tight" style={{ color: kpi.color }}>
                 {display}
               </div>
-              <div className="text-[9px] text-text-muted mt-1 leading-snug">{kpi.sub}</div>
+              <div className="text-[10px] text-text-muted mt-1 leading-snug">{kpi.sub}</div>
             </div>
           )
         })}

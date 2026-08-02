@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
-import { fmtCurrency } from "../../engine"
+import { deflationFactor, fmtCurrency } from "../../engine"
 import { pie3dGeometry } from "../../utils/pie3d"
 import type { YearRow } from "../../types"
 
 interface CapitalAllocationProps {
   rows: YearRow[]
   darkMode: boolean
+  /** Affichage en euros d'aujourd'hui : la légende déflate comme les cartes. */
+  showReal?: boolean
 }
 
 const PALETTE = {
@@ -37,25 +39,33 @@ const RX = 100
 const RY = 54
 const DEPTH = 24
 
-export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
+export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalAllocationProps) {
   const lastRow = rows[rows.length - 1]
   const [active, setActive] = useState<number | null>(null)
   const palette = darkMode ? PALETTE.dark : PALETTE.light
 
   const items = useMemo(() => {
     if (!lastRow) return []
-    // Le camembert doit totaliser le capital réel (nominal). Les impôts sont
-    // une perte SUR les gains : gains nets = gains bruts − impôts (les frais
-    // sont déjà déduits du capital par la simulation). Total = épargné + gains
-    // nets + impôts = capital nominal.
-    const grossGains = lastRow.interestsNom
-    const taxes = Math.max(0, Math.min(grossGains, lastRow.tax))
+    // Le camembert totalise le capital. Les impôts sont une perte SUR les
+    // gains : gains nets = gains bruts − impôts (les frais sont déjà déduits
+    // du capital par la simulation). Total = épargné + gains nets + impôts =
+    // capital. MÊME échelle que les cartes : quand l'affichage est en euros
+    // d'aujourd'hui, la légende déflate aussi (avant l'audit v5.2.0, le pie
+    // affichait 303 k€ d'impôts nominaux à côté d'une carte à 176 k€).
+    const factor = showReal ? deflationFactor(lastRow) : 1
+    const grossGains = lastRow.interestsNom * factor
+    // MÊME base que les cartes et le graphique d'équité : impôts de LIQUIDATION
+    // = nominal − taxNet (exit tax), pas totalTax (qui inclurait en plus les
+    // dividendes déjà prélevés chaque mois → camembert ≠ carte dès que
+    // dividendYield > 0, audit v5.2.2).
+    const exitTax = Math.max(0, lastRow.nominal - lastRow.taxNet) * factor
+    const taxes = Math.max(0, Math.min(grossGains, exitTax))
     return [
-      { label: "Argent épargné", value: lastRow.investedNom, color: palette.invested },
+      { label: "Argent épargné", value: lastRow.investedNom * factor, color: palette.invested },
       { label: "Gains nets (après impôts)", value: Math.max(0, grossGains - taxes), color: palette.gains },
       { label: "Impôts (liquidation théorique)", value: taxes, color: palette.losses },
     ]
-  }, [lastRow, palette])
+  }, [lastRow, palette, showReal])
 
   const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
 
@@ -88,10 +98,10 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
 
   return (
     <div className="glass rounded-3xl p-6 animate-scale-in">
-      <h3 className="text-xs font-bold mb-4 flex items-center gap-2">
+      <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
         <PieChart size={12} className="text-warning" />
         D'où vient votre argent ?
-      </h3>
+      </h2>
 
       <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
         {parts.map((part, idx) =>
@@ -132,7 +142,9 @@ export function CapitalAllocation({ rows, darkMode }: CapitalAllocationProps) {
         ))}
       </svg>
 
-      <div className="mt-5 space-y-2">
+      {/* La légende ci-dessous affiche TOUJOURS les valeurs : sur mobile, où
+          le hover n'existe pas, l'information reste lisible sans interaction. */}
+      <div className="mt-5 space-y-2" role="list">
         {items.map((item, idx) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0
           return (

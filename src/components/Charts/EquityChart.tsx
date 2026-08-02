@@ -1,8 +1,10 @@
 import { useMemo } from "react"
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { fmtCurrency, fmtCompact } from "../../engine"
+import { deflationFactor, fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
-import type { SimulationInputs, YearRow } from "../../types"
+import { useChartA11y } from "../../hooks/useChartA11y"
+import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import type { EnvelopeType, SimulationInputs, YearRow } from "../../types"
 
 interface EquityChartProps {
   rows: YearRow[]
@@ -10,21 +12,31 @@ interface EquityChartProps {
   darkMode: boolean
 }
 
+/**
+ * Série du graphique d'équité. Fonction pure (testable) : TOUTES les courbes
+ * partagent la même échelle — quand showReal est actif, les impôts sont
+ * déflatés comme l'épargne et les gains. Avant l'audit v5.2.0, le tooltip
+ * affichait 303 k€ d'impôts (euros courants) à côté d'une carte « Impôts » à
+ * 176 k€ (euros d'aujourd'hui) : échelles mélangées sur un même graphe.
+ */
+export function buildEquitySeries(rows: YearRow[], showReal: boolean, envelope: EnvelopeType) {
+  return rows.map(r => {
+    const invested = showReal ? r.investedReal : r.investedNom
+    const total = showReal ? r.real : r.nominal
+    const gains = Math.max(0, total - invested)
+    const taxesNom = envelope === "none" ? 0 : Math.max(0, r.nominal - r.taxNet)
+    const taxes = showReal ? taxesNom * deflationFactor(r) : taxesNom
+    return { year: `Année ${r.year}`, investi: invested, gains, impôts: taxes }
+  })
+}
+
 export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
   const showReal = inputs.showReal
   const theme = chartTheme(darkMode)
+  const chartRef = useChartA11y("Projection de votre capital — montants par année")
+  const coarse = useIsCoarsePointer()
 
-  const data = useMemo(
-    () =>
-      rows.map(r => {
-        const invested = showReal ? r.investedReal : r.investedNom
-        const total = showReal ? r.real : r.nominal
-        const gains = Math.max(0, total - invested)
-        const taxes = inputs.envelope === "none" ? 0 : Math.max(0, r.nominal - r.taxNet)
-        return { year: `Année ${r.year}`, investi: invested, gains, impôts: taxes }
-      }),
-    [rows, showReal, inputs.envelope],
-  )
+  const data = useMemo(() => buildEquitySeries(rows, showReal, inputs.envelope), [rows, showReal, inputs.envelope])
 
   const gainsColor = showReal ? theme.gainsAlt : theme.gains
   const investedColor = theme.invested
@@ -33,15 +45,15 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
   return (
     <div className="glass rounded-3xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="text-xs font-bold flex items-center gap-2">
+        <h2 className="text-sm font-bold flex items-center gap-2">
           📈 Projection de votre capital
           {showReal && (
-            <span className="text-[9px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+            <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
               Euros d'aujourd'hui
             </span>
           )}
-        </h3>
-        <div className="flex items-center gap-3 text-[9px] text-text-dim">
+        </h2>
+        <div className="flex items-center gap-3 text-[10px] text-text-dim">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains (bourse)
           </span>
@@ -56,7 +68,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
         </div>
       </div>
 
-      <div className="h-72 sm:h-80">
+      <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -72,19 +84,20 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fill: theme.tick, fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 11 }}
               interval="preserveEnd"
               minTickGap={28}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: theme.tick, fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 11 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
+              trigger={coarse ? "click" : "hover"}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 return (
@@ -113,6 +126,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               stroke={investedColor}
               strokeWidth={2}
               fill="url(#gradInvesti)"
+              isAnimationActive={false}
             />
             <Area
               type="monotone"
@@ -122,6 +136,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               stroke={gainsColor}
               strokeWidth={2}
               fill="url(#gradGains)"
+              isAnimationActive={false}
             />
             {inputs.envelope !== "none" && (
               <Line
@@ -132,6 +147,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
+                isAnimationActive={false}
               />
             )}
           </AreaChart>

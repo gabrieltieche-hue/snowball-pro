@@ -4,6 +4,120 @@
 
 ---
 
+## SESSION — 2026-08-02 (v5.2.3 : audit profond v3 — la Rente applique enfin le krach + unités verrouillées)
+
+### Résumé
+
+Audit moteur et UI en profondeur à la demande de l'utilisateur (« cherche les erreurs qui faussent les simulations, vérifie les toggles, que tout soit dans la même unité ») : lecture des 13 modules engine + tous les composants, croisement des unités et des identités comptables, revue adverse. **153 tests**, gate 100 % vert, déploiement Vercel.
+
+### Bugs trouvés et corrigés
+
+- **C1 — La Rente ignorait le krach (bug moteur)** : `decumulation.ts` n'utilisait que `volMultiplier` de `crisisAdjustment` — le `returnShock` (la chute elle-même) n'était JAMAIS appliqué au décumul. Le toggle « Simuler un krach » faisait « trembler » la bourse sans jamais l'effondrer, incohérent avec le Simulateur et Monte Carlo. Fix : `returnWithShock = (1 + marketReturn) × (1 + shock) − 1` mois par mois, neutralisé en mode historique (comme `runSimulation`).
+- **C2 — KPI « Après inflation » faux** : `realReturn` utilisait `(1+annualReturn)/(1+inflation)−1` (inputs bruts) — faux en mode historique/aléatoire et ignorant les modes d'inflation historique/cyclique. Fix : dériver l'inflation réelle du rapport nominal/réel cumulé de la simulation (`(nominal/real)^(1/years)−1`) et déflater le XIRR réellement simulé.
+- **C3 — Camembert ≠ carte** : `CapitalAllocation` affichait `totalTax` (dividendes inclus) alors que cartes + graphique + panneau affichent l'exit tax (`nominal − taxNet`). Aligné.
+- **C4 — FiscalPanel double comptait les dividendes** : « Total des impôts » = `totalTax` (dividendes déjà prélevés chaque mois re-comptés). Fix : total = exit tax + ligne séparée « Impôts sur dividendes (déjà prélevés) » + taux effectif sur la base affichée.
+- **C5 — 3 écrans ignoraient `showReal`** : `CashflowCalendar` (colonne Impôts = totalTax en plus), `FeeImpact` et `AIInsightCard` affichaient du nominal à côté de cartes réelles. Fix : déflation via `deflationFactor` (par année pour le calendrier). Branche morte logiquement inatteignable supprimée dans AIInsightCard (revue adverse).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **153/153 tests** ✓ (5 nouveaux tests de non-régression : krach Rente, realReturn simulé, identité brut−impôts=net, interestsReal, déflation FeeImpact).
+- Revue adverse (code-reviewer) : 2 findings intégrés (branche morte, colonne Impôts du calendrier) + test tautologique nettoyé.
+- Version 5.2.2 → 5.2.3 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`), CHANGELOG (entrée v5.2.3).
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+### Notes
+
+- Identités comptables verrouillées : `brut − impôts(exitTax) = net` partout (cartes, graphique, camembert, panneau, calendrier) ; `nominal − taxNet = socialCharges + incomeTax`.
+- Rien n'est commité (worktree = audit v3 + refactor parallèle).
+
+---
+
+## SESSION — 2026-08-02 (v5.2.2 : audit moteur v2 — 10 bugs corrigés, Rente asynchrone, a11y graphiques)
+
+### Résumé
+
+Deuxième passe d'audit en profondeur (revue moteur ligne à ligne + tests runtime Playwright 16/16 + revue adverse) : correction de 10 bugs moteur/perf/a11y, dont un fix bloquant de chaîne de build. Version 5.2.1 → 5.2.2 (package.json, sw.js `CACHE_VERSION`).
+
+### Modifications
+
+- **`package.json`** : `lucide-react` épinglé à `1.25.0` exact — la montée vers 1.28.0 cassait le typecheck (20 erreurs TS7016 : `dist/lucide-react.d.ts` absent du paquet). `package-lock.json` régénéré.
+- **`engine/simulation.ts`** : cache module-level pour `toLocaleDateString("fr-FR")` (B1, perf MC 10k runs) ; crise synthétique désactivée en `returnMode==="historical"` (B3 — les krachs réels sont déjà rejoués, plus de double application ; composante inflation stagflation aussi neutralisée) ; clamp `Math.max(-1, …)` sur `yearlyReturn`/`netYield` (B7).
+- **`engine/kpis.ts`** : `computeXIRR` garde `finalValue<=0 → 0` (B4) ; `solveGoal` — `totalGains` clampé à ≥ 0 et `achievable` cohérent avec `difficulty` (B5).
+- **`engine/decumulation.ts`** : refactor — cœur partagé `runDecumulationRange` (avec retrait partiel exact au mois de ruine, B6) + `runDecumulationAsync` chunké (150) avec `AbortController` et `onProgress` (B2, plus de gel main-thread 5,4 s). Résultats bit-à-bit identiques au synchrone.
+- **`App.tsx`** : `runDecum` async avec `AbortController` + garde anti-race (`decumAbortRef === controller`) + `mountedRef`. **`RenteRetraiteTab.tsx`** : props `running`/`progress`, bouton « Calcul… X% » + barre de progression.
+- **`MonteCarloPanel.tsx`** : `inflationMode` ajouté à `inputsHash` (B8) ; recap crise informatif en mode historique. **`AIInsightCard.tsx`**/**`Sidebar.tsx`** : garde crise historique (B3 UI). **`types.ts`** : conventions `drawdownPct` documentées (B9).
+- **`hooks/useChartA11y.ts`** : remplacé par un `MutationObserver` — Recharts ré-applique `role="application"` à chaque re-render après montage, un simple `useEffect` ne tenait pas. Vérifié runtime : `role=img` + `aria-label` stables au chargement ET après re-render.
+- **`engine.test.ts`** : +9 tests de non-régression (B2–B7). **148 tests au total.**
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **148/148 tests** ✓ build ✓ (dist ~921 kB / ~275 kB gzip).
+- Runtime Playwright : **16/16** — a11y (`img=1` stable), Rente historique, partage URL roundtrip, raccourcis ⌘Z/⌘⇧Z, stale warning MC (B8), exports CSV/JSON, snapshots 2-clics, dark mode, reduced-motion, console 0 erreur.
+- Environnement : le build cassait à cause de binaires natifs déchargés vers iCloud (`lightningcss`, `@tailwindcss/oxide`) — réinstallés (⚠️ exclure `node_modules` de la synchro iCloud).
+- Revue adverse : points traités — retrait partiel au mois de ruine, stagflation neutralisée en historique, aucun composant ne décrivant la crise de façon inconditionnelle.
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+### Notes
+
+- Un refactor parallèle (v5.2.0 a11y + v5.2.1 exports, hooks `useChartA11y`/`useIsCoarsePointer`, `ExportMenu.tsx`) a tourné pendant la session — réconcilié sans l'écraser (seul `useChartA11y` a été corrigé pour tenir face au re-render Recharts).
+- Rien n'est commité : worktree = audit v2 + refactor parallèle (dont 3 fichiers non suivis).
+
+---
+
+## SESSION — 2026-08-02 (v5.2.1 : exports groupés + échelle « euros d'aujourd'hui » cohérente partout)
+
+### Résumé
+
+Suite de l'audit utilisateur (5 captures d'écran) : 1) les 3 boutons d'export (CSV/JSON/PDF) regroupés derrière un seul bouton « Exporter » avec popup ; 2) la carte « Valeur brute » affichait un montant net d'inflation avec un libellé « brut » (contradiction) ; 3) sous-texte « Impôts estimés (règles en vigueur) » hérité du millésime fiscal supprimé → dégagé ; 4) le panneau fiscal « Gains après impôts » (708 k€) ne rimait pas avec la carte « Net fiscal » (1 176 k€) — échelles mélangées ; 5) le tooltip du graphique affichait 303 k€ d'impôts (nominaux) à côté d'une carte à 176 k€ (réels). Aucun changement de logique moteur : uniquement la couche d'affichage.
+
+### Modifications
+
+- **`ExportMenu.tsx` (nouveau)** : un bouton doré « Exporter » → popup CSV/JSON/PDF (icône + description), fermeture clic extérieur/Échap, `role=menu`/`menuitem` + `aria-expanded`. `ActionBar.tsx` : les 3 boutons remplacés par `<ExportMenu />`.
+- **`SummaryStats.tsx`** : libellé « Valeur brute » → « Valeur réelle » quand `showReal` ; toutes les cartes suivent la même échelle (helper `deflationFactor`) ; carte « Pouvoir d'achat » remplacée par « Impôts » (doublon du Net fiscal en mode réel) ; sous-texte « Impôts estimés (règles en vigueur) : -x € » supprimé.
+- **`FiscalPanel.tsx`** : déflation quand `showReal` (badge « € d'aujourd'hui ») + ligne « Capital net (impôts déduits) » alignée sur la carte Net fiscal ; phrase « règles fiscales en vigueur » simplifiée.
+- **`EquityChart.tsx`** : série « Impôts payés » déflatée via `buildEquitySeries` (fonction pure exportée, 3 tests).
+- **`CapitalAllocation.tsx`** : légende du camembert déflatée (prop `showReal` passée depuis `SimulatorTab`).
+- **`engine/math.ts`** : helper partagé `deflationFactor(row)` (real/nominal) — avant, le facteur était recalculé à l'identique dans 4 composants (source de dérive). Exporté via `engine/index.ts`.
+- **Version 5.2.1** : package.json, package-lock.json, `public/sw.js` (`CACHE_VERSION`), CHANGELOG (entrée complète).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **148/148 tests** ✓ (dont 3 nouveaux tests buildEquitySeries + 2 tests menu Export).
+- Revue adversarial (code-reviewer) : points traités — CapitalAllocation à la même échelle, helper de déflation partagé, imports fusionnés dans les tests.
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+---
+
+## SESSION — 2026-08-02 (v5.2.0 : correction intégrale de l'audit UI/UX + déploiement prod)
+
+### Résumé
+
+Audit UI/UX complet (lecture des 35 composants + mesures live : contrastes, tailles, arbre d'accessibilité) puis correction intégrale : 2 critiques (or sombre 2.1:1, champs sans nom accessible), 8 importants (sidebar sticky, crise > durée, text-dim, tailles 8-9 px, impression sombre, hiérarchie h1/h2, focus or-sur-or, table ouverte par défaut), 10 moyens (tooltips tactiles, confirmation snapshot 2 temps, aria-label rente, reduced-motion, title truncation, ActionBar mobile, role=application Recharts, blur, animations live, bordures claires) + bruit (bornes min/max sliders, roving tabindex, meta description).
+
+### Modifications clés
+
+- **`index.css`** : classe `.btn-gold-text` (texte sombre sur or en mode sombre → 8.6:1, blanc en clair), `.toggle-on` (`#8a6d1f`), `--color-text-dim` → `#a39a8c` (sombre) / `#6f6a5f` (clair), outline focus `#60a5fa`/`#1e40af` + anneau focus sliders, `@media print` Recharts (encres sombres sur papier), `@media (prefers-reduced-motion: reduce)`, blur 28/32→16/20 px + fallback `@supports`, bordures claires 0.06→0.12-0.16.
+- **`SliderInput`** : `id` sur le range (label htmlFor fonctionnel) + `aria-label` sur la saisie directe + bornes min/max affichées + label 11 px.
+- **`SegmentedControl`** : roving tabindex + ←/→/Home/End.
+- **`Sidebar`** : sticky retirée (I1) ; `CrisisSelector` borné à la durée + warning (I2) ; encart krach conditionné.
+- **`validation.ts`** : warning `crisisYear > duration` (I2) + test.
+- **Charts** : h2, ticks 11 px, `useIsCoarsePointer` (tooltip clic sur tactile), `useChartA11y` (role=img), `isAnimationActive={false}` sur les graphes live.
+- **`SnapshotPanel`** : suppression en deux temps (1ᵉʳ clic arme, 2ᵉ supprime, timeout 3,5 s) — test adapté.
+- **`main.tsx`** : `<MotionConfig reducedMotion="user">`. **`App.tsx`** : h1 sr-only. **`index.html`** : meta description + theme-color.
+- **Version 5.2.0** : package.json, sw.js (`CACHE_VERSION`), CHANGELOG (entrée complète), AGENTS.md inchangé.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ tests ✓ build ✓ ; revue code (code-reviewer) puis vérification live (preview) des contrastes/tailles/focus/hiérarchie.
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app (HTTP 200, `CACHE_VERSION = "snowball-pro-v5.2.0"`).
+
+### Notes
+
+- Pas de changement moteur : tous les chiffres de simulation restent identiques (5.1.3).
+- Le `useIsCoarsePointer` est gardé contre jsdom (`window.matchMedia` absent) — les tests composants restent verts.
+
+---
+
 ## SESSION — 2026-08-01 (v5.1.3 : audit 27 bugs — vérification runtime 20/20 + finalisation)
 
 ### Résumé

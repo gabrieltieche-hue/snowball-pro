@@ -1,4 +1,4 @@
-import { ENVELOPE_CONFIGS } from "../../engine"
+import { deflationFactor, ENVELOPE_CONFIGS } from "../../engine"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface SummaryStatsProps {
@@ -26,36 +26,45 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const displayInterests = Math.max(0, displayFinal - displayInvested)
   const netAfterTax = lastRow.taxNet
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
-  // Pouvoir d'achat = capital NET (impôts déduits) converti en euros d'aujourd'hui.
-  // lastRow.real est le brut déflaté : on applique le même facteur au net fiscal.
-  const deflationFactor = lastRow.nominal > 0 ? lastRow.real / lastRow.nominal : 1
-  const realNet = netAfterTax * deflationFactor
+  // MÊME facteur de déflation pour toutes les cartes (helper partagé avec le
+  // panneau fiscal et les graphiques — une seule source de vérité). Avant
+  // l'audit v5.1.4, « Valeur brute » suivait showReal mais « Net fiscal »
+  // restait en euros courants → net affiché PLUS ÉLEVÉ que le brut
+  // (1 176 k€ vs 862 k€), absurde et incohérent avec le panneau fiscal.
+  const factor = deflationFactor(lastRow)
+  const displayNet = showReal ? netAfterTax * factor : netAfterTax
+  const displayTax = showReal ? taxAmount * factor : taxAmount
 
-  // Le « Net fiscal » reste exprimé en euros courants (c'est le montant réel
-  // après impôts) ; le « Pouvoir d'achat » le convertit en euros d'aujourd'hui.
-  // Les deux cartes sont donc toujours distinctes, quel que soit le mode
-  // d'affichage — pas de doublon ni d'échelles mélangées.
+  const scaleNote = showReal ? "en euros d'aujourd'hui" : "en euros courants"
+
   const cards: StatCard[] = [
     {
-      label: "Valeur brute",
+      // « brut » veut dire avant impôts ; quand l'affichage est en euros
+      // d'aujourd'hui, la valeur est nette d'inflation → libellé adapté
+      // (audit v5.1.4, plus de contradiction brut/nouveaux euros).
+      label: showReal ? "Valeur réelle" : "Valeur brute",
       value: fmt(displayFinal),
       color: "var(--color-text)",
-      sub: showReal ? "euros d'aujourd'hui (inflation déduite)" : "euros bruts, avant impôts",
+      sub: `avant impôts · ${scaleNote}`,
     },
     {
       label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
-      value: fmt(netAfterTax),
+      value: fmt(displayNet),
       color: "var(--color-value-gold)",
       sub:
         envelope !== "none"
-          ? `${showReal ? "Euros courants — " : ""}Impôts estimés (règles en vigueur) : -${fmt(taxAmount)}`
+          ? `après impôts · ${scaleNote}`
           : "Aucun impôt à payer",
     },
     {
-      label: "Pouvoir d'achat",
-      value: fmt(realNet),
-      color: "var(--color-warning)",
-      sub: "capital net en euros d'aujourd'hui (impôts et inflation déduits)",
+      // Remplaçait « Pouvoir d'achat » (doublon du Net fiscal dès que
+      // showReal est actif) : la part de l'État devient visible et vérifiable
+      // (brut − impôts = net), le texte « Impôts estimés (règles en vigueur) »
+      // hérité du millésime fiscal supprimé a disparu.
+      label: "Impôts",
+      value: fmt(displayTax),
+      color: "var(--color-value-red)",
+      sub: "prélevés sur vos gains",
     },
     {
       label: "Total épargné",
@@ -69,11 +78,17 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {cards.map(card => (
         <div key={card.label} className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors min-w-0">
-          <div className="text-[9px] text-text-dim uppercase tracking-wider mb-2 truncate">{card.label}</div>
-          <div className="mono text-sm sm:text-base font-bold truncate" style={{ color: card.color }}>
+          <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2 truncate" title={card.label}>
+            {card.label}
+          </div>
+          <div className="mono text-sm sm:text-base font-bold truncate" title={card.value} style={{ color: card.color }}>
             {card.value}
           </div>
-          {card.sub && <div className="text-[10px] text-text-dim mt-1 truncate">{card.sub}</div>}
+          {card.sub && (
+            <div className="text-[10px] text-text-dim mt-1 truncate" title={card.sub}>
+              {card.sub}
+            </div>
+          )}
         </div>
       ))}
     </div>

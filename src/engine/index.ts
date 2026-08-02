@@ -8,6 +8,7 @@ export { buildCashFlows, computeXIRR } from "./kpis"
 export { applyScenarioPatch, enterComparison, exitComparison, resolveScenarioTarget } from "./scenarios"
 export type { ScenarioState, ScenarioPatchResult } from "./scenarios"
 export {
+  deflationFactor,
   monthlyRate,
   annualFromMonthly,
   futureValue,
@@ -19,7 +20,7 @@ export {
 } from "./math"
 export { runSimulation } from "./simulation"
 export { runMonteCarlo, runMonteCarloAsync, sampleHistoricalReturns } from "./montecarlo"
-export { runDecumulation } from "./decumulation"
+export { runDecumulation, runDecumulationAsync } from "./decumulation"
 export { computeKPIs, computeMilestones, solveGoal, compareScenarios } from "./kpis"
 export { validateInputs, sanitizeInputs } from "./validation"
 export type { ValidationError } from "./validation"

@@ -5,8 +5,9 @@ import userEvent from "@testing-library/user-event"
 import "@testing-library/jest-dom/vitest"
 import App from "../App"
 import { ErrorBoundary } from "../components/shared/ErrorBoundary"
+import { buildEquitySeries } from "../components/Charts/EquityChart"
+import { DEFAULT_INPUTS, runSimulation } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
-import { DEFAULT_INPUTS } from "../engine"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
  * nécessitent des mesures de conteneur (ResizeObserver) absentes de jsdom.
@@ -166,12 +167,75 @@ describe("snapshots", () => {
       await user.click(screen.getByRole("button", { name: /sauvegarder/i }))
       expect(await screen.findByText(/^Snapshot /)).toBeInTheDocument()
 
+      // Suppression en deux temps (anti-erreur de tap) : 1er clic arme la
+      // confirmation, le 2ᵉ supprime réellement.
       await user.click(screen.getByTitle("Supprimer ce snapshot"))
+      await user.click(screen.getByTitle("Confirmer la suppression"))
       await waitFor(() => expect(screen.queryByText(/^Snapshot /)).not.toBeInTheDocument())
       expect(screen.getByText(/aucun état sauvegardé/i)).toBeInTheDocument()
     },
     APP_TIMEOUT,
   )
+})
+
+describe("buildEquitySeries — même échelle pour tout le graphique (audit v5.2.0)", () => {
+  it("déflate les impôts quand showReal est actif (plus de 303 k€ vs 176 k€)", () => {
+    const inputs = { ...DEFAULT_INPUTS, showReal: true, envelope: "cto" as const, duration: 10 }
+    const rows = runSimulation(inputs)
+    const series = buildEquitySeries(rows, true, "cto")
+    const last = series[series.length - 1]
+    const row = rows[rows.length - 1]
+
+    // L'épargne et les gains sont en euros d'aujourd'hui
+    expect(last.investi).toBe(row.investedReal)
+    expect(last.gains).toBeCloseTo(row.real - row.investedReal, 0)
+    // Les impôts SONT déflatés : impôts réels = (nominal − taxNet) × (real/nominal)
+    const expectedTaxes = Math.max(0, row.nominal - row.taxNet) * (row.real / row.nominal)
+    expect(last.impôts).toBeCloseTo(expectedTaxes, 0)
+    // Le tooltip ne peut plus afficher un montant NOMINAL à côté de cartes réelles
+    expect(last.impôts).toBeLessThan(row.nominal - row.taxNet)
+  })
+
+  it("garde les impôts en euros courants quand showReal est inactif", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, showReal: false, envelope: "cto" as const, duration: 10 })
+    const series = buildEquitySeries(rows, false, "cto")
+    const last = series[series.length - 1]
+    const row = rows[rows.length - 1]
+    expect(last.investi).toBe(row.investedNom)
+    expect(last.impôts).toBeCloseTo(Math.max(0, row.nominal - row.taxNet), 0)
+  })
+
+  it("n'affiche aucun impôt sans enveloppe fiscale", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, showReal: true, envelope: "none" as const, duration: 5 })
+    const series = buildEquitySeries(rows, true, "none")
+    for (const point of series) expect(point.impôts).toBe(0)
+  })
+})
+
+describe("menu Export — toutes les fonctionnalités d'export dans un bouton", () => {
+  it("ouvre un popup avec CSV, JSON et Rapport PDF au clic", () => {
+    render(<App />)
+    // Un seul bouton « Exporter », les trois formats n'existent pas avant
+    // l'ouverture du menu.
+    expect(screen.getByRole("button", { name: /exporter/i })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /export json/i })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+
+    expect(screen.getByRole("menuitem", { name: /export csv/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /export json/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /rapport pdf/i })).toBeInTheDocument()
+  })
+
+  it("se ferme au clic extérieur (aucune option piégée)", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+    expect(screen.getByRole("menuitem", { name: /export csv/i })).toBeInTheDocument()
+
+    // Clic hors du menu → fermeture (le composant écoute mousedown natif)
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole("menuitem", { name: /export csv/i })).not.toBeInTheDocument()
+  })
 })
 
 describe("export CSV", () => {
@@ -185,7 +249,9 @@ describe("export CSV", () => {
       render(<App />)
       // fireEvent (comme pour undo/redo) : userEvent attend une géométrie DOM
       // réelle absente de jsdom et expirait sur les boutons de l'ActionBar.
-      fireEvent.click(screen.getByRole("button", { name: /export csv/i }))
+      // Le CSV est désormais caché derrière le menu Export (un seul bouton).
+      fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+      fireEvent.click(screen.getByRole("menuitem", { name: /export csv/i }))
 
       expect(createObjectURL).toHaveBeenCalledTimes(1)
       const blob = createObjectURL.mock.calls[0][0] as Blob

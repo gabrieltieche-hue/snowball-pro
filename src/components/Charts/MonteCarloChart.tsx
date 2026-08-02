@@ -12,6 +12,8 @@ import {
 } from "recharts"
 import { fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
+import { useChartA11y } from "../../hooks/useChartA11y"
+import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
 import type { MonteCarloResult } from "../../types"
 
 interface MonteCarloChartProps {
@@ -21,6 +23,8 @@ interface MonteCarloChartProps {
 
 export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
   const theme = chartTheme(darkMode)
+  const chartRef = useChartA11y("Votre capital année après année — P10, P50 et P90")
+  const coarse = useIsCoarsePointer()
   const data = useMemo(
     () =>
       result.years.map((y, i) => {
@@ -44,7 +48,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
         <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
           Votre capital, année après année
         </span>
-        <span className="text-[9px] text-text-dim">
+        <span className="text-[10px] text-text-dim">
           Objectif visé : <span className="mono">{fmtCompact(result.goalTarget)}</span>
         </span>
       </div>
@@ -52,7 +56,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
         {result.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un cas
         possible
       </p>
-      <div className="h-72 sm:h-80">
+      <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }} data={data}>
             <defs>
@@ -64,19 +68,20 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fill: theme.tick, fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 11 }}
               interval="preserveEnd"
               minTickGap={28}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: theme.tick, fontSize: 10 }}
+              tick={{ fill: theme.tick, fontSize: 11 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
+              trigger={coarse ? "click" : "hover"}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null
                 return (

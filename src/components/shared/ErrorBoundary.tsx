@@ -43,12 +43,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             vos réglages sont enregistrés sur cet appareil.
           </p>
           {this.state.message && (
-            <p className="text-[10px] mono text-danger/80 mb-4 break-words max-w-sm mx-auto">{this.state.message}</p>
+            <p className="text-[11px] mono text-danger/80 mb-4 break-words max-w-sm mx-auto">{this.state.message}</p>
           )}
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light text-white shadow-gold hover:from-primary-light hover:to-primary transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
           >
             🔄 Recharger
           </button>

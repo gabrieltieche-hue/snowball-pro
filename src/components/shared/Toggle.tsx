@@ -33,7 +33,7 @@ export function Toggle({ checked, onChange, label, sub }: ToggleProps) {
       <div
         className={cn(
           "relative w-10 h-5 rounded-full transition-colors duration-300 flex-shrink-0",
-          checked ? "bg-primary" : "bg-text-dim/30",
+          checked ? "toggle-on" : "bg-text-dim/30",
         )}
       >
         <motion.div

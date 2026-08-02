@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { Percent } from "lucide-react"
-import { runSimulation as reRunSim, fmtCurrency } from "../../engine"
+import { runSimulation as reRunSim, deflationFactor, fmtCurrency } from "../../engine"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface FeeImpactProps {
@@ -18,7 +18,11 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
-  const feeImpact = noFeeFinal - lastRow.nominal
+  // MÊME échelle que les cartes du haut : quand l'affichage est en euros
+  // d'aujourd'hui, l'impact des frais est déflaté aussi (audit v5.2.2 — avant,
+  // les frais restaient nominaux à côté de cartes réelles).
+  const factor = inputs.showReal ? deflationFactor(lastRow) : 1
+  const feeImpact = (noFeeFinal - lastRow.nominal) * factor
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
@@ -30,7 +34,7 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
       </div>
       <div className="space-y-1.5">
         {[
-          { label: "Frais payés au total", value: lastRow.feesLost, color: "#8B3A3A" },
+          { label: "Frais payés au total", value: lastRow.feesLost * factor, color: "#8B3A3A" },
           { label: "Capital perdu à cause des frais", value: feeImpact, color: "#A84A4A" },
         ].map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">
@@ -45,8 +49,8 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
       {feeImpact > 0 ? (
         <div className="text-[10px] text-text-dim">
           Sans frais, votre capital final serait de{" "}
-          <span className="font-bold text-danger">{fmtCurrency(noFeeFinal)}</span> (au lieu de{" "}
-          {fmtCurrency(lastRow.nominal)}).
+          <span className="font-bold text-danger">{fmtCurrency(noFeeFinal * factor)}</span> (au lieu de{" "}
+          {fmtCurrency(lastRow.nominal * factor)}).
         </div>
       ) : (
         <div className="text-[10px] text-text-dim">Vos frais sont à 0 % : votre capital n'en perd rien.</div>

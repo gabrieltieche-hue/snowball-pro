@@ -180,6 +180,19 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
+  // I2 — une crise programmée APRÈS la fin de la simulation est un no-op
+  // silencieux : l'UI l'annonce pourtant (« Chute en année X ») alors que le
+  // moteur ne fera rien. On alerte pour que l'utilisateur le constate.
+  if (inputs.crisisEnabled && inputs.crisisYear > inputs.duration) {
+    errors.push({
+      field: "crisisYear",
+      message: `La crise (année ${inputs.crisisYear}) survient après la fin de la simulation (${inputs.duration} ans) : elle ne sera pas appliquée. Réduisez l'année ou allongez la durée.`,
+      severity: "warning",
+      value: inputs.crisisYear,
+      max: inputs.duration,
+    })
+  }
+
   // Bornes réelles utilisées par runMonteCarlo / runDecumulation (alignées).
   if (inputs.mcRuns < 100 || inputs.mcRuns > 10000) {
     errors.push({

@@ -13,6 +13,8 @@ interface CrisisSelectorProps {
   profile: string
   amplitude: number
   year: number
+  maxYear?: number
+  warning?: string
   onProfileChange: (v: string) => void
   onAmplitudeChange: (v: number) => void
   onYearChange: (v: number) => void
@@ -22,6 +24,8 @@ export function CrisisSelector({
   profile,
   amplitude,
   year,
+  maxYear,
+  warning,
   onProfileChange,
   onAmplitudeChange,
   onYearChange,
@@ -51,7 +55,7 @@ export function CrisisSelector({
             <div className="text-xs font-bold text-text" style={profile === cp.id ? { color: cp.color } : undefined}>
               {cp.label}
             </div>
-            <div className="text-[9px] text-text-dim mt-0.5">{cp.desc}</div>
+            <div className="text-[10px] text-text-dim mt-0.5">{cp.desc}</div>
           </motion.button>
         ))}
       </div>
@@ -60,8 +64,9 @@ export function CrisisSelector({
         id="crisis-year"
         value={year}
         min={1}
-        max={50}
+        max={maxYear ?? 50}
         step={1}
+        warning={warning}
         onChange={onYearChange}
         color="#8B3A3A"
       />

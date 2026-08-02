@@ -72,7 +72,10 @@ export function Sidebar({
   ]
 
   return (
-    <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium lg:sticky lg:top-6 overflow-hidden">
+    <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium overflow-hidden">
+      {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
+          hauteur d'écran et épinglait ses sections basses sous le pli pendant
+          tout le scroll. Elle suit désormais le document. */}
       {/* Logo */}
       <div className="flex items-center justify-between gap-2 mb-6">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -83,12 +86,12 @@ export function Sidebar({
             <div className="text-lg font-extrabold tracking-tight leading-none whitespace-nowrap">
               SNOWBALL <span className="text-primary">PRO</span>
             </div>
-            <div className="text-[9px] text-text-dim mt-1 uppercase tracking-[0.2em] truncate">
+            <div className="text-[10px] text-text-dim mt-1 uppercase tracking-[0.2em] truncate">
               Simulateur patrimonial
             </div>
           </div>
           {scenarioLabel && (
-            <span className="text-[9px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+            <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
               {scenarioLabel}
             </span>
           )}
@@ -158,7 +161,7 @@ export function Sidebar({
               value={inputs.historicalIndex}
               onChange={v => updateInput("historicalIndex", v as HistoricalIndex)}
             />
-            <p className="text-[9px] text-text-dim mt-2 leading-snug">{historicalPeriod}</p>
+            <p className="text-[10px] text-text-dim mt-2 leading-snug">{historicalPeriod}</p>
           </div>
         )}
         {inputs.returnMode === "random" && (
@@ -342,10 +345,18 @@ export function Sidebar({
               profile={inputs.crisisProfile}
               amplitude={inputs.crisisAmplitude}
               year={inputs.crisisYear}
+              maxYear={inputs.duration}
+              warning={fieldWarning("crisisYear")?.message}
               onProfileChange={v => updateInput("crisisProfile", v as CrisisProfile)}
               onAmplitudeChange={v => updateInput("crisisAmplitude", v)}
               onYearChange={v => updateInput("crisisYear", v)}
             />
+            {inputs.returnMode === "historical" && (
+              <p className="text-[10px] text-warning mt-2 leading-snug">
+                En mode historique, les krachs réels de l'indice sont déjà rejoués : la crise synthétique ne
+                s'applique pas (cohérent avec Monte Carlo &amp; Rente).
+              </p>
+            )}
           </div>
         )}
       </CollapsibleSection>
@@ -362,7 +373,7 @@ export function Sidebar({
           <strong className="text-primary">{fmtCurrency(displayFinal)}</strong>{" "}
           {inputs.showReal ? "en euros d'aujourd'hui" : "en euros bruts (inflation non déduite)"}.
           {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>}
-          {inputs.crisisEnabled && (
+          {inputs.crisisEnabled && inputs.returnMode !== "historical" && inputs.crisisYear <= inputs.duration && (
             <span className="text-danger">
               {" "}
               ⚠️ Chute de la bourse en année {inputs.crisisYear} (-{inputs.crisisAmplitude}%).
