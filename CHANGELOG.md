@@ -4,6 +4,48 @@
 
 ---
 
+## v5.5.0 — Option A : plus de « taux défini » ni de crise simulée — l'historique réel du MSCI World partout
+
+Suite directe de la demande « Monte Carlo et Rente rejouent TOUJOURS l'historique réel » : l'app devient **100 % données réelles**. Le mode « Taux défini », le curseur de rendement, la volatilité et la crise synthétique sont supprimés — le Simulateur, Monte Carlo et la Rente rejouent tous les rendements réels du MSCI World 1970-2025 (krachs réels de 2000, 2008, 2022… et bull markets réels inclus).
+
+### 🧭 Pourquoi (décision discutée et validée avec l'utilisateur)
+
+Après le correctif « MC + Rente toujours en historique », le sélecteur « Comment évolue la bourse ? » ne pilotait plus QUE le Simulateur, et uniquement en « Taux défini ». Question légitime : *« à quoi sert le taux que l'utilisateur rentre au début ? »* — réponse : plus à rien. Option A retenue : un seul modèle mental — *tu rentres ton épargne (capital, mensualité, durée, inflation), la bourse c'est la vraie histoire, pas un taux qu'on invente.*
+
+### ⚙️ Moteur
+
+- **`types.ts`** : suppression de `returnMode`, `annualReturn`, `volatility` et des 6 champs crise (`crisisEnabled`, `crisisProfile`, `crisisYear`, `crisisAmplitude`, `crisisDuration`, `crisisAmplitude` legacy). `SimulationInputs` allégé.
+- **`simulation.ts`** : `runSimulation` rejoue TOUJOURS les rendements réels (`annualReturnForYear` seul chemin) ; `sampledMonthlyReturn` sans volatilité ni choc de crise ; l'override Monte-Carlo conserve son rôle (blocs rééchantillonnés).
+- **`historical.ts`** : nouvelle constante `MSCI_WORLD_AVG_RETURN = 0.1007` (source unique du repli de repli pour les fenêtres sans données).
+- **`montecarlo.ts`** : `sampleHistoricalReturns` seul mode ; l'appel à `runSimulation` n'a plus besoin de forcer `returnMode/crisisEnabled` (champs supprimés).
+- **`decumulation.ts`** : la Rente rééchantillonne toujours les rendements réels ; code mort stochastique supprimé.
+- **`kpis.ts`** : `sharpe` vaut TOUJOURS 0 (plus de mode aléatoire gaussien — ratio sans objet) ; `solveGoal` utilise exclusivement `goalAnnualReturn` (l'onglet Objectif garde son propre curseur, défaut 10,07 % brut MSCI World).
+- **`migration.ts`** : `annualReturn`/crise retirés des défauts, des clés numériques et du mapping v4 (les anciens champs stockés sont simplement ignorés) ; `parseStoredInputs` verrouille `historicalIndex = "msci-world"`.
+- **`validation.ts`** : suppression des règles `annualReturn` (fourchette 7-12 %) et crise (> durée).
+- **Suppressions** : `engine/crisis.ts`, `components/Forms/CrisisSelector.tsx`, `rng.gaussian` (Box-Muller), exports correspondants dans `engine/index.ts`.
+
+### 🖥 UI
+
+- **`Sidebar`** : la section « Comment évolue la bourse ? » et le curseur « Rendement annuel » sont remplacés par une carte **« MSCI World — historique réel »** (moyenne de la série : 10,07 %/an brut · 8,22 %/an net d'inflation ; mention que Simulateur, Monte Carlo et Rente rejouent les rendements réels). Section crise supprimée. `updateInputs` retiré des props (plus utilisé).
+- **`GoalTab`** : le libellé de référence devient **« référence : 10,07 % brut (moyenne MSCI World) »** ; le curseur de l'onglet Objectif reste (il sert à calculer l'épargne mensuelle nécessaire), aligné sur le même défaut que le reste de l'app.
+- **`MonteCarloPanel` / `AIInsightCard` / `MethodologyPanel` / `SimulatorTab`** : textes et hash de fraîcheur nettoyés des références au mode de rendement et à la crise.
+- **`App.tsx`** : hash des paramètres de décaissement simplifié (champs supprimés).
+
+### 🌍 « Euros d'aujourd'hui » COCHÉ par défaut (fusion v5.4.2)
+
+À la demande de l'utilisateur, l'affichage démarre désormais sur les **vraies valeurs nettes d'inflation** : le toggle « Euros d'aujourd'hui » est **coché par défaut** (`DEFAULT_INPUTS.showReal = true`).
+
+- **`migration.ts`** : `showReal = true` par défaut ; fallback v4 `showReal: s.showReal !== false` — un choix v4 explicitement « false » reste respecté, sinon on retombe sur le défaut (vrai).
+- **Rappel moteur (invariant)** : le moteur calcule **TOUJOURS** les deux échelles (`nominal` + `real = capital / inflationIndex`, cf. `simulation.ts`) — le toggle ne choisit que laquelle est mise en avant. L'infobulle « ne saisissez jamais un taux déjà net d'inflation » est donc vraie **que l'option soit cochée ou non**.
+- **Infobulle clarifiée** (`GoalTab`) : *« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »*
+- **Tests** : défaut `showReal = true` (moteur), migration v4 (undefined → vrai, false → false, true → true), toggle coché au rendu d'App (composant).
+
+### Tests
+
+- **145 tests moteur + 24 tests composants** (typecheck ✓ lint ✓) : défauts sans taux/volatilité/mode, migration v4 sans rendement/crise, `parseStoredInputs` ignore les anciens champs, Sharpe = 0, temps de doublement = log(2)/log(1+XIRR), Rente déterministe pour une graine, GoalTab « référence 10,07 % brut », Sidebar note MSCI World + absence du curseur de rendement, **toggle « Euros d'aujourd'hui » coché par défaut**. **169 tests au total.**
+
+---
+
 ## v5.4.1 — Rendement BRUT par défaut : 10,07 %/an (moyenne MSCI World) + clarté pédagogique
 
 À la demande de l'utilisateur, l'app rend explicite le point le plus source de confusion : **le rendement saisi est TOUJOURS brut** (avant inflation — l'inflation est déduite séparément par le moteur, jamais saisie nette sous peine de double déduction).

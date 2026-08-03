@@ -8,9 +8,7 @@ import type {
   ScenarioComparison,
 } from "../types"
 import { roundCent, calcXIRR } from "./taxes"
-import { calcMaxDrawdown, average, standardDeviation, PMTfromFV, monthlyRate, futureValue } from "./math"
-
-const RISK_FREE_RATE = 0.03
+import { calcMaxDrawdown, PMTfromFV, monthlyRate, futureValue } from "./math"
 
 /**
  * Construit les flux de trésorerie mensuels (capital initial + versements
@@ -86,25 +84,20 @@ export function computeKPIs(rows: YearRow[], inputs: SimulationInputs): KPIs {
   const years = Math.max(1, inputs.duration)
   const cagr = first.nominal > 0 ? Math.pow(last.nominal / first.nominal, 1 / years) - 1 : 0
   const xirr = computeXIRR(inputs, last.nominal)
-  const netReturns = rows
-    .slice(1)
-    .map(r => r.yearlyReturn)
-    .filter(v => Number.isFinite(v))
-  // Le Sharpe n'a de sens qu'en mode aléatoire : en mode fixe/historique les
-  // rendements sont (quasi) déterministes → écart-type ~0 et ratio explosé.
-  const sharpe =
-    inputs.returnMode === "random" && standardDeviation(netReturns) > 0
-      ? (average(netReturns) - RISK_FREE_RATE) / standardDeviation(netReturns)
-      : 0
+  // Le Sharpe n'a plus de sens : l'app rejoue toujours des rendements réels
+  // (plus de mode aléatoire gaussien) → rendements déterministes, écart-type
+  // ~0 et ratio explosé. On le force à 0 (masqué dans l'UI).
+  const sharpe = 0
   const drawdown = calcMaxDrawdown(rows.map(r => r.nominal))
   const contributionPct = last.nominal > 0 ? last.investedNom / last.nominal : 0
   // Rendement RÉEL mesuré sur la simulation, pas sur les inputs : le XIRR
   // (rendement annualisé des flux réels) déflaté par l'inflation RÉELLEMENT
   // appliquée pendant la projection (rapport nominal/réel cumulé). Avant
-  // l'audit v5.2.2, on utilisait (1+annualReturn)/(1+inflation)−1, ce qui
+  // l'audit v5.2.2, on utilisait (1+taux saisi)/(1+inflation)−1, ce qui
   // donnait un chiffre faux dès que le mode était historique ou aléatoire
-  // (le rendement saisi n'est pas celui rejoué), et ignorait les modes
-  // d'inflation historique/cyclique.
+  // (le rendement saisi n'est pas celui rejoué). Depuis l'Option A (v5.5.0),
+  // il n'y a plus de taux saisi du tout : le XIRR de la simulation réelle
+  // rejouée est la seule source de vérité.
   const cumulativeInflationFactor = last.nominal > 0 && last.real > 0 ? last.nominal / last.real : 1 + inputs.inflation
   const avgAnnualInflation = Math.pow(Math.max(0.05, cumulativeInflationFactor), 1 / years) - 1
   const realReturn = xirr > -0.99 && avgAnnualInflation > -0.99 ? (1 + xirr) / (1 + avgAnnualInflation) - 1 : 0
@@ -170,7 +163,7 @@ export function computeMilestones(rows: YearRow[]): Milestone[] {
 export function solveGoal(inputs: SimulationInputs): GoalResult {
   const target = Math.max(0, inputs.goalTarget)
   const periods = Math.max(1, Math.round(inputs.goalDuration * 12))
-  const goalRate = inputs.goalAnnualReturn ?? inputs.annualReturn
+  const goalRate = inputs.goalAnnualReturn
   const monthly = monthlyRate(goalRate)
   const pmt = PMTfromFV(target, inputs.goalCapital, monthly, periods)
   const pmtPerMonth = pmt > 0 && Number.isFinite(pmt) ? roundCent(pmt) : 0

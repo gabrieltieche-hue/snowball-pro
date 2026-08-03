@@ -11,15 +11,14 @@ interface MethodologyPanelProps {
 export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
   const [open, setOpen] = useState(false)
   const envelope = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)
-  const historical = inputs.returnMode === "historical" ? getHistoricalDataset(inputs.historicalIndex) : null
+  // Option A : toutes les simulations rejouent TOUJOURS l'historique réel de
+  // l'indice (plus de taux saisi par l'utilisateur ni de mode de rendement).
+  const historical = getHistoricalDataset(inputs.historicalIndex)
 
   const rows: { label: string; value: string }[] = [
     {
       label: "Rendement",
-      value:
-        inputs.returnMode === "historical" && historical
-          ? `Historique réel ${historical.name} (moyenne : ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation)`
-          : `${(inputs.annualReturn * 100).toFixed(1)} %/an — taux défini dans « Votre épargne »`,
+      value: `Historique réel ${historical.name} (moyenne : ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation)`,
     },
     {
       label: "Inflation",

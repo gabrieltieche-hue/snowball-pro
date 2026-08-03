@@ -41,14 +41,13 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
         <FeeImpact rows={rows} inputs={inputs} />
       </div>
 
-      {inputs.crisisEnabled ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DrawdownChart rows={rows} darkMode={darkMode} />
-          <CapitalAllocation rows={rows} darkMode={darkMode} showReal={inputs.showReal} />
-        </div>
-      ) : (
+      {/* La crise synthétique a été supprimée (Option A) : les krachs réels
+          (2000, 2008, 2022…) sont déjà rejoués dans l'historique. Les deux
+          graphiques (drawdown + allocation) sont affichés en permanence. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DrawdownChart rows={rows} darkMode={darkMode} />
         <CapitalAllocation rows={rows} darkMode={darkMode} showReal={inputs.showReal} />
-      )}
+      </div>
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
 

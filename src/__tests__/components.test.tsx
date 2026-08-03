@@ -301,32 +301,47 @@ describe("DualAmount — les deux échelles toujours affichées (demande utilisa
 describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)", () => {
   it("GoalTab : label « (% brut) » + note taux recommandé 7-12 %/an · défaut 10,07 %", () => {
     const rows = runSimulation(DEFAULT_INPUTS)
-    render(
+    const { container } = render(
       <GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />,
     )
+    // toLocaleString(« fr-FR ») insère des espaces insécables (U+202F) : on
+    // normalise avant de comparer.
+    const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
     expect(screen.getByText("Rendement de la bourse (% brut)")).toBeInTheDocument()
-    expect(screen.getByText(/défaut 10,07 %\/an \(moyenne MSCI World\)/)).toBeInTheDocument()
-    expect(screen.getByText(/taux recommandé :/)).toBeInTheDocument()
+    expect(text).toContain("référence")
+    expect(text).toContain("10,07 % brut (moyenne MSCI World)")
+    expect(text).toContain("taux recommandé")
     // Le curseur Objectif démarre sur le défaut 10,07 % (valeur en %)
     expect(screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" })).toHaveValue("10.07")
   })
 
-  it("Sidebar : message d'alerte double déduction dans la carte insight hors fourchette", () => {
-    render(<App />)
-    // Rendement hors fourchette recommandée (7-12 %)
-    fireEvent.change(screen.getByRole("slider", { name: "Rendement annuel de la bourse (% brut)" }), {
-      target: { value: "15" },
-    })
-    // L'insight avertit du risque de double déduction si le taux était déjà net
-    expect(screen.getByText(/double déduction|serait déduite|trop pessimiste/i)).toBeInTheDocument()
+  it("Sidebar (Option A) : la note MSCI World remplace le curseur de rendement", () => {
+    const { container } = render(<App />)
+    // Plus de « taux saisi » : le Simulateur, Monte Carlo et la Rente rejouent
+    // TOUJOURS l'historique réel — la note MSCI World est affichée à la place
+    // du curseur de rendement supprimé. Le texte est fragmenté par des
+    // <strong> : on compare le texte complet du container.
+    const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    expect(text).toContain("MSCI World — historique réel")
+    expect(text).toContain("Moyenne de la série")
+    expect(text).toContain("net d'inflation")
+    // Le curseur de rendement de la bourse a disparu de la sidebar.
+    expect(screen.queryByRole("slider", { name: /rendement annuel de la bourse/i })).not.toBeInTheDocument()
   })
 
-  it("Sidebar : aucune alerte hors fourchette quand le rendement est dans 7-12 %", () => {
+  it("Sidebar (Option A) : plus d'alerte de double déduction (le taux saisi n'existe plus)", () => {
     render(<App />)
-    fireEvent.change(screen.getByRole("slider", { name: "Rendement annuel de la bourse (% brut)" }), {
-      target: { value: "10.07" },
-    })
-    expect(screen.queryByText(/serait déduite.*deux fois/i)).not.toBeInTheDocument()
+    // L'ancienne alerte « si le taux était déjà net d'inflation » n'a plus de
+    // sens : il n'y a plus de taux saisi, rien à déduire deux fois.
+    expect(screen.queryByText(/double déduction|serait déduite|trop pessimiste/i)).not.toBeInTheDocument()
+  })
+
+  it("App : le toggle « Euros d'aujourd'hui » est COCHÉ par défaut (vraies valeurs)", () => {
+    render(<App />)
+    // Demande utilisateur : l'affichage par défaut montre les vraies valeurs
+    // nettes d'inflation — le montant sur le compte reste affiché partout.
+    const toggle = screen.getByRole("switch", { name: /euros d'aujourd'hui/i })
+    expect(toggle).toBeChecked()
   })
 
   it("SliderInput : l'infobulle « ? » explique la règle du rendement BRUT", () => {

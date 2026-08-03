@@ -1,5 +1,4 @@
-import { Coins, Landmark, Percent, RefreshCcw, Settings2, TrendingDown, TrendingUp, Wallet } from "lucide-react"
-import { CrisisSelector } from "../Forms/CrisisSelector"
+import { Coins, Landmark, Percent, Settings2, TrendingUp, Wallet } from "lucide-react"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
 import { SnapshotPanel } from "./SnapshotPanel"
@@ -7,9 +6,9 @@ import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
-import { DEFAULT_INPUTS, fmtCurrency, getHistoricalDataset, RECOMMENDED_RETURN_MAX, RECOMMENDED_RETURN_MIN, validateInputs } from "../../engine"
+import { fmtCurrency, getHistoricalDataset, validateInputs } from "../../engine"
 import type { ValidationError } from "../../engine"
-import type { CrisisProfile, ReturnMode, SavedSnapshot, SimulationInputs, YearRow } from "../../types"
+import type { SavedSnapshot, SimulationInputs, YearRow } from "../../types"
 
 interface SidebarProps {
   inputs: SimulationInputs
@@ -20,7 +19,6 @@ interface SidebarProps {
   onLoadSnapshot: (id: string) => void
   onRemoveSnapshot: (id: string) => void
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
-  updateInputs: (partial: Partial<SimulationInputs>) => void
 }
 
 export function Sidebar({
@@ -32,7 +30,6 @@ export function Sidebar({
   onLoadSnapshot,
   onRemoveSnapshot,
   updateInput,
-  updateInputs,
 }: SidebarProps) {
   const lastRow = rows[rows.length - 1]
   // Les deux échelles sont TOUJOURS affichées côte à côte : le montant qui
@@ -52,16 +49,6 @@ export function Sidebar({
     validationErrors.find(e => e.field === field && e.severity === "error")
   const fieldWarning = (field: keyof SimulationInputs): ValidationError | undefined =>
     validationErrors.find(e => e.field === field && e.severity === "warning")
-
-  // Ménage UX v5.3 : deux modes seulement. « Taux défini » reprend le
-  // rendement annuel saisi dans « Votre épargne » (le demander deux fois était
-  // redondant) ; « Historique » rejoue les vrais rendements du MSCI World
-  // (sélecteur d'indices supprimé — seul le MSCI World reste). Le mode
-  // « Aléatoire » (gaussien ± volatilité) a été supprimé de l'interface.
-  const RETURN_MODES: { id: ReturnMode; label: string; sub: string }[] = [
-    { id: "fixed", label: "Taux défini", sub: "reprend le rendement annuel ci-dessus" },
-    { id: "historical", label: "Historique", sub: `réel : ${historical.name}` },
-  ]
   return (
     <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium overflow-hidden">
       {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
@@ -113,29 +100,27 @@ export function Sidebar({
           warning={fieldWarning("monthlyPayment")?.message}
           onChange={v => updateInput("monthlyPayment", v)}
         />
-        <SliderInput
-          label="Rendement annuel de la bourse (% brut)"
-          id="annual-return"
-          value={inputs.annualReturn * 100}
-          min={0.1}
-          max={20}
-          step={0.1}
-          help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur — ne saisissez jamais un taux déjà net d'inflation."
-          suffix={`Soit ${((inputs.annualReturn * 100) / 12).toFixed(3)} % par mois`}
-          error={fieldError("annualReturn")?.message}
-          warning={fieldWarning("annualReturn")?.message}
-          onChange={v => updateInput("annualReturn", v / 100)}
-        />
-        {/* Le rendement saisi est TOUJOURS brut (avant inflation) : l'inflation
-            est déduite séparément par le moteur. Défaut = moyenne MSCI World
-            1970-2025 (10,07 %/an brut). Taux recommandé : 7 à 12 %/an. */}
-        <p className="text-[10px] text-text-dim leading-snug -mt-2 mb-3">
-          Rendement <strong className="text-text">brut</strong> (avant inflation) — taux recommandé :{" "}
-          <strong className="text-text">
-            {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
-          </strong>{" "}
-          · défaut {(DEFAULT_INPUTS.annualReturn * 100).toFixed(2).replace(".", ",")} %/an (moyenne MSCI World)
-        </p>
+        {/* Option A : plus de curseur de rendement ni de mode « taux défini ».
+            Le Simulateur (comme Monte Carlo et la Rente) rejoue TOUJOURS les
+            rendements réels du MSCI World 1970-2025 — les krachs réels (2000,
+            2008, 2022…) et les bull markets sont rejoués, pas simulés. */}
+        <div className="rounded-xl border border-primary/30 bg-primary/10 p-3">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp size={12} className="text-primary" />
+            <span className="text-xs font-bold text-text">MSCI World — historique réel</span>
+          </div>
+          <p className="text-[10px] text-text-muted mt-1.5 leading-snug">
+            Moyenne de la série :{" "}
+            <strong className="text-text">{(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut</strong> ·{" "}
+            <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong> net
+            d'inflation
+          </p>
+          <p className="text-[10px] text-text-dim mt-1 leading-snug">
+            Simulateur, Monte Carlo et Rente rejouent les rendements réels{" "}
+            {historicalPeriod.replace(`${historical.name} · `, "")} — pas de taux défini, pas de crise
+            simulée.
+          </p>
+        </div>
         <SliderInput
           label="Durée (années)"
           id="duration"
@@ -147,37 +132,6 @@ export function Sidebar({
           warning={fieldWarning("duration")?.message}
           onChange={v => updateInput("duration", v)}
         />
-      </CollapsibleSection>
-
-      {/* Mode de rendement */}
-      <CollapsibleSection title="Comment évolue la bourse ?" icon={<RefreshCcw size={12} />}>
-        <SegmentedControl
-          value={inputs.returnMode}
-          onChange={v => updateInputs({ returnMode: v })}
-          ariaLabel="Mode d'évolution de la bourse"
-          options={RETURN_MODES}
-        />
-        {inputs.returnMode === "historical" && (
-          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 animate-fade-in">
-            <div className="flex items-center gap-1.5">
-              <TrendingUp size={12} className="text-primary" />
-              <span className="text-xs font-bold text-text">MSCI World</span>
-            </div>
-            <p className="text-[10px] text-text-muted mt-1.5 leading-snug">
-              Moyenne arithmétique de la série :{" "}
-              <strong className="text-text">{(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
-              (brut) · <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong>{" "}
-              net d'inflation
-            </p>
-            <p className="text-[10px] text-text-dim mt-1 leading-snug">
-              Moyenne calculée sur la série rejouée {historicalPeriod.replace(`${historical.name} · `, "")}
-            </p>
-          </div>
-        )}
-        {/* Le rendement des dividendes a été supprimé : le MSCI World est
-            capitalisant (dividendes réinvestis dans l'indice, rendement
-            total) — un rendement de dividendes séparé serait un double
-            comptage. */}
       </CollapsibleSection>
 
       {/* Paramètres avancés */}
@@ -311,35 +265,9 @@ export function Sidebar({
         )}
       </CollapsibleSection>
 
-      {/* Stress test */}
-      <CollapsibleSection title="Et si la bourse s'effondrait ?" icon={<TrendingDown size={12} />}>
-        <Toggle
-          checked={inputs.crisisEnabled}
-          onChange={v => updateInput("crisisEnabled", v)}
-          label="Simuler un krach boursier"
-          sub="Simule une chute brutale de la bourse"
-        />
-        {inputs.crisisEnabled && (
-          <div className="mt-3 animate-fade-in">
-            <CrisisSelector
-              profile={inputs.crisisProfile}
-              amplitude={inputs.crisisAmplitude}
-              year={inputs.crisisYear}
-              maxYear={inputs.duration}
-              warning={fieldWarning("crisisYear")?.message}
-              onProfileChange={v => updateInput("crisisProfile", v as CrisisProfile)}
-              onAmplitudeChange={v => updateInput("crisisAmplitude", v)}
-              onYearChange={v => updateInput("crisisYear", v)}
-            />
-            {inputs.returnMode === "historical" && (
-              <p className="text-[10px] text-warning mt-2 leading-snug">
-                En mode historique, les krachs réels de l'indice sont déjà rejoués : la crise synthétique ne
-                s'applique pas (cohérent avec Monte Carlo &amp; Rente).
-              </p>
-            )}
-          </div>
-        )}
-      </CollapsibleSection>
+      {/* La crise synthétique a été supprimée (Option A) : les krachs réels
+          (2000, 2008, 2022…) sont déjà dans les rendements rejoués par toutes
+          les simulations — en simuler un les compterait deux fois. */}
 
       {/* Frais */}
       <CollapsibleSection title="Frais" icon={<Percent size={12} />}>
@@ -352,23 +280,8 @@ export function Sidebar({
           Projection sur <strong className="text-text">{inputs.duration} ans</strong>. Capital final :{" "}
           <strong className="text-primary">{fmtCurrency(displayNominal)}</strong> sur le compte (fin de projet) ·{" "}
           <strong className="text-primary">{fmtCurrency(displayReal)}</strong> en euros d'aujourd'hui.
-          {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>}
-          {inputs.crisisEnabled && inputs.returnMode !== "historical" && inputs.crisisYear <= inputs.duration && (
-            <span className="text-danger">
-              {" "}
-              ⚠️ Chute de la bourse en année {inputs.crisisYear} (-{inputs.crisisAmplitude}%).
-            </span>
-          )}
-          {inputs.annualReturn > 0 &&
-            (inputs.annualReturn < RECOMMENDED_RETURN_MIN || inputs.annualReturn > RECOMMENDED_RETURN_MAX) && (
-              <span className="block mt-2 text-[11px] text-warning leading-snug">
-                ⚠️ Rendement hors fourchette recommandée ({
-                  (RECOMMENDED_RETURN_MIN * 100).toFixed(0)
-                }–{(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an brut). Si ce taux était déjà net
-                d'inflation, l'inflation serait déduite <strong>deux fois</strong> par le simulateur et le
-                capital final serait trop pessimiste.
-              </span>
-            )}
+          {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>}{" "}
+          Les rendements rejoués sont ceux du MSCI World (1970–2025).
         </p>
       </div>
 

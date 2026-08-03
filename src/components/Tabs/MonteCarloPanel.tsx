@@ -33,13 +33,13 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         managementFees: inputs.managementFees,
         seed: inputs.seed,
         mcRuns: inputs.mcRuns,
-        // Monte Carlo rejoue TOUJOURS les rendements réels passés (quel que
-        // soit le mode de rendement) : annualReturn, volatility, returnMode et
-        // la crise synthétique n'influencent plus le résultat — les exclure du
-        // hash évite de faux avertissements « relancez » à leur modification.
-        // Paramètres qui changent aussi le résultat (taux de succès, fiscalité,
-        // inflation, années de détention) : sans eux, l'avertissement
-        // « relancez » ne se déclenchait pas à la modification.
+        // Monte Carlo rejoue TOUJOURS les rendements réels passés : plus de
+        // taux saisi, de volatilité, de mode de rendement ni de crise
+        // synthétique (tous supprimés en Option A) — ces paramètres ne
+        // peuvent plus influencer le résultat. Paramètres qui changent le
+        // résultat (taux de succès, fiscalité, inflation, années de
+        // détention) : sans eux, l'avertissement « relancez » ne se
+        // déclenchait pas à la modification.
         goalTarget: inputs.goalTarget,
         inflation: inputs.inflation,
         // Mode d'inflation (custom/historique/dynamique) : il change le
@@ -130,10 +130,9 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
               <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, en rééchantillonnant
               les <strong className="text-text">rendements réels passés</strong> de l'indice{" "}
               <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> (les krachs et
-              les bull markets réels sont rejoués), quel que soit le mode de rendement choisi. Vous verrez le résultat
-              de votre capital dans une <strong className="text-text">mauvaise</strong>, une{" "}
-              <strong className="text-text">moyenne</strong> et une <strong className="text-text">bonne</strong>{" "}
-              période de bourse.
+              les bull markets réels sont rejoués). Vous verrez le résultat de votre capital dans une{" "}
+              <strong className="text-text">mauvaise</strong>, une <strong className="text-text">moyenne</strong> et une{" "}
+              <strong className="text-text">bonne</strong> période de bourse.
             </p>
           </div>
           <button
@@ -210,27 +209,9 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         )}
       </div>
 
-      {/* Krach recap */}
-      {inputs.crisisEnabled && (
-        <div
-          className={cn(
-            "rounded-2xl p-5 border border-[#8B3A3A]/30 border-l-2 border-l-danger",
-            darkMode
-              ? "bg-gradient-to-br from-[#1a1210] to-[#160d0b]"
-              : "bg-gradient-to-br from-[#fdf3ec] to-[#f9e9dd]",
-          )}
-        >
-          <h3 className="text-xs font-bold text-danger uppercase tracking-wider mb-2.5">
-            ⚠️ Et si la bourse s'effondrait en année {inputs.crisisYear} ?
-          </h3>
-          <p className="text-xs text-text-muted leading-relaxed">
-            Monte Carlo rejoue <strong className="text-text">toujours les rendements réels passés</strong> de l'indice{" "}
-            <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> : les krachs
-            réels (2000, 2008, 2022…) sont déjà dans les scénarios rejoués. La crise synthétique configurée ici ne
-            s'applique donc pas à Monte Carlo — elle serait comptée deux fois.
-          </p>
-        </div>
-      )}
+      {/* La crise synthétique a été supprimée (Option A) : les krachs réels
+          (2000, 2008, 2022…) sont déjà dans les scénarios rejoués par Monte
+          Carlo — en simuler un les compterait deux fois. */}
     </div>
   )
 }

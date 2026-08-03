@@ -354,18 +354,10 @@ export default function App() {
         withdrawalFixed: activeInputs.withdrawalFixed,
         withdrawalInflation: activeInputs.withdrawalInflation,
         retirementYears: activeInputs.retirementYears,
-        annualReturn: activeInputs.annualReturn,
-        volatility: activeInputs.volatility,
-        returnMode: activeInputs.returnMode,
         historicalIndex: activeInputs.historicalIndex,
         inflation: activeInputs.inflation,
         mcRuns: activeInputs.mcRuns,
         seed: activeInputs.seed,
-        crisisEnabled: activeInputs.crisisEnabled,
-        crisisProfile: activeInputs.crisisProfile,
-        crisisYear: activeInputs.crisisYear,
-        crisisAmplitude: activeInputs.crisisAmplitude,
-        crisisDuration: activeInputs.crisisDuration,
       }),
     [activeInputs, lastRow],
   )
@@ -424,7 +416,6 @@ export default function App() {
               inputs={activeInputs}
               rows={rows}
               updateInput={updateInput}
-              updateInputs={updateInputs}
               scenarioLabel={comparing ? "Scénario B" : undefined}
               snapshots={snapshots}
               onSaveSnapshot={handleSaveSnapshot}

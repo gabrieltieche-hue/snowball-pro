@@ -1,9 +1,11 @@
 import type { SimulationInputs } from "../types"
 import { clamp } from "./taxes"
 
-// Fourchette recommandée pour le rendement annuel saisi (TOUJOURS brut, avant
-// inflation) : moyenne MSCI World 1970-2025 ≈ 10,07 %/an. Une seule source de
-// vérité — utilisée par la validation ET la carte insight de la Sidebar.
+// Fourchette recommandée pour le rendement de l'onglet Objectif (TOUJOURS
+// brut, avant inflation) : moyenne MSCI World 1970-2025 ≈ 10,07 %/an. Une
+// seule source de vérité — utilisée par la validation ET le libellé du curseur
+// de l'onglet Objectif. Le Simulateur/MC/Rente n'ont plus de taux saisi
+// (Option A) : ils rejouent toujours l'historique réel.
 export const RECOMMENDED_RETURN_MIN = 0.07
 export const RECOMMENDED_RETURN_MAX = 0.12
 
@@ -74,57 +76,9 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
-  if (inputs.annualReturn <= -1) {
-    errors.push({
-      field: "annualReturn",
-      message: "Le rendement ne peut pas être ≤ -100%",
-      severity: "error",
-      value: inputs.annualReturn,
-      min: -0.99,
-    })
-  }
-  if (inputs.annualReturn > 10) {
-    errors.push({
-      field: "annualReturn",
-      message: "Rendement annuel très élevé (>1000%)",
-      severity: "warning",
-      value: inputs.annualReturn,
-      max: 10,
-    })
-  }
-  // Le rendement saisi est TOUJOURS brut (avant inflation) : hors de la
-  // fourchette recommandée (7-12 %/an), on le signale pour éviter de saisir un
-  // rendement déjà net d'inflation (qui serait déduit deux fois) ou irréaliste.
-  if (inputs.annualReturn < RECOMMENDED_RETURN_MIN || inputs.annualReturn > RECOMMENDED_RETURN_MAX) {
-    errors.push({
-      field: "annualReturn",
-      message: "Rendement hors fourchette recommandée (7-12 %/an brut) — moyenne MSCI World : 10,07 %/an",
-      severity: "warning",
-      value: inputs.annualReturn,
-      min: RECOMMENDED_RETURN_MIN,
-      max: RECOMMENDED_RETURN_MAX,
-    })
-  }
-
-  if (inputs.volatility <= 0) {
-    errors.push({
-      field: "volatility",
-      message: "La volatilité doit être positive",
-      severity: "error",
-      value: inputs.volatility,
-      min: 0.001,
-    })
-  }
-  if (inputs.volatility > 3) {
-    errors.push({
-      field: "volatility",
-      message: "Volatilité extrêmement élevée (>300%)",
-      severity: "warning",
-      value: inputs.volatility,
-      max: 3,
-    })
-  }
-
+  // Plus de validation de rendement/volatilité : ces saisies ont été supprimées
+  // (Option A). Le rendement de l'onglet Objectif (goalAnnualReturn) garde sa
+  // fourchette recommandée via RECOMMENDED_RETURN_MIN/MAX (libellé du curseur).
   if (inputs.inflation < -0.1) {
     errors.push({
       field: "inflation",
@@ -190,18 +144,8 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
-  // I2 — une crise programmée APRÈS la fin de la simulation est un no-op
-  // silencieux : l'UI l'annonce pourtant (« Chute en année X ») alors que le
-  // moteur ne fera rien. On alerte pour que l'utilisateur le constate.
-  if (inputs.crisisEnabled && inputs.crisisYear > inputs.duration) {
-    errors.push({
-      field: "crisisYear",
-      message: `La crise (année ${inputs.crisisYear}) survient après la fin de la simulation (${inputs.duration} ans) : elle ne sera pas appliquée. Réduisez l'année ou allongez la durée.`,
-      severity: "warning",
-      value: inputs.crisisYear,
-      max: inputs.duration,
-    })
-  }
+  // La crise synthétique a été supprimée (Option A) : les krachs réels sont
+  // déjà rejoués dans l'historique — plus de validation de crise.
 
   // Bornes réelles utilisées par runMonteCarlo / runDecumulation (alignées).
   if (inputs.mcRuns < 100 || inputs.mcRuns > 10000) {
@@ -223,8 +167,6 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     ...inputs,
     capitalInitial: clamp(inputs.capitalInitial, 0, 100_000_000),
     monthlyPayment: clamp(inputs.monthlyPayment, 0, 200_000),
-    annualReturn: clamp(inputs.annualReturn, -0.95, 10),
-    volatility: clamp(inputs.volatility, 0.001, 3),
     duration: clamp(inputs.duration, 1, 80),
     indexation: clamp(inputs.indexation, 0, 0.5),
     inflation: clamp(inputs.inflation, -0.1, 1),
@@ -234,8 +176,6 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     insuranceFees: clamp(inputs.insuranceFees, 0, 0.5),
     peaYearsHeld: clamp(inputs.peaYearsHeld, 0, 50),
     avYearsHeld: clamp(inputs.avYearsHeld, 0, 50),
-    crisisAmplitude: clamp(inputs.crisisAmplitude, 0, 85),
-    crisisDuration: clamp(inputs.crisisDuration, 0.5, 10),
     mcRuns: Math.round(clamp(inputs.mcRuns, 100, 10000)),
     goalTarget: Math.max(inputs.goalTarget, 1),
     goalAnnualReturn: clamp(inputs.goalAnnualReturn, -0.95, 10),

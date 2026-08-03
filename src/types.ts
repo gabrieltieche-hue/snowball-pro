@@ -1,8 +1,6 @@
 export type EnvelopeType = "cto" | "pea" | "av" | "per" | "none"
 export type ScenarioId = "A" | "B"
-export type ReturnMode = "fixed" | "random" | "historical"
 export type HistoricalIndex = "msci-world" | "sp500" | "nasdaq" | "cac40" | "bitcoin" | "gold"
-export type CrisisProfile = "none" | "flash-crash" | "bear-market" | "long-depression" | "stagflation"
 export type WithdrawalModel = "rule-4" | "ultra-safe" | "optimistic" | "custom"
 export type InflationMode = "custom" | "historical" | "dynamic"
 export type GoalDifficulty = "easy" | "moderate" | "ambitious" | "impossible"
@@ -131,8 +129,6 @@ export interface TaxBreakdown {
 export interface SimulationInputs {
   capitalInitial: number
   monthlyPayment: number
-  annualReturn: number
-  volatility: number
   duration: number
   indexation: number
   inflation: number
@@ -141,13 +137,7 @@ export interface SimulationInputs {
   taxCouple: boolean
   peaYearsHeld: number
   avYearsHeld: number
-  returnMode: ReturnMode
   historicalIndex: HistoricalIndex
-  crisisEnabled: boolean
-  crisisProfile: CrisisProfile
-  crisisYear: number
-  crisisAmplitude: number
-  crisisDuration: number
   etfFees: number
   brokerageFees: number
   insuranceFees: number

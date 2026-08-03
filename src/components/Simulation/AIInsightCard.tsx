@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import { Sparkles } from "lucide-react"
-import { deflationFactor, fmtCurrency } from "../../engine"
+import { deflationFactor, fmtCurrency, getHistoricalDataset } from "../../engine"
 import type { SimulationInputs, YearRow, KPIs } from "../../types"
 
 interface AIInsightCardProps {
@@ -33,17 +33,14 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     )
   }
   const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
-  if (effectiveReturn > inputs.annualReturn * 100) {
+  // Référence de comparaison : la moyenne réelle de l'indice rejoué (Option A
+  // — plus de taux saisi par l'utilisateur, toutes les simulations rejouent
+  // l'historique réel).
+  const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
+  if (effectiveReturn > datasetAvg) {
     insights.push(
-      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse le rendement de ${(
-        inputs.annualReturn * 100
-      ).toFixed(0)}% que vous aviez prévu.`,
+      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse la moyenne historique de ${datasetAvg.toFixed(1)}%/an de l'indice rejoué.`,
     )
-  }
-  // En mode historique, la crise synthétique ne s'applique pas (les krachs
-  // réels sont déjà rejoués) — ne pas annoncer un krach qui n'est pas simulé.
-  if (inputs.crisisEnabled && inputs.returnMode !== "historical") {
-    insights.push("Un krach boursier est simulé. Diversifiez vos placements pour réduire l'impact.")
   }
   if (insights.length === 0) {
     insights.push(

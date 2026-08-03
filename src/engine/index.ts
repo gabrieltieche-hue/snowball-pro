@@ -1,4 +1,4 @@
-export { mulberry32, gaussian } from "./rng"
+export { mulberry32 } from "./rng"
 export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY, SETTINGS_KEY } from "./migration"
 export type { V4Settings } from "./migration"
 export { fmtCurrency, fmtCompact, fmtPercent, parseCurrencyInput, escapeCsvCell } from "./formatting"
@@ -36,5 +36,4 @@ export {
 } from "./snapshots"
 export { mergeComparisonSeries } from "./comparison"
 export type { ComparisonSeriesRow } from "./comparison"
-export { getHistoricalDataset } from "./historical"
-export { getCrisisProfile, crisisAdjustment } from "./crisis"
+export { getHistoricalDataset, MSCI_WORLD_AVG_RETURN } from "./historical"

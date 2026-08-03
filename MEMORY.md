@@ -4,6 +4,37 @@
 
 ---
 
+## SESSION — 2026-08-02 (v5.5.0 : Option A — 100 % historique réel + « Euros d'aujourd'hui » coché par défaut)
+
+### Résumé
+
+Deux chantiers se sont croisés dans le worktree : (1) la demande utilisateur « Euros d'aujourd'hui coché par défaut » (montrer d'emblée les VRAIES valeurs nettes d'inflation) ; (2) un **refactor parallèle « Option A »** (validé avec l'utilisateur dans une autre session) qui supprime le mode « Taux défini », le curseur de rendement, la volatilité et la crise synthétique — le Simulateur, Monte Carlo et la Rente rejouent désormais TOUS les rendements réels du MSCI World 1970-2025 (krachs et bull markets réels inclus). Les deux sont fusionnés dans la release **v5.5.0**. **169 tests**, gate 100 % vert, déploiement Vercel.
+
+### Modifications — refactor Option A (agent parallèle)
+
+- **`types.ts`** : suppression de `returnMode`, `annualReturn`, `volatility` et des 6 champs crise (`crisisEnabled`, `crisisProfile`, `crisisYear`, `crisisAmplitude`, `crisisDuration`). `SimulationInputs` allégé.
+- **`simulation.ts`** : `annualReturnForYear` seul chemin (ancrage inversé, repli `MSCI_WORLD_AVG_RETURN` de `historical.ts`) ; suppression de `sampledMonthlyReturn`, de `crisisAdjustment` et de `gaussian`.
+- **`montecarlo.ts` / `decumulation.ts`** : `sampleHistoricalReturns` seul mode ; code mort stochastique supprimé. **`kpis.ts`** : `sharpe` = 0, `solveGoal` utilise exclusivement `goalAnnualReturn` (l'onglet Objectif garde son curseur, défaut 10,07 % brut).
+- **`migration.ts` / `validation.ts`** : champs rendement/crise retirés des défauts, clés numériques, mapping v4 et règles de validation ; `parseStoredInputs` verrouille `historicalIndex = "msci-world"`.
+- **Suppressions** : `engine/crisis.ts`, `components/Forms/CrisisSelector.tsx`, exports associés. **UI** : Sidebar → carte « MSCI World — historique réel » (10,07 % brut · 8,22 % net) à la place de la section modes + curseur rendement ; GoalTab libellé « référence : 10,07 % brut ».
+
+### Modifications — « Euros d'aujourd'hui » coché par défaut (demande utilisateur)
+
+- **`migration.ts`** : `DEFAULT_INPUTS.showReal = true` (avant `false`) + fallback v4 `showReal: s.showReal !== false` (un choix v4 explicitement « false » reste respecté ; sinon défaut vrai).
+- **Invariant moteur documenté** : le moteur calcule TOUJOURS `real = capital / inflationIndex` (`simulation.ts`) — l'infobulle « ne saisissez jamais un taux déjà net d'inflation » est vraie que le toggle soit coché ou non (l'option ne change que l'échelle mise en avant).
+- **Infobulle clarifiée** (`GoalTab.tsx`) : *« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »*
+- **Tests** : défaut `showReal = true` (moteur), migration v4 undefined→vrai / false→false / true→true, toggle coché au rendu d'App (composant).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **169/169 tests** ✓ build ✓.
+- Revue adverse (code-reviewer) : refactor Option A audité (cohérence moteur, suppression complète des champs, tests adaptés) + demande showReal (invariant réel/nominal, migration v4 préservant les choix explicites).
+- Navigateur (preview réelle) : toggle « Euros d'aujourd'hui » **coché au chargement**, les 4 cartes + Sidebar + FiscalPanel affichent les deux échelles (valeur réelle en avant + « sur le compte en YYYY » visible), décochage → valeur du compte en avant (rien n'est caché) ; carte « MSCI World — historique réel » visible dans la Sidebar.
+- Version 5.4.1 → 5.5.0 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`), CHANGELOG (entrée v5.5.0 unique, contenus v5.4.2 fusionnés).
+- Déploiement : `vercel --prod` → https://v4-three-beige.vercel.app
+
+---
+
 ## SESSION — 2026-08-02 (v5.4.1 : rendement BRUT par défaut 10,07 % + double échelle affichée partout)
 
 ### Résumé

@@ -76,7 +76,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             max={20}
             step={0.1}
             color="#6366F1"
-            help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur — ne saisissez jamais un taux déjà net d'inflation."
+            help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation."
             suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
             onChange={v => updateInput("goalAnnualReturn", v / 100)}
           />
@@ -93,14 +93,17 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
           />
         </div>
 
-        {/* Cohérence avec l'onglet principal : rendement TOUJOURS brut, défaut
-            MSCI World (10,07 %/an), fourchette recommandée 7-12 %/an. */}
+        {/* Cohérence avec le reste de l'app : rendement TOUJOURS brut, référence
+            MSCI World (10,07 %/an), fourchette recommandée 7-12 %/an. Ce curseur
+            ne sert QU'à cet onglet (le Simulateur/MC/Rente rejouent l'historique
+            réel, Option A). */}
         <p className="text-[10px] text-text-dim leading-snug -mt-4">
-          Rendement <strong className="text-text">brut</strong> (avant inflation) — taux recommandé :{" "}
+          Rendement <strong className="text-text">brut</strong> (avant inflation) — référence :{" "}
           <strong className="text-text">
-            {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
+            {(DEFAULT_INPUTS.goalAnnualReturn * 100).toFixed(2).replace(".", ",")} % brut (moyenne MSCI World)
           </strong>{" "}
-          · défaut {(DEFAULT_INPUTS.goalAnnualReturn * 100).toFixed(2).replace(".", ",")} %/an (moyenne MSCI World)
+          · taux recommandé : {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à{" "}
+          {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
         </p>
 
         {/* Résultats */}

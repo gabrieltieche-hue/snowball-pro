@@ -233,28 +233,46 @@ describe("PEA — la durée de détention change l'imposition (correctif v5.2.4)
   })
 })
 
-describe("défauts — inflation 2,1 %, rendement brut 10,07 % et Monte Carlo 10 000", () => {
+describe("défauts — inflation 2,1 %, référence MSCI World 10,07 % et Monte Carlo 10 000", () => {
   it("le défaut d'inflation annuelle est 2,1 %", () => {
     expect(DEFAULT_INPUTS.inflation).toBeCloseTo(0.021)
   })
 
-  it("le défaut de rendement annuel est 10,07 % BRUT (moyenne MSCI World)", () => {
-    expect(DEFAULT_INPUTS.annualReturn).toBeCloseTo(0.1007, 4)
-    // Le rendement saisi est TOUJOURS brut : il reste supérieur au net
-    // d'inflation (8,22 %) — jamais un rendement net saisi par l'utilisateur.
-    expect(DEFAULT_INPUTS.annualReturn).toBeGreaterThan(0.0822)
+  it("plus de taux saisi (Option A) : aucun champ annualReturn/volatility/returnMode", () => {
+    // L'utilisateur ne saisit plus de rendement : Simulateur, Monte Carlo et
+    // Rente rejouent TOUJOURS l'historique réel du MSCI World. Les champs de
+    // l'ancien mode « taux défini » ne doivent plus exister dans les défauts.
+    expect("annualReturn" in DEFAULT_INPUTS).toBe(false)
+    expect("volatility" in DEFAULT_INPUTS).toBe(false)
+    expect("returnMode" in DEFAULT_INPUTS).toBe(false)
+    expect("crisisEnabled" in DEFAULT_INPUTS).toBe(false)
   })
 
-  it("l'onglet Objectif démarre aussi à 10,07 % brut (goalAnnualReturn aligné)", () => {
-    // Cohérence parfaite entre les onglets (demande TRUC 1) : le rendement de
-    // l'Objectif Inversé est aligné sur l'onglet principal — 10,07 %/an BRUT.
+  it("la référence de rendement reste 10,07 % brut via l'onglet Objectif (goalAnnualReturn)", () => {
+    // Seul l'onglet Objectif a un rendement (pour calculer l'épargne mensuelle
+    // nécessaire) : sa référence est alignée sur la moyenne MSCI World.
     expect(DEFAULT_INPUTS.goalAnnualReturn).toBeCloseTo(0.1007, 4)
-    expect(DEFAULT_INPUTS.goalAnnualReturn).toBe(DEFAULT_INPUTS.annualReturn)
     expect(DEFAULT_INPUTS.goalAnnualReturn).toBeGreaterThan(0.0822)
   })
 
   it("le défaut Monte Carlo est 10 000 simulations", () => {
     expect(DEFAULT_INPUTS.mcRuns).toBe(10000)
+  })
+
+  it("l'affichage par défaut est en euros d'aujourd'hui (vraies valeurs nettes d'inflation)", () => {
+    // Demande utilisateur : l'option « Euros d'aujourd'hui » est cochée par
+    // défaut pour montrer d'emblée les VRAIES valeurs (pouvoir d'achat réel).
+    // Le moteur calcule TOUJOURS les deux échelles (nominal + real) — le
+    // toggle ne change que laquelle est mise en avant.
+    expect(DEFAULT_INPUTS.showReal).toBe(true)
+  })
+
+  it("la migration v4 retombe sur euros d'aujourd'hui quand l'ancien état ne précisait rien", () => {
+    // v4 sans showReal stocké → défaut aligné (vrai), comme pour un nouvel
+    // utilisateur. Un choix v4 explicitement « false » reste respecté.
+    expect(v4SettingsToInputs({}).showReal).toBe(true)
+    expect(v4SettingsToInputs({ showReal: false }).showReal).toBe(false)
+    expect(v4SettingsToInputs({ showReal: true }).showReal).toBe(true)
   })
 
   it("parseStoredInputs force le mode d'inflation personnalisé (modes supprimés)", () => {
@@ -267,8 +285,6 @@ describe("runSimulation", () => {
   const baseInputs: SimulationInputs = {
     capitalInitial: 25000,
     monthlyPayment: 1000,
-    annualReturn: 0.079,
-    volatility: 0.155,
     duration: 10,
     indexation: 0.02,
     inflation: 0.022,
@@ -277,13 +293,7 @@ describe("runSimulation", () => {
     taxCouple: false,
     peaYearsHeld: 5,
     avYearsHeld: 8,
-    returnMode: "fixed",
     historicalIndex: "msci-world",
-    crisisEnabled: false,
-    crisisProfile: "bear-market",
-    crisisYear: 9,
-    crisisAmplitude: 38,
-    crisisDuration: 2,
     etfFees: 0.0025,
     brokerageFees: 0.001,
     insuranceFees: 0.006,
@@ -335,30 +345,11 @@ describe("runSimulation", () => {
     expect(rows[rows.length - 1].nominal).toBe(0)
   })
 
-  it("applies crisis when enabled", () => {
-    const normalInputs = { ...baseInputs, crisisEnabled: false, duration: 10 }
-    const crisisInputs = {
-      ...baseInputs,
-      crisisEnabled: true,
-      crisisProfile: "bear-market" as const,
-      crisisYear: 3,
-      crisisAmplitude: 50,
-      crisisDuration: 2,
-      duration: 10,
-    }
-    const normalRows = runSimulation(normalInputs)
-    const crisisRows = runSimulation(crisisInputs)
-    const normalEnd = normalRows[normalRows.length - 1]?.nominal ?? 0
-    const crisisEnd = crisisRows[crisisRows.length - 1]?.nominal ?? 0
-    expect(crisisEnd).toBeLessThan(normalEnd)
-  })
-
   it("rejoue la série historique en partant de l'année la plus récente", () => {
     const dataset = getHistoricalDataset("sp500")
     const lastReturn = dataset.years[dataset.years.length - 1]?.return ?? 0
     const histInputs: SimulationInputs = {
       ...baseInputs,
-      returnMode: "historical",
       historicalIndex: "sp500",
       monthlyPayment: 0,
       etfFees: 0,
@@ -447,8 +438,6 @@ describe("computeKPIs", () => {
   const baseInputs: SimulationInputs = {
     capitalInitial: 25000,
     monthlyPayment: 1000,
-    annualReturn: 0.079,
-    volatility: 0.155,
     duration: 10,
     indexation: 0.02,
     inflation: 0.022,
@@ -457,13 +446,7 @@ describe("computeKPIs", () => {
     taxCouple: false,
     peaYearsHeld: 5,
     avYearsHeld: 8,
-    returnMode: "fixed",
     historicalIndex: "msci-world",
-    crisisEnabled: false,
-    crisisProfile: "bear-market",
-    crisisYear: 9,
-    crisisAmplitude: 38,
-    crisisDuration: 2,
     etfFees: 0.0025,
     brokerageFees: 0.001,
     insuranceFees: 0.006,
@@ -499,8 +482,6 @@ describe("solveGoal", () => {
     const inputs: SimulationInputs = {
       capitalInitial: 25000,
       monthlyPayment: 1000,
-      annualReturn: 0.079,
-      volatility: 0.155,
       duration: 25,
       indexation: 0.02,
       inflation: 0.022,
@@ -509,13 +490,7 @@ describe("solveGoal", () => {
       taxCouple: false,
       peaYearsHeld: 5,
       avYearsHeld: 8,
-      returnMode: "fixed",
       historicalIndex: "msci-world",
-      crisisEnabled: false,
-      crisisProfile: "bear-market",
-      crisisYear: 9,
-      crisisAmplitude: 38,
-      crisisDuration: 2,
       etfFees: 0.0025,
       brokerageFees: 0.001,
       insuranceFees: 0.006,
@@ -547,8 +522,6 @@ describe("validateInputs", () => {
     const base: SimulationInputs = {
       capitalInitial: 25000,
       monthlyPayment: 1000,
-      annualReturn: 0.079,
-      volatility: 0.155,
       duration: 10,
       indexation: 0.02,
       inflation: 0.022,
@@ -557,13 +530,7 @@ describe("validateInputs", () => {
       taxCouple: false,
       peaYearsHeld: 5,
       avYearsHeld: 8,
-      returnMode: "fixed",
       historicalIndex: "msci-world",
-      crisisEnabled: false,
-      crisisProfile: "bear-market",
-      crisisYear: 9,
-      crisisAmplitude: 38,
-      crisisDuration: 2,
       etfFees: 0.0025,
       brokerageFees: 0.001,
       insuranceFees: 0.006,
@@ -592,8 +559,6 @@ describe("validateInputs", () => {
     const base: SimulationInputs = {
       capitalInitial: -1,
       monthlyPayment: 200000,
-      annualReturn: 20,
-      volatility: 0.155,
       duration: 100,
       indexation: 0.02,
       inflation: 2,
@@ -602,13 +567,7 @@ describe("validateInputs", () => {
       taxCouple: false,
       peaYearsHeld: 5,
       avYearsHeld: 8,
-      returnMode: "fixed",
       historicalIndex: "msci-world",
-      crisisEnabled: false,
-      crisisProfile: "bear-market",
-      crisisYear: 9,
-      crisisAmplitude: 38,
-      crisisDuration: 2,
       etfFees: -0.1,
       brokerageFees: 0.001,
       insuranceFees: 0.006,
@@ -635,12 +594,10 @@ describe("validateInputs", () => {
 })
 
 describe("solveGoal with goalAnnualReturn", () => {
-  it("uses goalAnnualReturn independently from annualReturn", () => {
+  it("goalAnnualReturn pilote seul le taux de l'objectif (plus de taux saisi)", () => {
     const inputs: SimulationInputs = {
       capitalInitial: 25000,
       monthlyPayment: 1000,
-      annualReturn: 0.03,
-      volatility: 0.155,
       duration: 25,
       indexation: 0.02,
       inflation: 0.022,
@@ -649,13 +606,7 @@ describe("solveGoal with goalAnnualReturn", () => {
       taxCouple: false,
       peaYearsHeld: 5,
       avYearsHeld: 8,
-      returnMode: "fixed",
       historicalIndex: "msci-world",
-      crisisEnabled: false,
-      crisisProfile: "bear-market",
-      crisisYear: 9,
-      crisisAmplitude: 38,
-      crisisDuration: 2,
       etfFees: 0.0025,
       brokerageFees: 0.001,
       insuranceFees: 0.006,
@@ -687,8 +638,6 @@ describe("sanitizeInputs", () => {
     const base: SimulationInputs = {
       capitalInitial: 1e9,
       monthlyPayment: 500000,
-      annualReturn: 50,
-      volatility: 10,
       duration: 200,
       indexation: 2,
       inflation: 5,
@@ -697,13 +646,7 @@ describe("sanitizeInputs", () => {
       taxCouple: false,
       peaYearsHeld: 200,
       avYearsHeld: 200,
-      returnMode: "fixed",
       historicalIndex: "msci-world",
-      crisisEnabled: false,
-      crisisProfile: "bear-market",
-      crisisYear: 9,
-      crisisAmplitude: 38,
-      crisisDuration: 2,
       etfFees: -1,
       brokerageFees: -1,
       insuranceFees: -1,
@@ -727,7 +670,6 @@ describe("sanitizeInputs", () => {
     const safe = sanitizeInputs(base)
     expect(safe.capitalInitial).toBeLessThanOrEqual(100_000_000)
     expect(safe.monthlyPayment).toBeLessThanOrEqual(200_000)
-    expect(safe.annualReturn).toBeGreaterThanOrEqual(-0.95)
     expect(safe.goalTarget).toBeGreaterThanOrEqual(1)
     expect(safe.seed).toBeGreaterThanOrEqual(1)
   })
@@ -773,13 +715,11 @@ describe("v4SettingsToInputs", () => {
     })
     expect(inputs.capitalInitial).toBe(25000)
     expect(inputs.monthlyPayment).toBe(750)
-    expect(inputs.annualReturn).toBeCloseTo(0.065)
     expect(inputs.duration).toBe(30)
     expect(inputs.indexation).toBeCloseTo(0.02)
     expect(inputs.inflation).toBeCloseTo(0.015)
     expect(inputs.envelope).toBe("pea")
-    expect(inputs.crisisYear).toBe(12)
-    expect(inputs.crisisAmplitude).toBe(40)
+    // Le rendement v4 (r) et la crise (krasch*) sont ignorés (Option A).
     expect(inputs.showReal).toBe(true)
   })
 
@@ -794,14 +734,8 @@ describe("v4SettingsToInputs", () => {
   })
 
   it("clamps out-of-range values", () => {
-    const inputs = v4SettingsToInputs({ t: 500, kraschPct: -10 })
+    const inputs = v4SettingsToInputs({ t: 500 })
     expect(inputs.duration).toBe(80)
-    expect(inputs.crisisAmplitude).toBe(0)
-  })
-
-  it("keeps krach inactive by default (legacy did not persist the toggle)", () => {
-    const inputs = v4SettingsToInputs({ kraschYear: 12, kraschPct: 40 })
-    expect(inputs.crisisEnabled).toBe(false)
   })
 })
 
@@ -906,21 +840,21 @@ describe("history", () => {
     const stack = pushHistory(
       pushHistory(createHistory(), DEFAULT_INPUTS, P({ monthlyPayment: 1100 }), "A"),
       { ...DEFAULT_INPUTS, monthlyPayment: 1100 },
-      P({ annualReturn: 0.09 }),
+      P({ duration: 40 }),
       "A",
     )
     const result = undoHistory(stack)
     expect(result).not.toBeNull()
     expect((result as NonNullable<typeof result>).patch).toMatchObject({
-      annualReturn: DEFAULT_INPUTS.annualReturn,
+      duration: DEFAULT_INPUTS.duration,
     })
     const next = {
       ...DEFAULT_INPUTS,
       monthlyPayment: 1100,
-      annualReturn: 0.09,
+      duration: 40,
       ...(result as NonNullable<typeof result>).patch,
     }
-    expect(next.annualReturn).toBe(DEFAULT_INPUTS.annualReturn)
+    expect(next.duration).toBe(DEFAULT_INPUTS.duration)
     expect(next.monthlyPayment).toBe(1100)
   })
 
@@ -1122,23 +1056,28 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
   })
 
   it("rejects invalid enum values and keeps defaults", () => {
-    const inputs = parseStoredInputs(JSON.stringify({ envelope: "futures", returnMode: "quantum" }))
+    const inputs = parseStoredInputs(JSON.stringify({ envelope: "futures", withdrawalModel: "quantum" }))
     expect(inputs.envelope).toBe(DEFAULT_INPUTS.envelope)
-    expect(inputs.returnMode).toBe(DEFAULT_INPUTS.returnMode)
+    expect(inputs.withdrawalModel).toBe(DEFAULT_INPUTS.withdrawalModel)
   })
 
   it("accepts valid numeric and enum values", () => {
     const inputs = parseStoredInputs(
-      JSON.stringify({ capitalInitial: 42_000, envelope: "av", returnMode: "historical" }),
+      JSON.stringify({ capitalInitial: 42_000, envelope: "av", withdrawalModel: "ultra-safe" }),
     )
     expect(inputs.capitalInitial).toBe(42_000)
     expect(inputs.envelope).toBe("av")
-    expect(inputs.returnMode).toBe("historical")
+    expect(inputs.withdrawalModel).toBe("ultra-safe")
   })
 
-  it("normalise le mode Aléatoire supprimé vers « fixed » et verrouille l'indice sur le MSCI World", () => {
-    const inputs = parseStoredInputs(JSON.stringify({ returnMode: "random", historicalIndex: "sp500" }))
-    expect(inputs.returnMode).toBe("fixed")
+  it("ignore les champs supprimés (taux, mode, crise) et verrouille l'indice MSCI World", () => {
+    const inputs = parseStoredInputs(
+      JSON.stringify({ returnMode: "random", annualReturn: 0.09, volatility: 0.15, crisisEnabled: true, historicalIndex: "sp500" }),
+    )
+    // Option A : les champs supprimés ne réapparaissent jamais dans les inputs.
+    expect("annualReturn" in inputs).toBe(false)
+    expect("returnMode" in inputs).toBe(false)
+    expect("crisisEnabled" in inputs).toBe(false)
     expect(inputs.historicalIndex).toBe("msci-world")
   })
 
@@ -1156,7 +1095,7 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
   it(
     "produces deterministic results for a fixed seed",
     () => {
-      const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10, returnMode: "historical" as const }
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10 }
       const first = runMonteCarlo(inputs, 200)
       const second = runMonteCarlo(inputs, 200)
       expect(first.p50).toEqual(second.p50)
@@ -1168,7 +1107,7 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
   it(
     "produces distinct paths across the distribution",
     () => {
-      const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10, returnMode: "historical" as const }
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10 }
       const result = runMonteCarlo(inputs, 300)
       const last = result.p50.length - 1
       expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
@@ -1179,20 +1118,27 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
   )
 
   it(
-    "rejoue TOUJOURS l'historique réel, même en mode « taux défini » (demande utilisateur)",
+    "le Simulateur rejoue TOUJOURS l'historique réel (Option A : plus de mode « taux défini »)",
     () => {
-      // Le mode de rendement ne doit PLUS influencer Monte Carlo : le moteur
-      // rééchantillonne toujours les rendements réels passés. Deux modes
-      // différents avec la même graine doivent produire des résultats
-      // strictement identiques.
-      const fixed = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "fixed" as const, goalTarget: 10_000 }
-      const hist = { ...DEFAULT_INPUTS, mcRuns: 150, returnMode: "historical" as const, goalTarget: 10_000 }
-      const fromFixed = runMonteCarlo(fixed, 150, 10_000)
-      const fromHist = runMonteCarlo(hist, 150, 10_000)
-      expect(fromFixed.p50).toEqual(fromHist.p50)
-      expect(fromFixed.successRate).toBe(fromHist.successRate)
-      expect(fromFixed.successRate).toBeGreaterThanOrEqual(0)
-      expect(fromFixed.successRate).toBeLessThanOrEqual(100)
+      // Sans aucun mode de rendement sélectionnable, runSimulation doit rejouer
+      // la série réelle : l'année 1 correspond au rendement le plus récent de
+      // l'indice. La référence de taux n'existe plus — la moyenne de l'index
+      // rejoué est la seule donnée de rendement.
+      const inputs = {
+        ...DEFAULT_INPUTS,
+        monthlyPayment: 0,
+        etfFees: 0,
+        brokerageFees: 0,
+        insuranceFees: 0,
+        managementFees: 0,
+        envelope: "none" as const,
+        duration: 3,
+        historicalIndex: "sp500" as const,
+      }
+      const dataset = getHistoricalDataset("sp500")
+      const lastReturn = dataset.years[dataset.years.length - 1]?.return ?? 0
+      const rows = runSimulation(inputs)
+      expect(rows[1].yearlyReturn).toBeCloseTo(lastReturn, 3)
     },
     MC_TIMEOUT,
   )
@@ -1216,30 +1162,8 @@ describe("régressions — corrections de l'audit", () => {
     expect(ok.find(e => e.field === "mcRuns")).toBeUndefined()
   })
 
-  it("validateInputs recommande 7-12 %/an brut (hors fourchette → warning)", () => {
-    const low = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.04 })
-    expect(low.find(e => e.field === "annualReturn")?.severity).toBe("warning")
-    const high = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.15 })
-    expect(high.find(e => e.field === "annualReturn")?.severity).toBe("warning")
-    // Dans la fourchette recommandée → pas de warning
-    const ok = validateInputs({ ...DEFAULT_INPUTS, annualReturn: 0.1007 })
-    expect(ok.find(e => e.field === "annualReturn")).toBeUndefined()
-  })
-
-  it("validateInputs signale une crise programmée après la fin de la simulation", () => {
-    const base = { ...DEFAULT_INPUTS, duration: 10, crisisEnabled: true, crisisYear: 15 }
-    const crisis = validateInputs(base).find(e => e.field === "crisisYear")
-    expect(crisis?.severity).toBe("warning")
-    expect(crisis?.max).toBe(10)
-    // Pas de faux positif : crise dans la durée, ou crise désactivée
-    const inRange = validateInputs({ ...base, crisisYear: 8 })
-    expect(inRange.find(e => e.field === "crisisYear")).toBeUndefined()
-    const disabled = validateInputs({ ...base, crisisEnabled: false })
-    expect(disabled.find(e => e.field === "crisisYear")).toBeUndefined()
-  })
-
-  it("Sharpe vaut 0 (masqué) en mode fixe — plus de ratio explosé", () => {
-    const inputs = { ...DEFAULT_INPUTS, returnMode: "fixed" as const, duration: 10, volatility: 0.155 }
+  it("Sharpe vaut TOUJOURS 0 (plus de mode aléatoire gaussien — ratio sans objet)", () => {
+    const inputs = { ...DEFAULT_INPUTS, duration: 10 }
     const kpis = computeKPIs(runSimulation(inputs), inputs)
     expect(kpis.sharpe).toBe(0)
   })
@@ -1249,9 +1173,10 @@ describe("régressions — corrections de l'audit", () => {
     const kpis = computeKPIs(runSimulation(inputs), inputs)
     expect(kpis.xirr).toBeGreaterThan(0)
     expect(kpis.doublingTime).not.toBeNull()
-    // log(2) / log(1 + xirr) ≈ 8,66 ans à ~8,3 %/an — et non ~4,4 ans
-    expect(kpis.doublingTime as number).toBeGreaterThan(7)
-    expect(kpis.doublingTime as number).toBeLessThan(11)
+    // Invariant mathématique : doublingTime = log(2)/log(1 + xirr), quelle que
+    // soit la fenêtre historique rejouée (plus de taux saisi à ~8,3 %/an).
+    const expected = Math.log(2) / Math.log(1 + kpis.xirr / 100)
+    expect(kpis.doublingTime as number).toBeCloseTo(expected, 1)
   })
 
   it("runDecumulation respecte un retrait personnalisé de 0 € (pas de fallback silencieux à 100 €)", () => {
@@ -1275,43 +1200,15 @@ describe("régressions — corrections de l'audit", () => {
     expect(yearly[1] ?? 0).toBeGreaterThan(0)
   })
 
-  it("runDecumulation en mode historique rejoue les rendements réels (branche plus morte)", () => {
-    const inputs = {
-      ...DEFAULT_INPUTS,
-      returnMode: "historical" as const,
-      historicalIndex: "sp500" as const,
-      retirementYears: 10,
-    }
-    const result = runDecumulation(inputs, 100_000, 100)
-    expect(result.years.length).toBe(11)
-    expect(result.survivalProbability).toBeGreaterThanOrEqual(0)
-    expect(result.survivalProbability).toBeLessThanOrEqual(100)
+  it("runDecumulation rejoue toujours les rendements réels (déterministe à graine fixe)", () => {
+    const inputs = { ...DEFAULT_INPUTS, historicalIndex: "sp500" as const, retirementYears: 10 }
+    const first = runDecumulation(inputs, 100_000, 100)
+    const second = runDecumulation(inputs, 100_000, 100)
+    expect(first.years.length).toBe(11)
+    expect(first.p50).toEqual(second.p50)
+    expect(first.survivalProbability).toBeGreaterThanOrEqual(0)
+    expect(first.survivalProbability).toBeLessThanOrEqual(100)
   })
-
-  it("runDecumulation rejoue TOUJOURS l'historique réel, même en mode « taux défini »", () => {
-    // Comme l'onglet Monte Carlo, la Rente ne doit plus dépendre du mode de
-    // rendement : les deux modes avec la même graine donnent des résultats
-    // strictement identiques (rendements réels passés rééchantillonnés).
-    const fixed = runDecumulation({ ...DEFAULT_INPUTS, returnMode: "fixed" as const, retirementYears: 10 }, 100_000, 100)
-    const hist = runDecumulation(
-      { ...DEFAULT_INPUTS, returnMode: "historical" as const, retirementYears: 10 },
-      100_000,
-      100,
-    )
-    expect(fixed.p50).toEqual(hist.p50)
-    expect(fixed.survivalProbability).toBe(hist.survivalProbability)
-  })
-
-  it(
-    "runMonteCarlo en historique + krach ne double pas la chute (crise désactivée)",
-    () => {
-      const base = { ...DEFAULT_INPUTS, returnMode: "historical" as const, duration: 10, mcRuns: 100 }
-      const withCrisis = runMonteCarlo({ ...base, crisisEnabled: true }, 100)
-      const withoutCrisis = runMonteCarlo({ ...base, crisisEnabled: false }, 100)
-      expect(withCrisis.p50).toEqual(withoutCrisis.p50)
-    },
-    MC_TIMEOUT,
-  )
 
   it("computeMilestones ne dépasse jamais l'horizon de projection", () => {
     const rows = runSimulation({ ...DEFAULT_INPUTS, duration: 10, monthlyPayment: 5000 })
@@ -1445,7 +1342,7 @@ describe("netYield — rendement net de l'année (ratio, comme yearlyReturn)", (
 })
 
 describe("sampleHistoricalReturns — bootstrap par blocs non chevauchants", () => {
-  const inputs = { ...DEFAULT_INPUTS, returnMode: "historical" as const, historicalIndex: "msci-world" as const }
+  const inputs = { ...DEFAULT_INPUTS, historicalIndex: "msci-world" as const }
   const returns = getHistoricalDataset("msci-world").years.map(y => y.return)
 
   it("un bloc de 5 ans est une fenêtre contiguë réelle, sans rebouclage 2025→1970", () => {
@@ -1529,8 +1426,6 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
   it("runDecumulation : plus de retraits fantômes après l'épuisement du capital", () => {
     const inputs = {
       ...DEFAULT_INPUTS,
-      returnMode: "fixed" as const,
-      annualReturn: 0.01,
       withdrawalModel: "custom" as const,
       withdrawalFixed: 5_000,
       withdrawalInflation: false,
@@ -1545,29 +1440,9 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
     expect(result.withdrawals[result.withdrawals.length - 1]).toBe(0)
   })
 
-  it("crise historique : plus de double comptage (Simulateur cohérent avec MC/Rente)", () => {
-    const base = {
-      ...DEFAULT_INPUTS,
-      returnMode: "historical" as const,
-      historicalIndex: "sp500" as const,
-      duration: 10,
-      monthlyPayment: 0,
-      envelope: "none" as const,
-      crisisEnabled: true,
-      crisisProfile: "bear-market" as const,
-      crisisYear: 3,
-      crisisAmplitude: 50,
-      crisisDuration: 2,
-    }
-    const withCrisis = runSimulation(base)
-    const withoutCrisis = runSimulation({ ...base, crisisEnabled: false })
-    expect(withCrisis.map(r => r.nominal)).toEqual(withoutCrisis.map(r => r.nominal))
-  })
-
   it("yearlyReturn / netYield bornés à -100 % (plus de -515 % impossible)", () => {
     const rows = runSimulation({
       ...DEFAULT_INPUTS,
-      annualReturn: -0.95,
       monthlyPayment: 1000,
       indexation: 0.5,
       duration: 2,
@@ -1606,44 +1481,35 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
 })
 
 describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)", () => {
-  it("la Rente ne double plus le krach : la crise synthétique est neutralisée (comme Monte Carlo)", () => {
-    // Depuis la demande utilisateur, la Rente (comme Monte Carlo) rééchantillonne
-    // TOUJOURS les rendements réels passés, quel que soit le mode sélectionné.
-    // Les krachs réels sont déjà dans les rendements rejoués : appliquer la
-    // crise synthétique par-dessus les compterait deux fois. Avec la même
-    // graine, crise activée ou non doit produire des résultats identiques.
+  it("la Rente reste déterministe pour une graine donnée (historique réel uniquement)", () => {
     const base = {
       ...DEFAULT_INPUTS,
-      returnMode: "fixed" as const,
-      annualReturn: 0.05,
       withdrawalModel: "rule-4" as const,
       withdrawalInflation: false,
       retirementYears: 15,
       mcRuns: 300,
     }
-    const noCrisis = runDecumulation(base, 100_000, 300)
-    const crisis = runDecumulation(
-      {
-        ...base,
-        crisisEnabled: true,
-        crisisProfile: "flash-crash" as const,
-        crisisYear: 3,
-        crisisAmplitude: 50,
-        crisisDuration: 1,
-      },
-      100_000,
-      300,
-    )
-    expect(crisis.p50).toEqual(noCrisis.p50)
+    const a = runDecumulation(base, 100_000, 300)
+    const b = runDecumulation(base, 100_000, 300)
+    // p50 est une bande par année (tableau) : on compare les séries entières.
+    // On vérifie aussi que le capital médian de fin de période est plausible :
+    // 15 ans de retraits rule-4 (4 % de l'initial/an) sur l'historique réel ne
+    // ruinent PAS le scénario médian (le capital continue de croître — mesuré
+    // ≈ 212 k€ pour 100 k€ de départ), mais ne le laisse pas non plus exploser
+    // à des niveaux absurdes (sinon le test serait tautologique).
+    expect(a.p50).toEqual(b.p50)
+    const medianFinal = a.p50[a.p50.length - 1]
+    expect(medianFinal).toBeGreaterThan(100_000 * 0.5)
+    expect(medianFinal).toBeLessThan(100_000 * 3.5)
   })
 
-  it("realReturn reflète la SIMULATION (XIRR déflaté par l'inflation réelle), pas les inputs", () => {
-    // En mode historique, le rendement saisi (annualReturn) n'est PAS celui
-    // rejoué : l'ancien calcul (1+annualReturn)/(1+inflation)−1 était faux.
+  it("realReturn reflète la SIMULATION (XIRR déflaté par l'inflation réelle), pas un taux saisi", () => {
+    // Plus de taux saisi (Option A) : le rendement réel est celui des données
+    // historiques rejouées, l'ancien calcul (1+annualReturn)/(1+inflation)−1
+    // n'a plus de sens.
     const inputs = {
       ...DEFAULT_INPUTS,
-      returnMode: "historical" as const,
-      historicalIndex: "sp500" as const,
+      historicalIndex: "msci-world" as const,
       monthlyPayment: 0,
       envelope: "none" as const,
       etfFees: 0,
@@ -1652,7 +1518,6 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
       managementFees: 0,
       inflation: 0.02,
       duration: 5,
-      annualReturn: 0.08, // rendement saisi ≠ rendements réels rejoués
     }
     const rows = runSimulation(inputs)
     const kpis = computeKPIs(rows, inputs)
@@ -1663,8 +1528,9 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
     const avgInfl = Math.pow(cumulativeInfl, 1 / 5) - 1
     const expected = (1 + kpis.xirr / 100) / (1 + avgInfl) - 1
     expect(kpis.realReturn).toBeCloseTo(expected * 100, 0)
-    // Et surtout : ce n'est plus (1+annualReturn)/(1+inflation)−1
-    const naive = (1 + inputs.annualReturn) / (1 + inputs.inflation) - 1
+    // Et surtout : ce n'est plus (1+taux saisi)/(1+inflation)−1 — on compare au
+    // calcul naïf avec un taux fixe arbitraire, différent du résultat réel.
+    const naive = (1 + 0.08) / (1 + inputs.inflation) - 1
     expect(Math.abs(kpis.realReturn / 100 - naive)).toBeGreaterThan(0.001)
   })
 

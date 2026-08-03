@@ -26,7 +26,10 @@ export function sampleHistoricalReturns(inputs: SimulationInputs, duration: numb
   const dataset = getHistoricalDataset(inputs.historicalIndex)
   const returns = dataset.years.map(y => y.return)
   const len = returns.length
-  if (len === 0) return Array.from({ length: duration }, () => inputs.annualReturn)
+  // Repli défensif (dataset vide, ne devrait pas arriver pour le MSCI World) :
+  // on boucle sur la moyenne de la série. Le taux saisi par l'utilisateur a été
+  // supprimé (Option A) — la moyenne réelle de l'indice est la seule référence.
+  if (len === 0) return Array.from({ length: duration }, () => dataset.avgReturn)
 
   const blocks: number[][] = []
   for (let start = 0; start < len; start += BLOCK_LENGTH) {
@@ -53,8 +56,11 @@ function runSinglePath(inputs: SimulationInputs, sim: number): number[] {
   // rejoués). La crise synthétique est désactivée — les krachs réels sont
   // déjà dans les rendements rejoués, l'appliquer reviendrait à les compter
   // deux fois.
+  // Monte Carlo rejoue TOUJOURS les rendements réels passés : plus de mode de
+  // rendement ni de crise synthétique (les krachs réels sont déjà dans les
+  // rendements rejoués, les appliquer les compterait deux fois).
   const annualReturns = sampleHistoricalReturns(inputs, duration, rng)
-  const simRows = runSimulation({ ...inputs, returnMode: "historical", crisisEnabled: false }, annualReturns)
+  const simRows = runSimulation(inputs, annualReturns)
   return simRows.map(row => row.taxNet)
 }
 

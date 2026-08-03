@@ -1,8 +1,6 @@
 import type { SimulationInputs, YearRow } from "../types"
-import { mulberry32, gaussian } from "./rng"
 import { monthlyRate } from "./math"
 import { roundCent, clamp, computeTaxBreakdown } from "./taxes"
-import { crisisAdjustment } from "./crisis"
 import { getHistoricalDataset, INFLATION_SERIES } from "./historical"
 import { sanitizeInputs } from "./validation"
 
@@ -13,15 +11,19 @@ import { sanitizeInputs } from "./validation"
 // navigateur). Le cache reste borné (une entrée par année × runSimulation).
 const dateCache = new Map<string, string>()
 
-function annualReturnForYear(inputs: SimulationInputs, yearIndex: number): number {
-  if (inputs.returnMode === "historical") {
-    const dataset = getHistoricalDataset(inputs.historicalIndex)
-    // Ancrage inversé : l'année 1 de la projection rejoue le rendement le plus
-    // récent de l'indice (backtest "à partir d'aujourd'hui"), puis remonte dans le temps.
-    const returns = dataset.years.map(y => y.return)
-    return returns[returns.length - 1 - (yearIndex % returns.length)] ?? inputs.annualReturn
-  }
-  return inputs.annualReturn
+/**
+ * Rendement annuel de l'année de projection : le Simulateur rejoue TOUJOURS
+ * les rendements réels passés de l'indice (Option A — plus de mode « taux
+ * défini » ni de mode aléatoire, cohérent avec Monte Carlo et la Rente).
+ * Ancrage inversé : l'année 1 de la projection rejoue le rendement le plus
+ * récent de l'indice (backtest « à partir d'aujourd'hui »), puis remonte dans
+ * le temps. Repli défensif : la moyenne de la série si le dataset est vide.
+ */
+function returnForYear(inputs: SimulationInputs, yearIndex: number): number {
+  const dataset = getHistoricalDataset(inputs.historicalIndex)
+  const returns = dataset.years.map(y => y.return)
+  if (returns.length === 0) return dataset.avgReturn
+  return returns[returns.length - 1 - (yearIndex % returns.length)]
 }
 
 /**
@@ -30,7 +32,7 @@ function annualReturnForYear(inputs: SimulationInputs, yearIndex: number): numbe
  * interne de la simulation. C'est ce qui permet de rejouer les vrais
  * rendements passés dans les milliers de scénarios.
  */
-function annualReturnOverrideForYear(returns: number[], yearIndex: number, fallback: number): number {
+function overrideReturnForYear(returns: number[], yearIndex: number, fallback: number): number {
   if (!returns.length) return fallback
   return returns[yearIndex % returns.length] ?? fallback
 }
@@ -40,35 +42,9 @@ function annualInflationForYear(inputs: SimulationInputs, yearIndex: number): nu
     return INFLATION_SERIES[yearIndex % INFLATION_SERIES.length] ?? inputs.inflation
   if (inputs.inflationMode === "dynamic") {
     const cycle = Math.sin((yearIndex / 7) * Math.PI * 2) * 0.006
-    // La crise synthétique est inerte en mode historique (les krachs réels
-    // sont déjà rejoués) : sa composante inflation (stagflation) ne doit pas
-    // non plus s'appliquer, pour rester cohérent avec la désactivation des
-    // rendements (audit B3).
-    const crisisBoost =
-      inputs.crisisEnabled &&
-      inputs.returnMode !== "historical" &&
-      inputs.crisisProfile === "stagflation" &&
-      yearIndex + 1 >= inputs.crisisYear
-        ? 0.035
-        : 0
-    return clamp(inputs.inflation + cycle + crisisBoost, -0.01, 0.12)
+    return clamp(inputs.inflation + cycle, -0.01, 0.12)
   }
   return inputs.inflation
-}
-
-function sampledMonthlyReturn(
-  inputs: SimulationInputs,
-  annualExpectedReturn: number,
-  monthIndex: number,
-  rng: () => number,
-): number {
-  if (inputs.returnMode !== "random") return monthlyRate(annualExpectedReturn)
-  const crisis = crisisAdjustment(inputs, monthIndex)
-  const sigma = clamp(inputs.volatility * crisis.volMultiplier, 0.001, 1.4)
-  const zBase = gaussian(rng)
-  const z = rng() < 0.08 ? zBase * 2.35 : zBase
-  const drift = Math.log1p(clamp(annualExpectedReturn, -0.8, 1.6)) - 0.5 * sigma * sigma
-  return Math.exp(drift / 12 + (sigma / Math.sqrt(12)) * z) - 1
 }
 
 function taxYearsHeld(inputs: SimulationInputs, projectionYear: number): number {
@@ -89,7 +65,6 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
   const hasOverride = Boolean(annualReturnsOverride?.length)
   const totalMonths = Math.max(0, Math.round(inputs.duration * 12))
   const rows: YearRow[] = []
-  const rng = mulberry32(inputs.seed)
   const startYear = new Date().getFullYear()
   const peaCap = inputs.envelope === "pea" ? (inputs.taxCouple ? 300_000 : 150_000) : Infinity
 
@@ -183,18 +158,13 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     }
 
     const annualReturn = hasOverride
-      ? annualReturnOverrideForYear(annualReturnsOverride ?? [], yearIndex, inputs.annualReturn)
-      : annualReturnForYear(inputs, yearIndex)
-    const baseMarketReturn = sampledMonthlyReturn(inputs, annualReturn, month, rng)
-    // En mode historique, les rendements réels rejoués contiennent DÉJÀ les
-    // krachs : appliquer la crise synthétique par-dessus les compterait deux
-    // fois (incohérent avec Monte Carlo et la Rente, qui la désactivent).
-    const crisis =
-      inputs.returnMode === "historical" ? { returnShock: 0, volMultiplier: 1 } : crisisAdjustment(inputs, month)
-    const totalMarketReturn = (1 + baseMarketReturn) * (1 + crisis.returnShock) - 1
-    // Plus de rendement de dividendes séparé : le MSCI World est capitalisant
-    // (les dividendes sont réinvestis dans l'indice, rendement total).
-    capital = roundCent(Math.max(0, capital * (1 + totalMarketReturn)))
+      ? overrideReturnForYear(annualReturnsOverride ?? [], yearIndex, returnForYear(inputs, yearIndex))
+      : returnForYear(inputs, yearIndex)
+    // Rendement mensuel composé du rendement annuel réel rejoué. Plus de
+    // rendement de dividendes séparé (le MSCI World est capitalisant) ni de
+    // crise synthétique (les krachs réels sont déjà dans la série rejouée).
+    const baseMarketReturn = monthlyRate(annualReturn)
+    capital = roundCent(Math.max(0, capital * (1 + baseMarketReturn)))
 
     const aumFeeRate = monthlyRate(
       Math.max(0, inputs.etfFees + inputs.managementFees + (inputs.envelope === "av" ? inputs.insuranceFees : 0)),

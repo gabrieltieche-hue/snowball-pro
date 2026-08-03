@@ -20,11 +20,9 @@ export interface V4Settings {
 export const DEFAULT_INPUTS: SimulationInputs = {
   capitalInitial: 10000,
   monthlyPayment: 500,
-  // Défaut = moyenne arithmétique MSCI World 1970-2025 (10,07 %/an BRUT, avant
-  // inflation). L'inflation est déduite séparément par le moteur : l'utilisateur
-  // saisit toujours un rendement BRUT (demande utilisateur).
-  annualReturn: 0.1007,
-  volatility: 0.15,
+  // Plus de rendement saisi par l'utilisateur (Option A) : le Simulateur, Monte
+  // Carlo et la Rente rejouent TOUJOURS les rendements réels du MSCI World
+  // (1970-2025, moyenne 10,07 %/an brut) — pas de taux défini ni de volatilité.
   duration: 25,
   indexation: 0,
   inflation: 0.021,
@@ -33,18 +31,17 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   taxCouple: false,
   peaYearsHeld: 0,
   avYearsHeld: 0,
-  returnMode: "fixed",
   historicalIndex: "msci-world",
-  crisisEnabled: false,
-  crisisProfile: "flash-crash",
-  crisisYear: 10,
-  crisisAmplitude: 30,
-  crisisDuration: 0,
   etfFees: 0,
   brokerageFees: 0,
   insuranceFees: 0,
   managementFees: 0,
-  showReal: false,
+  // Affichage par défaut = EUROS D'AUJOURD'HUI (les vraies valeurs nettes
+  // d'inflation). Le moteur calcule TOUJOURS les deux échelles (nominal + real,
+  // cf. simulation.ts) : le toggle ne fait que choisir laquelle est mise en
+  // avant. Coche par défaut → l'utilisateur voit d'emblée le pouvoir d'achat
+  // réel, le montant sur le compte restant affiché partout (demande utilisateur).
+  showReal: true,
   withdrawalModel: "custom",
   withdrawalRate: 0.04,
   withdrawalFixed: 2000,
@@ -78,30 +75,27 @@ export function v4SettingsToInputs(s: Partial<V4Settings>): SimulationInputs {
     ...DEFAULT_INPUTS,
     capitalInitial: clamp(num(s.p, DEFAULT_INPUTS.capitalInitial), 0, 100_000_000),
     monthlyPayment: clamp(num(s.m, DEFAULT_INPUTS.monthlyPayment), 0, 200_000),
-    annualReturn: clamp(num(s.r, 10.07) / 100, -0.95, 10),
     duration: clamp(num(s.t, DEFAULT_INPUTS.duration), 1, 80),
     indexation: clamp(num(s.idx, 0) / 100, 0, 0.5),
     inflation: clamp(num(s.inf, 2.1) / 100, -0.1, 1),
     envelope,
-    crisisYear: clamp(num(s.kraschYear, DEFAULT_INPUTS.crisisYear), 1, 80),
-    crisisAmplitude: clamp(num(s.kraschPct, DEFAULT_INPUTS.crisisAmplitude), 0, 70),
-    showReal: Boolean(s.showReal),
+    // Le rendement v4 (r) et la crise (krasch*) sont ignorés : l'app rejoue
+    // toujours l'historique réel (Option A), un taux saisi n'a plus de sens.
+    // Migration v4 → v5 : le défaut d'affichage est désormais « euros
+    // d'aujourd'hui ». On respecte un choix v4 explicitement stocké, mais on
+    // retombe sur le défaut (vrai) quand l'ancien état ne précisait rien.
+    showReal: s.showReal !== false,
   }
 }
 
 const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "capitalInitial",
   "monthlyPayment",
-  "annualReturn",
-  "volatility",
   "duration",
   "indexation",
   "inflation",
   "peaYearsHeld",
   "avYearsHeld",
-  "crisisYear",
-  "crisisAmplitude",
-  "crisisDuration",
   "etfFees",
   "brokerageFees",
   "insuranceFees",
@@ -119,14 +113,12 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "tmi",
 ]
 
-const BOOLEAN_KEYS: (keyof SimulationInputs)[] = ["taxCouple", "showReal", "withdrawalInflation", "crisisEnabled"]
+const BOOLEAN_KEYS: (keyof SimulationInputs)[] = ["taxCouple", "showReal", "withdrawalInflation"]
 
 const STRING_KEYS: (keyof SimulationInputs)[] = [
   "inflationMode",
   "envelope",
-  "returnMode",
   "historicalIndex",
-  "crisisProfile",
   "withdrawalModel",
   "ctoTaxMode",
 ]
@@ -134,9 +126,7 @@ const STRING_KEYS: (keyof SimulationInputs)[] = [
 const ENUM_VALUES: Record<string, string[]> = {
   inflationMode: ["custom", "historical", "dynamic"],
   envelope: ["cto", "pea", "av", "per", "none"],
-  returnMode: ["fixed", "random", "historical"],
   historicalIndex: ["msci-world", "sp500", "nasdaq", "cac40", "bitcoin", "gold"],
-  crisisProfile: ["none", "flash-crash", "bear-market", "long-depression", "stagflation"],
   withdrawalModel: ["rule-4", "ultra-safe", "optimistic", "custom"],
   ctoTaxMode: ["pfu", "bareme"],
 }
@@ -167,12 +157,10 @@ export function parseStoredInputs(raw: string | null): SimulationInputs {
     // curseur (défaut 2,1 %/an). Un état stocké ou partagé qui contenait un
     // ancien mode est normalisé pour rester cohérent avec l'UI.
     target.inflationMode = "custom"
-    // Le mode « Aléatoire » a été supprimé de l'interface (le seul choix est
-    // désormais Taux défini / Historique) : un état stocké qui le contenait est
-    // normalisé vers le mode fixe.
-    if (target.returnMode === "random") target.returnMode = "fixed"
     // Le sélecteur d'indices a été supprimé : l'historique est TOUJOURS le
-    // MSCI World. Un index stocké différent est normalisé.
+    // MSCI World. Un index stocké différent est normalisé. Les anciens champs
+    // (returnMode, annualReturn, volatility, crise) sont simplement ignorés
+    // par la liste de clés connues — ils n'ont plus de sens (Option A).
     target.historicalIndex = "msci-world"
     return merged
   } catch {

@@ -7,6 +7,7 @@ import { roundCent, clamp } from "./taxes"
 // de 5 années consécutives réelles sont tirés avec remise, sans jamais
 // reboucler 2025 → 1970. Les krachs et les bull markets réels sont rejoués.
 import { sampleHistoricalReturns } from "./montecarlo"
+import { MSCI_WORLD_AVG_RETURN } from "./historical"
 
 // Taille de chunk de la variante asynchrone : laisse le thread principal
 // respirer entre deux tranches (même principe que runMonteCarloAsync).
@@ -62,7 +63,9 @@ function runDecumulationRange(
     for (let month = 1; month <= years * 12; month += 1) {
       const yearIndex = Math.floor((month - 1) / 12)
       // Rendement réel de l'année rejouée, lissé au mois (comme runSimulation).
-      const marketReturn = monthlyRate(historicalReturns[yearIndex] ?? inputs.annualReturn)
+      // Repli défensif : moyenne de la série MSCI World si le tableau est vide
+      // (le taux saisi a été supprimé — Option A).
+      const marketReturn = monthlyRate(historicalReturns[yearIndex] ?? MSCI_WORLD_AVG_RETURN)
       const capitalAfterReturn = roundCent(capital * (1 + marketReturn))
       // On ne peut retirer que ce qui existe : si le capital ne couvre pas le
       // retrait prévu, seule la part disponible est réellement retirée (le

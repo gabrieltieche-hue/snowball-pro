@@ -8,9 +8,3 @@ export function mulberry32(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
-
-export function gaussian(rng: () => number): number {
-  const u1 = Math.max(rng(), 1e-12)
-  const u2 = Math.max(rng(), 1e-12)
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
-}

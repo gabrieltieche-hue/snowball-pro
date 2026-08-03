@@ -46,6 +46,14 @@ const RETURNS: Record<HistoricalIndex, number[]> = {
 // terme : on lui préfère un taux unique et lisible (choix produit).
 export const INFLATION_SERIES = [0.021]
 
+// Moyenne arithmétique de la série MSCI World (1970-2025, EUR Net Return) —
+// ≈ 10,07 %/an brut. C'est la seule référence de rendement de l'app depuis
+// l'Option A (plus de taux saisi par l'utilisateur) : elle sert de repli
+// défensif quand un tableau de rendements est vide. Dérivée de la moyenne
+// réellement calculée du dataset (pas de doublon codé en dur qui pourrait
+// dériver si la série était allongée).
+export const MSCI_WORLD_AVG_RETURN = average(RETURNS["msci-world"])
+
 export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset {
   const returns = RETURNS[index]
   const startYear = DATASET_START[index]
