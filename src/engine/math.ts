@@ -1,4 +1,4 @@
-import type { YearRow } from "../types"
+import type { YearRow, TerminalBin } from "../types"
 
 /**
  * Facteur de conversion euros courants → euros d'aujourd'hui (real/nominal).
@@ -65,4 +65,73 @@ export function calcMaxDrawdown(values: number[]): { maxDrawdown: number; maxDra
     if (ddp > maxDrawdownPct) maxDrawdownPct = ddp
   }
   return { maxDrawdown, maxDrawdownPct }
+}
+
+/**
+ * Loi normale (Box-Muller) alimentée par un générateur uniforme injecté :
+ * reste déterministe à graine fixe et ne dépend d'aucun état global.
+ */
+export function sampleNormal(mean: number, std: number, rng: () => number): number {
+  let u1 = 0
+  let u2 = 0
+  while (u1 === 0) u1 = rng()
+  while (u2 === 0) u2 = rng()
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+  return mean + std * z
+}
+
+const r100 = (x: number): number => Math.round(x * 100) / 100
+
+/**
+ * Intervalle de confiance à 95 % d'une proportion (score de Wilson — précis
+ * même près de 0 % / 100 %, contrairement à Wald). Le « 95,8 % » d'un taux de
+ * survie n'est pas un point exact : c'est une fourchette qui dépend du nombre
+ * de simulations. 10 000 runs → ± ~0,4 point ; 100 runs → ± ~4 points.
+ */
+export function wilsonScoreCI(successes: number, total: number, z = 1.96): { low: number; high: number } {
+  if (total <= 0) return { low: 0, high: 0 }
+  const p = Math.min(1, Math.max(0, successes / total))
+  const z2 = z * z
+  const denom = 1 + z2 / total
+  const center = (p + z2 / (2 * total)) / denom
+  const margin = (z * Math.sqrt((p * (1 - p)) / total + z2 / (4 * total * total))) / denom
+  return {
+    low: r100(Math.max(0, center - margin) * 100),
+    high: r100(Math.min(1, center + margin) * 100),
+  }
+}
+
+/**
+ * Histogramme des issues terminales (30 classes par défaut) sur [0, p99] : la
+ * queue droite (fat tail) — 1 % des cas les plus extrêmes — est volontairement
+ * exclue de l'axe pour garder des barres lisibles, et le compte total reste
+ * exact (la dernière classe absorbe tout ce qui dépasse).
+ */
+export function buildTerminalHistogram(values: number[], binCount = 30): TerminalBin[] {
+  if (values.length === 0) return []
+  const sorted = [...values].sort((a, b) => a - b)
+  const hi = Math.max(percentile(sorted, 0.99), 1)
+  const width = hi / binCount
+  if (width <= 0) {
+    return [{ index: 0, low: 0, high: hi, value: hi, count: values.length }]
+  }
+  const bins: TerminalBin[] = []
+  let idx = 0
+  for (let b = 0; b < binCount; b += 1) {
+    const low = b * width
+    const high = b === binCount - 1 ? Number.POSITIVE_INFINITY : (b + 1) * width
+    let count = 0
+    while (idx < sorted.length && (sorted[idx] ?? 0) < high) {
+      count += 1
+      idx += 1
+    }
+    bins.push({
+      index: b,
+      low,
+      high: b === binCount - 1 ? hi : high,
+      value: b === binCount - 1 ? (low + hi) / 2 : (low + high) / 2,
+      count,
+    })
+  }
+  return bins
 }

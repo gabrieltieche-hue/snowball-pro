@@ -1,4 +1,4 @@
-import type { HistoricalDataset, HistoricalIndex } from "../types"
+import type { HistoricalDataset, HistoricalIndex, HistoricalPool } from "../types"
 import { average, standardDeviation } from "./math"
 
 const DATASET_START: Record<HistoricalIndex, number> = {
@@ -10,6 +10,30 @@ const DATASET_START: Record<HistoricalIndex, number> = {
   gold: 2000,
 }
 
+/**
+ * Longueur d'un bloc pour le rééchantillonnage : 5 années consécutives
+ * conservent la séquence krach → reprise sans jamais créer de transition
+ * artificielle entre la fin et le début de l'historique (2025 → 1970).
+ * Constante partagée (Monte Carlo + Rente) pour une seule source de vérité.
+ */
+export const BLOCK_LENGTH = 5
+
+// Rendement total annuel du S&P 500 (dividendes réinvestis), 1926-1969.
+// Série SBBI/Ibbotson « Stocks, Bonds, Bills and Inflation », récupérée le
+// 2026-08 (Slickcharts « S&P 500 Total Returns by Year Since 1926 », Novel
+// Investor) et vérifiée sur les ancrages publiés (1929 ≈ −8,4 %, 1931 ≈
+// −43,3 %, 1933 ≈ +54 %, 1954 ≈ +52,6 %).
+const SP500_TOTAL_RETURNS_1926_1969: number[] = [
+  0.1162, 0.3749, 0.4361, -0.0842, -0.249, -0.4334, -0.0819, 0.5399, -0.0144, 0.4767, 0.3392, -0.3503, 0.3112, -0.0041,
+  -0.0978, -0.1159, 0.2034, 0.259, 0.1975, 0.3644, -0.0807, 0.0571, 0.055, 0.1879, 0.3171, 0.2402, 0.1837, -0.0099,
+  0.5262, 0.3156, 0.0656, -0.1078, 0.4336, 0.1196, 0.0047, 0.2689, -0.0873, 0.228, 0.1648, 0.1245, -0.1006, 0.2398,
+  0.1106, -0.085,
+]
+
+// Historique étendu : 100 ans de rendements réels pour le rééchantillonnage
+// Monte-Carlo / Rente. Aucune série mondiale exprimée en EUR n'existe avant
+// 1970 : le S&P 500 américain (SBBI) sert de proxy (les krachs et les bull
+// markets de l'entre-deux-guerres — 1929, 1931, 1933… — sont ainsi rejoués).
 const RETURNS: Record<HistoricalIndex, number[]> = {
   // MSCI World Net Return exprimé en EUR (dividendes nets réinvestis), 1970-2025.
   // Vérifié : 2022-2025 = performances officielles du CW8 (justETF / Amundi,
@@ -41,9 +65,33 @@ const RETURNS: Record<HistoricalIndex, number[]> = {
   ],
 }
 
-// Inflation forfaitaire : 2,1 %/an fixe. L'inflation historique réelle (pic à
-// plus de 10 %/an dans les années 1970) fausserait les moyennes de très long
-// terme : on lui préfère un taux unique et lisible (choix produit).
+// Historique étendu : 100 ans de rendements réels pour le rééchantillonnage
+// Monte-Carlo / Rente. Aucune série mondiale exprimée en EUR n'existe avant
+// 1970 : le S&P 500 américain (SBBI) sert de proxy (les krachs et les bull
+// markets de l'entre-deux-guerres — 1929, 1931, 1933… — sont ainsi rejoués).
+export const EXTENDED_WORLD_START_YEAR = 1926
+export const EXTENDED_WORLD_RETURNS: number[] = [...SP500_TOTAL_RETURNS_1926_1969, ...RETURNS["msci-world"]]
+export const EXTENDED_WORLD_AVG_RETURN = average(EXTENDED_WORLD_RETURNS)
+export const EXTENDED_WORLD_VOLATILITY = standardDeviation(EXTENDED_WORLD_RETURNS)
+
+// Inflation française réelle 1970-2025 — INSEE, indice des prix à la
+// consommation (variation annuelle moyenne), récupérée le 2026-08 (Insee
+// Focus n° 87, Tableaux de l'économie française). Les pics des années 1970
+// (13,7 % en 1974) et la quasi-déflation de 2015 (0,0 %) sont capturés :
+// indispensable pour une rente indexée — un taux fixe de 2,1 % sous-estime
+// les pires périodes d'érosion du pouvoir d'achat.
+export const FRENCH_INFLATION_1970_2025: number[] = [
+  0.052, 0.057, 0.062, 0.092, 0.137, 0.118, 0.096, 0.094, 0.091, 0.108, 0.136, 0.134, 0.118, 0.096, 0.074, 0.058, 0.027,
+  0.031, 0.027, 0.036, 0.034, 0.032, 0.024, 0.021, 0.016, 0.018, 0.02, 0.012, 0.007, 0.005, 0.017, 0.016, 0.019, 0.021,
+  0.021, 0.018, 0.017, 0.015, 0.028, 0.001, 0.015, 0.021, 0.02, 0.009, 0.005, 0.0, 0.002, 0.01, 0.019, 0.011, 0.005,
+  0.016, 0.052, 0.049, 0.02, 0.009,
+]
+
+// Inflation forfaitaire : 2,1 %/an fixe — utilisée par la SIMULATION
+// d'accumulation (et l'affichage nominal/real). La Rente peut rejouer la série
+// réelle FRENCH_INFLATION_1970_2025 quand l'option « inflation stochastique »
+// est active : les deux coexistents, l'une pour l'accumulation (lisibilité),
+// l'autre pour le décaissement (honnêteté).
 export const INFLATION_SERIES = [0.021]
 
 // Moyenne arithmétique de la série MSCI World (1970-2025, EUR Net Return) —
@@ -88,4 +136,71 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
     volatility: standardDeviation(returns),
     years,
   }
+}
+
+/**
+ * Sélectionne le « vivier » de rendements réels utilisé par le rééchantillon-
+ * nage (Monte Carlo + Rente). Avec l'historique étendu, le MSCI World rejoue
+ * 100 ans (S&P 500 1926-1969 + MSCI World 1970-2025) : plus de blocs, plus de
+ * krachs et de bull markets. Le Simulateur (backtest déterministe) reste sur
+ * la série 1970-2025 pour préserver sa figure de référence 10,07 %/an.
+ */
+export function getHistoricalPool(historicalIndex: HistoricalIndex, extendedHistory: boolean): HistoricalPool {
+  if (extendedHistory && historicalIndex === "msci-world") {
+    return {
+      returns: EXTENDED_WORLD_RETURNS,
+      avgReturn: EXTENDED_WORLD_AVG_RETURN,
+      volatility: EXTENDED_WORLD_VOLATILITY,
+      startYear: EXTENDED_WORLD_START_YEAR,
+      label: `S&P 500 + MSCI World (${EXTENDED_WORLD_START_YEAR}-2025)`,
+    }
+  }
+  const dataset = getHistoricalDataset(historicalIndex)
+  return {
+    returns: dataset.years.map(y => y.return),
+    avgReturn: dataset.avgReturn,
+    volatility: dataset.volatility,
+    startYear: dataset.years[0]?.year ?? 0,
+    label: dataset.name,
+  }
+}
+
+/**
+ * Rééchantillonnage par blocs NON CHEVAUCHANTS générique (partagé Monte
+ * Carlo + Rente) : la série est découpée en blocs de BLOCK_LENGTH années
+ * consécutives, puis des blocs entiers sont tirés avec remise. Chaque bloc
+ * reste une fenêtre réelle et contiguë du passé, ce qui préserve la séquence
+ * des krachs et des bull markets SANS jamais reboucler la fin vers le début.
+ */
+export function sampleBlocks(
+  values: number[],
+  duration: number,
+  rng: () => number,
+  blockLength = BLOCK_LENGTH,
+): number[] {
+  const len = values.length
+  if (len === 0) return []
+  if (blockLength >= len) {
+    const out: number[] = []
+    while (out.length < duration) {
+      for (const v of values) {
+        if (out.length >= duration) break
+        out.push(v)
+      }
+    }
+    return out
+  }
+  const blocks: number[][] = []
+  for (let start = 0; start < len; start += blockLength) {
+    blocks.push(values.slice(start, start + blockLength))
+  }
+  const out: number[] = []
+  while (out.length < duration) {
+    const block = blocks[Math.floor(rng() * blocks.length)] ?? values
+    for (const v of block) {
+      if (out.length >= duration) break
+      out.push(v)
+    }
+  }
+  return out
 }

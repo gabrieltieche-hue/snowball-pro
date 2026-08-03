@@ -4,6 +4,37 @@
 
 ---
 
+## v5.5.1 — Fiabilité & sûreté des estimations : incertitude des paramètres, 100 ans d'histoire, inflation stochastique, garde-fous et stress tests
+
+Suite directe de la question utilisateur *« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ ? (4× d'écart) »* — l'écart est mathématiquement correct (volatilité réelle × √durée, rééchantillonnage par blocs), mais le modèle traitait la moyenne 10,07 % et l'inflation 2,1 % comme des **vérités connues**, ce qui rendait les percentiles et le « 95,8 % de survie » **trop confiants**. Deux volets : **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Les 4 options sont **ON par défaut** — chacune reste désactivable dans l'UI pour comparer.
+
+### 🎲 Fiabilité (le moteur dit la vérité)
+
+- **Incertitude des paramètres (Pástor–Stambaugh, Merton)** — `reliability.ts` (nouveau) : la moyenne et la volatilité du vivier sont des *estimations*, pas des vérités. Chaque scénario tire son régime `μ̃ ~ N(μ̂, σ̂/√n_eff)` et `σ̃ ~ σ̂·exp(η)` autour des estimations (taille effective = séries/bloc, le bootstrap ne crée pas d'information). `applyRegime` préserve la structure des blocs (krachs enchaînés) en décalant niveau et ampleur. **Élargit honnêtement P10/P90** : vérifié par test — P10 sans incertitude ≥ P10 avec incertitude.
+- **Historique étendu : 100 ans** — `historical.ts` : série **S&P 500 SBBI 1926-1969** (dividendes réinvestis, vérifiée sur les ancrages 1929 ≈ −8,4 %, 1931 ≈ −43,3 %, 1933 ≈ +54 %) + MSCI World 1970-2025 = **100 ans de rendements réels** pour le rééchantillonnage. Les krachs de l'entre-deux-guerres sont rejoués. Le **Simulateur reste sur 1970-2025** (sa figure de référence 10,07 %/an est préservée).
+- **Inflation stochastique** — `historical.ts` : série **inflation française réelle INSEE 1970-2025** (56 valeurs : 13,7 % en 1974, 0,0 % en 2015, 5,2 % en 2022) rejouée par blocs pour l'indexation de la rente, au lieu d'un taux fixe 2,1 % qui sous-estime les pires érosions. Independante des rendements (modélisation simple assumée).
+- **Moyenne + intervalle de confiance + histogramme terminal** — `math.ts` : `wilsonScoreCI` (le « 95,8 % » vaut ±0,4 pt à 10 000 runs, ±4 pts à 100) et `buildTerminalHistogram` (30 classes sur [0, p99], la queue droite est absorbée dans la dernière classe). `runMonteCarlo` et `runDecumulation` exposent désormais `mean`, `successRateCI`/`survivalRateCI` et `terminalDistribution` — la **fat tail** que 3 lignes cachaient devient visible.
+
+### 🛡 Sûreté (le plan résiste)
+
+- **Garde-fous dynamiques (Guyton–Klinger)** — `decumulation.ts` : si l'année précédente a été négative, la rente de l'année suivante est réduite de 10 % et l'indexation sautée. **Sauve la majorité des cas de ruine** — vérifié par test : la rente 4 % qui meurt sur 1973 sans garde-fous **survit** avec. Le cœur mensuel `runDecumulationPath` est partagé entre Monte Carlo, variante asynchrone et stress tests (une seule implémentation).
+- **Stress tests déterministes** — `decumulation.ts` : `STRESS_TEST_SCENARIOS` (1973, 2000, 2008) + `runStressTest` rejouent les **rendements contigus réels** de l'indice depuis l'année du scénario (aucun hasard), avec **l'inflation réelle de l'époque** alignée par année calendaire (1973-74 = 9-14 %). Affiche « et si vous partiez pile au début du choc pétrolier ? ».
+
+### 🖥 UI
+
+- **`TerminalHistogram.tsx`** (nouveau) : histogramme des capitaux finaux avec repères **médiane** (verte) et **moyenne** (bleue) — l'écart entre les deux EST la dissymétrie du modèle ; survol d'une classe = plage + nombre de cas + % ; classe 0 € surlignée en rouge pour la Rente (ruine).
+- **`MonteCarloPanel`** : section « Fiabilité du modèle » (2 toggles : incertitude des paramètres, historique étendu) + intervalle de confiance du taux de succès (« 84,2 % ± 0,7 pt ») + histogramme terminal avec note pédagogique « planifiez sur la médiane, pas la moyenne ».
+- **`RenteRetraiteTab`** : section « Fiabilité & sûreté » (4 toggles) + bandeau « ce 95,8 % n'est pas un point exact » avec l'intervalle de Wilson + histogramme terminal (0 € = rente stoppée) + **section stress tests** (3 cartes : verdict Survit/Épuisé, capital final, perte max, détail dépliable avec rendements réels rejoués et mini-graphe du capital).
+- **`App.tsx`** : les 4 nouvelles options entrent dans le hash de fraîcheur du décaissement (le bandeau « relancez » se déclenche à leur bascule).
+
+### Tests
+
+- **+16 tests moteur** (historique étendu 100 ans et krachs 1929/1931/1933, inflation INSEE, sampleRegime/applyRegime/effectiveSampleSize, wilsonScoreCI dont 0 %/100 % unilatéral, histogramme terminal, stress tests déterministes dont le sauvetage par garde-fous, defaults 4 options ON + persistance, moyenne/CI/histogramme sur MC et Rente, inflation stochastique ≠ fixe).
+- **+6 tests composants** (toggles MC et Rente cochés par défaut, updateInput, TerminalHistogram, stress tests rendus, CI affiché).
+- **201 tests au total** · gate : typecheck ✓ lint ✓ build ✓.
+
+---
+
 ## v5.5.0 — Option A : plus de « taux défini » ni de crise simulée — l'historique réel du MSCI World partout
 
 Suite directe de la demande « Monte Carlo et Rente rejouent TOUJOURS l'historique réel » : l'app devient **100 % données réelles**. Le mode « Taux défini », le curseur de rendement, la volatilité et la crise synthétique sont supprimés — le Simulateur, Monte Carlo et la Rente rejouent tous les rendements réels du MSCI World 1970-2025 (krachs réels de 2000, 2008, 2022… et bull markets réels inclus).

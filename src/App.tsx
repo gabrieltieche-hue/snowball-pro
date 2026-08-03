@@ -358,6 +358,13 @@ export default function App() {
         inflation: activeInputs.inflation,
         mcRuns: activeInputs.mcRuns,
         seed: activeInputs.seed,
+        // Fiabilité (v5.5.0) : ces options changent le résultat du décaissement
+        // — sans elles, le bandeau « relancez » ne se déclencherait pas après
+        // un basculement.
+        parameterUncertainty: activeInputs.parameterUncertainty,
+        extendedHistory: activeInputs.extendedHistory,
+        stochasticInflation: activeInputs.stochasticInflation,
+        dynamicGuardrails: activeInputs.dynamicGuardrails,
       }),
     [activeInputs, lastRow],
   )
@@ -497,7 +504,9 @@ export default function App() {
                   ) : (
                     <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
                   ))}
-                {activeTab === "montecarlo" && <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} />}
+                {activeTab === "montecarlo" && (
+                  <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} updateInput={updateInput} />
+                )}
                 {activeTab === "rente" && (
                   <RenteRetraiteTab
                     inputs={activeInputs}

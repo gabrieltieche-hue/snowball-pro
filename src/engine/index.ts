@@ -17,10 +17,13 @@ export {
   standardDeviation,
   percentile,
   calcMaxDrawdown,
+  sampleNormal,
+  wilsonScoreCI,
+  buildTerminalHistogram,
 } from "./math"
 export { runSimulation } from "./simulation"
 export { runMonteCarlo, runMonteCarloAsync, sampleHistoricalReturns } from "./montecarlo"
-export { runDecumulation, runDecumulationAsync } from "./decumulation"
+export { runDecumulation, runDecumulationAsync, runStressTest, STRESS_TEST_SCENARIOS } from "./decumulation"
 export { computeKPIs, computeMilestones, solveGoal, compareScenarios } from "./kpis"
 export { validateInputs, sanitizeInputs, RECOMMENDED_RETURN_MIN, RECOMMENDED_RETURN_MAX } from "./validation"
 export type { ValidationError } from "./validation"
@@ -36,4 +39,15 @@ export {
 } from "./snapshots"
 export { mergeComparisonSeries } from "./comparison"
 export type { ComparisonSeriesRow } from "./comparison"
-export { getHistoricalDataset, MSCI_WORLD_AVG_RETURN } from "./historical"
+export {
+  getHistoricalDataset,
+  getHistoricalPool,
+  sampleBlocks,
+  MSCI_WORLD_AVG_RETURN,
+  BLOCK_LENGTH,
+  FRENCH_INFLATION_1970_2025,
+  EXTENDED_WORLD_RETURNS,
+  EXTENDED_WORLD_START_YEAR,
+} from "./historical"
+export { sampleRegime, applyRegime, effectiveSampleSize } from "./reliability"
+export type { RegimeParams } from "./reliability"

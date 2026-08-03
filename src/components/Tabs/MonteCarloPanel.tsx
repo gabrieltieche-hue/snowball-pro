@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, Play } from "lucide-react"
+import { AlertTriangle, Play, ShieldCheck } from "lucide-react"
 import { fmtCurrency, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
+import { TerminalHistogram } from "../Simulation/TerminalHistogram"
+import { Toggle } from "../shared/Toggle"
+import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { cn } from "../../utils/cn"
 import type { MonteCarloResult, SimulationInputs } from "../../types"
 
 interface MonteCarloPanelProps {
   inputs: SimulationInputs
   darkMode: boolean
+  updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
 }
 
-export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
+export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPanelProps) {
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -51,6 +55,11 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
         avYearsHeld: inputs.avYearsHeld,
         tmi: inputs.tmi,
         ctoTaxMode: inputs.ctoTaxMode,
+        // Fiabilité (v5.5.0) : ces options changent le résultat du Monte Carlo
+        // — sans elles, l'avertissement « relancez » ne se déclencherait pas
+        // après un basculement.
+        parameterUncertainty: inputs.parameterUncertainty,
+        extendedHistory: inputs.extendedHistory,
       }),
     [inputs],
   )
@@ -166,6 +175,29 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
           </div>
         )}
 
+        {/* Options de fiabilité du modèle : l'honnêteté des estimations prime.
+            Toutes ON par défaut — chacune reste désactivable pour comparer. */}
+        <CollapsibleSection
+          title="Fiabilité du modèle"
+          icon={<ShieldCheck size={12} className="text-primary" />}
+          defaultOpen
+        >
+          <div className="space-y-2">
+            <Toggle
+              checked={inputs.parameterUncertainty}
+              onChange={v => updateInput("parameterUncertainty", v)}
+              label="Incertitude des paramètres"
+              sub="La moyenne 10,07 % et la volatilité ne sont PAS des vérités connues : chaque scénario tire les siennes autour des estimations historiques (Pástor–Stambaugh). Élargit honnêtement P10 et P90."
+            />
+            <Toggle
+              checked={inputs.extendedHistory}
+              onChange={v => updateInput("extendedHistory", v)}
+              label="Historique étendu (100 ans)"
+              sub="Rejoue 100 ans de rendements réels (S&P 500 1926-1969 + MSCI World 1970-2025) au lieu de 56 : les krachs de 1929, 1931, 1933 sont rejoués."
+            />
+          </div>
+        </CollapsibleSection>
+
         {!mcResult && !running && (
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
             <div className="text-4xl">🎲</div>
@@ -198,7 +230,37 @@ export function MonteCarloPanel({ inputs, darkMode }: MonteCarloPanelProps) {
                   sur {mcResult.runs.toLocaleString("fr-FR")} cas, le capital final atteint au moins{" "}
                   {fmtCurrency(mcResult.goalTarget)}
                 </p>
+                <p className="text-[9px] text-text-dim mt-1 border-t border-border/60 pt-1.5">
+                  Précision : {mcResult.successRate.toFixed(1)} % ±{" "}
+                  {((mcResult.successRateCI.high - mcResult.successRateCI.low) / 2).toFixed(1)} pt (intervalle de
+                  confiance à 95 %)
+                </p>
               </div>
+            </div>
+            {/* Histogramme des issues terminales : rend la queue droite visible */}
+            <div className="glass rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Distribution des capitaux finaux
+                  </span>
+                </div>
+                <span className="text-[10px] text-text-dim">
+                  <span className="mono font-bold text-text">{mcResult.runs.toLocaleString("fr-FR")}</span> cas
+                </span>
+              </div>
+              <TerminalHistogram
+                bins={mcResult.terminalDistribution}
+                mean={mcResult.mean}
+                median={mcResult.p50[mcResult.p50.length - 1] ?? 0}
+                format={fmtCurrency}
+                leftNote="0 €"
+              />
+              <p className="text-[10px] text-text-dim mt-2 px-1 leading-relaxed">
+                L'écart entre la <strong className="text-[#4ADE80]">médiane</strong> (cas le plus courant) et la{" "}
+                <strong className="text-[#60A5FA]">moyenne</strong> montre la « queue de chance » : quelques cas très
+                heureux tirent la moyenne vers le haut. Planifiez sur la médiane, pas sur la moyenne.
+              </p>
             </div>
             {isStale && (
               <p className="text-[10px] text-warning flex items-center gap-1">

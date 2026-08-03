@@ -8,8 +8,11 @@ import { ErrorBoundary } from "../components/shared/ErrorBoundary"
 import { buildEquitySeries } from "../components/Charts/EquityChart"
 import { DualAmount } from "../components/shared/DualAmount"
 import { GoalTab } from "../components/Tabs/GoalTab"
+import { MonteCarloPanel } from "../components/Tabs/MonteCarloPanel"
+import { RenteRetraiteTab } from "../components/Tabs/RenteRetraiteTab"
+import { TerminalHistogram } from "../components/Simulation/TerminalHistogram"
 import { SliderInput } from "../components/shared/SliderInput"
-import { DEFAULT_INPUTS, runSimulation } from "../engine"
+import { DEFAULT_INPUTS, runSimulation, runDecumulation, buildTerminalHistogram } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
@@ -269,8 +272,7 @@ describe("buildEquitySeries — même échelle pour tout le graphique (audit v5.
 describe("DualAmount — les deux échelles toujours affichées (demande utilisateur)", () => {
   // toLocaleString("fr-FR") insère une espace insécable (U+202F) dans les
   // milliers : on normalise en espace simple avant de comparer.
-  const text = (container: HTMLElement) =>
-    (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+  const text = (container: HTMLElement) => (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
 
   it("affiche la valeur du compte ET le pouvoir d'achat quand showReal est inactif", () => {
     const { container } = render(<DualAmount nominal={46610} real={30700} showReal={false} />)
@@ -477,6 +479,106 @@ describe("partage par URL (hash)", () => {
     },
     APP_TIMEOUT,
   )
+})
+
+describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () => {
+  it("les 2 options de fiabilité sont COCHÉES par défaut (incertitude + historique étendu)", () => {
+    const updateInput = vi.fn()
+    render(
+      <MonteCarloPanel
+        inputs={{ ...DEFAULT_INPUTS, parameterUncertainty: true, extendedHistory: true }}
+        darkMode={false}
+        updateInput={updateInput}
+      />,
+    )
+    expect(screen.getByRole("switch", { name: /incertitude des paramètres/i })).toBeChecked()
+    expect(screen.getByRole("switch", { name: /historique étendu/i })).toBeChecked()
+  })
+
+  it("décoché → updateInput est appelé avec la bonne clé", () => {
+    const updateInput = vi.fn()
+    render(
+      <MonteCarloPanel
+        inputs={{ ...DEFAULT_INPUTS, parameterUncertainty: false, extendedHistory: false }}
+        darkMode={false}
+        updateInput={updateInput}
+      />,
+    )
+    fireEvent.click(screen.getByRole("switch", { name: /incertitude des paramètres/i }))
+    expect(updateInput).toHaveBeenCalledWith("parameterUncertainty", true)
+  })
+
+  it("TerminalHistogram totalise les classes et affiche médiane + moyenne", () => {
+    const bins = buildTerminalHistogram([0, 0, 100, 200, 500, 1000, 5000, 12000], 5)
+    render(
+      <TerminalHistogram
+        bins={bins}
+        mean={2400}
+        median={350}
+        format={v => `${v} €`}
+        highlightRuin
+        leftNote="0 € = échec"
+      />,
+    )
+    const container = screen.getByText(/médiane/i).closest("div")
+    expect(container).not.toBeNull()
+    // La légende contient les deux repères pédagogiques
+    expect(screen.getByText(/médiane/i)).toBeInTheDocument()
+    expect(screen.getByText(/moyenne/i)).toBeInTheDocument()
+    expect(screen.getByText(/0 € = échec/i)).toBeInTheDocument()
+  })
+
+  it("TerminalHistogram gère un histogramme vide sans planter", () => {
+    const { container } = render(<TerminalHistogram bins={[]} mean={0} median={0} format={v => `${v} €`} />)
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests", () => {
+  const lastRow = runSimulation({ ...DEFAULT_INPUTS, duration: 25 })[
+    runSimulation({ ...DEFAULT_INPUTS, duration: 25 }).length - 1
+  ]
+  const baseProps = {
+    inputs: {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "rule-4" as const,
+      withdrawalInflation: true,
+      retirementYears: 20,
+    },
+    lastRow,
+    darkMode: false,
+    decumResult: null,
+    updateInput: vi.fn(),
+    updateInputs: vi.fn(),
+    runDecum: vi.fn(),
+  }
+
+  it("les 4 options de fiabilité sont COCHÉES par défaut", () => {
+    render(<RenteRetraiteTab {...baseProps} />)
+    expect(screen.getByRole("switch", { name: /incertitude des paramètres/i })).toBeChecked()
+    expect(screen.getByRole("switch", { name: /historique étendu/i })).toBeChecked()
+    expect(screen.getByRole("switch", { name: /inflation stochastique/i })).toBeChecked()
+    expect(screen.getByRole("switch", { name: /garde-fous dynamiques/i })).toBeChecked()
+  })
+
+  it("les 3 stress tests historiques sont rendus avec leur verdict", () => {
+    render(<RenteRetraiteTab {...baseProps} />)
+    expect(screen.getByText(/et si vous partiez en pleine crise/i)).toBeInTheDocument()
+    expect(screen.getByText(/choc pétrolier 1973-74/i)).toBeInTheDocument()
+    expect(screen.getByText(/bulle internet 2000-03/i)).toBeInTheDocument()
+    expect(screen.getByText(/crise financière 2008/i)).toBeInTheDocument()
+    // Chaque carte affiche un verdict Survit / Épuisé
+    expect(screen.getAllByText(/survit|épuisé/i).length).toBe(3)
+  })
+
+  it("un résultat de décaissement affiche l'intervalle de confiance du taux de survie", () => {
+    const decum = runDecumulation(baseProps.inputs, 1_000_000, 150)
+    render(<RenteRetraiteTab {...baseProps} decumResult={decum} />)
+    // La note pédagogique sur la précision du taux de survie est affichée
+    expect(screen.getByText(/intervalle de confiance à 95 %/i)).toBeInTheDocument()
+    // L'histogramme des capitaux finaux est présent
+    expect(screen.getByText(/distribution des capitaux finaux/i)).toBeInTheDocument()
+  })
 })
 
 describe("régression — stderr propre pendant les tests (audit v5.4.0)", () => {

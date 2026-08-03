@@ -58,6 +58,14 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   seed: 42,
   tmi: 0.3,
   ctoTaxMode: "pfu",
+  // Fiabilité du modèle (v5.5.0) — toutes ON par défaut : l'honnêteté des
+  // estimations prime. Chaque option reste désactivable dans l'UI (l'utilisateur
+  // peut revenir au comportement historique simple si les bandes s'élargissent
+  // trop à son goût).
+  parameterUncertainty: true,
+  extendedHistory: true,
+  stochasticInflation: true,
+  dynamicGuardrails: true,
 }
 
 const VALID_ENVELOPES: EnvelopeType[] = ["cto", "pea", "av", "per", "none"]
@@ -113,7 +121,15 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "tmi",
 ]
 
-const BOOLEAN_KEYS: (keyof SimulationInputs)[] = ["taxCouple", "showReal", "withdrawalInflation"]
+const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
+  "taxCouple",
+  "showReal",
+  "withdrawalInflation",
+  "parameterUncertainty",
+  "extendedHistory",
+  "stochasticInflation",
+  "dynamicGuardrails",
+]
 
 const STRING_KEYS: (keyof SimulationInputs)[] = [
   "inflationMode",

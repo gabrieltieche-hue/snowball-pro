@@ -15,6 +15,8 @@ import {
   Play,
   RefreshCw,
   Lightbulb,
+  ShieldCheck,
+  Activity,
 } from "lucide-react"
 import {
   ComposedChart,
@@ -28,13 +30,15 @@ import {
   ReferenceLine,
 } from "recharts"
 
-import { fmtCurrency, fmtCompact } from "../../engine"
+import { fmtCurrency, fmtCompact, runStressTest, STRESS_TEST_SCENARIOS } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import { Toggle } from "../shared/Toggle"
+import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 
-import type { DecumulationResult, SimulationInputs, WithdrawalModel, YearRow } from "../../types"
+import type { DecumulationResult, SimulationInputs, StressTestResult, WithdrawalModel, YearRow } from "../../types"
 
 const WITHDRAWAL_MODELS: {
   id: WithdrawalModel
@@ -343,6 +347,48 @@ export function RenteRetraiteTab({
       </div>
 
       {/* ──────────────────────────────────────────────────────────
+          Fiabilité & sûreté du modèle (options désactivables)
+         ────────────────────────────────────────────────────────── */}
+      <div className="glass rounded-3xl p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <ShieldCheck size={14} className="text-primary" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Fiabilité & sûreté des estimations
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          <Toggle
+            checked={inputs.parameterUncertainty}
+            onChange={v => updateInput("parameterUncertainty", v)}
+            label="Incertitude des paramètres"
+            sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
+          />
+          <Toggle
+            checked={inputs.extendedHistory}
+            onChange={v => updateInput("extendedHistory", v)}
+            label="Historique étendu (100 ans)"
+            sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
+          />
+          <Toggle
+            checked={inputs.stochasticInflation}
+            onChange={v => updateInput("stochasticInflation", v)}
+            label="Inflation stochastique"
+            sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
+          />
+          <Toggle
+            checked={inputs.dynamicGuardrails}
+            onChange={v => updateInput("dynamicGuardrails", v)}
+            label="Garde-fous dynamiques (Guyton–Klinger)"
+            sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
+          />
+        </div>
+        <p className="text-[9px] text-text-dim mt-2.5">
+          Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges, taux
+          de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
+        </p>
+      </div>
+
+      {/* ──────────────────────────────────────────────────────────
           Résultats de la simulation
          ────────────────────────────────────────────────────────── */}
       {decumResult ? (
@@ -358,6 +404,11 @@ export function RenteRetraiteTab({
       ) : (
         <EmptyState hasAccumulation={!!lastRow} />
       )}
+
+      {/* ──────────────────────────────────────────────────────────
+          Stress tests déterministes — « et si vous partiez en 1973 ? »
+         ────────────────────────────────────────────────────────── */}
+      <StressTestsSection inputs={inputs} startingCapital={startingCapital} darkMode={darkMode} />
 
       {/* ──────────────────────────────────────────────────────────
           Comparatif rapide : 3 taux
@@ -538,6 +589,41 @@ function ResultsSection({
           tone={finalSurvival ? "#4ADE80" : "#F87171"}
         />
       </div>
+
+      {/* Précision du taux de survie : un point, pas une vérité */}
+      <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
+        <HelpCircle size={12} className="text-text-dim shrink-0 mt-0.5" />
+        <p className="text-[10px] leading-relaxed text-text-dim">
+          Ce « {fmtPct(survival)} » n'est pas un point exact : sur {decumResult.runs.toLocaleString("fr-FR")}{" "}
+          simulations, le taux de survie réel se situe entre{" "}
+          <strong className="text-text">
+            {fmtPct(decumResult.survivalRateCI.low)} et {fmtPct(decumResult.survivalRateCI.high)}
+          </strong>{" "}
+          (intervalle de confiance à 95 %). La moyenne des capitaux finaux ({" "}
+          <strong className="text-text">{fmtCurrency(decumResult.mean)}</strong>) est tirée par quelques cas très
+          chanceux — planifiez sur la médiane.
+        </p>
+      </div>
+
+      {/* Histogramme des issues terminales : la queue de chance visible */}
+      {decumResult.terminalDistribution.length > 0 && (
+        <div className="glass rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+              Distribution des capitaux finaux
+            </span>
+            <span className="text-[10px] text-text-dim">0 € = capital épuisé</span>
+          </div>
+          <TerminalHistogram
+            bins={decumResult.terminalDistribution}
+            mean={decumResult.mean}
+            median={finalMedian}
+            format={fmtCurrency}
+            highlightRuin
+            leftNote="0 € = rente stoppée"
+          />
+        </div>
+      )}
 
       {/* Graphique */}
       {decumResult.years.length > 0 && (
@@ -785,6 +871,176 @@ function EmptyState({ hasAccumulation }: { hasAccumulation: boolean }) {
             : "Commencez par simuler une phase d'accumulation dans l'onglet Simulateur pour disposer d'un capital à décumuler."}
         </p>
       </div>
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────
+// Stress tests déterministes — « et si vous partiez en pleine
+// crise ? »  Les trois périodes noires du passé sont rejouées
+// telles quelles (aucun hasard) : on voit ce que la rente
+// devient vraiment quand le départ tombe pile dessus.
+// ───────────────────────────────────────────────────────────
+function StressTestsSection({
+  inputs,
+  startingCapital,
+  darkMode,
+}: {
+  inputs: SimulationInputs
+  startingCapital: number
+  darkMode: boolean
+}) {
+  const results = useMemo(() => {
+    if (startingCapital <= 0) return []
+    return STRESS_TEST_SCENARIOS.map(scenario => ({
+      scenario,
+      result: runStressTest(inputs, startingCapital, scenario),
+    }))
+  }, [inputs, startingCapital])
+
+  if (results.length === 0) return null
+
+  return (
+    <div className="glass rounded-3xl p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <Activity size={13} className="text-text-dim" />
+        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+          Et si vous partiez en pleine crise ? (stress tests réels)
+        </h3>
+      </div>
+      <p className="text-[10px] text-text-dim leading-relaxed mb-4 max-w-2xl">
+        Les percentiles ci-dessus mélangent toutes les époques. Ici, nous rejouons{" "}
+        <strong className="text-text">
+          les trois pires fenêtres historiques telles qu'elles se sont réellement déroulées
+        </strong>{" "}
+        (rendements contigus réels, inflation réelle de l'époque, garde-fous et indexation appliqués à l'identique).
+        Aucun hasard : c'est exactement ce que la bourse a fait.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {results.map(({ scenario, result }) => (
+          <StressTestCard key={scenario.id} scenario={scenario} result={result} darkMode={darkMode} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StressTestCard({
+  scenario,
+  result,
+  darkMode,
+}: {
+  scenario: (typeof STRESS_TEST_SCENARIOS)[number]
+  result: StressTestResult
+  darkMode: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const survived = result.survived
+  const ruinYear = result.ruinYear
+  const drawdown = result.worstDrawdown
+  const theme = useMemo(() => chartTheme(darkMode), [darkMode])
+
+  return (
+    <div className="glass rounded-2xl p-4 space-y-2.5" style={{ borderTop: `3px solid ${scenario.color}` }}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-xs font-bold">{scenario.label}</div>
+          <div className="text-[9px] text-text-dim mt-0.5 leading-snug">{scenario.desc}</div>
+        </div>
+        <span
+          className={cn(
+            "text-[9px] mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0",
+            survived ? "bg-[#4ADE80]/20 text-[#4ADE80]" : "bg-[#F87171]/20 text-[#F87171]",
+          )}
+        >
+          {survived ? "Survit" : "Épuisé"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl bg-glass p-2">
+          <div className="text-[9px] text-text-dim uppercase tracking-wider">Capital final</div>
+          <div className={cn("mono text-xs font-bold", survived ? "text-[#4ADE80]" : "text-[#F87171]")}>
+            {survived ? fmtCurrency(result.finalCapital) : "0 €"}
+          </div>
+        </div>
+        <div className="rounded-xl bg-glass p-2">
+          <div className="text-[9px] text-text-dim uppercase tracking-wider">Perte max</div>
+          <div className="mono text-xs font-bold text-[#F87171]">
+            −{Math.round(drawdown * 100)}% <span className="text-[9px] text-text-dim font-normal">(pic → creux)</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-[9px] text-text-dim">
+        <span>
+          {ruinYear !== null
+            ? `Rente stoppée en ${result.scenario.startYear + (ruinYear ?? 0) - 1}`
+            : "Rente versée jusqu'au bout"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 hover:text-text transition-colors"
+        >
+          Voir le détail <ChevronDown size={10} className={cn("transition-transform", open && "rotate-180")} />
+        </button>
+      </div>
+
+      {open && (
+        <div className="space-y-2 border-t border-border/60 pt-2.5">
+          <div className="flex items-center gap-2 text-[9px] text-text-dim">
+            <span>Rendements réels rejoués :</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {result.windowReturns.map(({ year, return: r }) => (
+              <span
+                key={year}
+                title={`${year} : ${(r * 100).toFixed(1)} %`}
+                className={cn(
+                  "mono text-[9px] px-1 py-0.5 rounded",
+                  r >= 0 ? "bg-[#4ADE80]/15 text-[#4ADE80]" : "bg-[#F87171]/15 text-[#F87171]",
+                )}
+              >
+                {year} {(r * 100).toFixed(1).replace(".", ",")} %
+              </span>
+            ))}
+          </div>
+          <div className="mt-1 space-y-1 text-[9px] text-text-dim">
+            <div className="flex justify-between">
+              <span>Capital le plus bas</span>
+              <span className="mono font-bold text-text">{fmtCurrency(result.minCapital)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total retiré sur la période</span>
+              <span className="mono font-bold text-text">{fmtCurrency(result.totalWithdrawn)}</span>
+            </div>
+          </div>
+          {/* Mini-graphique du capital */}
+          <div className="h-16">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={result.yearsPath.map((v, i) => ({ y: i, v }))}
+                margin={{ top: 2, right: 2, bottom: 2, left: 2 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke={scenario.color}
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <ReferenceLine y={0} stroke="#F87171" strokeWidth={1} strokeDasharray="2 2" />
+                <XAxis dataKey="y" hide />
+                <YAxis hide domain={[0, "auto"]} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

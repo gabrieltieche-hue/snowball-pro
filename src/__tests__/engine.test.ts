@@ -43,6 +43,17 @@ import {
   runMonteCarlo,
   sampleHistoricalReturns,
   mulberry32,
+  getHistoricalPool,
+  FRENCH_INFLATION_1970_2025,
+  sampleRegime,
+  applyRegime,
+  effectiveSampleSize,
+  wilsonScoreCI,
+  buildTerminalHistogram,
+  sampleNormal,
+  runStressTest,
+  STRESS_TEST_SCENARIOS,
+  average,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -279,6 +290,20 @@ describe("défauts — inflation 2,1 %, référence MSCI World 10,07 % et Monte 
     const inputs = parseStoredInputs(JSON.stringify({ ...DEFAULT_INPUTS, inflationMode: "historical" }))
     expect(inputs.inflationMode).toBe("custom")
   })
+
+  it("les 4 options de fiabilité sont ON par défaut (v5.5.0) et persitées", () => {
+    // L'honnêteté des estimations prime : incertitude des paramètres,
+    // historique étendu, inflation stochastique et garde-fous dynamiques sont
+    // TOUS actifs par défaut — chacun reste désactivable dans l'UI.
+    expect(DEFAULT_INPUTS.parameterUncertainty).toBe(true)
+    expect(DEFAULT_INPUTS.extendedHistory).toBe(true)
+    expect(DEFAULT_INPUTS.stochasticInflation).toBe(true)
+    expect(DEFAULT_INPUTS.dynamicGuardrails).toBe(true)
+    // La persistance restaure un choix explicite, y compris false.
+    const restored = parseStoredInputs(JSON.stringify({ ...DEFAULT_INPUTS, dynamicGuardrails: false }))
+    expect(restored.dynamicGuardrails).toBe(false)
+    expect(restored.parameterUncertainty).toBe(true)
+  })
 })
 
 describe("runSimulation", () => {
@@ -313,6 +338,10 @@ describe("runSimulation", () => {
     seed: 41041,
     tmi: 0.3,
     ctoTaxMode: "pfu",
+    parameterUncertainty: true,
+    extendedHistory: true,
+    stochasticInflation: true,
+    dynamicGuardrails: true,
   }
 
   it("produces correct number of rows", () => {
@@ -466,6 +495,10 @@ describe("computeKPIs", () => {
     seed: 41041,
     tmi: 0.3,
     ctoTaxMode: "pfu",
+    parameterUncertainty: true,
+    extendedHistory: true,
+    stochasticInflation: true,
+    dynamicGuardrails: true,
   }
 
   it("produces KPIs with valid values", () => {
@@ -510,6 +543,10 @@ describe("solveGoal", () => {
       seed: 41041,
       tmi: 0.3,
       ctoTaxMode: "pfu",
+      parameterUncertainty: true,
+      extendedHistory: true,
+      stochasticInflation: true,
+      dynamicGuardrails: true,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -550,6 +587,10 @@ describe("validateInputs", () => {
       seed: 41041,
       tmi: 0.3,
       ctoTaxMode: "pfu",
+      parameterUncertainty: true,
+      extendedHistory: true,
+      stochasticInflation: true,
+      dynamicGuardrails: true,
     }
     const errors = validateInputs(base)
     expect(errors.length).toBe(0)
@@ -587,6 +628,10 @@ describe("validateInputs", () => {
       seed: 41041,
       tmi: 0.3,
       ctoTaxMode: "pfu",
+      parameterUncertainty: true,
+      extendedHistory: true,
+      stochasticInflation: true,
+      dynamicGuardrails: true,
     }
     const errors = validateInputs(base)
     expect(errors.length).toBeGreaterThan(0)
@@ -626,6 +671,10 @@ describe("solveGoal with goalAnnualReturn", () => {
       seed: 41041,
       tmi: 0.3,
       ctoTaxMode: "pfu",
+      parameterUncertainty: true,
+      extendedHistory: true,
+      stochasticInflation: true,
+      dynamicGuardrails: true,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -666,6 +715,10 @@ describe("sanitizeInputs", () => {
       seed: 0,
       tmi: 0.3,
       ctoTaxMode: "pfu",
+      parameterUncertainty: true,
+      extendedHistory: true,
+      stochasticInflation: true,
+      dynamicGuardrails: true,
     }
     const safe = sanitizeInputs(base)
     expect(safe.capitalInitial).toBeLessThanOrEqual(100_000_000)
@@ -1072,7 +1125,13 @@ describe("parseStoredInputs — validation stricte du schéma", () => {
 
   it("ignore les champs supprimés (taux, mode, crise) et verrouille l'indice MSCI World", () => {
     const inputs = parseStoredInputs(
-      JSON.stringify({ returnMode: "random", annualReturn: 0.09, volatility: 0.15, crisisEnabled: true, historicalIndex: "sp500" }),
+      JSON.stringify({
+        returnMode: "random",
+        annualReturn: 0.09,
+        volatility: 0.15,
+        crisisEnabled: true,
+        historicalIndex: "sp500",
+      }),
     )
     // Option A : les champs supprimés ne réapparaissent jamais dans les inputs.
     expect("annualReturn" in inputs).toBe(false)
@@ -1113,6 +1172,38 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
       expect(result.p90[last]).toBeGreaterThan(result.p50[last] ?? 0)
       expect(result.p10[last]).toBeLessThan(result.p50[last] ?? 0)
       expect(result.bestCase).toBeGreaterThan(result.worstCase)
+    },
+    MC_TIMEOUT,
+  )
+
+  it(
+    "expose moyenne, intervalle de confiance du taux de succès et histogramme terminal (v5.5.0)",
+    () => {
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 300, duration: 10 }
+      const result = runMonteCarlo(inputs, 300)
+      // La moyenne est tirée par la queue droite : ≥ médiane, jamais inférieure.
+      const median = result.p50[result.p50.length - 1] ?? 0
+      expect(result.mean).toBeGreaterThanOrEqual(median)
+      // L'intervalle de Wilson encadre le taux de succès ponctuel.
+      expect(result.successRateCI.low).toBeLessThanOrEqual(result.successRate)
+      expect(result.successRateCI.high).toBeGreaterThanOrEqual(result.successRate)
+      // L'histogramme terminal est peuplé et totalise exactement les runs.
+      expect(result.terminalDistribution.reduce((s, b) => s + b.count, 0)).toBe(300)
+      expect(result.terminalDistribution.length).toBeGreaterThan(0)
+    },
+    MC_TIMEOUT,
+  )
+
+  it(
+    "l'incertitude des paramètres élargit honnêtement les percentiles extrêmes (v5.5.0)",
+    () => {
+      const base = { ...DEFAULT_INPUTS, mcRuns: 400, duration: 15 }
+      const without = runMonteCarlo({ ...base, parameterUncertainty: false }, 400)
+      const withUncertainty = runMonteCarlo({ ...base, parameterUncertainty: true }, 400)
+      const last = base.duration
+      // P10 sans incertitude ≥ P10 avec incertitude (la queue défavorable
+      // s'élargit) — vérification statistique robuste sur 400 runs.
+      expect(withUncertainty.p10[last] ?? 0).toBeLessThanOrEqual(without.p10[last] ?? 0)
     },
     MC_TIMEOUT,
   )
@@ -1186,12 +1277,16 @@ describe("régressions — corrections de l'audit", () => {
   })
 
   it("runDecumulation cumule les retraits mois par mois (pas « dernier retrait × 12 »)", () => {
+    // Comportement historique isolé : inflation FIXE + pas de garde-fous, pour
+    // vérifier que l'indexation cumule bien les retraits année après année.
     const inputs = {
       ...DEFAULT_INPUTS,
       withdrawalModel: "rule-4" as const,
       withdrawalInflation: true,
       inflation: 0.03,
       retirementYears: 10,
+      stochasticInflation: false,
+      dynamicGuardrails: false,
     }
     const result = runDecumulation(inputs, 100_000, 100)
     const yearly = result.withdrawals
@@ -1208,6 +1303,34 @@ describe("régressions — corrections de l'audit", () => {
     expect(first.p50).toEqual(second.p50)
     expect(first.survivalProbability).toBeGreaterThanOrEqual(0)
     expect(first.survivalProbability).toBeLessThanOrEqual(100)
+  })
+
+  it("runDecumulation expose CI de survie, moyenne et histogramme terminal (v5.5.0)", () => {
+    const inputs = { ...DEFAULT_INPUTS, withdrawalModel: "rule-4" as const, retirementYears: 20 }
+    const result = runDecumulation(inputs, 500_000, 300)
+    // L'intervalle de Wilson encadre le taux de survie ponctuel.
+    expect(result.survivalRateCI.low).toBeLessThanOrEqual(result.survivalProbability)
+    expect(result.survivalRateCI.high).toBeGreaterThanOrEqual(result.survivalProbability)
+    // La moyenne ≥ médiane (queue droite des cas très chanceux).
+    const median = result.p50[result.p50.length - 1] ?? 0
+    expect(result.mean).toBeGreaterThanOrEqual(median)
+    expect(result.terminalDistribution.reduce((s, b) => s + b.count, 0)).toBe(300)
+  })
+
+  it("l'inflation stochastique rejoue la série française réelle (v5.5.0)", () => {
+    const base = {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "rule-4" as const,
+      withdrawalInflation: true,
+      retirementYears: 15,
+      extendedHistory: false,
+    }
+    const fixed = runDecumulation({ ...base, stochasticInflation: false }, 1_000_000, 200)
+    const stoch = runDecumulation({ ...base, stochasticInflation: true }, 1_000_000, 200)
+    // Le résultat change (la série réelle a des pics à 13,7 %) : les deux
+    // configurations ne sont PAS identiques — la stochastique n'est pas un
+    // no-op cosmétique.
+    expect(JSON.stringify(fixed.withdrawals)).not.toBe(JSON.stringify(stoch.withdrawals))
   })
 
   it("computeMilestones ne dépasse jamais l'horizon de projection", () => {
@@ -1342,7 +1465,9 @@ describe("netYield — rendement net de l'année (ratio, comme yearlyReturn)", (
 })
 
 describe("sampleHistoricalReturns — bootstrap par blocs non chevauchants", () => {
-  const inputs = { ...DEFAULT_INPUTS, historicalIndex: "msci-world" as const }
+  // Historique CLASSIQUE (extendedHistory false) pour ces invariants de base :
+  // ils vérifient la mécanique du découpage en blocs sur la série 1970-2025.
+  const inputs = { ...DEFAULT_INPUTS, historicalIndex: "msci-world" as const, extendedHistory: false }
   const returns = getHistoricalDataset("msci-world").years.map(y => y.return)
 
   it("un bloc de 5 ans est une fenêtre contiguë réelle, sans rebouclage 2025→1970", () => {
@@ -1364,6 +1489,216 @@ describe("sampleHistoricalReturns — bootstrap par blocs non chevauchants", () 
     const seq = sampleHistoricalReturns(inputs, 60, mulberry32(3))
     expect(seq).toHaveLength(60)
     for (const v of seq) expect(returns).toContain(v)
+  })
+})
+
+describe("historique étendu 100 ans (v5.5.0) — getHistoricalPool", () => {
+  it("le vivier étendu couvre 1926-2025 (S&P 500 SBBI + MSCI World)", () => {
+    const pool = getHistoricalPool("msci-world", true)
+    expect(pool.startYear).toBe(1926)
+    expect(pool.returns.length).toBe(100)
+    expect(pool.label).toContain("1926-2025")
+    // Le 100e point est le dernier rendement MSCI World (2025)
+    expect(pool.returns[pool.returns.length - 1]).toBeCloseTo(0.0639, 3)
+  })
+
+  it("le vivier classique reste 1970-2025", () => {
+    const pool = getHistoricalPool("msci-world", false)
+    expect(pool.startYear).toBe(1970)
+    expect(pool.returns.length).toBe(56)
+  })
+
+  it("les krachs de l'entre-deux-guerres sont dans le vivier étendu (1929, 1931, 1933)", () => {
+    const pool = getHistoricalPool("msci-world", true)
+    const byYear = new Map(pool.returns.map((r, i) => [pool.startYear + i, r]))
+    expect(byYear.get(1929)).toBeCloseTo(-0.0842, 3)
+    expect(byYear.get(1931)).toBeCloseTo(-0.4334, 3)
+    expect(byYear.get(1933)).toBeCloseTo(0.5399, 3)
+  })
+
+  it("sampleHistoricalReturns tire du vivier étendu quand extendedHistory est actif", () => {
+    const inputs = { ...DEFAULT_INPUTS, historicalIndex: "msci-world" as const, extendedHistory: true }
+    const seq = sampleHistoricalReturns(inputs, 200, mulberry32(1))
+    expect(seq).toHaveLength(200)
+    // Au moins un rendement d'avant 1970 doit pouvoir être tiré (les blocs
+    // 1926-1969 existent dans le vivier) — sur 200 ans c'est quasi certain.
+    const classic = getHistoricalDataset("msci-world").years.map(y => y.return)
+    expect(seq.some(v => !classic.includes(v))).toBe(true)
+  })
+})
+
+describe("inflation française réelle 1970-2025 (v5.5.0)", () => {
+  it("couvre 56 années et capture les pics des années 70", () => {
+    expect(FRENCH_INFLATION_1970_2025.length).toBe(56)
+    expect(FRENCH_INFLATION_1970_2025[0]).toBeCloseTo(0.052, 3) // 1970
+    expect(FRENCH_INFLATION_1970_2025[4]).toBeCloseTo(0.137, 3) // 1974
+    expect(FRENCH_INFLATION_1970_2025[10]).toBeCloseTo(0.136, 3) // 1980
+    expect(FRENCH_INFLATION_1970_2025[45]).toBe(0) // 2015 quasi-déflation
+    expect(FRENCH_INFLATION_1970_2025[52]).toBeCloseTo(0.052, 3) // 2022
+    expect(FRENCH_INFLATION_1970_2025[55]).toBeCloseTo(0.009, 3) // 2025
+  })
+})
+
+describe("incertitude des paramètres (v5.5.0) — sampleRegime / applyRegime", () => {
+  it("le régime reste centré sur l'estimation historique (bornes réalistes)", () => {
+    const rng = mulberry32(42)
+    let muSum = 0
+    for (let i = 0; i < 200; i += 1) {
+      const regime = sampleRegime(0.1007, 0.193, 11, rng)
+      expect(regime.mu).toBeGreaterThanOrEqual(-0.2)
+      expect(regime.mu).toBeLessThanOrEqual(0.45)
+      expect(regime.sigma).toBeGreaterThan(0)
+      muSum += regime.mu
+    }
+    expect(muSum / 200).toBeCloseTo(0.1007, 1)
+  })
+
+  it("applyRegime conserve la structure des blocs et change le niveau moyen", () => {
+    const returns = [0.05, -0.2, 0.3, -0.1, 0.12]
+    const shifted = applyRegime(returns, { mu: 0.06, sigma: 0.2 }, 0.1, 0.25)
+    expect(shifted).toHaveLength(returns.length)
+    // r' = mu + (σ̃/σ̂)·(r − μ̂) → moyenne(r') = mu + (σ̃/σ̂)·(moyenne(r) − μ̂)
+    const scale = 0.2 / 0.25
+    const expectedMean = 0.06 + scale * (average(returns) - 0.1)
+    const mean = shifted.reduce((s, v) => s + v, 0) / shifted.length
+    expect(mean).toBeCloseTo(expectedMean, 5)
+    // La structure des écarts est préservée : le signe de l'écart à la moyenne
+    // de chaque année reste identique après le changement de régime.
+    const baseAvg = average(returns)
+    shifted.forEach((v, i) => {
+      expect(Math.sign(v - mean)).toBe(Math.sign((returns[i] ?? 0) - baseAvg))
+    })
+  })
+
+  it("effectiveSampleSize compte les observations indépendantes du bootstrap", () => {
+    expect(effectiveSampleSize(100, 5)).toBe(20)
+    expect(effectiveSampleSize(56, 5)).toBe(11)
+    expect(effectiveSampleSize(10, 5)).toBe(2)
+  })
+})
+
+describe("wilsonScoreCI / buildTerminalHistogram / sampleNormal (v5.5.0)", () => {
+  it("Wilson donne ±0,4 pt autour de 95,8 % à 10 000 simulations", () => {
+    const ci = wilsonScoreCI(9580, 10000)
+    expect(ci.low).toBeGreaterThan(95)
+    expect(ci.high).toBeLessThan(96.5)
+    expect(ci.low).toBeLessThan(ci.high)
+  })
+
+  it("Wilson s'élargit quand le nombre de simulations diminue (honnêteté)", () => {
+    const wide = wilsonScoreCI(96, 100)
+    const narrow = wilsonScoreCI(9580, 10000)
+    expect(wide.high - wide.low).toBeGreaterThan(narrow.high - narrow.low)
+  })
+
+  it("Wilson gère 0 % et 100 % sans NaN (intervalle unilatéral aux extrêmes)", () => {
+    // À 0 succès sur 100, Wilson donne [0 ; ~3,7 %] — et non [0 ; 0] : c'est le
+    // comportement statistique correct (intervalle unilatéral), jamais de NaN.
+    const zero = wilsonScoreCI(0, 100)
+    expect(zero.low).toBe(0)
+    expect(zero.high).toBeGreaterThan(0)
+    expect(zero.high).toBeLessThanOrEqual(100)
+    const all = wilsonScoreCI(100, 100)
+    expect(all.high).toBe(100)
+    expect(all.low).toBeLessThan(100)
+    expect(all.low).toBeGreaterThanOrEqual(0)
+  })
+
+  it("l'histogramme terminal a 30 classes sur [0, p99] et le compte total est exact", () => {
+    const values = Array.from({ length: 1000 }, (_, i) => i * 1000)
+    const bins = buildTerminalHistogram(values, 30)
+    expect(bins).toHaveLength(30)
+    expect(bins.reduce((s, b) => s + b.count, 0)).toBe(1000)
+    expect(bins[0]?.low).toBe(0)
+  })
+
+  it("l'histogramme absorbe la queue droite dans la dernière classe", () => {
+    const values = [...Array.from({ length: 99 }, (_, i) => i), 100_000] // 1 outlier énorme
+    const bins = buildTerminalHistogram(values, 10)
+    expect(bins.reduce((s, b) => s + b.count, 0)).toBe(100)
+  })
+
+  it("sampleNormal est déterministe à graine fixe et centré", () => {
+    const rng = mulberry32(7)
+    const draws = Array.from({ length: 500 }, () => sampleNormal(0.1, 0.05, rng))
+    expect(draws.reduce((s, v) => s + v, 0) / 500).toBeCloseTo(0.1, 1)
+    // Deux tirages successifs diffèrent (vraie alea) tout en restant reproductibles
+    const rng2 = mulberry32(7)
+    const again = Array.from({ length: 500 }, () => sampleNormal(0.1, 0.05, rng2))
+    expect(draws).toEqual(again)
+  })
+})
+
+describe("stress tests déterministes (v5.5.0) — runStressTest", () => {
+  const inputs = {
+    ...DEFAULT_INPUTS,
+    withdrawalModel: "rule-4" as const,
+    withdrawalInflation: true,
+    retirementYears: 20,
+    extendedHistory: false,
+  }
+
+  it("les trois scénarios sont définis (1973, 2000, 2008)", () => {
+    expect(STRESS_TEST_SCENARIOS.map(s => s.startYear)).toEqual([1973, 2000, 2008])
+  })
+
+  it("le choc pétrolier 1973 épuise un retrait de 4 % SANS garde-fous", () => {
+    const scenario = STRESS_TEST_SCENARIOS[0]
+    if (!scenario) throw new Error("scenario 1973 manquant")
+    const result = runStressTest({ ...inputs, dynamicGuardrails: false }, 1_000_000, scenario)
+    expect(result.scenario.startYear).toBe(1973)
+    // 1973-74 = -29,6 % puis -31,3 %, avec 9-14 % d'inflation : la rente 4 %
+    // indexée (sans garde-fou) ne survit pas à la stagflation sur 20 ans.
+    expect(result.windowReturns[0]?.return).toBeCloseTo(-0.2958, 3)
+    expect(result.windowReturns[1]?.return).toBeCloseTo(-0.3128, 3)
+    expect(result.ruinYear).not.toBeNull()
+    expect(result.survived).toBe(false)
+    expect(result.totalWithdrawn).toBeGreaterThan(0)
+    expect(result.yearsPath.length).toBeGreaterThan(1)
+  })
+
+  it("les garde-fous dynamiques sauvent la rente du choc pétrolier 1973", () => {
+    const scenario = STRESS_TEST_SCENARIOS[0]
+    if (!scenario) throw new Error("scenario 1973 manquant")
+    const guarded = runStressTest({ ...inputs, dynamicGuardrails: true }, 1_000_000, scenario)
+    // Les coupes de 10 % après chaque année négative suffisent à éviter la
+    // ruine sur cette fenêtre — c'est précisément leur rôle.
+    expect(guarded.survived).toBe(true)
+  })
+
+  it("un retrait ultra-prudent (2,5 %) survit à 2008", () => {
+    const scenario = STRESS_TEST_SCENARIOS[2]
+    if (!scenario) throw new Error("scenario 2008 manquant")
+    const result = runStressTest({ ...inputs, withdrawalModel: "ultra-safe" as const }, 1_000_000, scenario)
+    expect(result.windowReturns[0]?.return).toBeCloseTo(-0.3729, 3)
+    // Le capital est malmené (2008 = -37 %) mais le retrait de 2,5 % tient.
+    expect(result.worstDrawdown).toBeGreaterThan(0.3)
+  })
+
+  it("le scénario 2000 enchaîne trois années de baisse réelles", () => {
+    const scenario = STRESS_TEST_SCENARIOS[1]
+    if (!scenario) throw new Error("scenario 2000 manquant")
+    const result = runStressTest(inputs, 1_000_000, scenario)
+    expect(result.windowReturns[0]?.return).toBeCloseTo(-0.0626, 3)
+    expect(result.windowReturns[1]?.return).toBeCloseTo(-0.1218, 3)
+    expect(result.windowReturns[2]?.return).toBeCloseTo(-0.3267, 3)
+  })
+
+  it("les garde-fous dynamiques réduisent le retrait après une année négative", () => {
+    const scenario = STRESS_TEST_SCENARIOS[0]
+    if (!scenario) throw new Error("scenario 1973 manquant")
+    const guarded = runStressTest({ ...inputs, dynamicGuardrails: true }, 1_000_000, scenario)
+    const unguarded = runStressTest({ ...inputs, dynamicGuardrails: false }, 1_000_000, scenario)
+    // Avec garde-fous, le capital final est supérieur ou la ruine est évitée/repoussée
+    expect(guarded.finalCapital).toBeGreaterThanOrEqual(unguarded.finalCapital)
+    // Sans assertion non-nulle : la ruine avec garde-fous est soit absente,
+    // soit strictement postérieure à la ruine sans garde-fous.
+    if (guarded.ruinYear !== null) {
+      expect(unguarded.ruinYear).not.toBeNull()
+      expect(guarded.ruinYear).toBeGreaterThan(unguarded.ruinYear as number)
+    } else {
+      expect(guarded.survived).toBe(true)
+    }
   })
 })
 

@@ -4,6 +4,45 @@
 
 ---
 
+## SESSION — 2026-08-03 (v5.5.1 : Fiabilité & sûreté des estimations — Pástor–Stambaugh, 100 ans d'histoire, stress tests)
+
+### Résumé
+
+Suite directe de la question utilisateur *« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ (4× d'écart) ? Est-ce fiable ? Comment augmenter drastiquement la fiabilité ? »*. Première réponse vérifiée par recalcul indépendant (la dispersion 4× est mathématiquement correcte : volatilité réelle 19,3 % × √durée + bootstrap par blocs). Puis demande « IMPLÉMENTE TOUT » : les 6 améliorations proposées ont été implémentées en deux volets — **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Workflow APEX -a -x -v + fable-mode + oneshot + ultrathink + webapp-testing. **201 tests**, gate 100 % vert (vérifié navigateur en cours).
+
+### Fiabilité (moteur dit la vérité)
+
+- **`reliability.ts` (nouveau)** — incertitude des paramètres (Pástor–Stambaugh, Merton) : `sampleRegime` tire μ̃ ~ N(μ̂, σ̂/√n_eff) et σ̃ ~ σ̂·exp(η) par scénario (taille effective = séries/bloc — le bootstrap ne crée pas d'information) ; `applyRegime` préserve la structure des blocs (krachs enchaînés). Test vérifié : **P10 sans incertitude ≥ P10 avec incertitude** (les queues s'élargissent honnêtement).
+- **`historical.ts`** — **100 ans de rendements réels** : série S&P 500 SBBI 1926-1969 (vérifiée sur 1929 ≈ −8,4 %, 1931 ≈ −43,3 %, 1933 ≈ +54 %) + MSCI World 1970-2025. `getHistoricalPool(index, extendedHistory)` ; le Simulateur reste sur 1970-2025 (référence 10,07 % préservée). **Inflation française réelle INSEE 1970-2025** (`FRENCH_INFLATION_1970_2025`, 13,7 % en 1974 / 0,0 % en 2015 / 5,2 % en 2022) rejouée par blocs pour la rente (stochasticInflation). `sampleBlocks` partagé MC + Rente.
+- **`math.ts`** — `wilsonScoreCI` (95,8 % ± 0,4 pt à 10k runs, ±4 pts à 100 — un point, pas une vérité), `buildTerminalHistogram` (30 classes sur [0, p99], queue droite absorbée), `sampleNormal` (Box-Muller, déterministe à graine injectée).
+- **`montecarlo.ts` / `decumulation.ts`** — exposent `mean`, `successRateCI`/`survivalRateCI`, `terminalDistribution` : la **fat tail** que 3 lignes cachaient devient visible.
+
+### Sûreté (plan résiste)
+
+- **Garde-fous dynamiques (Guyton–Klinger)** : année négative → rente suivante réduite de 10 % et indexation sautée. Test vérifié : la rente 4 % qui meurt sur 1973 **sans** garde-fous **survit avec**. Cœur mensuel `runDecumulationPath` partagé (MC + async + stress tests).
+- **Stress tests déterministes** — `STRESS_TEST_SCENARIOS` (1973, 2000, 2008) + `runStressTest` : rejoue les rendements contigus réels depuis l'année du scénario (aucun hasard) avec **l'inflation réelle de l'époque** alignée par année calendaire (1973-74 = 9-14 %).
+
+### UI
+
+- **`TerminalHistogram.tsx` (nouveau)** : histogramme des capitaux finaux, repères médiane (vert) / moyenne (bleu) — l'écart EST la dissymétrie —, survol = plage + cas + %, classe 0 € rouge pour la Rente.
+- **`MonteCarloPanel`** : section « Fiabilité du modèle » (2 toggles, ouverte par défaut) + CI du taux de succès + histogramme + note « planifiez sur la médiane ».
+- **`RenteRetraiteTab`** : section « Fiabilité & sûreté » (4 toggles) + bandeau « ce 95,8 % n'est pas un point exact » (Wilson) + histogramme (0 € = rente stoppée) + **section stress tests** (3 cartes : verdict, capital final, perte max, détail dépliable avec rendements rejoués + mini-graphe).
+- **`App.tsx`** : les 4 options entrent dans le hash de fraîcheur du décum.
+
+### Migration / persistance
+
+- 4 nouveaux booléens `parameterUncertainty`, `extendedHistory`, `stochasticInflation`, `dynamicGuardrails` — **tous ON par défaut** (`DEFAULT_INPUTS`), ajoutés à `BOOLEAN_KEYS` (persistance + partage URL), exportés via le barrel.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **201/201 tests** ✓ (170 engine + 31 composants) build ✓.
+- Tests : +16 moteur (historique étendu + krachs 1929/1931/1933, inflation INSEE, sampleRegime/applyRegime, Wilson 0 %/100 % unilatéral, histogramme, stress tests + sauvetage garde-fous, defaults 4 ON, CI/moyenne/histogramme MC et Rente, inflation stochastique ≠ fixe) ; +6 composants (toggles cochés, updateInput, TerminalHistogram, stress tests rendus, CI affiché).
+- Données : séries SBBI et INSEE récupérées et vérifiées via chercheurs (ancrages publiés croisés).
+- Version 5.5.0 → 5.5.1 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`), CHANGELOG (entrée v5.5.1).
+- ⚠️ Session interrompue une fois par Freebuff (redémarrage) : reprise à partir de l'état disque (fichiers intacts), les données chercheurs ont été re-collectées.
+
+---
+
 ## SESSION — 2026-08-02 (v5.5.0 : Option A — 100 % historique réel + « Euros d'aujourd'hui » coché par défaut)
 
 ### Résumé

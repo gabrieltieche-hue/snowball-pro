@@ -1,19 +1,13 @@
 import type { SimulationInputs, MonteCarloResult } from "../types"
 import { runSimulation } from "./simulation"
 import { roundCent, clamp } from "./taxes"
-import { percentile } from "./math"
+import { average, buildTerminalHistogram, percentile, wilsonScoreCI } from "./math"
 import { sanitizeInputs } from "./validation"
 import { mulberry32 } from "./rng"
-import { getHistoricalDataset } from "./historical"
+import { getHistoricalPool, sampleBlocks, BLOCK_LENGTH } from "./historical"
+import { applyRegime, effectiveSampleSize, sampleRegime } from "./reliability"
 
 const CHUNK_SIZE = 150
-
-/**
- * Longueur d'un bloc pour le rééchantillonnage : 5 années consécutives
- * conservent la séquence krach → reprise sans jamais créer de transition
- * artificielle entre la fin et le début de l'historique (2025 → 1970).
- */
-const BLOCK_LENGTH = 5
 
 /**
  * Rééchantillonnage par blocs NON CHEVAUCHANTS : l'historique est découpé en
@@ -21,45 +15,39 @@ const BLOCK_LENGTH = 5
  * avec remise. Chaque bloc reste une fenêtre réelle et contiguë du passé, ce
  * qui préserve la séquence des krachs et des bull markets SANS jamais reboucler
  * la fin vers le début de la série (contrairement au modulo (start + i) % len).
+ * Avec `extendedHistory`, le MSCI World rejoue 100 ans (S&P 500 1926-1969 +
+ * MSCI World 1970-2025) : plus de blocs, plus de krachs et de bull markets.
  */
 export function sampleHistoricalReturns(inputs: SimulationInputs, duration: number, rng: () => number): number[] {
-  const dataset = getHistoricalDataset(inputs.historicalIndex)
-  const returns = dataset.years.map(y => y.return)
-  const len = returns.length
+  const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
   // Repli défensif (dataset vide, ne devrait pas arriver pour le MSCI World) :
   // on boucle sur la moyenne de la série. Le taux saisi par l'utilisateur a été
   // supprimé (Option A) — la moyenne réelle de l'indice est la seule référence.
-  if (len === 0) return Array.from({ length: duration }, () => dataset.avgReturn)
-
-  const blocks: number[][] = []
-  for (let start = 0; start < len; start += BLOCK_LENGTH) {
-    blocks.push(returns.slice(start, start + BLOCK_LENGTH))
-  }
-
-  const out: number[] = []
-  while (out.length < duration) {
-    const block = blocks[Math.floor(rng() * blocks.length)] ?? returns
-    for (const r of block) {
-      if (out.length >= duration) break
-      out.push(r)
-    }
-  }
-  return out
+  if (pool.returns.length === 0) return Array.from({ length: duration }, () => pool.avgReturn)
+  return sampleBlocks(pool.returns, duration, rng, BLOCK_LENGTH)
 }
 
 function runSinglePath(inputs: SimulationInputs, sim: number): number[] {
   const rng = mulberry32(inputs.seed * 2654435761 + sim * 7919 + 17)
   const duration = Math.max(1, inputs.duration)
-  // Monte Carlo rejoue TOUJOURS les rendements réels passés, quel que soit le
-  // mode de rendement sélectionné (taux défini inclus) : c'est ce qui donne
-  // une distribution crédible (les krachs et les bull markets réels sont
-  // rejoués). La crise synthétique est désactivée — les krachs réels sont
-  // déjà dans les rendements rejoués, l'appliquer reviendrait à les compter
-  // deux fois.
   // Monte Carlo rejoue TOUJOURS les rendements réels passés : plus de mode de
   // rendement ni de crise synthétique (les krachs réels sont déjà dans les
   // rendements rejoués, les appliquer les compterait deux fois).
-  const annualReturns = sampleHistoricalReturns(inputs, duration, rng)
+  const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
+  let annualReturns = sampleHistoricalReturns(inputs, duration, rng)
+  // Incertitude des paramètres (Pástor–Stambaugh) : la moyenne et la volatilité
+  // du vivier sont des ESTIMATIONS. Chaque scénario tire son propre régime
+  // autour de ces estimations — la structure des blocs (krachs enchaînés) est
+  // conservée, le niveau moyen et l'ampleur des écarts changent.
+  if (inputs.parameterUncertainty) {
+    const regime = sampleRegime(
+      pool.avgReturn,
+      pool.volatility,
+      effectiveSampleSize(pool.returns.length, BLOCK_LENGTH),
+      rng,
+    )
+    annualReturns = applyRegime(annualReturns, regime, pool.avgReturn, pool.volatility)
+  }
   const simRows = runSimulation(inputs, annualReturns)
   return simRows.map(row => row.taxNet)
 }
@@ -83,7 +71,7 @@ function finalize(
       return roundCent(percentile(values, pct))
     })
   const sortedTerminal = [...terminalValues].sort((a, b) => a - b)
-  const successRate = sortedTerminal.filter(v => v >= goalTarget).length / simCount
+  const successCount = sortedTerminal.filter(v => v >= goalTarget).length
 
   return {
     years,
@@ -94,7 +82,12 @@ function finalize(
     p75: band(0.75),
     p90: band(0.9),
     p95: band(0.95),
-    successRate: roundCent(successRate * 100),
+    successRate: roundCent((successCount / simCount) * 100),
+    // Moyenne + intervalle de confiance du taux de succès : le « 84 % » n'est
+    // pas un point exact — avec N simulations, il vaut mieux ±0,4 pt.
+    mean: roundCent(average(terminalValues)),
+    successRateCI: wilsonScoreCI(successCount, simCount),
+    terminalDistribution: buildTerminalHistogram(terminalValues),
     bestCase: roundCent(sortedTerminal[sortedTerminal.length - 1] ?? 0),
     worstCase: roundCent(sortedTerminal[0] ?? 0),
     goalTarget,
