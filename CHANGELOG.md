@@ -4,6 +4,53 @@
 
 ---
 
+## Infra — Projet Vercel renommé : nouvelle URL de production
+
+Le projet Vercel a été renommé de `v4` vers **`snowball-pro`** (API REST Vercel + redéploiement `vercel --prod`), sans changement de code ni de version. Aucun bump de version : 5.5.1 conservée.
+
+- **Nouvelle URL de production : https://snowball-pro.vercel.app** (HTTP 200).
+- L'ancienne URL `https://v4-three-beige.vercel.app` reste active (Vercel la garde en alias).
+- `.vercel/project.json` synchronisé (`projectName: "snowball-pro"`).
+
+---
+
+## v5.6.0 — Courbe lissée du Simulateur + scénario « Partir en période difficile » (krach paramétrable)
+
+Deux demandes utilisateur fusionnées : (1) *« un truc linéaire, pas une courbe aléatoire »* — le Simulateur affichait les zigzags réels de l'historique ; (2) pouvoir tester *« et si le départ à la retraite tombait en pleine crise ? »* au moment et à l'intensité de son choix, au lieu des seules fenêtres historiques fixes. Bump 5.5.1 → **5.6.0**.
+
+### 📈 Simulateur : courbe lissée (rendement constant chaque année)
+
+- **`simulation.ts`** : `runSimulation` applique désormais le rendement moyen de référence **MSCI World ≈ 10,07 %/an brut** chaque année — la même courbe, sans hasard ni zigzag. **Monte Carlo et la Rente, eux, continuent de rééchantillonner l'historique réel** (krachs et bull markets rejoués) : c'est leur raison d'être, seule la figure de référence du Simulateur devient constante.
+- **`Sidebar.tsx`** : la carte devient **« Rendement lissé — 10,07 %/an brut »** (moyenne MSCI World, net d'inflation 8,22 %, « la même courbe chaque année, sans hasard »).
+- **`MethodologyPanel.tsx`** : la ligne « Rendement » précise « taux constant … courbe lissée ; Monte Carlo & Rente rejouent l'historique réel ».
+- **`AIInsightCard.tsx`** : la référence de comparaison devient la « moyenne de référence » (plus d'« indice rejoué »).
+- **`DrawdownChart.tsx`** : avec un rendement constant, le capital ne baisse jamais — la ligne plate à 0 % est remplacée par un **message explicatif** (les baisses restent visibles dans les onglets Monte Carlo et Rente).
+
+### 🚨 Scénario « Partir en période difficile » : krach déterministe choisi par l'utilisateur
+
+- **Nouvelle option dans les paramètres de la Rente** (`RenteRetraiteTab`, OFF par défaut) : `crisisScenario` + `crisisStartOffset` (0-10 ans après le départ) + `crisisIntensity` (10-60 %). Le krach **REMPlACE** le rendement de l'année choisie dans **CHAQUE scénario Monte-Carlo** — c'est le « et si la bourse chutait juste à ce moment-là ? » appliqué à 100 % des cas, pas seulement au cas pessimiste (P10).
+- **`decumulation.ts`** : le krach est appliqué mois par mois (`runDecumulationPath`), et le **garde-fou dynamique voit le rendement EFFECTIF de l'année** (le choc, pas le rendement d'origine) — la réduction de rente de 10 % se déclenche bien l'année suivant le krach (revue v5.6.0).
+- **`runStressTest` ne superpose PAS le krach paramétrable** : ces fenêtres historiques SONT déjà des crises réelles (1973, 2000, 2008) — le compter deux fois fausserait le résultat.
+- **Bandeau de transparence dans les résultats** : « Un krach de −X % frappe chaque scénario en année N de la retraite ». Bandeau « relancez » déclenché à leur bascule (`App.tsx` hash).
+- **Stress tests historiques repliés par défaut** : la section « Et si vous partiez en pleine crise ? (1973 · 2000 · 2008) » ne s'impose plus à chaque visite — un en-tête repliable s'ouvre à la demande, avec un renvoi vers l'option paramétrable.
+
+### 📊 Histogramme terminal enfin lisible
+
+- **`math.ts` — `buildTerminalHistogram`** : axe adaptatif sur les cas NON NULS `max(p95, 3 × médiane)` au lieu du p99 (l'outlier de la fat tail n'écrase plus tout, une majorité de faillites ne réduit plus l'échelle à 1 €) + **bornes non linéaires (échelle √)** : la masse d'une distribution très asymétrique n'est plus concentrée dans les 10 % gauche du graphe.
+- **`TerminalHistogram.tsx`** : repères médiane/moyenne positionnés sur la **même échelle √** que les classes ; barres vides visibles (traits fins) ; note de bas « au-delà de X € (queue droite) ».
+
+### 🧹 Détails
+
+- **`FiscalPanel.tsx`** : le badge du « Total des impôts » devient une pastille discrète (ne mange plus la ligne).
+- **`validation.ts` / `migration.ts`** : `crisisStartOffset` (0-10, arrondi) et `crisisIntensity` (5-95 %) bornés au sanitize — un lien partagé malformé ne peut pas casser l'onglet Rente ; les 3 champs entrent dans les clés de persistance et le partage URL.
+
+### Tests
+
+- **+7 tests nets** (208 au total) : scénario crise OFF par défaut + persistance/URL, krach appliqué à l'année choisie dans chaque scénario (chemins bit-à-bit identiques avant le choc), impact persistant au-delà du krach sur une rente réelle, garde-fou qui coupe APRÈS l'année de krach ; courbe lissée (même rendement chaque année, indépendance de Monte Carlo) ; axe adaptatif de l'histogramme ; stress tests repliés par défaut + curseurs crise (composants).
+- Gate : typecheck ✓ lint ✓ **208/208 tests** ✓ build ✓.
+
+---
+
 ## v5.5.1 — Fiabilité & sûreté des estimations : incertitude des paramètres, 100 ans d'histoire, inflation stochastique, garde-fous et stress tests
 
 Suite directe de la question utilisateur *« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ ? (4× d'écart) »* — l'écart est mathématiquement correct (volatilité réelle × √durée, rééchantillonnage par blocs), mais le modèle traitait la moyenne 10,07 % et l'inflation 2,1 % comme des **vérités connues**, ce qui rendait les percentiles et le « 95,8 % de survie » **trop confiants**. Deux volets : **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Les 4 options sont **ON par défaut** — chacune reste désactivable dans l'UI pour comparer.

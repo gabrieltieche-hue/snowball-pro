@@ -199,6 +199,15 @@ export interface SimulationInputs {
   /** Garde-fous dynamiques (Guyton–Klinger) : année boursière négative → la
    * rente de l'année suivante est réduite de 10 % (et non indexée). */
   dynamicGuardrails: boolean
+  // Scénario de crise paramétrable (v5.6.0) : « partir en période difficile ».
+  // Remplace l'affichage permanent des stress tests historiques par un krach
+  // DÉTERMINISTE choisi par l'utilisateur, appliqué à CHAQUE scénario MC.
+  /** Un krach survient à une date et une intensité choisies (OFF par défaut). */
+  crisisScenario: boolean
+  /** Année de la retraite où le krach frappe (0 = dès la 1re année). */
+  crisisStartOffset: number
+  /** Intensité du krach en % POSITIF (0,3 = −30 % sur l'année du krach). */
+  crisisIntensity: number
 }
 
 export interface HistoricalDataset {

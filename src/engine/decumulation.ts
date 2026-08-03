@@ -59,6 +59,7 @@ function runDecumulationPath(
   returns: number[],
   inflations: number[] | null,
   applyGuardrails: boolean,
+  applyCrisis: boolean,
 ): { capitalPath: number[]; ruinYear: number | null; withdrawalByYear: number[] } {
   const capitalPath: number[] = [roundCent(startingCapital)]
   const withdrawalByYear: number[] = Array.from({ length: years + 1 }, () => 0)
@@ -84,7 +85,15 @@ function runDecumulationPath(
     // Rendement réel de l'année rejouée, lissé au mois (comme runSimulation).
     // Repli défensif : moyenne de la série MSCI World si le tableau est vide
     // (le taux saisi a été supprimé — Option A).
-    const marketReturn = monthlyRate(returns[yearIndex] ?? MSCI_WORLD_AVG_RETURN)
+    // Scénario « partir en période difficile » : à l'année choisie, le
+    // rendement est REMPLACÉ par le krach défini par l'utilisateur (−X %),
+    // identique pour CHAQUE scénario MC — c'est le « et si la bourse chutait
+    // juste à ce moment-là ? » appliqué à 100 % des cas, pas seulement à P10.
+    const annualReturn =
+      applyCrisis && yearIndex === inputs.crisisStartOffset
+        ? -clamp(Math.abs(inputs.crisisIntensity), 0.05, 0.95)
+        : (returns[yearIndex] ?? MSCI_WORLD_AVG_RETURN)
+    const marketReturn = monthlyRate(annualReturn)
     const capitalAfterReturn = roundCent(capital * (1 + marketReturn))
     // On ne peut retirer que ce qui existe : si le capital ne couvre pas le
     // retrait prévu, seule la part disponible est réellement retirée (le
@@ -106,7 +115,11 @@ function runDecumulationPath(
     )
     if (month % 12 === 0) {
       capitalPath.push(roundCent(capital))
-      lastYearReturn = returns[yearIndex] ?? MSCI_WORLD_AVG_RETURN
+      // Rendement EFFECTIF de l'année : pour un krach paramétrable, c'est le
+      // choc appliqué (pas le rendement d'origine) — sinon le garde-fou de
+      // l'année suivante verrait une année « positive » et ne couperait pas
+      // alors que le capital a réellement chuté (revue v5.6.0).
+      lastYearReturn = annualReturn
     }
   }
   return { capitalPath, ruinYear, withdrawalByYear }
@@ -162,6 +175,7 @@ function runDecumulationRange(
       historicalReturns,
       inflations,
       inputs.dynamicGuardrails,
+      inputs.crisisScenario,
     )
     if (path.ruinYear !== null) acc.ruinYears.push(path.ruinYear)
     acc.paths.push(path.capitalPath)
@@ -279,6 +293,9 @@ export function runStressTest(
       : inputs.inflation
   })
   const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
+  // Le krach paramétrable ne s'applique PAS ici : ces fenêtres historiques
+  // SONT déjà des crises réelles (1973, 2000, 2008) — lui superposer un krach
+  // synthétique compterait la crise deux fois.
   const path = runDecumulationPath(
     inputs,
     startingCapital,
@@ -287,6 +304,7 @@ export function runStressTest(
     windowReturns,
     inflations,
     inputs.dynamicGuardrails,
+    false,
   )
   const { maxDrawdownPct } = calcMaxDrawdown(path.capitalPath)
   return {

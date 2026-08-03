@@ -365,6 +365,12 @@ export default function App() {
         extendedHistory: activeInputs.extendedHistory,
         stochasticInflation: activeInputs.stochasticInflation,
         dynamicGuardrails: activeInputs.dynamicGuardrails,
+        // Scénario « partir en période difficile » (v5.6.0) : ces options
+        // changent le résultat du décaissement — le bandeau « relancez » doit
+        // se déclencher à leur bascule.
+        crisisScenario: activeInputs.crisisScenario,
+        crisisStartOffset: activeInputs.crisisStartOffset,
+        crisisIntensity: activeInputs.crisisIntensity,
       }),
     [activeInputs, lastRow],
   )

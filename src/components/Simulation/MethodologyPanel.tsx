@@ -11,14 +11,15 @@ interface MethodologyPanelProps {
 export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
   const [open, setOpen] = useState(false)
   const envelope = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)
-  // Option A : toutes les simulations rejouent TOUJOURS l'historique réel de
-  // l'indice (plus de taux saisi par l'utilisateur ni de mode de rendement).
+  // Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
+  // référence du MSCI World chaque année — plus de zigzags, la même courbe
+  // chaque année. Monte Carlo et la Rente rééchantillonnent toujours la série.
   const historical = getHistoricalDataset(inputs.historicalIndex)
 
   const rows: { label: string; value: string }[] = [
     {
       label: "Rendement",
-      value: `Historique réel ${historical.name} (moyenne : ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation)`,
+      value: `Taux constant ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut (moyenne ${historical.name}, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation) — courbe lissée ; Monte Carlo & Rente rejouent l'historique réel`,
     },
     {
       label: "Inflation",

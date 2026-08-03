@@ -317,15 +317,15 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     expect(screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" })).toHaveValue("10.07")
   })
 
-  it("Sidebar (Option A) : la note MSCI World remplace le curseur de rendement", () => {
+  it("Sidebar (v5.6.0) : la note « Rendement lissé » remplace le curseur de rendement", () => {
     const { container } = render(<App />)
-    // Plus de « taux saisi » : le Simulateur, Monte Carlo et la Rente rejouent
-    // TOUJOURS l'historique réel — la note MSCI World est affichée à la place
-    // du curseur de rendement supprimé. Le texte est fragmenté par des
-    // <strong> : on compare le texte complet du container.
+    // Plus de « taux saisi » : la sidebar affiche désormais la référence de
+    // courbe LISSÉE (demande utilisateur) — rendement moyen MSCI World chaque
+    // année, plus de zigzags. Le texte est fragmenté par des <strong> : on
+    // compare le texte complet du container.
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
-    expect(text).toContain("MSCI World — historique réel")
-    expect(text).toContain("Moyenne de la série")
+    expect(text).toContain("Rendement lissé")
+    expect(text).toContain("10,07 %/an brut")
     expect(text).toContain("net d'inflation")
     // Le curseur de rendement de la bourse a disparu de la sidebar.
     expect(screen.queryByRole("slider", { name: /rendement annuel de la bourse/i })).not.toBeInTheDocument()
@@ -561,14 +561,37 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
     expect(screen.getByRole("switch", { name: /garde-fous dynamiques/i })).toBeChecked()
   })
 
-  it("les 3 stress tests historiques sont rendus avec leur verdict", () => {
+  it("les 3 stress tests historiques sont rendus quand on déplie la section (v5.6.0)", () => {
     render(<RenteRetraiteTab {...baseProps} />)
-    expect(screen.getByText(/et si vous partiez en pleine crise/i)).toBeInTheDocument()
+    // Les stress tests ne s'imposent plus à chaque visite : la section est
+    // repliée par défaut — le titre est visible, mais pas les cartes.
+    expect(screen.getByRole("button", { name: /et si vous partiez en pleine crise/i })).toBeInTheDocument()
+    expect(screen.queryByText(/choc pétrolier 1973-74/i)).not.toBeInTheDocument()
+    // On déplie → les 3 scénarios et leurs verdicts apparaissent.
+    fireEvent.click(screen.getByRole("button", { name: /et si vous partiez en pleine crise/i }))
     expect(screen.getByText(/choc pétrolier 1973-74/i)).toBeInTheDocument()
     expect(screen.getByText(/bulle internet 2000-03/i)).toBeInTheDocument()
     expect(screen.getByText(/crise financière 2008/i)).toBeInTheDocument()
     // Chaque carte affiche un verdict Survit / Épuisé
     expect(screen.getAllByText(/survit|épuisé/i).length).toBe(3)
+  })
+
+  it("« Partir en période difficile » : OFF par défaut, le clic demande l'activation", () => {
+    render(<RenteRetraiteTab {...baseProps} />)
+    const toggle = screen.getByRole("switch", { name: /partir en période difficile/i })
+    expect(toggle).not.toBeChecked()
+    // Les curseurs de krach n'existent pas tant que l'option est éteinte
+    expect(screen.queryByRole("slider", { name: "Intensité du krach en pourcentage" })).not.toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(baseProps.updateInput).toHaveBeenCalledWith("crisisScenario", true)
+  })
+
+  it("« Partir en période difficile » : activé → curseurs année et intensité visibles", () => {
+    render(<RenteRetraiteTab {...baseProps} inputs={{ ...baseProps.inputs, crisisScenario: true }} />)
+    // Valeurs par défaut : le krach frappe après 1 an, à −30 %
+    expect(screen.getByRole("slider", { name: "Années avant le krach" })).toHaveValue("1")
+    expect(screen.getByRole("slider", { name: "Intensité du krach en pourcentage" })).toHaveValue("30")
   })
 
   it("un résultat de décaissement affiche l'intervalle de confiance du taux de survie", () => {

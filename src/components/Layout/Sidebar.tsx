@@ -39,10 +39,6 @@ export function Sidebar({
   const displayNominal = lastRow ? lastRow.nominal : 0
   const displayReal = lastRow ? lastRow.real : 0
   const historical = getHistoricalDataset(inputs.historicalIndex)
-  const historicalPeriod =
-    historical.years.length > 0
-      ? `${historical.name} · ${historical.years[0]?.year}–${historical.years[historical.years.length - 1]?.year}`
-      : historical.name
 
   const validationErrors = validateInputs(inputs)
   const fieldError = (field: keyof SimulationInputs): ValidationError | undefined =>
@@ -100,25 +96,20 @@ export function Sidebar({
           warning={fieldWarning("monthlyPayment")?.message}
           onChange={v => updateInput("monthlyPayment", v)}
         />
-        {/* Option A : plus de curseur de rendement ni de mode « taux défini ».
-            Le Simulateur (comme Monte Carlo et la Rente) rejoue TOUJOURS les
-            rendements réels du MSCI World 1970-2025 — les krachs réels (2000,
-            2008, 2022…) et les bull markets sont rejoués, pas simulés. */}
-        <div className="rounded-xl border border-primary/30 bg-primary/10 p-3">
+        {/* Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
+            référence du MSCI World chaque année — plus de zigzags. Monte Carlo
+            et la Rente continuent de rééchantillonner l'historique réel. */}
+        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2.5">
           <div className="flex items-center gap-1.5">
-            <TrendingUp size={12} className="text-primary" />
-            <span className="text-xs font-bold text-text">MSCI World — historique réel</span>
+            <TrendingUp size={12} className="text-primary shrink-0" />
+            <span className="text-[11px] font-bold text-text leading-tight">
+              Rendement lissé — {(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut
+            </span>
           </div>
-          <p className="text-[10px] text-text-muted mt-1.5 leading-snug">
-            Moyenne de la série :{" "}
-            <strong className="text-text">{(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut</strong> ·{" "}
+          <p className="text-[10px] text-text-muted mt-1 leading-snug">
+            Moyenne MSCI World ·{" "}
             <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong> net
-            d'inflation
-          </p>
-          <p className="text-[10px] text-text-dim mt-1 leading-snug">
-            Simulateur, Monte Carlo et Rente rejouent les rendements réels{" "}
-            {historicalPeriod.replace(`${historical.name} · `, "")} — pas de taux défini, pas de crise
-            simulée.
+            d'inflation — la même courbe chaque année, sans hasard.
           </p>
         </div>
         <SliderInput
@@ -195,11 +186,7 @@ export function Sidebar({
               min={0}
               max={30}
               step={1}
-              suffix={
-                inputs.peaYearsHeld < 5
-                  ? "moins de 5 ans : PFU 30 %"
-                  : "au-delà de 5 ans : taux réduit (17,2 %)"
-              }
+              suffix={inputs.peaYearsHeld < 5 ? "moins de 5 ans : PFU 30 %" : "au-delà de 5 ans : taux réduit (17,2 %)"}
               onChange={v => updateInput("peaYearsHeld", v)}
             />
           </div>
@@ -280,8 +267,8 @@ export function Sidebar({
           Projection sur <strong className="text-text">{inputs.duration} ans</strong>. Capital final :{" "}
           <strong className="text-primary">{fmtCurrency(displayNominal)}</strong> sur le compte (fin de projet) ·{" "}
           <strong className="text-primary">{fmtCurrency(displayReal)}</strong> en euros d'aujourd'hui.
-          {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>}{" "}
-          Les rendements rejoués sont ceux du MSCI World (1970–2025).
+          {inputs.indexation > 0 && <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>} Les
+          rendements rejoués sont ceux du MSCI World (1970–2025).
         </p>
       </div>
 

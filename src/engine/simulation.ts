@@ -1,7 +1,7 @@
 import type { SimulationInputs, YearRow } from "../types"
 import { monthlyRate } from "./math"
 import { roundCent, clamp, computeTaxBreakdown } from "./taxes"
-import { getHistoricalDataset, INFLATION_SERIES } from "./historical"
+import { INFLATION_SERIES, MSCI_WORLD_AVG_RETURN } from "./historical"
 import { sanitizeInputs } from "./validation"
 
 // Mémoïsation de la date affichée : elle ne dépend que de (startYear, month)
@@ -12,18 +12,17 @@ import { sanitizeInputs } from "./validation"
 const dateCache = new Map<string, string>()
 
 /**
- * Rendement annuel de l'année de projection : le Simulateur rejoue TOUJOURS
- * les rendements réels passés de l'indice (Option A — plus de mode « taux
- * défini » ni de mode aléatoire, cohérent avec Monte Carlo et la Rente).
- * Ancrage inversé : l'année 1 de la projection rejoue le rendement le plus
- * récent de l'indice (backtest « à partir d'aujourd'hui »), puis remonte dans
- * le temps. Repli défensif : la moyenne de la série si le dataset est vide.
+ * Rendement annuel de l'année de projection : le Simulateur applique le
+ * rendement MOYEN de référence (≈ 10,07 %/an brut, moyenne MSCI World) chaque
+ * année — la courbe est LISSÉE, identique d'une année à l'autre (demande
+ * utilisateur : « un truc linéaire, pas une courbe aléatoire »). Monte Carlo
+ * et la Rente, eux, continuent de rééchantillonner l'historique réel (leurs
+ * krachs et bull markets rejoués) : seule la figure de référence du
+ * Simulateur devient constante. Repli défensif : cette même moyenne si jamais
+ * le dataset était vide.
  */
-function returnForYear(inputs: SimulationInputs, yearIndex: number): number {
-  const dataset = getHistoricalDataset(inputs.historicalIndex)
-  const returns = dataset.years.map(y => y.return)
-  if (returns.length === 0) return dataset.avgReturn
-  return returns[returns.length - 1 - (yearIndex % returns.length)]
+function returnForYear(_inputs: SimulationInputs, _yearIndex: number): number {
+  return MSCI_WORLD_AVG_RETURN
 }
 
 /**
@@ -160,9 +159,11 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     const annualReturn = hasOverride
       ? overrideReturnForYear(annualReturnsOverride ?? [], yearIndex, returnForYear(inputs, yearIndex))
       : returnForYear(inputs, yearIndex)
-    // Rendement mensuel composé du rendement annuel réel rejoué. Plus de
-    // rendement de dividendes séparé (le MSCI World est capitalisant) ni de
-    // crise synthétique (les krachs réels sont déjà dans la série rejouée).
+    // Rendement mensuel composé du rendement annuel appliqué (moyenne de
+    // référence pour le Simulateur ; séquence rééchantillonnée quand Monte
+    // Carlo fournit un override). Plus de rendement de dividendes séparé (le
+    // MSCI World est capitalisant) ni de crise synthétique (les krachs réels
+    // sont déjà dans la série rejouée par Monte Carlo / la Rente).
     const baseMarketReturn = monthlyRate(annualReturn)
     capital = roundCent(Math.max(0, capital * (1 + baseMarketReturn)))
 

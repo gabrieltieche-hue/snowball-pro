@@ -122,6 +122,17 @@ export function RenteRetraiteTab({
   // Aperçu comparatif (toujours affiché, basé sur le capital)
   const comparisonRates = [0.025, 0.04, 0.055]
 
+  // Note de transparence sur le krach paramétrable, affichée avec les résultats
+  const crisisNote = inputs.crisisScenario
+    ? `Un krach de −${Math.round(inputs.crisisIntensity * 100)} % frappe chaque scénario en année ${
+        inputs.crisisStartOffset + 1
+      } de la retraite (partir en période difficile).`
+    : null
+
+  // Les stress tests historiques sont repliés par défaut : ils ne s'imposent
+  // plus à chaque visite, on les ouvre à la demande (v5.6.0).
+  const [stressOpen, setStressOpen] = useState(false)
+
   return (
     <div className="space-y-5">
       {/* ──────────────────────────────────────────────────────────
@@ -306,8 +317,86 @@ export function RenteRetraiteTab({
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   className="absolute w-4 h-4 bg-white rounded-full top-0.5 shadow-sm"
                 />
-              </div>
+              </div>{" "}
             </button>
+
+            {/* Partir en période difficile : un krach déterministe choisi par
+                l'utilisateur, appliqué à CHAQUE scénario Monte-Carlo. */}
+            <div className="glass rounded-xl p-4 border border-danger/20">
+              <Toggle
+                checked={inputs.crisisScenario}
+                onChange={v => updateInput("crisisScenario", v)}
+                label="Partir en période difficile"
+                sub="Simule un krach au moment et à l'intensité de votre choix"
+              />
+              {inputs.crisisScenario && (
+                <div className="mt-3 space-y-3 animate-fade-in border-t border-border/50 pt-3">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] text-text-dim uppercase tracking-wider">Le krach frappe après</span>
+                      <span className="text-xs mono font-bold text-text">
+                        {inputs.crisisStartOffset === 0
+                          ? "dès le début"
+                          : `${inputs.crisisStartOffset} an${inputs.crisisStartOffset > 1 ? "s" : ""}`}
+                      </span>
+                    </div>
+                    {/* Le krach doit pouvoir frapper pendant la rente : le
+                        curseur est borné par la durée (jamais au-delà de la
+                        dernière année). */}
+                    {(() => {
+                      const maxOffset = Math.max(0, Math.min(10, inputs.retirementYears - 1))
+                      return (
+                        <>
+                          <input
+                            type="range"
+                            min={0}
+                            max={maxOffset}
+                            step={1}
+                            value={Math.min(inputs.crisisStartOffset, maxOffset)}
+                            onChange={e => updateInput("crisisStartOffset", Number(e.target.value))}
+                            className="w-full"
+                            aria-label="Années avant le krach"
+                            style={{ accentColor: "var(--color-danger)" }}
+                          />
+                          <div className="flex justify-between text-[10px] text-text-dim mt-1">
+                            <span>Année 1</span>
+                            <span>{maxOffset === 0 ? "Année 1" : `+${maxOffset} ans`}</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] text-text-dim uppercase tracking-wider">Intensité du krach</span>
+                      <span className="text-xs mono font-bold text-danger">
+                        −{Math.round(inputs.crisisIntensity * 100)} %
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={60}
+                      step={5}
+                      value={Math.round(inputs.crisisIntensity * 100)}
+                      onChange={e => updateInput("crisisIntensity", Number(e.target.value) / 100)}
+                      className="w-full"
+                      aria-label="Intensité du krach en pourcentage"
+                      style={{ accentColor: "var(--color-danger)" }}
+                    />
+                    <div className="flex justify-between text-[10px] text-text-dim mt-1">
+                      <span>−10 %</span>
+                      <span>−60 %</span>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-text-dim leading-snug flex items-start gap-1">
+                    <AlertTriangle size={10} className="shrink-0 mt-0.5 text-danger" />
+                    Chaque scénario subit cette chute la même année — le « et si le départ tombait en pleine crise ? »
+                    appliqué à 100 % des cas, pas seulement au cas pessimiste.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Lancer la simulation */}
             <motion.button
@@ -399,16 +488,40 @@ export function RenteRetraiteTab({
               jour les résultats.
             </p>
           )}
-          <ResultsSection decumResult={decumResult} theme={theme} />
+          <ResultsSection decumResult={decumResult} theme={theme} crisisNote={crisisNote} />
         </div>
       ) : (
         <EmptyState hasAccumulation={!!lastRow} />
       )}
 
       {/* ──────────────────────────────────────────────────────────
-          Stress tests déterministes — « et si vous partiez en 1973 ? »
+          Stress tests déterministes — repliés par défaut : ils ne
+          s'affichent plus à chaque visite (demande utilisateur), on les
+          ouvre à la demande pour détailler les scénarios réels.
          ────────────────────────────────────────────────────────── */}
-      <StressTestsSection inputs={inputs} startingCapital={startingCapital} darkMode={darkMode} />
+      <div className="glass rounded-3xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setStressOpen(v => !v)}
+          aria-expanded={stressOpen}
+          className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors text-left"
+        >
+          <span className="text-xs font-bold flex items-center gap-2">
+            <Activity size={13} className="text-text-dim" />
+            Et si vous partiez en pleine crise ?{" "}
+            <span className="text-text-dim font-medium">(scénarios réels 1973 · 2000 · 2008)</span>
+          </span>
+          <span className="text-[10px] text-text-dim flex items-center gap-1">
+            {stressOpen ? "Réduire" : "Voir le détail"}
+            <ChevronDown size={12} className={cn("transition-transform", stressOpen && "rotate-180")} />
+          </span>
+        </button>
+        {stressOpen && (
+          <div className="px-4 sm:px-6 pb-5 animate-fade-in">
+            <StressTestsSection inputs={inputs} startingCapital={startingCapital} darkMode={darkMode} />
+          </div>
+        )}
+      </div>
 
       {/* ──────────────────────────────────────────────────────────
           Comparatif rapide : 3 taux
@@ -476,9 +589,11 @@ function fmtPercent(v: number): string {
 function ResultsSection({
   decumResult,
   theme,
+  crisisNote,
 }: {
   decumResult: DecumulationResult
   theme: ReturnType<typeof chartTheme>
+  crisisNote?: string | null
 }) {
   const survival = decumResult.survivalProbability
   const survivalTone = survival >= 90 ? "#4ADE80" : survival >= 75 ? "var(--color-primary)" : "#F87171"
@@ -535,6 +650,14 @@ function ResultsSection({
             jusqu'au bout dans{" "}
             <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
           </p>
+          {crisisNote && (
+            <div className="mt-2 rounded-xl bg-danger/8 border-l-2 border-danger/40 px-3 py-2 flex items-start gap-2">
+              <AlertTriangle size={13} className="text-danger shrink-0 mt-0.5" />
+              <p className="text-[11px] leading-relaxed text-text-dim">
+                <strong className="text-danger">Krach simulé :</strong> {crisisNote}
+              </p>
+            </div>
+          )}
           <div className="mt-2 rounded-xl bg-primary/8 border-l-2 border-primary/50 px-3 py-2 flex items-start gap-2">
             <Lightbulb size={13} className="text-primary shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed text-text-dim">
@@ -901,20 +1024,15 @@ function StressTestsSection({
   if (results.length === 0) return null
 
   return (
-    <div className="glass rounded-3xl p-4 sm:p-6">
-      <div className="flex items-center gap-2 mb-1">
-        <Activity size={13} className="text-text-dim" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-          Et si vous partiez en pleine crise ? (stress tests réels)
-        </h3>
-      </div>
+    <div className="pt-2">
       <p className="text-[10px] text-text-dim leading-relaxed mb-4 max-w-2xl">
         Les percentiles ci-dessus mélangent toutes les époques. Ici, nous rejouons{" "}
         <strong className="text-text">
           les trois pires fenêtres historiques telles qu'elles se sont réellement déroulées
         </strong>{" "}
         (rendements contigus réels, inflation réelle de l'époque, garde-fous et indexation appliqués à l'identique).
-        Aucun hasard : c'est exactement ce que la bourse a fait.
+        Aucun hasard : c'est exactement ce que la bourse a fait. Pour un krach au moment de votre choix, utilisez
+        l'option <strong className="text-text">« Partir en période difficile »</strong> dans les paramètres.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {results.map(({ scenario, result }) => (

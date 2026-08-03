@@ -33,13 +33,12 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     )
   }
   const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
-  // Référence de comparaison : la moyenne réelle de l'indice rejoué (Option A
-  // — plus de taux saisi par l'utilisateur, toutes les simulations rejouent
-  // l'historique réel).
+  // Référence de comparaison : la moyenne du MSCI World appliquée par la
+  // courbe lissée du Simulateur (v5.6.0).
   const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
   if (effectiveReturn > datasetAvg) {
     insights.push(
-      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse la moyenne historique de ${datasetAvg.toFixed(1)}%/an de l'indice rejoué.`,
+      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse la moyenne de référence de ${datasetAvg.toFixed(1)}%/an.`,
     )
   }
   if (insights.length === 0) {

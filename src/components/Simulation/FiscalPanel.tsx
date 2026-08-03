@@ -89,8 +89,10 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           <div key={item.label} className="flex items-center justify-between py-1">
             <span className="text-[11px] text-text-muted flex items-center gap-1.5">
               {item.label}
+              {/* Tag discret du régime : simple pastille, plus la grosse case
+                  rouge qui écrasait la ligne « Total des impôts ». */}
               {item.label === "Total des impôts" && totalBadge && (
-                <span className="px-1.5 py-px rounded bg-danger/15 text-danger text-[10px] font-bold uppercase tracking-wider">
+                <span className="inline-flex items-center px-1.5 py-px rounded-full border border-danger/15 bg-danger/5 text-danger/80 text-[9px] font-semibold tracking-wide whitespace-nowrap">
                   {totalBadge}
                 </span>
               )}

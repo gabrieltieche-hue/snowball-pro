@@ -34,7 +34,10 @@ export function TerminalHistogram({
   const maxCount = Math.max(...bins.map(b => b.count))
   const total = bins.reduce((s, b) => s + b.count, 0)
   const xMax = bins[bins.length - 1]?.high ?? 1
-  const posOf = (v: number) => Math.min(100, Math.max(0, (v / xMax) * 100))
+  // Repères positionnés sur la même échelle √ que les classes du moteur
+  // (buildTerminalHistogram) : sans cela, médiane/moyenne seraient mal
+  // alignées avec les barres sur une distribution à queue droite.
+  const posOf = (v: number) => Math.min(100, Math.max(0, Math.sqrt(v / xMax) * 100))
   const modalBin = bins.reduce((a, b) => (b.count > (a?.count ?? 0) ? b : a), bins[0])
   const ariaSummary = `Histogramme des issues : ${total} cas répartis en ${bins.length} classes de capital final entre ${format(bins[0]?.low ?? 0)} et ${format(xMax)}. La classe la plus fréquente contient ${modalBin?.count ?? 0} cas autour de ${format(modalBin?.value ?? 0)}. La médiane est à ${format(median)}, la moyenne à ${format(mean)} (l'écart entre les deux reflète les cas très chanceux).`
 
@@ -47,7 +50,8 @@ export function TerminalHistogram({
         className="relative h-32 sm:h-36 flex items-end gap-[2px] px-1 outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-primary/60"
       >
         {bins.map((bin, i) => {
-          const h = bin.count === 0 ? 1.5 : Math.max(4, (bin.count / maxCount) * 100)
+          const hasCount = bin.count > 0
+          const h = hasCount ? Math.max(6, (bin.count / maxCount) * 100) : 2
           const isRuin = highlightRuin && bin.low === 0
           const isHovered = hovered === i
           return (
@@ -63,14 +67,15 @@ export function TerminalHistogram({
                 animate={{ height: `${h}%` }}
                 transition={{ duration: 0.35, delay: i * 0.006 }}
                 className={cn(
-                  "w-full rounded-t-sm transition-colors duration-150",
+                  "w-full rounded-t-[3px] transition-colors duration-150",
+                  !hasCount && "bg-text-dim/10",
                   isRuin
                     ? isHovered
                       ? "bg-[#EF4444]"
                       : "bg-[#F87171]/80"
                     : isHovered
                       ? "bg-gradient-to-t from-primary/60 to-primary"
-                      : "bg-gradient-to-t from-primary/20 to-primary/60",
+                      : "bg-gradient-to-t from-primary/25 to-primary/65",
                 )}
               />
               {isHovered && (
@@ -114,7 +119,7 @@ export function TerminalHistogram({
         <span className="inline-flex items-center gap-1">
           <span className="w-2 h-0.5 bg-[#60A5FA] inline-block" /> Moyenne : {format(mean)} — tirée par la queue droite
         </span>
-        <span>· La dernière barre regroupe aussi les cas extrêmes (au-delà du 99ᵉ percentile).</span>
+        <span>· La dernière barre regroupe aussi les cas au-delà de {format(xMax)} (queue droite).</span>
       </div>
     </div>
   )

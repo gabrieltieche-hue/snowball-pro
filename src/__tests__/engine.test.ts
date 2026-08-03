@@ -54,6 +54,7 @@ import {
   runStressTest,
   STRESS_TEST_SCENARIOS,
   average,
+  MSCI_WORLD_AVG_RETURN,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -342,6 +343,9 @@ describe("runSimulation", () => {
     extendedHistory: true,
     stochasticInflation: true,
     dynamicGuardrails: true,
+    crisisScenario: false,
+    crisisStartOffset: 1,
+    crisisIntensity: 0.3,
   }
 
   it("produces correct number of rows", () => {
@@ -374,9 +378,10 @@ describe("runSimulation", () => {
     expect(rows[rows.length - 1].nominal).toBe(0)
   })
 
-  it("rejoue la série historique en partant de l'année la plus récente", () => {
-    const dataset = getHistoricalDataset("sp500")
-    const lastReturn = dataset.years[dataset.years.length - 1]?.return ?? 0
+  it("applique le même rendement chaque année (courbe lissée — v5.6.0)", () => {
+    // Demande utilisateur : « un truc linéaire, pas une courbe aléatoire ».
+    // Le Simulateur applique la moyenne de référence du MSCI World (≈ 10,07
+    // %/an brut) à chaque année — plus de zigzags historiques sur la courbe.
     const histInputs: SimulationInputs = {
       ...baseInputs,
       historicalIndex: "sp500",
@@ -389,7 +394,9 @@ describe("runSimulation", () => {
       duration: 3,
     }
     const rows = runSimulation(histInputs)
-    expect(rows[1].yearlyReturn).toBeCloseTo(lastReturn, 3)
+    expect(rows[1].yearlyReturn).toBeCloseTo(MSCI_WORLD_AVG_RETURN, 3)
+    // Année 1 et année 2 identiques : la même courbe, chaque année.
+    expect(rows[2].yearlyReturn).toBeCloseTo(rows[1].yearlyReturn, 6)
   })
 })
 
@@ -499,6 +506,9 @@ describe("computeKPIs", () => {
     extendedHistory: true,
     stochasticInflation: true,
     dynamicGuardrails: true,
+    crisisScenario: false,
+    crisisStartOffset: 1,
+    crisisIntensity: 0.3,
   }
 
   it("produces KPIs with valid values", () => {
@@ -547,6 +557,9 @@ describe("solveGoal", () => {
       extendedHistory: true,
       stochasticInflation: true,
       dynamicGuardrails: true,
+      crisisScenario: false,
+      crisisStartOffset: 1,
+      crisisIntensity: 0.3,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -591,6 +604,9 @@ describe("validateInputs", () => {
       extendedHistory: true,
       stochasticInflation: true,
       dynamicGuardrails: true,
+      crisisScenario: false,
+      crisisStartOffset: 1,
+      crisisIntensity: 0.3,
     }
     const errors = validateInputs(base)
     expect(errors.length).toBe(0)
@@ -632,6 +648,9 @@ describe("validateInputs", () => {
       extendedHistory: true,
       stochasticInflation: true,
       dynamicGuardrails: true,
+      crisisScenario: false,
+      crisisStartOffset: 1,
+      crisisIntensity: 0.3,
     }
     const errors = validateInputs(base)
     expect(errors.length).toBeGreaterThan(0)
@@ -675,6 +694,9 @@ describe("solveGoal with goalAnnualReturn", () => {
       extendedHistory: true,
       stochasticInflation: true,
       dynamicGuardrails: true,
+      crisisScenario: false,
+      crisisStartOffset: 1,
+      crisisIntensity: 0.3,
     }
     const result = solveGoal(inputs)
     expect(result.achievable).toBe(true)
@@ -719,6 +741,9 @@ describe("sanitizeInputs", () => {
       extendedHistory: true,
       stochasticInflation: true,
       dynamicGuardrails: true,
+      crisisScenario: false,
+      crisisStartOffset: 1,
+      crisisIntensity: 0.3,
     }
     const safe = sanitizeInputs(base)
     expect(safe.capitalInitial).toBeLessThanOrEqual(100_000_000)
@@ -1209,12 +1234,12 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
   )
 
   it(
-    "le Simulateur rejoue TOUJOURS l'historique réel (Option A : plus de mode « taux défini »)",
+    "le Simulateur applique le même rendement chaque année (courbe lissée — v5.6.0)",
     () => {
-      // Sans aucun mode de rendement sélectionnable, runSimulation doit rejouer
-      // la série réelle : l'année 1 correspond au rendement le plus récent de
-      // l'indice. La référence de taux n'existe plus — la moyenne de l'index
-      // rejoué est la seule donnée de rendement.
+      // Demande utilisateur : la courbe du Simulateur doit être identique d'une
+      // année à l'autre (10,07 %/an brut) — pas une courbe aléatoire. Monte
+      // Carlo et la Rente, eux, continuent de rééchantillonner l'historique
+      // réel (c'est leur raison d'être).
       const inputs = {
         ...DEFAULT_INPUTS,
         monthlyPayment: 0,
@@ -1226,10 +1251,24 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
         duration: 3,
         historicalIndex: "sp500" as const,
       }
-      const dataset = getHistoricalDataset("sp500")
-      const lastReturn = dataset.years[dataset.years.length - 1]?.return ?? 0
       const rows = runSimulation(inputs)
-      expect(rows[1].yearlyReturn).toBeCloseTo(lastReturn, 3)
+      expect(rows[1].yearlyReturn).toBeCloseTo(MSCI_WORLD_AVG_RETURN, 3)
+      expect(rows[2].yearlyReturn).toBeCloseTo(rows[1].yearlyReturn, 6)
+    },
+    MC_TIMEOUT,
+  )
+
+  it(
+    "Monte Carlo continue de rééchantillonner l'historique réel (indépendant de la courbe lissée)",
+    () => {
+      // La courbe lissée ne touche QUE le Simulateur : runMonteCarlo injecte
+      // ses propres séquences via l'override — le rendement rejoué reste la
+      // série réelle, pas la moyenne constante.
+      const inputs = { ...DEFAULT_INPUTS, mcRuns: 200, duration: 10 }
+      const result = runMonteCarlo(inputs, 200)
+      const last = result.p50.length - 1
+      expect(result.p50[last] ?? 0).toBeGreaterThan(0)
+      expect(result.p90[last] ?? 0).toBeGreaterThan(result.p50[last] ?? 0)
     },
     MC_TIMEOUT,
   )
@@ -1357,6 +1396,100 @@ describe("régressions — corrections de l'audit", () => {
     const expectedPct = ((result.finalB - result.finalA) / result.finalA) * 100
     expect(result.diffPercent).toBeCloseTo(expectedPct, 2)
     expect(Math.abs(result.diffPercent)).toBeGreaterThan(1) // ex : -12,3 % et non -0,123
+  })
+})
+
+describe("scénario « partir en période difficile » (v5.6.0) — krach paramétrable", () => {
+  it("est OFF par défaut, persisté et partagé par URL", () => {
+    expect(DEFAULT_INPUTS.crisisScenario).toBe(false)
+    expect(DEFAULT_INPUTS.crisisStartOffset).toBe(1)
+    expect(DEFAULT_INPUTS.crisisIntensity).toBe(0.3)
+    // La persistance restaure un choix explicite, y compris les valeurs.
+    const restored = parseStoredInputs(
+      JSON.stringify({ ...DEFAULT_INPUTS, crisisScenario: true, crisisIntensity: 0.5, crisisStartOffset: 2 }),
+    )
+    expect(restored.crisisScenario).toBe(true)
+    expect(restored.crisisIntensity).toBe(0.5)
+    expect(restored.crisisStartOffset).toBe(2)
+  })
+
+  it("applique le krach à l'année choisie, dans chaque scénario", () => {
+    // Rente à 0 € pour isoler l'effet du krach sur le capital (pas de retraits
+    // qui masquent la chute).
+    const base = {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "custom" as const,
+      withdrawalFixed: 0,
+      retirementYears: 10,
+      extendedHistory: false,
+      parameterUncertainty: false,
+      stochasticInflation: false,
+      dynamicGuardrails: false,
+    }
+    const clean = runDecumulation(base, 1_000_000, 200)
+    const crash = runDecumulation(
+      { ...base, crisisScenario: true, crisisStartOffset: 3, crisisIntensity: 0.4 },
+      1_000_000,
+      200,
+    )
+    // Même graine → chemins bit-à-bit identiques AVANT le krach : la fin de la
+    // 3e année (indice 3) est inchangée, le krach n'a pas encore frappé.
+    expect(crash.p50[3]).toBe(clean.p50[3])
+    // L'année suivante (indice 4, après un −40 % sur l'année) chute nettement.
+    const ratio = (crash.p50[4] ?? 0) / (clean.p50[4] ?? 1)
+    expect(ratio).toBeLessThan(0.85)
+  })
+
+  it("dégrade le capital final d'une rente réelle (l'impact persiste au-delà du krach)", () => {
+    const base = {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "rule-4" as const,
+      retirementYears: 20,
+      extendedHistory: false,
+      parameterUncertainty: false,
+      stochasticInflation: false,
+    }
+    const clean = runDecumulation(base, 1_000_000, 300)
+    const crash = runDecumulation(
+      { ...base, crisisScenario: true, crisisStartOffset: 0, crisisIntensity: 0.4 },
+      1_000_000,
+      300,
+    )
+    const last = 20
+    // La 1re année encaisse le choc (−40 %)…
+    expect(crash.p50[1] ?? 0).toBeLessThan((clean.p50[1] ?? 0) * 0.9)
+    // …et le capital final en pâtit encore 19 ans plus tard.
+    expect(crash.p50[last] ?? 0).toBeLessThan(clean.p50[last] ?? 0)
+  })
+
+  it("le garde-fou coupe la rente APRÈS l'année de krach (revue v5.6.0)", () => {
+    // Rente fixe (2000 €/mois), inflation off, krach dès la 1re année : le
+    // rendement EFFECTIF de l'année 1 est le krach (−30 %). Le garde-fou doit
+    // voir une année négative et réduire la rente de 10 % l'année suivante.
+    const base = {
+      ...DEFAULT_INPUTS,
+      withdrawalModel: "custom" as const,
+      withdrawalFixed: 2000,
+      retirementYears: 8,
+      extendedHistory: false,
+      parameterUncertainty: false,
+      stochasticInflation: false,
+      withdrawalInflation: false,
+      crisisScenario: true,
+      crisisStartOffset: 0,
+      crisisIntensity: 0.3,
+    }
+    const guarded = runDecumulation(base, 500_000, 200)
+    // Sans garde-fou, la rente reste à 2 000 €/mois toutes les années.
+    const unguarded = runDecumulation({ ...base, dynamicGuardrails: false }, 500_000, 200)
+    // Année 1 identique (le krach frappe pendant l'année, la coupe n'a lieu
+    // qu'au début de l'année suivante) : 2 000 × 12.
+    expect(unguarded.withdrawals[1] ?? 0).toBeCloseTo(24_000, 0)
+    expect(guarded.withdrawals[1] ?? 0).toBeCloseTo(24_000, 0)
+    // Année 2 : le garde-fou a coupé 10 % (1 800 €/mois) — le rendement
+    // effectif négatif du krach est bien pris en compte par le garde-fou.
+    expect(unguarded.withdrawals[2] ?? 0).toBeCloseTo(24_000, 0)
+    expect(guarded.withdrawals[2] ?? 0).toBeLessThan((guarded.withdrawals[1] ?? 0) * 0.93)
   })
 })
 
@@ -1604,12 +1737,17 @@ describe("wilsonScoreCI / buildTerminalHistogram / sampleNormal (v5.5.0)", () =>
     expect(all.low).toBeGreaterThanOrEqual(0)
   })
 
-  it("l'histogramme terminal a 30 classes sur [0, p99] et le compte total est exact", () => {
+  it("l'histogramme terminal a 30 classes, compte total exact et axe lisible (v5.6.0)", () => {
     const values = Array.from({ length: 1000 }, (_, i) => i * 1000)
     const bins = buildTerminalHistogram(values, 30)
     expect(bins).toHaveLength(30)
     expect(bins.reduce((s, b) => s + b.count, 0)).toBe(1000)
     expect(bins[0]?.low).toBe(0)
+    // Axe adaptatif : max(p95, 3 × médiane) — l'axe reste proche de la masse
+    // de la distribution au lieu de courir jusqu'au cas extrême (p99).
+    const hi = bins[bins.length - 1]?.high ?? 0
+    expect(hi).toBeGreaterThanOrEqual(3 * 499_500)
+    expect(hi).toBeLessThan(2_000_000)
   })
 
   it("l'histogramme absorbe la queue droite dans la dernière classe", () => {

@@ -66,6 +66,11 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   extendedHistory: true,
   stochasticInflation: true,
   dynamicGuardrails: true,
+  // Scénario de crise paramétrable (v5.6.0) : OFF par défaut (l'utilisateur
+  // choisit d'« partir en période difficile » dans les paramètres de la rente).
+  crisisScenario: false,
+  crisisStartOffset: 1,
+  crisisIntensity: 0.3,
 }
 
 const VALID_ENVELOPES: EnvelopeType[] = ["cto", "pea", "av", "per", "none"]
@@ -119,6 +124,8 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "mcRuns",
   "seed",
   "tmi",
+  "crisisStartOffset",
+  "crisisIntensity",
 ]
 
 const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
@@ -129,6 +136,7 @@ const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
   "extendedHistory",
   "stochasticInflation",
   "dynamicGuardrails",
+  "crisisScenario",
 ]
 
 const STRING_KEYS: (keyof SimulationInputs)[] = [

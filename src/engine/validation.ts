@@ -182,5 +182,10 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     seed: Math.abs(inputs.seed) || 1,
     tmi: clamp(inputs.tmi, 0, 0.45),
     ctoTaxMode: inputs.ctoTaxMode === "bareme" ? "bareme" : "pfu",
+    // Scénario « partir en période difficile » (v5.6.0) : bornes alignées sur
+    // l'UI (0-10 ans, 5 %-95 %) — un lien partagé malformé ne peut pas casser
+    // l'onglet Rente ni faire diverger UI et moteur.
+    crisisStartOffset: Math.round(clamp(inputs.crisisStartOffset, 0, 10)),
+    crisisIntensity: clamp(inputs.crisisIntensity, 0.05, 0.95),
   }
 }

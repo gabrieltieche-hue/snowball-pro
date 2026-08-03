@@ -102,24 +102,30 @@ export function wilsonScoreCI(successes: number, total: number, z = 1.96): { low
 }
 
 /**
- * Histogramme des issues terminales (30 classes par défaut) sur [0, p99] : la
- * queue droite (fat tail) — 1 % des cas les plus extrêmes — est volontairement
- * exclue de l'axe pour garder des barres lisibles, et le compte total reste
- * exact (la dernière classe absorbe tout ce qui dépasse).
+ * Histogramme des issues terminales (30 classes par défaut). Deux corrections
+ * v5.6.0 pour le rendre LISIBLE (avant : « des barres écrasées à gauche, on ne
+ * comprend rien ») :
+ *  1. Axe adaptatif sur les cas NON NULS : max(p95, 3 × médiane) au lieu du
+ *     p99 — l'outlier de la fat tail n'écrase plus tout, et une majorité de
+ *     faillites (0 €) ne réduit plus l'échelle à 1 €.
+ *  2. Bornes NON LINÉAIRES (échelle √, bornes en (i/n)² × hi) : une
+ *     distribution de capitaux finaux est très asymétrique — des classes
+ *     linéaires concentrent toute la masse dans les 10 % gauche du graphe.
+ *     L'échelle √ étale la masse sur toute la largeur tout en gardant la queue
+ *     droite visible (le composant positionne médiane/moyenne sur la même
+ *     échelle √). La dernière classe absorbe toujours ce qui dépasse.
  */
 export function buildTerminalHistogram(values: number[], binCount = 30): TerminalBin[] {
   if (values.length === 0) return []
   const sorted = [...values].sort((a, b) => a - b)
-  const hi = Math.max(percentile(sorted, 0.99), 1)
-  const width = hi / binCount
-  if (width <= 0) {
-    return [{ index: 0, low: 0, high: hi, value: hi, count: values.length }]
-  }
+  const nonZero = sorted.filter(v => v > 0)
+  const hi = nonZero.length > 0 ? Math.max(percentile(nonZero, 0.95), 3 * percentile(nonZero, 0.5), 1) : 1
+  if (hi <= 0) return [{ index: 0, low: 0, high: hi, value: hi, count: values.length }]
   const bins: TerminalBin[] = []
   let idx = 0
   for (let b = 0; b < binCount; b += 1) {
-    const low = b * width
-    const high = b === binCount - 1 ? Number.POSITIVE_INFINITY : (b + 1) * width
+    const low = hi * (b / binCount) ** 2
+    const high = b === binCount - 1 ? Number.POSITIVE_INFINITY : hi * ((b + 1) / binCount) ** 2
     let count = 0
     while (idx < sorted.length && (sorted[idx] ?? 0) < high) {
       count += 1

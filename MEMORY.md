@@ -4,6 +4,61 @@
 
 ---
 
+## SESSION — 2026-08-03 (v5.6.0 : Courbe lissée du Simulateur + scénario « Partir en période difficile »)
+
+### Résumé
+
+Deux demandes utilisateur fusionnées dans la release **v5.6.0** (workflow APEX + fable-mode + oneshot + ultrathink) : (1) *« un truc linéaire, pas une courbe aléatoire »* — le Simulateur rejouait les zigzags historiques, l'utilisateur veut une courbe lisse ; (2) *« et si le départ à la retraite tombait en pleine crise ? »* — pouvoir choisir le moment et l'intensité du krach au lieu des seules fenêtres historiques fixes. **208 tests**, gate 100 % vert (typecheck ✓ lint ✓ test ✓ build ✓), déploiement Vercel.
+
+### Courbe lissée (Simulateur uniquement)
+
+- **`simulation.ts`** : `runSimulation` applique `MSCI_WORLD_AVG_RETURN` (≈ 10,07 %/an brut) chaque année — la même courbe, sans hasard. `returnForYear` simplifié (constante). **Monte Carlo et la Rente rééchantillonnent toujours l'historique réel** (leur raison d'être) : seul le Simulateur devient constant.
+- **UI alignée** : `Sidebar` (« Rendement lissé — 10,07 %/an brut »), `MethodologyPanel` (« taux constant … courbe lissée ; MC & Rente rejouent l'historique »), `AIInsightCard` (« moyenne de référence »), `DrawdownChart` (rendement constant → aucune baisse possible : la ligne plate à 0 % est remplacée par un message explicatif).
+
+### Scénario « Partir en période difficile » (krach paramétrable)
+
+- **Nouveaux champs** : `crisisScenario` (bool, OFF par défaut), `crisisStartOffset` (0-10, année de retraite où le krach frappe), `crisisIntensity` (5-95 % au sanitize, UI 10-60 %). Clés de persistance + partage URL + hash de fraîcheur `App.tsx` (bandeau « relancez »).
+- **`decumulation.ts`** : `runDecumulationPath` reçoit `applyCrisis` — à l'année choisie, le rendement est REMPLACÉ par le krach (clampé 5-95 %), identique pour CHAQUE scénario MC (100 % des cas, pas seulement P10). Le garde-fou dynamique voit le **rendement EFFECTIF** de l'année (`lastYearReturn = annualReturn`), donc il coupe bien la rente l'année suivant le krach (revue v5.6.0).
+- **`runStressTest` passe `applyCrisis = false`** : les fenêtres 1973/2000/2008 SONT déjà des crises réelles — superposer un krach synthétique compterait la crise deux fois.
+- **UI `RenteRetraiteTab`** : carte « Partir en période difficile » (Toggle + curseurs année/intensité, bornés par `retirementYears`), bandeau de transparence dans les résultats (« Un krach de −X % frappe chaque scénario en année N ») ; **stress tests historiques repliés par défaut** (en-tête repliable « Et si vous partiez en pleine crise ? », renvoi vers l'option paramétrable).
+
+### Histogramme terminal lisible (revue UI)
+
+- **`math.ts` `buildTerminalHistogram`** : axe adaptatif sur cas NON NULS `max(p95, 3×médiane)` (au lieu du p99 qui écrasait tout, et des faillites qui réduisaient l'échelle à 1 €) + **bornes non linéaires (échelle √)** : la masse d'une distribution asymétrique n'est plus concentrée dans les 10 % gauche.
+- **`TerminalHistogram.tsx`** : repères médiane/moyenne sur la même échelle √ que les classes ; barres vides visibles ; note « au-delà de X € (queue droite) ».
+
+### Détails
+
+- `FiscalPanel` : badge « Total des impôts » → pastille discrète. `validation.ts` : bornes `crisisStartOffset` (0-10 arrondi) et `crisisIntensity` (0,05-0,95) au sanitize. `migration.ts` : champs ajoutés à `NUMERIC_KEYS`/`BOOLEAN_KEYS`.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **208/208 tests** ✓ (175 engine + 33 composants) build ✓.
+- Tests : +7 nets — crise OFF par défaut + persistance/URL, krach à l'année choisie (chemins bit-à-bit identiques avant le choc), impact persistant au-delà du krach, garde-fou coupe APRÈS l'année de krach, courbe lissée (rendement identique chaque année, MC indépendant), axe histogramme, stress tests repliés + curseurs crise (composants).
+- Version 5.5.1 → 5.6.0 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v5.6.0`), CHANGELOG (entrée v5.6.0). Prettier appliqué aux fichiers v5.6.0 (4 fichiers legacy non conformes laissés intacts : SnapshotPanel, TabBar, SegmentedControl, GoalTab).
+
+---
+
+## SESSION — 2026-08-03 (Infra : projet Vercel renommé v4 → snowball-pro)
+
+### Résumé
+
+Demande utilisateur : obtenir une URL Vercel personnalisée au lieu de l'URL auto-générée `https://v4-three-beige.vercel.app`. Après comparaison des options (nom de domaine réel `.fr`/`.com` ≈ 2-10 €/an, sous-domaines gratuits `is-a.dev`/`eu.org`/`is-cool.dev`), l'utilisateur a choisi la **renommage du projet Vercel** (0 €, 2 min) : le projet `v4` (prj_J8bvSime5dm7oNJsUZBhjyTrBe8T, org team_dI2kW7QMo7eKuhF0caXOfVJP) a été renommé **`snowball-pro`** via l'API REST Vercel (`PATCH /v9/projects/{id}`), le domaine `snowball-pro.vercel.app` ajouté via `POST /v10/projects/{id}/domains` (verified: true), puis redéploiement `vercel --prod`.
+
+### Nouvelle URL
+
+- **Production : `https://snowball-pro.vercel.app`** (HTTP 200, titre « Snowball Pro v5 — Simulateur Patrimonial »).
+- L'ancienne URL `https://v4-three-beige.vercel.app` reste active (HTTP 200, alias de l'ancien déploiement — Vercel ne la désactive pas automatiquement).
+- `.vercel/project.json` mis à jour (`projectName: "snowball-pro"`) — fichier gitignoré, modifié via terminal.
+- Aucun changement de code, aucune dépendance : le renommage est purement côté plateforme Vercel.
+
+### Notes
+
+- Le CLI Vercel n'a pas de commande `rename` : passage par l'API REST avec le token de `~/Library/Application Support/com.vercel.cli/auth.json`.
+- Pas de bump de version (aucun changement utilisateur) : 5.5.1 conservée.
+
+---
+
 ## SESSION — 2026-08-03 (v5.5.1 : Fiabilité & sûreté des estimations — Pástor–Stambaugh, 100 ans d'histoire, stress tests)
 
 ### Résumé
