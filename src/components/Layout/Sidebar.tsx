@@ -99,7 +99,9 @@ export function Sidebar({
         {/* Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
             référence du MSCI World chaque année — plus de zigzags. Monte Carlo
             et la Rente continuent de rééchantillonner l'historique réel. */}
-        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3">
+        {/* mb-4 : la carte est un frère des SliderInput (chacun a mb-4) — sans
+            cette marge, elle collait au « Durée (années) » en dessous (fix v5.6.2). */}
+        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 mb-4">
           <div className="flex items-center gap-1.5">
             <TrendingUp size={12} className="text-primary shrink-0" />
             <span className="text-[11px] font-bold text-text leading-tight">
