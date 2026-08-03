@@ -99,14 +99,14 @@ export function Sidebar({
         {/* Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
             référence du MSCI World chaque année — plus de zigzags. Monte Carlo
             et la Rente continuent de rééchantillonner l'historique réel. */}
-        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3 py-2.5">
+        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3">
           <div className="flex items-center gap-1.5">
             <TrendingUp size={12} className="text-primary shrink-0" />
             <span className="text-[11px] font-bold text-text leading-tight">
               Rendement lissé — {(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut
             </span>
           </div>
-          <p className="text-[10px] text-text-muted mt-1 leading-snug">
+          <p className="text-[10px] text-text-muted mt-1.5 leading-relaxed">
             Moyenne MSCI World ·{" "}
             <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong> net
             d'inflation — la même courbe chaque année, sans hasard.

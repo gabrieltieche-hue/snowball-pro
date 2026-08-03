@@ -220,6 +220,25 @@ export function RenteRetraiteTab({
                 )
               })}
             </div>
+
+            {/* Guide de choix : comble le vide sous les modèles (colonne
+                gauche) et aide à choisir le bon taux de retrait. */}
+            <div className="mt-3 rounded-xl bg-primary/8 border border-primary/20 p-3.5">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Lightbulb size={12} className="text-primary shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                  Quel modèle choisir ?
+                </span>
+              </div>
+              <p className="text-[10px] text-text-dim leading-relaxed">
+                La <strong className="text-text">règle des 4 %</strong> est le standard historique (Bengen) : elle a
+                tenu sur toutes les périodes de 30 ans testées.{" "}
+                <strong className="text-text">Très prudent</strong> sacrifie du confort pour la sécurité, pendant que{" "}
+                <strong className="text-text">Optimiste</strong> convient si vous pouvez réduire vos retraits les
+                mauvaises années. Le mode <strong className="text-text">Personnalisé</strong> teste le montant exact
+                que vous visez.
+              </p>
+            </div>
           </div>
 
           {/* Paramètres */}

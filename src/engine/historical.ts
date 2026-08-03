@@ -144,12 +144,25 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
  * 100 ans (S&P 500 1926-1969 + MSCI World 1970-2025) : plus de blocs, plus de
  * krachs et de bull markets. Le Simulateur (backtest déterministe) reste sur
  * la série 1970-2025 pour préserver sa figure de référence 10,07 %/an.
+ *
+ * CORRECTIF v5.6.1 (paradoxe « plus de fiabilité = plus de gains ») : la
+ * moyenne BRUTE du vivier étendu (≈ 11,00 %/an) dépasse la référence MSCI
+ * World (≈ 10,07 %/an) — le S&P 500 1926-1969 a rendu en moyenne 12,18 %/an.
+ * Utilisée telle quelle, elle faisait monter P50/P90 dès qu'on activait
+ * « Historique étendu », un biais déroutant (activer la fiabilité semblait
+ * fabriquer de la performance). La série étendue est donc CENTRÉE sur la
+ * moyenne de référence : les krachs (1929, 1931, 1933…) restent rejoués,
+ * mais le niveau moyen redevient celui du MSCI World. Le scénario médian ne
+ * bouge plus quand on coche l'option ; seules les bandes P10/P90 s'élargissent.
  */
 export function getHistoricalPool(historicalIndex: HistoricalIndex, extendedHistory: boolean): HistoricalPool {
   if (extendedHistory && historicalIndex === "msci-world") {
+    const centeredReturns = EXTENDED_WORLD_RETURNS.map(r => r - EXTENDED_WORLD_AVG_RETURN + MSCI_WORLD_AVG_RETURN)
     return {
-      returns: EXTENDED_WORLD_RETURNS,
-      avgReturn: EXTENDED_WORLD_AVG_RETURN,
+      returns: centeredReturns,
+      avgReturn: MSCI_WORLD_AVG_RETURN,
+      // La volatilité est invariante par translation : on garde celle de la
+      // série étendue (plus de krachs testés → bandes plus larges).
       volatility: EXTENDED_WORLD_VOLATILITY,
       startYear: EXTENDED_WORLD_START_YEAR,
       label: `S&P 500 + MSCI World (${EXTENDED_WORLD_START_YEAR}-2025)`,

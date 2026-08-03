@@ -55,6 +55,7 @@ import {
   STRESS_TEST_SCENARIOS,
   average,
   MSCI_WORLD_AVG_RETURN,
+  EXTENDED_WORLD_RETURNS,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -1631,8 +1632,26 @@ describe("historique étendu 100 ans (v5.5.0) — getHistoricalPool", () => {
     expect(pool.startYear).toBe(1926)
     expect(pool.returns.length).toBe(100)
     expect(pool.label).toContain("1926-2025")
-    // Le 100e point est le dernier rendement MSCI World (2025)
-    expect(pool.returns[pool.returns.length - 1]).toBeCloseTo(0.0639, 3)
+    // Le 100e point est le dernier rendement MSCI World (2025), CENTRÉ sur la
+    // moyenne de référence : 0,0639 − (moyenne brute étendue − référence).
+    const shift = average(EXTENDED_WORLD_RETURNS) - MSCI_WORLD_AVG_RETURN
+    expect(pool.returns[pool.returns.length - 1]).toBeCloseTo(0.0639 - shift, 3)
+  })
+
+  it("le vivier étendu est CENTRÉ sur la moyenne de référence MSCI World (correctif v5.6.1)", () => {
+    // Avant : la moyenne brute du vivier étendu (≈ 11,00 %/an, portée par le
+    // S&P 500 1926-1969 à 12,18 %/an) dépassait la référence 10,07 % →
+    // activer « Historique étendu » faisait monter P50/P90. Le centrage
+    // aligne la moyenne sur la référence SANS perdre les krachs (structure
+    // préservée, volatilité inchangée par translation).
+    const pool = getHistoricalPool("msci-world", true)
+    expect(pool.avgReturn).toBeCloseTo(MSCI_WORLD_AVG_RETURN, 10)
+    expect(pool.avgReturn).toBeCloseTo(0.1007, 3)
+    // Volatilité préservée : la série étendue garde ses krachs (1929, 1931…)
+    expect(pool.volatility).toBeGreaterThan(0.2)
+    // Le dernier point (2025, 6,39 % brut) est translaté du delta de centrage
+    const shift = average(EXTENDED_WORLD_RETURNS) - MSCI_WORLD_AVG_RETURN
+    expect(pool.returns[pool.returns.length - 1]).toBeCloseTo(0.0639 - shift, 3)
   })
 
   it("le vivier classique reste 1970-2025", () => {
@@ -1644,9 +1663,12 @@ describe("historique étendu 100 ans (v5.5.0) — getHistoricalPool", () => {
   it("les krachs de l'entre-deux-guerres sont dans le vivier étendu (1929, 1931, 1933)", () => {
     const pool = getHistoricalPool("msci-world", true)
     const byYear = new Map(pool.returns.map((r, i) => [pool.startYear + i, r]))
-    expect(byYear.get(1929)).toBeCloseTo(-0.0842, 3)
-    expect(byYear.get(1931)).toBeCloseTo(-0.4334, 3)
-    expect(byYear.get(1933)).toBeCloseTo(0.5399, 3)
+    // Les krachs restent rejoués : chaque valeur est translatée du même delta
+    // de centrage que toute la série (structure identique, moyenne alignée).
+    const shift = average(EXTENDED_WORLD_RETURNS) - MSCI_WORLD_AVG_RETURN
+    expect(byYear.get(1929) ?? 0).toBeCloseTo(-0.0842 - shift, 2)
+    expect(byYear.get(1931) ?? 0).toBeCloseTo(-0.4334 - shift, 2)
+    expect(byYear.get(1933) ?? 0).toBeCloseTo(0.5399 - shift, 2)
   })
 
   it("sampleHistoricalReturns tire du vivier étendu quand extendedHistory est actif", () => {

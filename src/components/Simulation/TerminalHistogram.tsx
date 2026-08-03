@@ -55,19 +55,28 @@ export function TerminalHistogram({
           const isRuin = highlightRuin && bin.low === 0
           const isHovered = hovered === i
           return (
+            /* CORRECTIF v5.6.1 : l'ancien wrapper « flex-1 » sans hauteur
+               définie laissait la barre (height: X%) sans parent mesurable →
+               0 px de haut, seules les lignes médiane/moyenne s'affichaient
+               (« 2 barres »). Le wrapper s'étire maintenant sur toute la
+               hauteur et aligne la barre en bas (items-end). */
             <div
               key={i}
               aria-hidden
-              className="relative flex-1 group"
+              className="relative flex-1 h-full flex items-end group"
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(null)}
             >
+              {/* La barre est relative : le tooltip s'ancre au sommet DE LA
+                  BARRE survolée (pas en haut du graphique — le wrapper étant
+                  désormais pleine hauteur, un bottom-full sur le wrapper
+                  égarerait le tooltip). */}
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: `${h}%` }}
                 transition={{ duration: 0.35, delay: i * 0.006 }}
                 className={cn(
-                  "w-full rounded-t-[3px] transition-colors duration-150",
+                  "relative w-full rounded-t-[3px] transition-colors duration-150",
                   !hasCount && "bg-text-dim/10",
                   isRuin
                     ? isHovered
@@ -77,16 +86,17 @@ export function TerminalHistogram({
                       ? "bg-gradient-to-t from-primary/60 to-primary"
                       : "bg-gradient-to-t from-primary/25 to-primary/65",
                 )}
-              />
-              {isHovered && (
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10 glass-strong rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-premium pointer-events-none">
-                  <span className="font-bold text-text">≈ {format(bin.value)}</span>
-                  <span className="text-text-dim">
-                    {" "}
-                    · {bin.count} cas ({((bin.count / total) * 100).toFixed(1)} %)
-                  </span>
-                </div>
-              )}
+              >
+                {isHovered && (
+                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10 glass-strong rounded-lg px-2 py-1 text-[10px] whitespace-nowrap shadow-premium pointer-events-none">
+                    <span className="font-bold text-text">≈ {format(bin.value)}</span>
+                    <span className="text-text-dim">
+                      {" "}
+                      · {bin.count} cas ({((bin.count / total) * 100).toFixed(1)} %)
+                    </span>
+                  </div>
+                )}
+              </motion.div>
             </div>
           )
         })}

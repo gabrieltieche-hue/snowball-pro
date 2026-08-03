@@ -23,6 +23,9 @@ interface KpiCard {
 // Indicateurs affichés selon la simulation : on masque les stats qui n'ont
 // pas de sens (pas de chute, pas de risque, capital qui ne double pas) et on
 // évite les doublons avec le camembert 3D « D'où vient votre argent ? ».
+// Avec la courbe lissée du Simulateur (v5.6.0), le sharpe vaut toujours 0 et
+// la chute maximale est nulle → 6 cartes par défaut : une grille 2×3 remplie
+// sans trou (avant : auto-fit 4 colonnes → 2 cases vides au 2e rang).
 const CARDS: KpiCard[] = [
   {
     key: "xirr",
@@ -97,11 +100,21 @@ export function KpiGrid({ kpis }: KpiGridProps) {
 
   return (
     <div className="animate-fade-in min-w-0">
-      <div className="flex items-center gap-2 mb-2.5">
-        <Gauge size={14} className="text-text-dim" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Statistiques clés</span>
+      {/* Titre de section agrandi (demande utilisateur) : c'est un titre de
+          partie — plus gros et plus imposant, aligné sur les autres titres
+          de section (barre dorée + icône teintée). */}
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="w-1 h-5 rounded-full bg-primary" aria-hidden />
+        <Gauge size={18} className="text-primary" aria-hidden />
+        <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-[0.08em] text-text leading-none">
+          Statistiques clés
+        </h3>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(155px,1fr))] gap-2.5">
+      {/* Grille 2×3 par défaut (6 cartes) : aucune case vide, contrairement à
+          l'ancien auto-fit qui laissait un trou de 2 cartes sur les écrans
+          larges. Les cartes sont plus hautes → le bloc remplit mieux la
+          colonne à côté du panneau fiscal. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {cards.map(kpi => {
           const val = kpis[kpi.key]
           const display = kpi.currency
@@ -110,15 +123,15 @@ export function KpiGrid({ kpis }: KpiGridProps) {
           return (
             <div
               key={kpi.key}
-              className="glass rounded-2xl p-3 hover:bg-glass-hover transition-colors flex flex-col min-w-0"
+              className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors flex flex-col min-w-0 min-h-[132px]"
             >
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-h-[2.75em]">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug">
                 {kpi.label}
               </div>
-              <div className="mono text-sm font-bold mt-1.5 leading-tight" style={{ color: kpi.color }}>
+              <div className="mono text-lg font-bold mt-2 leading-tight" style={{ color: kpi.color }}>
                 {display}
               </div>
-              <div className="text-[10px] text-text-muted mt-1 leading-snug">{kpi.sub}</div>
+              <div className="text-[10px] text-text-muted mt-auto pt-2 leading-snug">{kpi.sub}</div>
             </div>
           )
         })}
