@@ -17,7 +17,10 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
   const theme = chartTheme(darkMode)
   const chartRef = useChartA11y("Projection comparée des scénarios A et B")
   const coarse = useIsCoarsePointer()
-  const data = useMemo(() => mergeComparisonSeries(rowsA, rowsB, inputs.showReal), [rowsA, rowsB, inputs.showReal])
+  const data = useMemo(
+    () => mergeComparisonSeries(rowsA, rowsB, inputs.showReal, true),
+    [rowsA, rowsB, inputs.showReal],
+  )
   const colorA = theme.invested
   const colorB = theme.gains
 

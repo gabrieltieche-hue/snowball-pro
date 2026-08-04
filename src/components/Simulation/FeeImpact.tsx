@@ -34,7 +34,7 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
       </div>
       <div className="space-y-1.5">
         {[
-          { label: "Frais payés au total", value: lastRow.feesLost * factor, color: "#8B3A3A" },
+          { label: "Frais débités au total", value: lastRow.feesLost * factor, color: "#8B3A3A" },
           { label: "Capital perdu à cause des frais", value: feeImpact, color: "#A84A4A" },
         ].map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">
@@ -53,7 +53,9 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
           {fmtCurrency(lastRow.nominal * factor)}).
         </div>
       ) : (
-        <div className="text-[10px] text-text-dim">Vos frais sont à 0 % : votre capital n'en perd rien.</div>
+        <div className="text-[10px] text-text-dim">
+          Aucun écart de frais mesurable dans cette projection : les frais sont nuls ou leur effet est arrondi.
+        </div>
       )}
     </div>
   )

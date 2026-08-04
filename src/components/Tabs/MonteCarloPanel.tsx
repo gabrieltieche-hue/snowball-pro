@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, Play, ShieldCheck } from "lucide-react"
-import { fmtCurrency, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
+import { fmtCurrency, fmtDecimal, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 import { Toggle } from "../shared/Toggle"
@@ -211,6 +211,11 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         {mcResult && (
           <div className="space-y-5">
             <MonteCarloChart result={mcResult} darkMode={darkMode} />
+            <p className="text-[10px] text-text-dim italic">
+              Montants en <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte,
+              non corrigés de l'inflation) et <strong className="text-text not-italic">nets d'impôts</strong> (liquidation
+              théorique) — pour comparer avec le Simulateur en euros d'aujourd'hui, tenez compte de l'inflation.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
                 <div key={card.label} className="glass rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
@@ -231,8 +236,8 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                   {fmtCurrency(mcResult.goalTarget)}
                 </p>
                 <p className="text-[9px] text-text-dim mt-1 border-t border-border/60 pt-1.5">
-                  Précision : {mcResult.successRate.toFixed(1)} % ±{" "}
-                  {((mcResult.successRateCI.high - mcResult.successRateCI.low) / 2).toFixed(1)} pt (intervalle de
+                  Précision : {fmtDecimal(mcResult.successRate, 1)} % ±{" "}
+                  {fmtDecimal((mcResult.successRateCI.high - mcResult.successRateCI.low) / 2, 1)} pt (intervalle de
                   confiance à 95 %)
                 </p>
               </div>

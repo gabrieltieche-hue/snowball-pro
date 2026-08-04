@@ -26,14 +26,21 @@ export function buildCashFlows(inputs: SimulationInputs, finalValue: number): { 
     months.push(0)
   }
 
-  // Versements mensuels (avec indexation annuelle, comme dans runSimulation)
+  // Versements mensuels (avec indexation annuelle, comme dans runSimulation),
+  // soumis au MÊME plafond PEA que le moteur (150/300 k€) : sans ce plafond,
+  // le XIRR d'un PEA au-delà du cap comptait des versements jamais investis
+  // et sous-évaluait le rendement (audit v5.6.2 : 6,2 % au lieu de ~10 %).
   let monthlyPayment = inputs.monthlyPayment
+  const peaCap = inputs.envelope === "pea" ? (inputs.taxCouple ? 300_000 : 150_000) : Infinity
+  let invested = Math.max(0, inputs.capitalInitial)
   for (let m = 1; m <= totalMonths; m += 1) {
     const monthInYear = (m - 1) % 12
     if (monthInYear === 0 && m > 1) monthlyPayment = monthlyPayment * (1 + inputs.indexation)
-    if (monthlyPayment > 0) {
-      flows.push(-monthlyPayment)
+    const allowed = Math.min(monthlyPayment, Math.max(0, peaCap - invested))
+    if (allowed > 0) {
+      flows.push(-allowed)
       months.push(m)
+      invested += allowed
     }
   }
 
@@ -42,9 +49,6 @@ export function buildCashFlows(inputs: SimulationInputs, finalValue: number): { 
     flows.push(finalValue)
     months.push(totalMonths)
   }
-  // Note : simplification documentée — le plafond de versements PEA
-  // (150/300 k€) n'est pas appliqué ici ; le XIRR reste très proche tant
-  // que la durée et les versements restent dans les bornes usuelles.
   return { flows, months }
 }
 
@@ -219,9 +223,13 @@ export function solveGoal(inputs: SimulationInputs): GoalResult {
   }
 }
 
-export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[]): ScenarioComparison {
-  const finalA = rowsA[rowsA.length - 1]?.taxNet ?? 0
-  const finalB = rowsB[rowsB.length - 1]?.taxNet ?? 0
+export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[], showReal = false): ScenarioComparison {
+  const lastA = rowsA[rowsA.length - 1]
+  const lastB = rowsB[rowsB.length - 1]
+  const finalA =
+    showReal && lastA ? lastA.taxNet * (lastA.nominal > 0 ? lastA.real / lastA.nominal : 1) : (lastA?.taxNet ?? 0)
+  const finalB =
+    showReal && lastB ? lastB.taxNet * (lastB.nominal > 0 ? lastB.real / lastB.nominal : 1) : (lastB?.taxNet ?? 0)
   const diffAbsolute = roundCent(finalB - finalA)
   const diffPercent = finalA > 0 ? roundCent((diffAbsolute / finalA) * 100) : 0
   return {

@@ -46,7 +46,7 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
           graphiques (drawdown + allocation) sont affichés en permanence. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DrawdownChart rows={rows} darkMode={darkMode} />
-        <CapitalAllocation rows={rows} darkMode={darkMode} showReal={inputs.showReal} />
+        <CapitalAllocation rows={rows} inputs={inputs} darkMode={darkMode} showReal={inputs.showReal} />
       </div>
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
@@ -59,6 +59,8 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
         <button
           type="button"
           onClick={() => setTableOpen(!tableOpen)}
+          aria-expanded={tableOpen}
+          aria-controls="annual-detail-table"
           className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors"
         >
           <span className="text-xs font-bold flex items-center gap-2">📋 Détail année par année</span>
@@ -75,7 +77,7 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
           </span>
         </button>
         {tableOpen && (
-          <div className="px-4 sm:px-6 pb-5">
+          <div id="annual-detail-table" className="px-4 sm:px-6 pb-5">
             <AmortissementTable rows={rows} />
           </div>
         )}

@@ -63,7 +63,8 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
           </span>
           {inputs.envelope !== "none" && (
             <span className="flex items-center gap-1">
-              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impôts payés
+              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impôts théoriques
+              (liquidation)
             </span>
           )}
         </div>
@@ -153,7 +154,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               <Line
                 type="monotone"
                 dataKey="impôts"
-                name="Impôts payés"
+                name="Impôts théoriques (liquidation)"
                 stroke={taxColor}
                 strokeWidth={2}
                 strokeDasharray="6 3"

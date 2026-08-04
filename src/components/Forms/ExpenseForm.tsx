@@ -1,4 +1,5 @@
 import { SliderInput } from "../shared/SliderInput"
+import { fmtDecimal } from "../../engine"
 import type { SimulationInputs } from "../../types"
 
 interface ExpenseFormProps {
@@ -16,17 +17,21 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         min={0}
         max={2}
         step={0.05}
-        suffix={`${(inputs.etfFees * 100).toFixed(2)}%/an`}
+        hardMin={0}
+        hardMax={50}
+        suffix={`${fmtDecimal(inputs.etfFees * 100, 2)}%/an`}
         onChange={v => updateInput("etfFees", v / 100)}
       />
       <SliderInput
-        label="Frais du courtier"
+        label="Courtage sur chaque versement"
         id="fee-broker"
         value={inputs.brokerageFees * 100}
         min={0}
         max={1}
         step={0.05}
-        suffix={`${(inputs.brokerageFees * 100).toFixed(2)}%/an`}
+        hardMin={0}
+        hardMax={50}
+        suffix={`${fmtDecimal(inputs.brokerageFees * 100, 2)}% par versement`}
         onChange={v => updateInput("brokerageFees", v / 100)}
       />
       <SliderInput
@@ -36,7 +41,9 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         min={0}
         max={2}
         step={0.05}
-        suffix={`${(inputs.managementFees * 100).toFixed(2)}%/an`}
+        hardMin={0}
+        hardMax={50}
+        suffix={`${fmtDecimal(inputs.managementFees * 100, 2)}%/an`}
         onChange={v => updateInput("managementFees", v / 100)}
       />
       <SliderInput
@@ -46,7 +53,9 @@ export function ExpenseForm({ inputs, updateInput }: ExpenseFormProps) {
         min={0}
         max={2}
         step={0.05}
-        suffix={`${(inputs.insuranceFees * 100).toFixed(2)}%/an`}
+        hardMin={0}
+        hardMax={50}
+        suffix={`${fmtDecimal(inputs.insuranceFees * 100, 2)}%/an`}
         onChange={v => updateInput("insuranceFees", v / 100)}
       />
     </div>

@@ -92,7 +92,7 @@ export function TerminalHistogram({
                     <span className="font-bold text-text">≈ {format(bin.value)}</span>
                     <span className="text-text-dim">
                       {" "}
-                      · {bin.count} cas ({((bin.count / total) * 100).toFixed(1)} %)
+                      · {bin.count} cas ({((bin.count / total) * 100).toFixed(1).replace(".", ",")} %)
                     </span>
                   </div>
                 )}

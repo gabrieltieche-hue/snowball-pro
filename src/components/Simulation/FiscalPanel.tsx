@@ -51,6 +51,9 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   const lines: { label: string; value: number; strong?: boolean; tone?: string }[] = [
     { label: "Gains avant impôts (brut)", value: show(taxInfo.grossGains), tone: GOLD },
   ]
+  if (taxInfo.contributionsTax > 0) {
+    lines.push({ label: "Impôt sur versements PER déduits", value: show(taxInfo.contributionsTax), tone: RED })
+  }
   if (taxInfo.socialCharges > 0) {
     lines.push({ label: "Cotisations sociales", value: show(taxInfo.socialCharges), tone: RED })
   }
@@ -122,9 +125,16 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
         />
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-[10px] text-text-dim">Part de vos gains prise par les impôts</span>
+        <span className="text-[10px] text-text-dim">
+          {inputs.envelope === "per"
+            ? "Part de la base PER imposable prise par l'impôt"
+            : "Part de vos gains prise par les impôts"}
+        </span>
         <span className="mono text-xs font-bold" style={{ color: "var(--color-value-red)" }}>
-          {taxInfo.grossGains > 0 ? ((exitTax / taxInfo.grossGains) * 100).toFixed(1) : "0.0"}%
+          {((exitTax / Math.max(1, taxInfo.grossGains + (taxInfo.taxableContributions ?? 0))) * 100)
+            .toFixed(1)
+            .replace(".", ",")}
+            %
         </span>
       </div>
       {isLiquidationTheorique && (

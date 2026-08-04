@@ -15,7 +15,7 @@ export function GoalProgress({ current, target }: GoalProgressProps) {
         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
           Avec votre épargne actuelle
         </span>
-        <span className="mono text-xs font-bold text-text">{pct.toFixed(1)}%</span>
+        <span className="mono text-xs font-bold text-text">{pct.toFixed(1).replace(".", ",")}%</span>
       </div>
       <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
         <motion.div

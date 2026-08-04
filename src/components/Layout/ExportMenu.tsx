@@ -16,6 +16,8 @@ interface ExportMenuProps {
 export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -23,7 +25,10 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Escape") {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
     }
     document.addEventListener("mousedown", onPointerDown)
     document.addEventListener("keydown", onKey)
@@ -31,6 +36,10 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
       document.removeEventListener("mousedown", onPointerDown)
       document.removeEventListener("keydown", onKey)
     }
+  }, [open])
+
+  useEffect(() => {
+    if (open) menuRef.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus()
   }, [open])
 
   const actions = [
@@ -42,6 +51,7 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
   return (
     <div className="relative" ref={rootRef}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
@@ -56,7 +66,9 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={menuRef}
             role="menu"
+            aria-label="Options d'export"
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
@@ -70,6 +82,7 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
                 role="menuitem"
                 onClick={() => {
                   setOpen(false)
+                  triggerRef.current?.focus()
                   a.onClick()
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-glass-hover transition-colors"

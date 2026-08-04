@@ -9,7 +9,11 @@ const AV_IR_ALLOWANCE_SINGLE = 4_600
 const AV_IR_ALLOWANCE_COUPLE = 9_200
 const AV_PREMIUM_CAP_SINGLE = 150_000
 const AV_PREMIUM_CAP_COUPLE = 300_000
-const PER_EXIT_ABATTEMENT = 0.1
+
+// PER individuel : à la sortie en capital, les versements volontaires
+// déduits sont imposés au barème sur 100 % de leur montant, sans abattement
+// de 10 %. Les gains relèvent du PFU (règles simplifiées de projection).
+const PER_SOCIAL_RATE = 0.172
 
 export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
   {
@@ -71,14 +75,18 @@ export function computeTaxBreakdown(
   const ctoTaxMode = opts.ctoTaxMode ?? "pfu"
   const notes: string[] = []
   let taxableGains = grossGains
+  let taxableContributions = 0
+  let contributionsTax = 0
   let socialCharges = 0
   let incomeTax = 0
   let flatTax = 0
 
-  if (grossGains <= 0 || envelope === "none") {
+  if ((grossGains <= 0 && envelope !== "per") || envelope === "none") {
     return {
       grossGains,
       taxableGains: 0,
+      taxableContributions: 0,
+      contributionsTax: 0,
       socialCharges: 0,
       incomeTax: 0,
       flatTax: 0,
@@ -154,30 +162,34 @@ export function computeTaxBreakdown(
   }
 
   if (envelope === "per") {
-    socialCharges = grossGains * SOCIAL_TAX_RATE
-    // Sortie en capital modélisée simplement : les gains sont taxés à la TMI
-    // après abattement de 10 % (l'économie d'impôt à l'entrée est déjà
-    // réinvestie dans la simulation, à hauteur de TMI × versements).
-    incomeTax = Math.max(0, grossGains * (1 - PER_EXIT_ABATTEMENT)) * tmi
+    // Le moteur passe la base de versements personnels dans contributionBase.
+    // Les versements PER déduits à l'entrée sont taxés séparément à la TMI,
+    // sans abattement de 10 % et sans cotisations sociales. Les gains sont
+    // soumis au PFU dans cette projection (12,8 % IR + 17,2 % sociaux).
+    taxableContributions = Math.max(0, contributionBase)
+    contributionsTax = taxableContributions * tmi
+    socialCharges = grossGains * PER_SOCIAL_RATE
+    incomeTax = grossGains * PFU_INCOME_RATE
+    flatTax = grossGains * (PER_SOCIAL_RATE + PFU_INCOME_RATE)
     notes.push(
-      `PER : vos versements sont déduits de vos revenus imposables (économie d'impôt de ${(tmi * 100).toFixed(
+      `PER : les versements déduits à l'entrée (${(tmi * 100).toFixed(
         0,
-      )} % réinvestie dans la simulation). À la sortie, les gains sont taxés à votre TMI de ${(tmi * 100).toFixed(
-        0,
-      )} % après un abattement de 10 %.`,
+      )} % de TMI) sont imposés à la sortie sur 100 % du capital correspondant, sans abattement de 10 %. Les gains sont modélisés au PFU (12,8 % + 17,2 %).`,
     )
   }
 
-  const exitTax = socialCharges + incomeTax
+  const exitTax = socialCharges + incomeTax + contributionsTax
   return {
     grossGains: roundCent(grossGains),
     taxableGains: roundCent(taxableGains),
+    taxableContributions: roundCent(taxableContributions),
+    contributionsTax: roundCent(contributionsTax),
     socialCharges: roundCent(socialCharges),
     incomeTax: roundCent(incomeTax),
     flatTax: roundCent(flatTax),
-    netGains: roundCent(Math.max(0, grossGains - exitTax)),
+    netGains: roundCent(Math.max(0, grossGains - socialCharges - incomeTax)),
     totalTax: roundCent(exitTax),
-    effectiveRate: grossGains > 0 ? exitTax / grossGains : 0,
+    effectiveRate: grossGains + taxableContributions > 0 ? exitTax / (grossGains + taxableContributions) : 0,
     notes,
   }
 }

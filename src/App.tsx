@@ -120,8 +120,8 @@ export default function App() {
 
   const rowsA = useMemo(() => (comparing && frozenA ? runSimulation(frozenA) : null), [comparing, frozenA])
   const comparison = useMemo(
-    () => (comparing && rowsA && rows ? compareScenarios(rowsA, rows) : null),
-    [comparing, rowsA, rows],
+    () => (comparing && rowsA && rows ? compareScenarios(rowsA, rows, activeInputs.showReal) : null),
+    [comparing, rowsA, rows, activeInputs.showReal],
   )
 
   /**

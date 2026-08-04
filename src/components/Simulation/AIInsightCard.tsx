@@ -32,13 +32,23 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
       `${kpis.gainsPct.toFixed(0)}% de votre capital provient de la croissance de la bourse, pas de votre épargne.`,
     )
   }
+  // Le XIRR est un taux NOMINAL : le qualifier de « réel » le confondait avec
+  // la carte « Après inflation » (audit v5.6.2). On compare au brut de
+  // référence (10,07 %/an MSCI World) et on n'alerte que sur un écart qui a du
+  // sens — avant, « 10,1 % dépasse 10,1 % » s'affichait avec les réglages par
+  // défaut.
   const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
-  // Référence de comparaison : la moyenne du MSCI World appliquée par la
-  // courbe lissée du Simulateur (v5.6.0).
   const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
-  if (effectiveReturn > datasetAvg) {
+  const gap = Math.abs(effectiveReturn - datasetAvg)
+  if (gap > 0.5) {
     insights.push(
-      `Votre rendement réel de ${effectiveReturn.toFixed(1)}% (XIRR, versements inclus) dépasse la moyenne de référence de ${datasetAvg.toFixed(1)}%/an.`,
+      effectiveReturn > datasetAvg
+        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) dépasse la moyenne de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
+        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) reste sous la moyenne de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
+    )
+  } else if (effectiveReturn > 0) {
+    insights.push(
+      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) est proche de la moyenne de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
     )
   }
   if (insights.length === 0) {

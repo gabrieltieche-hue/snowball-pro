@@ -112,7 +112,14 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
   }))
   const avgReturn = average(returns)
   const inflation = INFLATION_SERIES[0] ?? 0.021
-  const netReturn = index === "msci-world" ? 0.0822 : Math.max(0, (1 + avgReturn) / (1 + inflation) - 1)
+  // Le rendement réel composé doit partir de la moyenne géométrique de la
+  // série, puis retirer l'inflation. La moyenne arithmétique (10,07 % pour le
+  // MSCI World) décrit le taux moyen d'une année, pas le pouvoir d'achat
+  // effectivement multiplié sur toute la période. Ainsi 8,22 % est bien le
+  // composé nominal et environ 5,99 % le composé réel à 2,1 % d'inflation.
+  const growthFactor = returns.reduce((factor, yearlyReturn) => factor * Math.max(0, 1 + yearlyReturn), 1)
+  const geometricReturn = returns.length > 0 ? Math.pow(growthFactor, 1 / returns.length) - 1 : 0
+  const netReturn = (1 + geometricReturn) / (1 + inflation) - 1
   return {
     id: index,
     name: (
@@ -125,12 +132,8 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
         gold: "Gold",
       } as Record<HistoricalIndex, string>
     )[index],
-    // MSCI World : la moyenne arithmétique de la série EUR 1970-2025
-    // (≈ 10,07 %/an) est calculée — plus de valeur codée en dur qui divergeait
-    // des rendements réellement rejoués. Le rendement net d'inflation (8,22
-    // %/an) reste la figure de référence communiquée. Les autres indices
-    // gardent leur moyenne calculée ; leur rendement net est dérivé à
-    // l'inflation forfaitaire de 2,1 %.
+    // La moyenne arithmétique sert à la courbe lissée ; netReturn est le
+    // rendement composé réel de la série, après inflation forfaitaire.
     avgReturn,
     netReturn,
     volatility: standardDeviation(returns),

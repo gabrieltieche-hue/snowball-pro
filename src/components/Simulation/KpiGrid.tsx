@@ -119,7 +119,7 @@ export function KpiGrid({ kpis }: KpiGridProps) {
           const val = kpis[kpi.key]
           const display = kpi.currency
             ? fmtCurrency(val as number)
-            : `${(val as number).toFixed(kpi.digits ?? 1)}${kpi.suffix}`
+            : `${(val as number).toFixed(kpi.digits ?? 1).replace(".", ",")}${kpi.suffix}`
           return (
             <div
               key={kpi.key}

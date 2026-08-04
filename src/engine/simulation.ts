@@ -83,12 +83,19 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
     const dateKey = `${startYear}-${month}`
     let date = dateCache.get(dateKey)
     if (date === undefined) {
-      date = new Date(startYear, month, 1).toLocaleDateString("fr-FR", {
+      // CORRECTIF audit v5.6.2 : month est le mois CUMULÉ depuis le départ
+      // (12 = fin de la 1re année). new Date(startYear, 12, 1) rendait
+      // « janv. 2027 » pour la fin de l'année 1 — un décalage d'un mois dans
+      // le CSV et le calendrier des flux (déc. 2026 attendu).
+      date = new Date(startYear, Math.max(0, month - 1), 1).toLocaleDateString("fr-FR", {
         month: "short",
         year: "numeric",
       })
       dateCache.set(dateKey, date)
     }
+    // En cas de perte, les gains sont nuls mais le capital PER correspondant
+    // aux versements déductibles reste imposable à la sortie. Pour les autres
+    // enveloppes, seule la plus-value positive constitue la base fiscale.
     const grossGains = Math.max(0, capital - investedNom)
     const tax = computeTaxBreakdown(
       grossGains,

@@ -11,8 +11,10 @@ import { GoalTab } from "../components/Tabs/GoalTab"
 import { MonteCarloPanel } from "../components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "../components/Tabs/RenteRetraiteTab"
 import { TerminalHistogram } from "../components/Simulation/TerminalHistogram"
+import { CashflowCalendar } from "../components/Simulation/CashflowCalendar"
 import { SliderInput } from "../components/shared/SliderInput"
-import { DEFAULT_INPUTS, runSimulation, runDecumulation, buildTerminalHistogram } from "../engine"
+import { SmartInput } from "../components/shared/SmartInput"
+import { DEFAULT_INPUTS, fmtCompact, fmtCurrency, runSimulation, runDecumulation, buildTerminalHistogram, solveGoal } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
@@ -326,7 +328,11 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
     expect(text).toContain("Rendement lissé")
     expect(text).toContain("10,07 %/an brut")
-    expect(text).toContain("net d'inflation")
+    // Audit v5.6.2 : la note distingue la moyenne ARITHMÉTIQUE brute (courbe
+    // lissée) du rendement réel composé historique — les deux stats de la
+    // série sont désormais explicitement séparées, plus de « la courbe fait
+    // 5,99 % réel » sous-entendu.
+    expect(text).toContain("réel composé sur 1970-2025")
     // Le curseur de rendement de la bourse a disparu de la sidebar.
     expect(screen.queryByRole("slider", { name: /rendement annuel de la bourse/i })).not.toBeInTheDocument()
   })
@@ -601,6 +607,74 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
     expect(screen.getByText(/intervalle de confiance à 95 %/i)).toBeInTheDocument()
     // L'histogramme des capitaux finaux est présent
     expect(screen.getByText(/distribution des capitaux finaux/i)).toBeInTheDocument()
+  })
+})
+
+describe("audit v5.6.3 — SmartInput : retour visible sur saisie invalide ou hors bornes", () => {
+  it("rejette une valeur négative avec un message (plus de reset silencieux)", () => {
+    const onChange = vi.fn()
+    render(<SmartInput value={1000} onChange={onChange} />)
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "-500" } })
+    fireEvent.blur(input)
+    // La valeur négative n'est PAS appliquée…
+    expect(onChange).not.toHaveBeenCalled()
+    // …et l'utilisateur voit pourquoi.
+    expect(screen.getByRole("alert")).toHaveTextContent(/valeur négative/i)
+  })
+
+  it("clamp une valeur hors borne haute avec un message explicite (plus de divergence silencieuse)", () => {
+    const onChange = vi.fn()
+    render(<SmartInput value={1000} onChange={onChange} max={100_000_000} />)
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "999 999 999" } })
+    fireEvent.blur(input)
+    // La valeur calculée est la borne, pas la saisie…
+    expect(onChange).toHaveBeenCalledWith(100_000_000)
+    // …le message l'explique.
+    expect(screen.getByRole("alert")).toHaveTextContent(/limité au maximum/i)
+  })
+
+  it("laisse passer une saisie valide sans message", () => {
+    const onChange = vi.fn()
+    render(<SmartInput value={1000} onChange={onChange} max={100_000_000} />)
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "25000" } })
+    fireEvent.blur(input)
+    expect(onChange).toHaveBeenCalledWith(25000)
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+  })
+})
+
+describe("audit v5.6.3 — GoalTab : le taux courant du curseur est une ligne du tableau", () => {
+  it("la carte principale et la ligne « 10,07 % » du tableau affichent le MÊME montant", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    const { container } = render(
+      <GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />,
+    )
+    const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    // La ligne du taux courant (10,07 %) existe dans le tableau…
+    expect(text).toContain("10,07%")
+    // …et son épargne mensuelle est exactement celle de la carte principale.
+    const expected = solveGoal(DEFAULT_INPUTS).pmtPerMonth
+    const amount = fmtCurrency(expected ?? 0).replace(/[\u202F\u00A0]/g, " ")
+    const occurrences = text.split(amount).length - 1
+    expect(occurrences).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe("audit v5.6.3 — CashflowCalendar : capital initial réconcilié avec « Total épargné »", () => {
+  it("ajoute la ligne « Départ » et totalise les versements = investedNom final", () => {
+    const rows = runSimulation({ ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 25 })
+    render(<CashflowCalendar rows={rows} showReal={false} />)
+    // Déplie le calendrier
+    fireEvent.click(screen.getByRole("button", { name: /calendrier des flux/i }))
+    // La ligne « Capital initial » est présente (getAllByText : le matcher
+    // remonte aussi aux ancêtres <tr>/<table> qui contiennent le texte)
+    expect(screen.getAllByText("Capital initial").length).toBeGreaterThan(0)
+    // Le total des versements affiché = investedNom final (comme la carte)
+    const last = rows[rows.length - 1]
+    expect(screen.getByText(fmtCompact(last.investedNom))).toBeInTheDocument()
   })
 })
 

@@ -62,7 +62,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       nominal: taxAmount,
       real: taxAmount * factor,
       color: "var(--color-value-red)",
-      sub: "prélevés sur vos gains",
+      sub: envelope === "per" ? "impôt théorique sur gains + versements" : "impôt théorique à la liquidation",
     },
     {
       label: "Total épargné",

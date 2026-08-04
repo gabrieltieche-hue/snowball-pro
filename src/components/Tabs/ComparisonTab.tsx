@@ -24,8 +24,10 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
         // valeur connue au lieu d'un faux « 0 » (chute à zéro trompeuse).
         const aRef = a ?? rowsA[rowsA.length - 1]
         const bRef = b ?? rowsB[rowsB.length - 1]
-        const aVal = aRef?.nominal ?? 0
-        const bVal = bRef?.nominal ?? 0
+        const factorOf = (row: YearRow | undefined) =>
+          inputs.showReal && row && row.nominal > 0 ? row.real / row.nominal : 1
+        const aVal = (aRef?.taxNet ?? 0) * factorOf(aRef)
+        const bVal = (bRef?.taxNet ?? 0) * factorOf(bRef)
         return {
           year: a?.year ?? b?.year ?? i,
           A: aVal,
@@ -33,12 +35,12 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
           diff: bVal - aVal,
         }
       }),
-    [rowsA, rowsB, maxYears],
+    [rowsA, rowsB, maxYears, inputs.showReal],
   )
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <ComparisonSummary comparison={comparison} />
+      <ComparisonSummary comparison={comparison} showReal={inputs.showReal} />
       <ComparisonChart rowsA={rowsA} rowsB={rowsB} inputs={inputs} darkMode={darkMode} />
 
       <div className="glass rounded-3xl overflow-hidden">

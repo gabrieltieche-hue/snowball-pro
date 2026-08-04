@@ -2,8 +2,11 @@ export function fmtCurrency(value: number): string {
   const n = Math.abs(value) < 0.005 ? 0 : value
   const abs = Math.abs(n)
   const sign = n < 0 ? "-" : ""
-  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2)} Md€`
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)} M€`
+  // Séparateur décimal français (virgule) partout, y compris M€/Md€ : avant
+  // l'audit v5.6.2, « 1.00 M€ » (point) côtoyait « 1 000 000 € » et « 10,1 % »
+  // à virgule — incohérent dans une app en français.
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2).replace(".", ",")} Md€`
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2).replace(".", ",")} M€`
   if (abs >= 10_000) return `${sign}${Math.round(abs).toLocaleString("fr-FR")} €`
   return `${sign}${abs.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
 }
@@ -11,14 +14,24 @@ export function fmtCurrency(value: number): string {
 export function fmtCompact(value: number): string {
   const abs = Math.abs(value)
   const sign = value < 0 ? "-" : ""
-  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(1)}Md`
-  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(1).replace(".", ",")}Md`
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1).replace(".", ",")}M`
   if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`
   return `${sign}${Math.round(abs)}`
 }
 
 export function fmtPercent(value: number, digits = 1): string {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`
+  return `${value >= 0 ? "+" : ""}${value.toFixed(digits).replace(".", ",")}%`
+}
+
+/**
+ * Formate un nombre avec la virgule décimale française (12.5 → « 12,5 »).
+ * Audit v5.6.3 : les derniers affichages utilisaient encore toFixed() brut
+ * (« 43.3 % », « 0.00%/an », « TAUX 2.5 % ») — helper unique pour ne plus
+ * jamais laisser un point décimal anglais dans l'interface.
+ */
+export function fmtDecimal(value: number, digits = 1): string {
+  return value.toFixed(digits).replace(".", ",")
 }
 
 /**

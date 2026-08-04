@@ -21,6 +21,18 @@ const DIFFICULTY_META: Record<GoalDifficulty, { label: string; tone: string }> =
 
 const COMPARISON_RATES = [3, 5, 7, 10, 12]
 
+/**
+ * Libellé de taux français sans zéros inutiles : 10 → « 10% », 10.07 →
+ * « 10,07% », 12.5 → « 12,5% ». Audit v5.6.3 : avant, le tableau arrondissait
+ * les taux à l'entier (« 10 % ») pendant que le calcul principal utilisait
+ * 10,07 % — deux chiffres différents pour la même étiquette. La ligne du taux
+ * COURANT affiche désormais sa valeur exacte.
+ */
+const fmtRate = (r: number): string => {
+  const s = r.toFixed(2).replace(".", ",").replace(/0+$/, "").replace(/,$/, "")
+  return `${s}%`
+}
+
 export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
   const goalResult = useMemo(() => solveGoal(inputs), [inputs])
   const lastRow = rows[rows.length - 1]
@@ -76,6 +88,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             max={20}
             step={0.1}
             color="#6366F1"
+            hardMin={-95}
+            hardMax={1000}
+            allowNegative
             help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 10,07 %/an brut). L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation."
             suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
             onChange={v => updateInput("goalAnnualReturn", v / 100)}
@@ -120,7 +135,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             <p className="text-[11px] text-text-muted leading-relaxed">
               Pour atteindre <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
               <strong className="text-text">{inputs.goalDuration} ans</strong> avec un rendement de{" "}
-              <strong className="text-text">{(inputs.goalAnnualReturn * 100).toFixed(0)}%</strong>/an
+              <strong className="text-text">{fmtRate(inputs.goalAnnualReturn * 100)}</strong>/an
               {inputs.goalCapital > 0 && ` et un capital de départ de ${fmtCurrency(inputs.goalCapital)}`}.
             </p>
             {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 && (
@@ -138,7 +153,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               📈 Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois d'épargne)
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
-              {goalResult.requiredRate !== null ? `${goalResult.requiredRate.toFixed(2)}%` : "Impossible"}
+              {goalResult.requiredRate !== null
+                ? `${goalResult.requiredRate.toFixed(2).replace(".", ",")}%`
+                : "Impossible"}
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
               Rendement de la bourse nécessaire chaque année pour obtenir{" "}
@@ -183,17 +200,25 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 </tr>
               </thead>
               <tbody>
-                {COMPARISON_RATES.map(rr => {
-                  const res = solveGoal({ ...inputs, goalAnnualReturn: rr / 100 })
-                  if (res.pmtPerMonth === null || res.pmtPerMonth <= 0) return null
-                  const isCurrent = Math.abs(inputs.goalAnnualReturn * 100 - rr) < 0.01
-                  const gains = res.totalGains ?? 0
-                  const totalPaid = res.totalInvested ?? 0
-                  return (
-                    <tr key={rr} className={cn("border-b border-border/30", isCurrent && "bg-[#6366F1]/10")}>
-                      <td className={cn("py-2.5 px-3 font-bold", isCurrent ? "text-[#6366F1]" : "text-text")}>
-                        {rr}%{isCurrent && " ←"}
-                      </td>
+                {/* Le taux COURANT du curseur est toujours dans le tableau avec
+                    sa valeur exacte (10,07 % et pas « 10 % ») : le montant de
+                    la carte principale se retrouve à l'identique dans la ligne
+                    correspondante (audit v5.6.3 — avant, deux chiffres pour la
+                    même étiquette). */}
+                {Array.from(new Set(COMPARISON_RATES.concat([inputs.goalAnnualReturn * 100])))
+                  .sort((a, b) => a - b)
+                  .map(rr => {
+                    const res = solveGoal({ ...inputs, goalAnnualReturn: rr / 100 })
+                    if (res.pmtPerMonth === null || res.pmtPerMonth <= 0) return null
+                    const isCurrent = Math.abs(inputs.goalAnnualReturn * 100 - rr) < 0.01
+                    const gains = res.totalGains ?? 0
+                    const totalPaid = res.totalInvested ?? 0
+                    return (
+                      <tr key={rr} className={cn("border-b border-border/30", isCurrent && "bg-[#6366F1]/10")}>
+                        <td className={cn("py-2.5 px-3 font-bold", isCurrent ? "text-[#6366F1]" : "text-text")}>
+                          {fmtRate(rr)}
+                          {isCurrent && " ←"}
+                        </td>
                       <td className="py-2.5 px-3 mono text-primary font-semibold">{fmtCurrency(res.pmtPerMonth)}</td>
                       <td className="py-2.5 px-3 mono text-text">{fmtCurrency(totalPaid)}</td>
                       <td className={cn("py-2.5 px-3 mono font-semibold", gains > 0 ? "text-primary" : "text-danger")}>

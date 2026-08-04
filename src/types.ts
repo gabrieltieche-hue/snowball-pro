@@ -143,6 +143,9 @@ export interface ScenarioComparison {
 export interface TaxBreakdown {
   grossGains: number
   taxableGains: number
+  /** Versements PER déductibles taxés à la sortie (hors cotisations sociales). */
+  taxableContributions: number
+  contributionsTax: number
   socialCharges: number
   incomeTax: number
   flatTax: number

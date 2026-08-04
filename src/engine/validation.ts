@@ -32,7 +32,7 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
   if (inputs.capitalInitial > 100_000_000) {
     errors.push({
       field: "capitalInitial",
-      message: "Capital initial très élevé (>100M€)",
+      message: "Capital initial très élevé : limité à 100 M€ pour le calcul",
       severity: "warning",
       value: inputs.capitalInitial,
       max: 100_000_000,
@@ -47,13 +47,13 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
       value: inputs.monthlyPayment,
     })
   }
-  if (inputs.monthlyPayment > 100_000) {
+  if (inputs.monthlyPayment > 200_000) {
     errors.push({
       field: "monthlyPayment",
-      message: "Versement mensuel très élevé (>100k€)",
+      message: "Versement mensuel très élevé : limité à 200 k€/mois pour le calcul",
       severity: "warning",
       value: inputs.monthlyPayment,
-      max: 100_000,
+      max: 200_000,
     })
   }
 
@@ -69,7 +69,7 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
   if (inputs.duration > 80) {
     errors.push({
       field: "duration",
-      message: "La durée maximale est de 80 ans",
+      message: "La durée maximale est de 80 ans : valeur limitée pour le calcul",
       severity: "error",
       value: inputs.duration,
       max: 80,
@@ -151,7 +151,7 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
   if (inputs.mcRuns < 100 || inputs.mcRuns > 10000) {
     errors.push({
       field: "mcRuns",
-      message: "Le nombre de simulations doit être entre 100 et 10 000",
+      message: "Nombre de simulations limité à la fourchette 100-10 000 pour le calcul",
       severity: "warning",
       value: inputs.mcRuns,
       min: 100,

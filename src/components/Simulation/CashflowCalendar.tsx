@@ -22,22 +22,37 @@ interface FlowLine {
 
 export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarProps) {
   const [open, setOpen] = useState(false)
-  const flows: FlowLine[] = rows.map(r => {
-    // Déflation PAR ANNÉE : chaque flux est converti avec le facteur de
-    // l'année où il a eu lieu (real/nominal de cette ligne), pas un facteur
-    // unique de fin de projection.
-    const factor = showReal ? deflationFactor(r) : 1
-    return {
-      year: r.year,
-      date: r.date,
-      versements: r.annualContribution * factor,
-      frais: r.fees * factor,
-      // Impôts de LIQUIDATION (exit tax = nominal − taxNet), MÊME base que la
-      // carte « Impôts », le camembert, le graphique et le panneau fiscal.
-      impots: Math.max(0, r.nominal - r.taxNet) * factor,
-      net: r.taxNet * factor,
-    }
-  })
+  // Le capital initial est un flux de départ que les lignes annuelles
+  // n'incluent pas : sans lui, le total « Versements » du calendrier différait
+  // de la carte « Total épargné » (qui compte investiNom = capital initial +
+  // épargne mensuelle). La ligne « Capital initial » réconcilie les deux et
+  // remplace la ligne de base redondante (année 0 : zéro flux, zéro croissance)
+  // (audit v5.6.3 — BUG #6).
+  const initialCapital =
+    rows.length > 0 ? Math.max(0, (rows[0]?.investedNom ?? 0) - (rows[0]?.annualContribution ?? 0)) : 0
+  const flows: FlowLine[] = [
+    ...(initialCapital > 0
+      ? [{ year: 0, date: "Aujourd'hui", versements: initialCapital, frais: 0, impots: 0, net: initialCapital }]
+      : []),
+    ...rows
+      .filter(r => r.year > 0)
+      .map(r => {
+        // Déflation PAR ANNÉE : chaque flux est converti avec le facteur de
+        // l'année où il a eu lieu (real/nominal de cette ligne), pas un facteur
+        // unique de fin de projection.
+        const factor = showReal ? deflationFactor(r) : 1
+        return {
+          year: r.year,
+          date: r.date,
+          versements: r.annualContribution * factor,
+          frais: r.fees * factor,
+          // Impôts de LIQUIDATION (exit tax = nominal − taxNet), MÊME base que la
+          // carte « Impôts », le camembert, le graphique et le panneau fiscal.
+          impots: Math.max(0, r.nominal - r.taxNet) * factor,
+          net: r.taxNet * factor,
+        }
+      }),
+  ]
 
   const totals = flows.reduce(
     (acc, f) => ({
@@ -54,6 +69,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
+        aria-controls="cashflow-calendar-content"
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-glass-hover transition-colors"
       >
         <span className="text-xs font-bold flex items-center gap-2">
@@ -62,7 +78,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
         <ChevronDown size={14} className={cn("text-text-dim transition-transform", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="px-5 pb-5 animate-fade-in">
+        <div id="cashflow-calendar-content" className="px-5 pb-5 animate-fade-in">
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -78,9 +94,11 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                 </tr>
               </thead>
               <tbody>
-                {flows.map(row => (
-                  <tr key={row.year} className="border-b border-border/30 hover:bg-glass transition-colors">
-                    <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
+                {flows.map((row, i) => (
+                  <tr key={`${row.year}-${i}`} className="border-b border-border/30 hover:bg-glass transition-colors">
+                    <td className="py-2 px-3 text-text-dim whitespace-nowrap">
+                      {row.year === 0 ? "Capital initial" : `Année ${row.year}`}
+                    </td>
                     <td className="py-2 px-3 text-text-dim whitespace-nowrap">{row.date}</td>
                     <td className="py-2 px-3 mono text-text">{fmtCompact(row.versements)}</td>
                     <td className="py-2 px-3 mono text-danger">{fmtCompact(row.frais)}</td>
@@ -103,8 +121,9 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
             </table>
           </div>
           <p className="text-[10px] text-text-dim italic mt-2">
-            Les impôts cumulés sont une estimation de liquidation théorique (fiscalité de l'année courante) — ils ne
-            sont réellement dus qu'à la revente.
+            « Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à
+            l'impôt théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés
+            réellement payés et ne deviennent dus qu'à la revente.
           </p>
         </div>
       )}

@@ -4,6 +4,37 @@
 
 ---
 
+## v5.6.3 — Audit complet qualité-UX-logique : virgule française partout, cohérence des chiffres, saisies bornées
+
+Audit complet (navigateur réel + lecture moteur) : 8 constats corrigés + chasse aux virgules décimales anglaises résiduelles. Bump 5.6.1 → **5.6.3**.
+
+### 🇫🇷 Virgule décimale française partout (BUG #1-4 + chasse)
+
+- **Nouveau helper `fmtDecimal`** (`engine/formatting.ts`) : `12.5 → « 12,5 »` — source unique pour ne plus jamais laisser un point décimal anglais dans l'interface.
+- **`MonteCarloPanel`** : « Précision : 43,3 % ± 1,0 pt » (au lieu de « 43.3 % ± 1.0 pt »).
+- **`ExpenseForm`** : suffixes « 0,00%/an », « 0,00% par versement » (×4).
+- **`CapitalAllocation`** : légende du camembert « 27,2 % / 72,8 % / 0,0 % ».
+- **`RenteRetraiteTab`** : badges « TAUX 2,5 % », « TAUX 5,5 % » et tooltips des années de stress test.
+- **Chasse (GO DEEPER)** : `MethodologyPanel` (inflation et frais affichés avec virgule).
+
+### 📊 Cohérence des chiffres (BUG #5-6)
+
+- **Objectif inversé — le taux courant devient une ligne du tableau** : la ligne « 10,07 % ← » (valeur exacte du curseur) affiche exactement le même montant que la carte principale — fini le « 1 142,34 € » à côté d'un « 10 % → 1 150,04 € » pour la même étiquette. Le libellé des cartes passe aussi en « 10,07%/an ».
+- **Calendrier des flux — capital initial réconcilié** : nouvelle ligne « Capital initial / Aujourd'hui » en tête (remplace la ligne de base redondante « Année 0 ») ; le total « Versements » égale désormais la carte « Total épargné » (investiNom = capital initial + épargne mensuelle).
+
+### ⌨️ Saisie directe avec retour visible (BUG #7-8)
+
+- **`SmartInput`** : une valeur négative n'est plus rejetée en silence — message « Valeur négative non acceptée » + bordure rouge (auto-effacé après 3 s) ; les touches `-`/`+`/`e` sont bloquées en amont.
+- **Clamp bornes réelles** : `SliderInput` accepte `hardMin`/`hardMax`/`allowNegative` → la saisie directe est clampée AU MÊME MONTANT que le calcul (ex. 999 999 999 € → « Limité au maximum (100 000 000) ») — plus de divergence silencieuse champ affiché / simulation. Plombé sur capital (100 M€), mensualité (200 k€), durée (80 ans), inflation (−10 % à 100 %, négatifs autorisés), simulations MC (100-10 000), TMI, années PEA/AV (50), frais (50 %), rendement Objectif.
+- **`validation.ts`** : messages explicites (« limité à 100 M€ pour le calcul »…) et seuil mensualité aligné sur le clamp réel (200 k€).
+
+### 🧪 Tests & gate
+
+- **+6 tests** (218 au total) : `fmtDecimal`, SmartInput (négatif rejeté avec message, clamp max, saisie valide), GoalTab (ligne « 10,07 % » = carte principale), CashflowCalendar (ligne « Capital initial » + totaux = investedNom).
+- Gate : typecheck ✓ lint ✓ **218/218 tests** ✓ + vérification navigateur des 8 fixes.
+
+---
+
 ## Infra — Projet Vercel renommé : nouvelle URL de production
 
 Le projet Vercel a été renommé de `v4` vers **`snowball-pro`** (API REST Vercel + redéploiement `vercel --prod`), sans changement de code ni de version. Aucun bump de version : 5.5.1 conservée.

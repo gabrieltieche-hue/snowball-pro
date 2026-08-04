@@ -30,7 +30,7 @@ import {
   ReferenceLine,
 } from "recharts"
 
-import { fmtCurrency, fmtCompact, runStressTest, STRESS_TEST_SCENARIOS } from "../../engine"
+import { fmtCurrency, fmtCompact, fmtDecimal, runStressTest, STRESS_TEST_SCENARIOS } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
@@ -255,7 +255,7 @@ export function RenteRetraiteTab({
                 >
                   {inputs.withdrawalModel === "custom"
                     ? "FIXE"
-                    : `${(selectedModel.rate * 100).toFixed(1).replace(/\.0$/, "")} %`}
+                    : `${fmtDecimal(selectedModel.rate * 100, 1).replace(/,0$/, "")} %`}
                 </span>
               </div>
 
@@ -566,7 +566,7 @@ export function RenteRetraiteTab({
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] text-text-dim uppercase tracking-wider">
-                    Taux {(rate * 100).toFixed(1).replace(/\.0$/, "")} %
+                    Taux {fmtDecimal(rate * 100, 1).replace(/,0$/, "")} %
                   </span>
                   {isCurrent && (
                     <span className="text-[10px] mono font-bold text-primary uppercase tracking-wider">Actuel</span>
@@ -602,7 +602,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function fmtPercent(v: number): string {
-  return `${(v * 100).toFixed(1).replace(/\.0$/, "")} %`
+  return `${fmtDecimal(v * 100, 1).replace(/,0$/, "")} %`
 }
 
 function ResultsSection({
@@ -700,6 +700,10 @@ function ResultsSection({
       </div>
 
       {/* 4 KPI cards */}
+      <p className="text-[10px] text-text-dim italic">
+        Montants en <strong className="text-text not-italic">euros courants</strong> (non corrigés de l'inflation) —
+        l'accumulation affichait les deux échelles, le décaissement est projeté en valeur nominale du compte.
+      </p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           label="Votre rente"
@@ -1134,7 +1138,7 @@ function StressTestCard({
             {result.windowReturns.map(({ year, return: r }) => (
               <span
                 key={year}
-                title={`${year} : ${(r * 100).toFixed(1)} %`}
+                title={`${year} : ${fmtDecimal(r * 100, 1)} %`}
                 className={cn(
                   "mono text-[9px] px-1 py-0.5 rounded",
                   r >= 0 ? "bg-[#4ADE80]/15 text-[#4ADE80]" : "bg-[#F87171]/15 text-[#F87171]",

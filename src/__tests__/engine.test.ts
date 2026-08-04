@@ -9,6 +9,7 @@ import {
   fmtCurrency,
   fmtCompact,
   fmtPercent,
+  fmtDecimal,
   parseCurrencyInput,
   escapeCsvCell,
   computeTaxBreakdown,
@@ -123,8 +124,9 @@ describe("fmtCurrency", () => {
   it("formats values correctly", () => {
     expect(fmtCurrency(0)).toBe("0,00 €")
     expect(fmtCurrency(1500)).toContain("€")
-    expect(fmtCurrency(1_500_000)).toBe("1.50 M€")
-    expect(fmtCurrency(1_500_000_000)).toBe("1.50 Md€")
+    // Séparateur décimal français partout, y compris M€/Md€ (audit v5.6.2).
+    expect(fmtCurrency(1_500_000)).toBe("1,50 M€")
+    expect(fmtCurrency(1_500_000_000)).toBe("1,50 Md€")
     expect(fmtCurrency(-100)).toContain("-")
   })
 })
@@ -134,15 +136,27 @@ describe("fmtCompact", () => {
     expect(fmtCompact(0)).toBe("0")
     expect(fmtCompact(500)).toBe("500")
     expect(fmtCompact(1500)).toBe("2k")
-    expect(fmtCompact(1_500_000)).toBe("1.5M")
-    expect(fmtCompact(1_500_000_000)).toBe("1.5Md")
+    expect(fmtCompact(1_500_000)).toBe("1,5M")
+    expect(fmtCompact(1_500_000_000)).toBe("1,5Md")
   })
 })
 
 describe("fmtPercent", () => {
   it("formats percentages with sign", () => {
-    expect(fmtPercent(5.5)).toBe("+5.5%")
-    expect(fmtPercent(-3.2)).toBe("-3.2%")
+    // Séparateur décimal français (virgule) : audit v5.6.2 — « +5.5% » à
+    // l'anglaise côtoyait « 10,07 % » à la française dans l'interface.
+    expect(fmtPercent(5.5)).toBe("+5,5%")
+    expect(fmtPercent(-3.2)).toBe("-3,2%")
+  })
+})
+
+describe("fmtDecimal — virgule décimale française partout (audit v5.6.3)", () => {
+  it("remplace le point décimal anglais par la virgule", () => {
+    expect(fmtDecimal(43.3)).toBe("43,3")
+    expect(fmtDecimal(0.4, 1)).toBe("0,4")
+    expect(fmtDecimal(12.5, 1)).toBe("12,5")
+    expect(fmtDecimal(0.004, 2)).toBe("0,00")
+    expect(fmtDecimal(10, 1)).toBe("10,0")
   })
 })
 
@@ -361,6 +375,17 @@ describe("runSimulation", () => {
     expect(rows[0].date.startsWith("janv.")).toBe(true)
   })
 
+  it("les dates de fin d'année tombent en DÉCEMBRE (pas de décalage d'un mois)", () => {
+    // Audit v5.6.2 : month était passé brut à new Date(startYear, month, 1),
+    // donc month=12 (fin de la 1re année) rendait « janv. 2027 » au lieu de
+    // « déc. 2026 » — le CSV et le calendrier des flux étaient décalés d'un
+    // mois sur CHAQUE ligne annuelle.
+    const rows = runSimulation(baseInputs)
+    expect(rows[1].date.startsWith("déc.")).toBe(true)
+    expect(rows[5].date.startsWith("déc.")).toBe(true)
+    expect(rows[rows.length - 1].date.startsWith("déc.")).toBe(true)
+  })
+
   it("capital grows over time", () => {
     const rows = runSimulation(baseInputs)
     expect(rows[rows.length - 1].nominal).toBeGreaterThan(rows[0].nominal)
@@ -452,21 +477,32 @@ describe("getHistoricalDataset", () => {
     expect(dataset.volatility).toBeGreaterThan(0)
   })
 
-  it("MSCI World : moyenne arithmétique calculée de la série (≈ 10,07 %/an brut, 8,22 %/an net d'inflation)", () => {
+  it("MSCI World : moyenne arithmétique brute et rendement réel composé calculés", () => {
     const dataset = getHistoricalDataset("msci-world")
     // La moyenne affichée est désormais CALCULÉE sur la série EUR 1970-2025
     // (≈ 10,07 %/an) — plus de valeur codée en dur divergente des rendements
-    // réellement rejoués. Le net (8,22 %/an) reste la référence communiquée.
+    // réellement rejoués. Le net est un rendement composé réel après inflation.
     const expectedAvg = dataset.years.reduce((s, y) => s + y.return, 0) / dataset.years.length
     expect(dataset.avgReturn).toBeCloseTo(expectedAvg, 10)
     expect(dataset.avgReturn).toBeCloseTo(0.1007, 3)
-    expect(dataset.netReturn).toBeCloseTo(0.0822, 4)
+    const geometric =
+      Math.pow(
+        dataset.years.reduce((factor, y) => factor * (1 + y.return), 1),
+        1 / dataset.years.length,
+      ) - 1
+    expect(dataset.netReturn).toBeCloseTo((1 + geometric) / 1.021 - 1, 10)
+    expect(dataset.netReturn).toBeLessThan(dataset.avgReturn)
     expect(dataset.volatility).toBeGreaterThan(0)
   })
 
   it("netReturn des autres indices est dérivé à l'inflation forfaitaire de 2,1 %", () => {
     const dataset = getHistoricalDataset("sp500")
-    const expectedNet = Math.max(0, (1 + dataset.avgReturn) / 1.021 - 1)
+    const geometric =
+      Math.pow(
+        dataset.years.reduce((factor, y) => factor * (1 + y.return), 1),
+        1 / dataset.years.length,
+      ) - 1
+    const expectedNet = (1 + geometric) / 1.021 - 1
     expect(dataset.netReturn).toBeCloseTo(expectedNet, 6)
   })
 })
@@ -1067,6 +1103,33 @@ describe("buildCashFlows / computeXIRR", () => {
     expect(flows).toEqual([10000])
   })
 
+  it("buildCashFlows applique le plafond PEA (150/300 k€) comme le moteur", () => {
+    // Audit v5.6.2 : sans plafond, le XIRR d'un PEA au-delà du cap comptait des
+    // versements jamais investis et sous-évaluait le rendement (6,2 % au lieu
+    // de ~10 %). Le XIRR doit refléter les flux réellement investis.
+    const solo = buildCashFlows(
+      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: false, capitalInitial: 10_000, monthlyPayment: 2000, duration: 30 },
+      2_000_000,
+    )
+    const outflowsSolo = solo.flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
+    expect(Math.abs(outflowsSolo)).toBeCloseTo(150_000, 0)
+    const couple = buildCashFlows(
+      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: true, capitalInitial: 0, monthlyPayment: 2000, duration: 30 },
+      2_000_000,
+    )
+    const outflowsCouple = couple.flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
+    expect(Math.abs(outflowsCouple)).toBeCloseTo(300_000, 0)
+  })
+
+  it("buildCashFlows : capital initial déjà au plafond PEA → aucun versement", () => {
+    const { flows } = buildCashFlows(
+      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: false, capitalInitial: 200_000, monthlyPayment: 2000, duration: 30 },
+      2_000_000,
+    )
+    const outflows = flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
+    expect(Math.abs(outflows)).toBeCloseTo(200_000, 0)
+  })
+
   it("XIRR of a pure lump sum equals the return rate", () => {
     // 1000 € pendant 2 ans, aucune épargne mensuelle → 1210 € = 10 %/an
     const xirr = computeXIRR({ ...DEFAULT_INPUTS, capitalInitial: 1000, monthlyPayment: 0, duration: 2 }, 1210)
@@ -1495,21 +1558,22 @@ describe("scénario « partir en période difficile » (v5.6.0) — krach param�
 })
 
 describe("PER — tranche marginale d'imposition (TMI)", () => {
-  it("sortie en capital : gains taxés à TMI après abattement de 10 %", () => {
-    const result = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.3 })
-    // social 17,2 % + IR = gains × (1 - 10 %) × TMI = 10000 × 0,9 × 0,3
+  it("sortie en capital : versements PER à TMI sans abattement, gains au PFU", () => {
+    const result = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.3 })
+    expect(result.taxableContributions).toBeCloseTo(50000, 0)
+    expect(result.contributionsTax).toBeCloseTo(15000, 0)
     expect(result.socialCharges).toBeCloseTo(1720, 0)
-    expect(result.incomeTax).toBeCloseTo(2700, 0)
-    expect(result.flatTax).toBe(0)
-    expect(result.totalTax).toBeCloseTo(4420, 0)
+    expect(result.incomeTax).toBeCloseTo(1280, 0)
+    expect(result.flatTax).toBeCloseTo(3000, 0)
+    expect(result.totalTax).toBeCloseTo(18000, 0)
   })
 
-  it("la TMI change l'impôt de sortie", () => {
-    const low = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.11 })
-    const high = computeTaxBreakdown(10000, "per", 10, false, 0, { tmi: 0.41 })
-    expect(low.incomeTax).toBeCloseTo(990, 0)
-    expect(high.incomeTax).toBeCloseTo(3690, 0)
-    expect(high.incomeTax).toBeGreaterThan(low.incomeTax)
+  it("la TMI change l'impôt sur les versements PER", () => {
+    const low = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.11 })
+    const high = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.41 })
+    expect(low.contributionsTax).toBeCloseTo(5500, 0)
+    expect(high.contributionsTax).toBeCloseTo(20500, 0)
+    expect(high.contributionsTax).toBeGreaterThan(low.contributionsTax)
   })
 
   it("l'économie d'impôt à l'entrée est réinvestie dans le capital", () => {

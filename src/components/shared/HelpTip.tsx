@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { cn } from "../../utils/cn"
 
 interface HelpTipProps {
@@ -15,6 +15,7 @@ interface HelpTipProps {
  */
 export function HelpTip({ text, className }: HelpTipProps) {
   const [open, setOpen] = useState(false)
+  const tooltipId = useId()
 
   return (
     <span
@@ -31,6 +32,7 @@ export function HelpTip({ text, className }: HelpTipProps) {
         type="button"
         aria-label="Aide"
         aria-expanded={open}
+        aria-describedby={open ? tooltipId : undefined}
         onClick={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         className="w-4 h-4 rounded-full bg-text-dim/15 text-text-dim text-[10px] font-bold leading-none flex items-center justify-center cursor-help hover:bg-primary/25 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
@@ -44,6 +46,7 @@ export function HelpTip({ text, className }: HelpTipProps) {
           overflow), il flotte librement au-dessus du contenu. */}
       {open && (
         <span
+          id={tooltipId}
           role="tooltip"
           className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 w-56 p-2.5 rounded-lg glass-strong shadow-premium text-[10px] leading-snug text-text-muted z-30"
         >

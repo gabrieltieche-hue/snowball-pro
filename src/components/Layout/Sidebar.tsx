@@ -81,6 +81,8 @@ export function Sidebar({
           min={0}
           max={200000}
           step={1000}
+          hardMin={0}
+          hardMax={100000000}
           error={fieldError("capitalInitial")?.message}
           warning={fieldWarning("capitalInitial")?.message}
           onChange={v => updateInput("capitalInitial", v)}
@@ -92,6 +94,8 @@ export function Sidebar({
           min={0}
           max={10000}
           step={50}
+          hardMin={0}
+          hardMax={200000}
           error={fieldError("monthlyPayment")?.message}
           warning={fieldWarning("monthlyPayment")?.message}
           onChange={v => updateInput("monthlyPayment", v)}
@@ -109,9 +113,10 @@ export function Sidebar({
             </span>
           </div>
           <p className="text-[10px] text-text-muted mt-1.5 leading-relaxed">
-            Moyenne MSCI World ·{" "}
-            <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an</strong> net
-            d'inflation — la même courbe chaque année, sans hasard.
+            Moyenne MSCI World :{" "}
+            <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an réel</strong>{" "}
+            composé sur 1970-2025 (votre rendement réel sur votre durée dépend de l'inflation — voir « Après
+            inflation »).
           </p>
         </div>
         <SliderInput
@@ -121,6 +126,8 @@ export function Sidebar({
           min={1}
           max={50}
           step={1}
+          hardMin={1}
+          hardMax={80}
           error={fieldError("duration")?.message}
           warning={fieldWarning("duration")?.message}
           onChange={v => updateInput("duration", v)}
@@ -136,6 +143,8 @@ export function Sidebar({
           min={0}
           max={10}
           step={0.1}
+          hardMin={0}
+          hardMax={50}
           suffix="Votre épargne mensuelle augmente chaque année"
           error={fieldError("indexation")?.message}
           warning={fieldWarning("indexation")?.message}
@@ -151,6 +160,9 @@ export function Sidebar({
           min={0}
           max={10}
           step={0.1}
+          hardMin={-10}
+          hardMax={100}
+          allowNegative
           suffix="défaut 2,1 %/an — taux personnalisé"
           error={fieldError("inflation")?.message}
           warning={fieldWarning("inflation")?.message}
@@ -163,6 +175,8 @@ export function Sidebar({
           min={100}
           max={10000}
           step={100}
+          hardMin={100}
+          hardMax={10000}
           suffix="nombre de scénarios testés (Monte Carlo & Rente)"
           error={fieldError("mcRuns")?.message}
           warning={fieldWarning("mcRuns")?.message}
@@ -188,6 +202,8 @@ export function Sidebar({
               min={0}
               max={30}
               step={1}
+              hardMin={0}
+              hardMax={50}
               suffix={inputs.peaYearsHeld < 5 ? "moins de 5 ans : PFU 30 %" : "au-delà de 5 ans : taux réduit (17,2 %)"}
               onChange={v => updateInput("peaYearsHeld", v)}
             />
@@ -202,6 +218,8 @@ export function Sidebar({
               min={0}
               max={30}
               step={1}
+              hardMin={0}
+              hardMax={50}
               suffix="au-delà de 8 ans : abattement annuel"
               onChange={v => updateInput("avYearsHeld", v)}
             />
@@ -229,6 +247,8 @@ export function Sidebar({
               min={0}
               max={45}
               step={1}
+              hardMin={0}
+              hardMax={45}
               suffix={
                 inputs.envelope === "per"
                   ? "Versements déduits à ce taux ; sortie taxée à TMI − 10 %"

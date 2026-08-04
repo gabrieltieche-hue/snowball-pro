@@ -15,6 +15,11 @@ interface SliderInputProps {
   help?: string
   error?: string
   warning?: string
+  /** Bornes réelles du calcul appliquées à la saisie directe (clamp + message). */
+  hardMin?: number
+  hardMax?: number
+  /** Autorise les valeurs négatives dans la saisie directe. */
+  allowNegative?: boolean
   onChange: (v: number) => void
 }
 
@@ -32,6 +37,9 @@ export function SliderInput({
   help,
   error,
   warning,
+  hardMin,
+  hardMax,
+  allowNegative,
 }: SliderInputProps) {
   return (
     <div className="mb-4">
@@ -48,7 +56,14 @@ export function SliderInput({
           {prefix && <span className="text-[11px] text-text-dim">{prefix}</span>}
           {/* C2 — la saisie directe doit avoir un nom accessible (le label
               htmlFor pointe sur le slider, pas sur cette textbox) */}
-          <SmartInput value={value} onChange={onChange} aria-label={`${label} (saisie directe)`} />
+          <SmartInput
+            value={value}
+            onChange={onChange}
+            min={hardMin}
+            max={hardMax}
+            allowNegative={allowNegative}
+            aria-label={`${label} (saisie directe)`}
+          />
         </div>
       </div>
       <input

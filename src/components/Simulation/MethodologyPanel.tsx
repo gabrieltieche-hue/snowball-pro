@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { BookOpen, ChevronDown } from "lucide-react"
-import { ENVELOPE_CONFIGS, getHistoricalDataset } from "../../engine"
+import { ENVELOPE_CONFIGS, fmtDecimal, getHistoricalDataset } from "../../engine"
 import { cn } from "../../utils/cn"
 import type { SimulationInputs } from "../../types"
 
@@ -19,7 +19,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
   const rows: { label: string; value: string }[] = [
     {
       label: "Rendement",
-      value: `Taux constant ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut (moyenne ${historical.name}, ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an net d'inflation) — courbe lissée ; Monte Carlo & Rente rejouent l'historique réel`,
+      value: `Taux constant ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut (moyenne arithmétique ${historical.name}) ; rendement réel composé historique : ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an après inflation — courbe lissée ; Monte Carlo & Rente rejouent l'historique réel`,
     },
     {
       label: "Inflation",
@@ -27,8 +27,8 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
         inputs.inflationMode === "historical"
           ? "Série historique réelle"
           : inputs.inflationMode === "dynamic"
-            ? `Dynamique autour de ${(inputs.inflation * 100).toFixed(1)} %/an`
-            : `${(inputs.inflation * 100).toFixed(1)} %/an fixe`,
+            ? `Dynamique autour de ${fmtDecimal(inputs.inflation * 100, 1)} %/an`
+            : `${fmtDecimal(inputs.inflation * 100, 1)} %/an fixe`,
     },
     {
       label: "Enveloppe fiscale",
@@ -42,10 +42,10 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
       label: "Frais",
       value:
         [
-          inputs.etfFees > 0 ? `${(inputs.etfFees * 100).toFixed(2)} % ETF` : null,
-          inputs.brokerageFees > 0 ? `${(inputs.brokerageFees * 100).toFixed(2)} % courtage` : null,
-          inputs.insuranceFees > 0 ? `${(inputs.insuranceFees * 100).toFixed(2)} % assurance` : null,
-          inputs.managementFees > 0 ? `${(inputs.managementFees * 100).toFixed(2)} % gestion` : null,
+          inputs.etfFees > 0 ? `${fmtDecimal(inputs.etfFees * 100, 2)} % ETF` : null,
+          inputs.brokerageFees > 0 ? `${fmtDecimal(inputs.brokerageFees * 100, 2)} % par versement (courtage)` : null,
+          inputs.insuranceFees > 0 ? `${fmtDecimal(inputs.insuranceFees * 100, 2)} % assurance` : null,
+          inputs.managementFees > 0 ? `${fmtDecimal(inputs.managementFees * 100, 2)} % gestion` : null,
         ]
           .filter(Boolean)
           .join(" + ") || "Aucun frais",
@@ -58,6 +58,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
+        aria-controls="methodology-content"
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-glass-hover transition-colors"
       >
         <span className="text-xs font-bold flex items-center gap-2">
@@ -66,7 +67,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
         <ChevronDown size={14} className={cn("text-text-dim transition-transform", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="px-5 pb-5 space-y-2.5 animate-fade-in">
+        <div id="methodology-content" className="px-5 pb-5 space-y-2.5 animate-fade-in">
           {rows.map(row => (
             <div key={row.label} className="flex items-start justify-between gap-4 py-1">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-text-dim whitespace-nowrap">
@@ -77,9 +78,9 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
           ))}
           <p className="text-[10px] text-text-dim italic leading-relaxed pt-2 border-t border-border/50">
             Les impôts affichés sont une <strong>estimation</strong> fondée sur la législation fiscale en vigueur
-            (prélèvement forfaitaire unique, abattements assurance-vie, cotisations sociales) et modélisée comme une
-            liquidation théorique à la fin de la projection. Les gains latents ne sont taxés qu'à la revente réelle —
-            les montants « après impôts » sont donc une projection, pas une réalité comptable.
+            (prélèvement forfaitaire unique, abattements assurance-vie, cotisations sociales et règles simplifiées du
+            PER) et modélisée comme une liquidation théorique à la fin de la projection. Les gains latents ne sont taxés
+            qu'à la revente réelle — les montants « après impôts » sont donc une projection, pas une réalité comptable.
           </p>
         </div>
       )}

@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
-import { deflationFactor, fmtCurrency } from "../../engine"
+import { computeTaxBreakdown, deflationFactor, fmtCurrency, fmtDecimal } from "../../engine"
 import { pie3dGeometry } from "../../utils/pie3d"
-import type { YearRow } from "../../types"
+import type { SimulationInputs, YearRow } from "../../types"
 
 interface CapitalAllocationProps {
   rows: YearRow[]
+  inputs: SimulationInputs
   darkMode: boolean
   /** Affichage en euros d'aujourd'hui : la légende déflate comme les cartes. */
   showReal?: boolean
@@ -39,7 +40,7 @@ const RX = 100
 const RY = 54
 const DEPTH = 24
 
-export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalAllocationProps) {
+export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: CapitalAllocationProps) {
   const lastRow = rows[rows.length - 1]
   const [active, setActive] = useState<number | null>(null)
   const palette = darkMode ? PALETTE.dark : PALETTE.light
@@ -53,17 +54,32 @@ export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalA
     // d'aujourd'hui, la légende déflate aussi (avant l'audit v5.2.0, le pie
     // affichait 303 k€ d'impôts nominaux à côté d'une carte à 176 k€).
     const factor = showReal ? deflationFactor(lastRow) : 1
-    const grossGains = lastRow.interestsNom * factor
-    // MÊME base que les cartes et le graphique d'équité : impôts de
-    // LIQUIDATION = nominal − taxNet (exit tax), pas totalTax.
-    const exitTax = Math.max(0, lastRow.nominal - lastRow.taxNet) * factor
-    const taxes = Math.max(0, Math.min(grossGains, exitTax))
+    const tax = computeTaxBreakdown(
+      lastRow.grossGains,
+      inputs.envelope,
+      inputs.envelope === "pea"
+        ? inputs.peaYearsHeld
+        : inputs.envelope === "av"
+          ? inputs.avYearsHeld + inputs.duration
+          : inputs.duration,
+      inputs.taxCouple,
+      lastRow.investedNom,
+      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
+    )
+    // Camembert du capital NET après liquidation théorique : chaque source
+    // est diminuée de sa propre fiscalité. Cela reste additif même pour un PER,
+    // où l'impôt porte aussi sur les versements, et évite de faire apparaître
+    // des impôts comme une composante supplémentaire du capital.
+    const total = Math.max(0, lastRow.taxNet) * factor
+    const invested = Math.max(0, lastRow.investedNom - tax.contributionsTax) * factor
+    const gains = Math.max(0, lastRow.grossGains - tax.socialCharges - tax.incomeTax) * factor
+    const remainder = Math.max(0, total - invested - gains)
     return [
-      { label: "Argent épargné", value: lastRow.investedNom * factor, color: palette.invested },
-      { label: "Gains nets (après impôts)", value: Math.max(0, grossGains - taxes), color: palette.gains },
-      { label: "Impôts (liquidation théorique)", value: taxes, color: palette.losses },
+      { label: "Versements après fiscalité", value: invested, color: palette.invested },
+      { label: "Gains après impôts", value: gains, color: palette.gains },
+      { label: "Autres écarts arrondis", value: remainder, color: palette.losses },
     ]
-  }, [lastRow, palette, showReal])
+  }, [lastRow, inputs, palette, showReal])
 
   const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
 
@@ -98,7 +114,8 @@ export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalA
     <div className="glass rounded-3xl p-6 animate-scale-in">
       <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
         <PieChart size={12} className="text-warning" />
-        D'où vient votre argent ?
+        D'où vient votre argent ?{" "}
+        <span className="text-[10px] font-normal text-text-dim">(net après liquidation théorique)</span>
       </h2>
 
       <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
@@ -161,7 +178,7 @@ export function CapitalAllocation({ rows, darkMode, showReal = false }: CapitalA
               <span className="flex items-center gap-2 shrink-0">
                 <span className="mono text-[10px] text-text-dim">{fmtCurrency(item.value)}</span>
                 <span className="mono text-[10px] font-bold" style={{ color: item.color }}>
-                  {pct.toFixed(1)}%
+                  {fmtDecimal(pct, 1)}%
                 </span>
               </span>
             </div>
