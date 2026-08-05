@@ -29,7 +29,8 @@ Demande utilisateur : *« Je veux créer une landing page de présentation de l'
 - **+71 tests** (308 au total) : 21 auth (SHA-256 NIST, registre/connexion/déconnexion, doublons, changement de mot de passe, suppression, purge de session orpheline, scoping invité/compte, storage défaillant) + composants (landing complète, démo du héro, FAQ, thème partagé, inscription → session → app, erreurs de confirmation, mauvais mot de passe, déconnexion depuis le menu, isolation des données par compte).
 - Gate : typecheck ✓ lint ✓ **308/308 tests** ✓ build ✓ (dist 1 021 kB / 300 kB gzip) · détecteur impeccable **0 finding** · revue adverse (code-reviewer) : branding index.html/manifest, test de purge orpheline, `role="menu"` hors formulaires, `utils/theme.ts` partagé, `maxLength` 128 — tous traités.
 - Vérifié en navigateur réel (desktop) : landing (démo 732 918 € calculée en direct), inscription, changement de mot de passe, déconnexion, reconnexion avec le nouveau mot de passe, retour landing, lien partagé `#s=…` → app avec état chargé + bandeau, console 0 erreur.
-- Version : package.json, package-lock.json, `public/sw.js` (`CACHE_VERSION = "snowball-pro-v6.1.0"`), CHANGELOG, MEMORY.md. Déploiement Vercel : **en attente de validation utilisateur** (explicite).
+- Version : package.json, package-lock.json, `public/sw.js` (`CACHE_VERSION = "snowball-pro-v6.1.0"`), CHANGELOG, MEMORY.md.
+- **Déployé en production** après validation utilisateur : `vercel --prod` → **https://snowball-pro.vercel.app** (HTTP 200, titre v6.1, landing complète, CACHE_VERSION v6.1.0 vérifiée).
 
 ---
 

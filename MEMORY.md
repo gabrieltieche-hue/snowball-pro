@@ -649,4 +649,10 @@ Demande utilisateur : *« Je veux créer une landing page de présentation de l'
 - Version 6.0.0 → **6.1.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.1.0"`), CHANGELOG (entrée v6.1.0), MEMORY.md (cette entrée + section « PISTES V6.1 » avec les 2 idées validées).
 - ⚠️ **Pas de déploiement Vercel** : attend la validation de l'utilisateur (explicite). Commit local créé à la demande ; pas de remote git.
 
+### 🚀 Déploiement (validation utilisateur obtenue dans la foulée)
+
+- `vercel --prod` : build OK (`snowball-pro@6.1.0`, vite build), aliasé sur **https://snowball-pro.vercel.app** (HTTP 200).
+- Vérifié en prod : titre « Snowball Pro v6.1 — Simulateur Patrimonial », landing complète (héro + fonctionnalités + enveloppes + FAQ), `sw.js` `CACHE_VERSION = "snowball-pro-v6.1.0"` (purge PWA). Ancienne URL `v4-three-beige.vercel.app` toujours 200 (alias).
+- Docs : MEMORY.md (cet ajout) + CHANGELOG (ligne « en attente de validation » → déployée) — petit commit `chore(deploy)`.
+
 ---
