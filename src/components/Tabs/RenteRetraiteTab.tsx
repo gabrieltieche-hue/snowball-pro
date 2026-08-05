@@ -37,6 +37,7 @@ import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
 import { Toggle } from "../shared/Toggle"
+import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SectionHeader } from "../shared/SectionHeader"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 
@@ -458,40 +459,48 @@ export function RenteRetraiteTab({
       </div>
 
       {/* ──────────────────────────────────────────────────────────
-          Fiabilité & sûreté du modèle (options désactivables)
+          Fiabilité & sûreté du modèle (options désactivables).
+          Repliée par défaut (v6, comme l'onglet Monte Carlo) : les 4
+          options restent actives par défaut, mais elles ne s'imposent
+          plus à chaque visite — on les ouvre à la demande.
          ────────────────────────────────────────────────────────── */}
       <div className="glass rounded-3xl p-4 sm:p-6">
-        <SectionHeader as="h3" level="card" icon={ShieldCheck} title="Fiabilité & sûreté des estimations" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          <Toggle
-            checked={inputs.parameterUncertainty}
-            onChange={v => updateInput("parameterUncertainty", v)}
-            label="Incertitude des paramètres"
-            sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
-          />
-          <Toggle
-            checked={inputs.extendedHistory}
-            onChange={v => updateInput("extendedHistory", v)}
-            label="Historique étendu (100 ans)"
-            sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
-          />
-          <Toggle
-            checked={inputs.stochasticInflation}
-            onChange={v => updateInput("stochasticInflation", v)}
-            label="Inflation stochastique"
-            sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
-          />
-          <Toggle
-            checked={inputs.dynamicGuardrails}
-            onChange={v => updateInput("dynamicGuardrails", v)}
-            label="Garde-fous dynamiques (Guyton–Klinger)"
-            sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
-          />
-        </div>
-        <p className="text-[9px] text-text-dim mt-2.5">
-          Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges, taux
-          de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
-        </p>
+        <CollapsibleSection
+          title="Fiabilité & sûreté des estimations"
+          icon={<ShieldCheck size={12} className="text-primary" />}
+          defaultOpen={false}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <Toggle
+              checked={inputs.parameterUncertainty}
+              onChange={v => updateInput("parameterUncertainty", v)}
+              label="Incertitude des paramètres"
+              sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
+            />
+            <Toggle
+              checked={inputs.extendedHistory}
+              onChange={v => updateInput("extendedHistory", v)}
+              label="Historique étendu (100 ans)"
+              sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
+            />
+            <Toggle
+              checked={inputs.stochasticInflation}
+              onChange={v => updateInput("stochasticInflation", v)}
+              label="Inflation stochastique"
+              sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
+            />
+            <Toggle
+              checked={inputs.dynamicGuardrails}
+              onChange={v => updateInput("dynamicGuardrails", v)}
+              label="Garde-fous dynamiques (Guyton–Klinger)"
+              sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
+            />
+          </div>
+          <p className="text-[9px] text-text-dim mt-2.5">
+            Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges, taux
+            de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
+          </p>
+        </CollapsibleSection>
       </div>
 
       {/* ──────────────────────────────────────────────────────────

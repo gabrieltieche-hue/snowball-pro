@@ -3,6 +3,10 @@ import { getTaxRules, pfuRate, fmtTaxPercent } from "./taxRules"
 
 // Libellés des enveloppes DÉRIVÉS des règles de l'année courante : les taux
 // affichés ne peuvent pas diverger de taxRules.ts (aucun chiffre en dur).
+// NOTE (revue v6) : évalués au chargement du module → figés sur l'année
+// courante. Tant qu'il n'y a pas de sélecteur d'année fiscale dans l'UI c'est
+// exact ; quand le sélecteur arrivera (P1), ces descs devront être dérivés par
+// composant pour suivre l'année choisie.
 const currentRules = getTaxRules()
 
 export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
@@ -24,7 +28,7 @@ export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
     id: "av",
     name: "Assurance-vie",
     shortLabel: "AV",
-    desc: "Après 8 ans : abattement, puis 7,5 % + cotisations sociales",
+    desc: `Après 8 ans : abattement, puis ${fmtTaxPercent(currentRules.avReducedIRRate)} + cotisations sociales`,
     color: "var(--color-primary-light)",
   },
   {
@@ -143,7 +147,7 @@ export function computeTaxBreakdown(
       taxableGains = Math.max(0, grossGains - allowance)
       // Les gains sont répartis au prorata des primes : jusqu'au plafond de
       // primes (150 k€ célibataire / 300 k€ couple), le taux réduit de 7,5 %
-      // s'applique ; au-delà, les gains sont taxés à 12,8 %.
+      // s'applique ; au-delà, les gains sont taxés au taux plein (taxRules).
       const withinFraction = contributionBase > 0 ? Math.min(1, cap / contributionBase) : 1
       incomeTax =
         taxableGains * withinFraction * rules.avReducedIRRate +
@@ -166,7 +170,8 @@ export function computeTaxBreakdown(
     // Le moteur passe la base de versements personnels dans contributionBase.
     // Les versements PER déduits à l'entrée sont taxés séparément à la TMI,
     // sans abattement de 10 % et sans cotisations sociales. Les gains sont
-    // soumis au PFU dans cette projection (12,8 % IR + prélèvements sociaux).
+    // soumis au PFU dans cette projection (part IR + prélèvements sociaux,
+    // taux de l'année fiscale dans taxRules).
     taxableContributions = Math.max(0, contributionBase)
     contributionsTax = taxableContributions * tmi
     socialCharges = grossGains * rules.perSocialRate

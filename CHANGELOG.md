@@ -30,6 +30,7 @@ Plan v6 validé avec l'utilisateur (synthèse de 3 avis UX externes + audit inte
 - **Bandeau de fiabilité** dans les résultats Monte Carlo et Rente : « Basé sur X scénarios · 100 ans d'historique réel · fiscalité française incluse ».
 - **Tooltips d'une ligne** (`HelpTip`) : P10/P50/P90 (cartes Monte Carlo), XIRR (Statistiques clés), PFU (CTO).
 - **Sidebar allégée** : la carte « Rendement de la bourse » (échelle 10,07 → 8,22 → 5,99 + formule de Fisher) rejoint le panneau **« Pourquoi ces chiffres ? »**, replié par défaut — contenu intégral conservé (déplacement, pas suppression).
+- **Fiabilité repliée par défaut** : « Fiabilité du modèle » (Monte Carlo) et « Fiabilité & sûreté des estimations » (Rente) s'ouvrent à la demande — les options restent toutes actives par défaut.
 
 ### 🧪 Tests & gate
 

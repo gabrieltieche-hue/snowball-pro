@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+// Import via le barrel (convention du projet) : taxRules et computeTaxBreakdown
+// sont re-exportés par src/engine/index.ts.
 import {
   getTaxRules,
   resolveTaxYear,
@@ -7,8 +9,8 @@ import {
   TAX_RULES,
   TAX_YEARS,
   CURRENT_TAX_YEAR,
-} from "../engine/taxRules"
-import { computeTaxBreakdown } from "../engine/taxes"
+  computeTaxBreakdown,
+} from "../engine"
 
 describe("taxRules — table fiscale par année (P0-1 v6)", () => {
   it("2025 : les taux de droit commun restent 17,2 % / 30 % (rétrocompatibilité)", () => {

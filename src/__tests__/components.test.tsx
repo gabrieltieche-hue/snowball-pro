@@ -614,8 +614,21 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
     runDecum: vi.fn(),
   }
 
+  it("la section « Fiabilité & sûreté des estimations » est repliée par défaut (v6)", () => {
+    render(<RenteRetraiteTab {...baseProps} />)
+    // v6 (comme Monte Carlo) : le titre est visible, mais pas les options
+    // tant qu'on ne déplie pas — les 4 restent actives par défaut au moteur.
+    expect(screen.getByRole("button", { name: /fiabilité & sûreté des estimations/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    )
+    expect(screen.queryByRole("switch", { name: /incertitude des paramètres/i })).not.toBeInTheDocument()
+  })
+
   it("les 4 options de fiabilité sont COCHÉES par défaut", () => {
     render(<RenteRetraiteTab {...baseProps} />)
+    // Le panneau est replié par défaut : on le déplie pour inspecter les toggles.
+    fireEvent.click(screen.getByRole("button", { name: /fiabilité & sûreté des estimations/i }))
     expect(screen.getByRole("switch", { name: /incertitude des paramètres/i })).toBeChecked()
     expect(screen.getByRole("switch", { name: /historique étendu/i })).toBeChecked()
     expect(screen.getByRole("switch", { name: /inflation stochastique/i })).toBeChecked()
