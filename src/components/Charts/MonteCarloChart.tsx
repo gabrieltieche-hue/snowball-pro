@@ -10,10 +10,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { TrendingUp } from "lucide-react"
 import { fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { MonteCarloResult } from "../../types"
 
 interface MonteCarloChartProps {
@@ -44,14 +46,18 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
 
   return (
     <div className="glass rounded-2xl p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-          Votre capital, année après année
-        </span>
-        <span className="text-[10px] text-text-dim">
-          Objectif visé : <span className="mono">{fmtCompact(result.goalTarget)}</span>
-        </span>
-      </div>
+      <SectionHeader
+        as="h3"
+        level="card"
+        icon={TrendingUp}
+        title="Votre capital, année après année"
+        className="mb-2 px-1"
+        trailing={
+          <span className="text-[10px] text-text-dim">
+            Objectif visé : <span className="mono">{fmtCompact(result.goalTarget)}</span>
+          </span>
+        }
+      />
       <p className="text-[10px] text-text-dim mb-2 px-1">
         {result.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un cas
         possible

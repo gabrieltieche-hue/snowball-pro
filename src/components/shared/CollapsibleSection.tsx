@@ -26,6 +26,7 @@ export function CollapsibleSection({ title, icon, defaultOpen = true, children }
         className="w-full flex items-center justify-between gap-2 group"
       >
         <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted group-hover:text-text transition-colors">
+          <span className="w-1 h-3.5 rounded-full bg-primary shrink-0" aria-hidden />
           {icon}
           {title}
         </span>

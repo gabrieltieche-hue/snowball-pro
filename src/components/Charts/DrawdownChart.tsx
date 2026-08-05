@@ -6,6 +6,7 @@ import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
 import type { YearRow } from "../../types"
 import { CustomTooltip } from "../shared/CustomTooltip"
+import { SectionHeader } from "../shared/SectionHeader"
 
 interface DrawdownChartProps {
   rows: YearRow[]
@@ -31,10 +32,14 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
 
   return (
     <div className="glass rounded-3xl p-6">
-      <h2 className="text-sm font-bold mb-1 flex items-center gap-2">
-        <TrendingDown size={12} className="text-danger" />
-        Les baisses de votre capital
-      </h2>
+      <SectionHeader
+        as="h2"
+        level="card"
+        icon={TrendingDown}
+        iconClassName="text-danger"
+        title="Les baisses de votre capital"
+        className="mb-1"
+      />
       <p className="text-[10px] text-text-dim mb-4 leading-snug">
         Les valeurs négatives = les moments où votre capital a baissé par rapport à son plus haut niveau (la « pire
         chute » est le point le plus bas de la courbe).

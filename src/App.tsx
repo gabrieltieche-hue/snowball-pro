@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { AlertTriangle, Banknote, Dices, LineChart, Link2, Target, Wallet, X } from "lucide-react"
 import {
   V4_SETTINGS_KEY,
   SETTINGS_KEY,
@@ -25,7 +26,7 @@ import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
-import { TabBar } from "./components/Layout/TabBar"
+import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
 import { SummaryStats } from "./components/Simulation/SummaryStats"
 import { ComparisonTab } from "./components/Tabs/ComparisonTab"
@@ -34,11 +35,11 @@ import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "./components/Tabs/RenteRetraiteTab"
 import { SimulatorTab } from "./components/Tabs/SimulatorTab"
 
-const TABS = [
-  { id: "simulator", label: "📈 Simulateur" },
-  { id: "montecarlo", label: "🎲 Monte Carlo" },
-  { id: "rente", label: "💸 Rente & Retraite" },
-  { id: "goal", label: "🎯 Objectif Inversé" },
+const TABS: TabDef[] = [
+  { id: "simulator", label: "Simulateur", icon: LineChart },
+  { id: "montecarlo", label: "Monte Carlo", icon: Dices },
+  { id: "rente", label: "Rente & Retraite", icon: Banknote },
+  { id: "goal", label: "Objectif Inversé", icon: Target },
 ]
 
 const THEME_KEY = "snowball_v5_theme"
@@ -422,6 +423,44 @@ export default function App() {
       {/* I6 — hiérarchie de titres : h1 de page (visuellement masqué), les
           sections s'enchaînent ensuite en h2/h3 dans les onglets. */}
       <h1 className="sr-only">Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)</h1>
+
+      {/* En-tête global : la marque et les actions (annuler, partager, thème,
+          export…) restent accessibles pendant tout le scroll. */}
+      <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
+              <Wallet size={18} className="text-[#221b06]" aria-hidden />
+              <span className="absolute -inset-px rounded-xl ring-1 ring-primary/50" aria-hidden />
+            </div>
+            <div className="min-w-0 leading-tight">
+              <div className="font-display text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
+                SNOWBALL <span className="text-primary">PRO</span>
+              </div>
+              <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
+                Simulateur patrimonial
+              </div>
+            </div>
+          </div>
+          <ActionBar
+            onExportCSV={exportCSV}
+            onExportJSON={exportJSON}
+            onPrint={() => window.print()}
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode(d => !d)}
+            comparing={comparing}
+            onToggleCompare={toggleComparing}
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            validationErrors={validationErrors}
+            onCopyLink={handleCopyLink}
+            linkCopied={linkCopied}
+          />
+        </div>
+      </header>
+
       <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
           <ErrorBoundary label="les réglages">
@@ -438,27 +477,14 @@ export default function App() {
           </ErrorBoundary>
 
           <main className="space-y-5 min-w-0">
-            <ActionBar
-              onExportCSV={exportCSV}
-              onExportJSON={exportJSON}
-              onPrint={() => window.print()}
-              darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode(d => !d)}
-              comparing={comparing}
-              onToggleCompare={toggleComparing}
-              canUndo={history.canUndo}
-              canRedo={history.canRedo}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-              validationErrors={validationErrors}
-              onCopyLink={handleCopyLink}
-              linkCopied={linkCopied}
-            />
             {sharedLinkLoaded && (
-              <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3 border-l-2 border-primary/60">
-                <p className="text-[11px] text-text-muted">
-                  🔗 Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
-                  sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
+              <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">
+                  <Link2 size={12} className="text-primary shrink-0" />
+                  <span>
+                    Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
+                    sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
+                  </span>
                 </p>
                 <button
                   type="button"
@@ -466,7 +492,7 @@ export default function App() {
                   aria-label="Fermer le bandeau lien partagé"
                   className="text-text-muted hover:text-text transition-colors shrink-0"
                 >
-                  ✕
+                  <X size={13} />
                 </button>
               </div>
             )}
@@ -474,12 +500,15 @@ export default function App() {
             {validationErrors.filter(e => e.severity === "error").length > 0 && (
               <div
                 role="alert"
-                className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger"
+                className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger flex items-center gap-2"
               >
-                ⚠️ Des valeurs saisies sortent des bornes acceptées (
-                {validationErrors.filter(e => e.severity === "error").length} erreur
-                {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
-                simulation fiable.
+                <AlertTriangle size={13} className="shrink-0" />
+                <span>
+                  Des valeurs saisies sortent des bornes acceptées (
+                  {validationErrors.filter(e => e.severity === "error").length} erreur
+                  {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
+                  simulation fiable.
+                </span>
               </div>
             )}
             {comparing && <ComparisonBar onExit={toggleComparing} />}

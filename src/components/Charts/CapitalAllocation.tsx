@@ -3,6 +3,7 @@ import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
 import { computeTaxBreakdown, deflationFactor, fmtCurrency, fmtDecimal } from "../../engine"
 import { pie3dGeometry } from "../../utils/pie3d"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface CapitalAllocationProps {
@@ -112,11 +113,12 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
 
   return (
     <div className="glass rounded-3xl p-6 animate-scale-in">
-      <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
-        <PieChart size={12} className="text-warning" />
-        D'où vient votre argent ?{" "}
-        <span className="text-[10px] font-normal text-text-dim">(net après liquidation théorique)</span>
-      </h2>
+      <SectionHeader
+        title="D'où vient votre argent ?"
+        icon={PieChart}
+        level="card"
+        sub="net après liquidation théorique"
+      />
 
       <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
         {parts.map((part, idx) =>

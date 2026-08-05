@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { Percent } from "lucide-react"
 import { runSimulation as reRunSim, deflationFactor, fmtCurrency } from "../../engine"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface FeeImpactProps {
@@ -26,12 +27,7 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
-      <div className="flex items-center gap-2 mb-2">
-        <Percent size={14} className="text-text-dim" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          Ce que les frais vous coûtent
-        </span>
-      </div>
+      <SectionHeader title="Ce que les frais vous coûtent" icon={Percent} level="card" />
       <div className="space-y-1.5">
         {[
           { label: "Frais débités au total", value: lastRow.feesLost * factor, color: "#8B3A3A" },

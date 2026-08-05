@@ -4,6 +4,35 @@
 
 ---
 
+## v5.6.4 — Titres de section UNIFORMES sur tout le site : « Vos impôts » proportionné à « Statistiques clés »
+
+Demande utilisateur : *« le titre de la partie des impôts doit être mieux proportionné par rapport aux statistiques clés… que tout soit uniforme sur le site, sublime, joli et cohérent »*. Avant, chaque carte et chaque graphique utilisaient son propre style de titre (10 px gris muet, `text-sm font-bold`, emoji 📈📊…) à côté de titres de section en extrabold — hiérarchie visuelle déséquilibrée. Bump 5.6.3 → **5.6.4**.
+
+### 🧩 Composant unique `SectionHeader` (`shared/SectionHeader.tsx`)
+
+- **Anatomie uniforme** : barre dorée `w-1 h-5 bg-primary` + icône lucide teintée or + titre `font-extrabold uppercase tracking-[0.08em]`, en 3 niveaux : `page` (grands titres, 16-18 px), `card` (titres de carte, 14-16 px) + `label` (mini-titres « Modèle de retrait » / « Paramètres »). Sous-titre aligné sous le texte, élément droit (pastille, légende, chevron), balise `h2`/`h3`/`span` selon le contexte.
+- **`bare`** (revue adverse) : rend UNIQUEMENT du contenu phrasé (spans) pour les boutons d'accordéon — plus de `<div>` dans un `<button>` (HTML invalide).
+- **`SectionTitle.tsx` supprimé** (code mort : seule la Rente avait un double local, remplacé par le composant partagé).
+
+### 🏛 Surfaces unifiées (18 fichiers)
+
+- **Simulateur** : `KpiGrid` (« Statistiques clés »), `FiscalPanel` (« Vos impôts » + enveloppe en sous-titre, `nowrap` + flex-wrap mobile), `FeeImpact`, `MilestoneTimeline`, `CapitalAllocation` (« D'où vient votre argent ? » + sous-titre), `AIInsightCard`, accordéons `CashflowCalendar` / `MethodologyPanel` / « Détail année par année ».
+- **Graphiques** : `EquityChart`, `DrawdownChart` (icône danger), `ComparisonChart`, `MonteCarloChart` — emoji 📈📊 remplacés par des icônes lucide, légendes/pastilles en élément droit.
+- **Onglets** : `MonteCarloPanel` (🎲 → icône dé), `GoalTab` (🎯 → icône cible, « Comparaison des scénarios » avec objectif en sous-titre), `RenteRetraiteTab` (titre page + Fiabilité & sûreté + Aperçu rente + accordéon crise + « Votre capital… » / « Distribution des capitaux finaux » + mini-titres via `label`).
+- **Sidebar** : `CollapsibleSection` (barre dorée ajoutée — uniforme avec le contenu) et `SnapshotPanel` (💾 → icône Camera).
+- **Détails impeccable** : suppression des `border-l-2` des bandeaux de résultats de la Rente (le « tell » des UIs générées par IA) — détecteur impeccable : **0 finding**.
+
+### 🧪 Tests & gate
+
+- **+5 tests composants** (223 au total) : SectionHeader (heading + barre `aria-hidden` + sous-titre + trailing, `label` via children, **mode `bare` sans `<div>/<p>`** — revue adverse) + FiscalPanel (titre « Vos impôts » séparé de l'enveloppe, suit le choix d'enveloppe).
+- Gate : typecheck ✓ lint ✓ **223/223 tests** ✓ build ✓ · vérifié en preview réelle sur les 4 onglets (desktop + mobile 320 px, accordéons valides).
+
+### ⚖️ Note ShadcnUI
+
+ShadcnUI **non installé** : la v5 a délibérément retiré Radix (base de shadcn), le build est single-file et 223 tests verrouillent l'incumbent. L'uniformité demandée est livrée via un composant de design-system maison sur les tokens existants (le même principe que shadcn : tokens + primitives), sans nouvelle dépendance ni risque de régression.
+
+---
+
 ## v5.6.3 — Audit complet qualité-UX-logique : virgule française partout, cohérence des chiffres, saisies bornées
 
 Audit complet (navigateur réel + lecture moteur) : 8 constats corrigés + chasse aux virgules décimales anglaises résiduelles. Bump 5.6.1 → **5.6.3**.

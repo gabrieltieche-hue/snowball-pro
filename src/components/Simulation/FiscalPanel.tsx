@@ -1,6 +1,7 @@
 import { Info, Shield } from "lucide-react"
 import { computeTaxBreakdown, deflationFactor, ENVELOPE_CONFIGS, fmtCurrency } from "../../engine"
 import { DualAmount } from "../shared/DualAmount"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface FiscalPanelProps {
@@ -14,6 +15,8 @@ const RED = "var(--color-value-red)"
 export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
+
+  const envelope = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)
 
   const taxInfo = computeTaxBreakdown(
     lastRow.interestsNom,
@@ -74,19 +77,21 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
 
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <Shield size={14} className="text-text-dim" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-            Vos impôts — {ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.name || "CTO"}
-          </span>
-        </div>
-        {inputs.showReal && (
-          <span className="text-[10px] mono font-bold text-text-dim bg-glass-hover px-1.5 py-0.5 rounded uppercase tracking-wider">
-            € d'aujourd'hui
-          </span>
-        )}
-      </div>
+      <SectionHeader
+        title="Vos impôts"
+        icon={Shield}
+        level="card"
+        as="h3"
+        nowrap
+        sub={envelope?.name ?? "CTO"}
+        trailing={
+          inputs.showReal && (
+            <span className="text-[10px] mono font-bold text-text-dim bg-glass-hover px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+              € d'aujourd'hui
+            </span>
+          )
+        }
+      />
       <div className="space-y-1.5">
         {lines.map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">

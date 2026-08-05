@@ -1,9 +1,11 @@
 import { useMemo } from "react"
+import { BarChart3 } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { fmtCompact, fmtCurrency, mergeComparisonSeries } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface ComparisonChartProps {
@@ -26,22 +28,27 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
 
   return (
     <div className="glass rounded-3xl p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-sm font-bold flex items-center gap-2">📊 Projection comparée A vs B</h2>
-        <div className="flex items-center gap-3 text-[10px] text-text-dim">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: colorA }} /> Scénario A
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: colorB }} /> Scénario B
-          </span>
-          {inputs.showReal && (
-            <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-              Euros d'aujourd'hui
+      <SectionHeader
+        as="h2"
+        level="card"
+        icon={BarChart3}
+        title="Projection comparée A vs B"
+        trailing={
+          <div className="flex items-center gap-3 text-[10px] text-text-dim flex-wrap">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: colorA }} /> Scénario A
             </span>
-          )}
-        </div>
-      </div>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: colorB }} /> Scénario B
+            </span>
+            {inputs.showReal && (
+              <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Euros d'aujourd'hui
+              </span>
+            )}
+          </div>
+        }
+      />
 
       <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">

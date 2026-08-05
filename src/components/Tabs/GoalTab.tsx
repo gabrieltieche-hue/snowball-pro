@@ -1,6 +1,8 @@
 import { useMemo } from "react"
+import { BarChart3, Target } from "lucide-react"
 import { DEFAULT_INPUTS, fmtCurrency, RECOMMENDED_RETURN_MAX, RECOMMENDED_RETURN_MIN, solveGoal } from "../../engine"
 import { GoalProgress } from "../Simulation/GoalProgress"
+import { SectionHeader } from "../shared/SectionHeader"
 import { SliderInput } from "../shared/SliderInput"
 import { cn } from "../../utils/cn"
 import type { GoalDifficulty, SimulationInputs, YearRow } from "../../types"
@@ -42,7 +44,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
     <div className="space-y-5 animate-fade-in">
       <div className="glass rounded-3xl p-5 sm:p-6 space-y-6">
         <div>
-          <h2 className="text-base font-bold mb-1">🎯 Objectif d'épargne</h2>
+          <SectionHeader as="h2" level="page" icon={Target} title="Objectif d'épargne" className="mb-2" />
           <p className="text-xs text-text-muted leading-relaxed max-w-xl">
             Vous savez combien vous voulez avoir plus tard : l'app calcule combien épargner chaque mois (et quel
             rendement de la bourse viser) pour y arriver.
@@ -176,9 +178,13 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
 
         {/* Tableau comparatif */}
         <div className="glass rounded-2xl p-5 border border-border">
-          <p className="text-xs font-bold mb-4">
-            📊 Comparaison des scénarios (objectif : {fmtCurrency(inputs.goalTarget)})
-          </p>
+          <SectionHeader
+            as="h3"
+            level="card"
+            icon={BarChart3}
+            title="Comparaison des scénarios"
+            sub={`objectif : ${fmtCurrency(inputs.goalTarget)}`}
+          />
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>

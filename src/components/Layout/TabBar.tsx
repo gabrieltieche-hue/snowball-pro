@@ -1,9 +1,12 @@
 import { useRef } from "react"
+import { motion } from "framer-motion"
+import type { LucideIcon } from "lucide-react"
 import { cn } from "../../utils/cn"
 
 export interface TabDef {
   id: string
   label: string
+  icon?: LucideIcon
 }
 
 interface TabBarProps {
@@ -38,6 +41,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
     >
       {tabs.map((tab, index) => {
         const selected = active === tab.id
+        const Icon = tab.icon
         return (
           <button
             key={tab.id}
@@ -51,11 +55,23 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             onClick={() => onChange(tab.id)}
             onKeyDown={e => handleKeyDown(e, index)}
             className={cn(
-              "flex-1 min-w-[110px] px-3 py-2.5 rounded-xl text-xs font-bold transition-all",
-              selected ? "bg-primary btn-gold-text shadow-gold" : "text-text-muted hover:bg-glass-hover hover:text-text",
+              "relative flex-1 min-w-[132px] px-3 py-2.5 rounded-xl text-xs font-bold transition-colors",
+              selected ? "text-[#221b06]" : "text-text-muted hover:text-text hover:bg-glass-hover",
             )}
           >
-            {tab.label}
+            {/* Pastille or animée : glisse d'un onglet à l'autre (layoutId). */}
+            {selected && (
+              <motion.span
+                layoutId="tab-pill"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                className="absolute inset-0 rounded-xl bg-gradient-to-b from-primary-light via-primary to-primary-dark shadow-gold"
+                aria-hidden
+              />
+            )}
+            <span className="relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+              {Icon && <Icon size={13} className="shrink-0" aria-hidden />}
+              {tab.label}
+            </span>
           </button>
         )
       })}

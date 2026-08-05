@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { Sparkles } from "lucide-react"
 import { deflationFactor, fmtCurrency, getHistoricalDataset } from "../../engine"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow, KPIs } from "../../types"
 
 interface AIInsightCardProps {
@@ -61,14 +62,9 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-gold rounded-2xl p-5 border-l-2 border-primary/50"
+      className="glass-gold rounded-2xl p-5"
     >
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles size={14} className="text-primary" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          Analyse & conseils
-        </span>
-      </div>
+      <SectionHeader title="Analyse & conseils" icon={Sparkles} level="card" />
       {insights.map((text, i) => (
         <p key={i} className="text-xs text-text-muted leading-relaxed mb-1">
           <span className="text-primary font-bold mr-1">✦</span>

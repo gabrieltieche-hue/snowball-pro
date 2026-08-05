@@ -1,5 +1,6 @@
 import { Gauge } from "lucide-react"
 import { fmtCurrency } from "../../engine"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { KPIs } from "../../types"
 
 interface KpiGridProps {
@@ -100,16 +101,7 @@ export function KpiGrid({ kpis }: KpiGridProps) {
 
   return (
     <div className="animate-fade-in min-w-0">
-      {/* Titre de section agrandi (demande utilisateur) : c'est un titre de
-          partie — plus gros et plus imposant, aligné sur les autres titres
-          de section (barre dorée + icône teintée). */}
-      <div className="flex items-center gap-2.5 mb-4">
-        <span className="w-1 h-5 rounded-full bg-primary" aria-hidden />
-        <Gauge size={18} className="text-primary" aria-hidden />
-        <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-[0.08em] text-text leading-none">
-          Statistiques clés
-        </h3>
-      </div>
+      <SectionHeader title="Statistiques clés" icon={Gauge} level="page" as="h3" />
       {/* Grille 2×3 par défaut (6 cartes) : aucune case vide, contrairement à
           l'ancien auto-fit qui laissait un trou de 2 cartes sur les écrans
           larges. Les cartes sont plus hautes → le bloc remplit mieux la

@@ -12,8 +12,11 @@ import { MonteCarloPanel } from "../components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "../components/Tabs/RenteRetraiteTab"
 import { TerminalHistogram } from "../components/Simulation/TerminalHistogram"
 import { CashflowCalendar } from "../components/Simulation/CashflowCalendar"
+import { FiscalPanel } from "../components/Simulation/FiscalPanel"
 import { SliderInput } from "../components/shared/SliderInput"
 import { SmartInput } from "../components/shared/SmartInput"
+import { SectionHeader } from "../components/shared/SectionHeader"
+import { Shield } from "lucide-react"
 import { DEFAULT_INPUTS, fmtCompact, fmtCurrency, runSimulation, runDecumulation, buildTerminalHistogram, solveGoal } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 
@@ -675,6 +678,64 @@ describe("audit v5.6.3 — CashflowCalendar : capital initial réconcilié avec 
     // Le total des versements affiché = investedNom final (comme la carte)
     const last = rows[rows.length - 1]
     expect(screen.getByText(fmtCompact(last.investedNom))).toBeInTheDocument()
+  })
+})
+
+describe("v5.6.4 — SectionHeader : anatomie de titre uniforme sur tout le site", () => {
+  it("rend le titre en en-tête avec barre dorée + icône + sous-titre + élément droit", () => {
+    const { container } = render(
+      <SectionHeader
+        title="Vos impôts"
+        icon={Shield}
+        level="card"
+        as="h3"
+        sub="Compte-titres ordinaire"
+        trailing={<span>€ d'aujourd'hui</span>}
+      />,
+    )
+    const heading = screen.getByRole("heading", { name: /vos impôts/i })
+    expect(heading.tagName).toBe("H3")
+    // La barre dorée décorative est masquée des lecteurs d'écran
+    expect(container.querySelector("[aria-hidden]")).not.toBeNull()
+    expect(screen.getByText("Compte-titres ordinaire")).toBeInTheDocument()
+    expect(screen.getByText("€ d'aujourd'hui")).toBeInTheDocument()
+  })
+
+  it("level=\"label\" rend un mini-titre via children (Modèle de retrait / Paramètres)", () => {
+    render(<SectionHeader level="label">Modèle de retrait</SectionHeader>)
+    expect(screen.getByText("Modèle de retrait")).toBeInTheDocument()
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument()
+  })
+
+  it("mode bare : aucun <div>/<p> (valide dans un <button>) — revue adverse v5.6.4", () => {
+    const { container } = render(
+      <SectionHeader bare level="card" icon={Shield} title="Calendrier des flux" />,
+    )
+    const root = container.firstElementChild as HTMLElement
+    expect(root.tagName).toBe("SPAN")
+    expect(root.querySelector("div, p")).toBeNull()
+    expect(screen.getByText("Calendrier des flux")).toBeInTheDocument()
+  })
+})
+
+describe("v5.6.4 — FiscalPanel : titre proportionné à « Statistiques clés »", () => {
+  it("affiche « Vos impôts » en TITRE et l'enveloppe en sous-titre (plus de tiret dans le titre)", () => {
+    const inputs = { ...DEFAULT_INPUTS, envelope: "cto" as const, duration: 10 }
+    const rows = runSimulation(inputs)
+    render(<FiscalPanel rows={rows} inputs={inputs} />)
+    const title = screen.getByRole("heading", { name: /vos impôts/i })
+    // Le titre est court et lisible (même anatomie que « Statistiques clés »)
+    expect(title.textContent).toBe("Vos impôts")
+    // L'enveloppe n'est plus collée au titre par un tiret : sous-titre séparé
+    expect(screen.getByText("Compte-titres ordinaire")).toBeInTheDocument()
+    expect(screen.queryByText(/Vos impôts —/)).not.toBeInTheDocument()
+  })
+
+  it("le sous-titre suit l'enveloppe choisie (PEA → Plan d'épargne en actions)", () => {
+    const inputs = { ...DEFAULT_INPUTS, envelope: "pea" as const, duration: 10 }
+    const rows = runSimulation(inputs)
+    render(<FiscalPanel rows={rows} inputs={inputs} />)
+    expect(screen.getByText("Plan d'épargne en actions")).toBeInTheDocument()
   })
 })
 

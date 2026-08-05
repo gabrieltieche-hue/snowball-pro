@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, Play, ShieldCheck } from "lucide-react"
+import { AlertTriangle, BarChart3, Dices, Play, ShieldCheck } from "lucide-react"
 import { fmtCurrency, fmtDecimal, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 import { Toggle } from "../shared/Toggle"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
+import { SectionHeader } from "../shared/SectionHeader"
 import { cn } from "../../utils/cn"
 import type { MonteCarloResult, SimulationInputs } from "../../types"
 
@@ -132,8 +133,8 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
     <div className="space-y-5 animate-fade-in">
       <div className="glass rounded-3xl p-5 sm:p-6 space-y-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h2 className="text-base font-bold mb-1">🎲 Simulation de Monte Carlo</h2>
+          <div className="flex-1 min-w-[260px]">
+            <SectionHeader as="h2" level="page" icon={Dices} title="Simulation de Monte Carlo" className="mb-2" />
             <p className="text-xs text-text-muted leading-relaxed max-w-xl">
               L'avenir de la bourse est imprévisible : nous testons donc votre plan{" "}
               <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, en rééchantillonnant
@@ -244,16 +245,18 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
             </div>
             {/* Histogramme des issues terminales : rend la queue droite visible */}
             <div className="glass rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                    Distribution des capitaux finaux
+              <SectionHeader
+                as="h3"
+                level="card"
+                icon={BarChart3}
+                title="Distribution des capitaux finaux"
+                className="mb-3 px-1"
+                trailing={
+                  <span className="text-[10px] text-text-dim">
+                    <span className="mono font-bold text-text">{mcResult.runs.toLocaleString("fr-FR")}</span> cas
                   </span>
-                </div>
-                <span className="text-[10px] text-text-dim">
-                  <span className="mono font-bold text-text">{mcResult.runs.toLocaleString("fr-FR")}</span> cas
-                </span>
-              </div>
+                }
+              />
               <TerminalHistogram
                 bins={mcResult.terminalDistribution}
                 mean={mcResult.mean}

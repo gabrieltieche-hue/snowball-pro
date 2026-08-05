@@ -1,9 +1,11 @@
 import { useMemo } from "react"
+import { TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { deflationFactor, fmtCurrency, fmtCompact } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { EnvelopeType, SimulationInputs, YearRow } from "../../types"
 
 interface EquityChartProps {
@@ -45,30 +47,33 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
 
   return (
     <div className="glass rounded-3xl p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-sm font-bold flex items-center gap-2">
-          📈 Projection de votre capital
-          {showReal && (
-            <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-              Euros d'aujourd'hui
-            </span>
-          )}
-        </h2>
-        <div className="flex items-center gap-3 text-[10px] text-text-dim">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains (bourse)
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: investedColor }} /> Argent épargné
-          </span>
-          {inputs.envelope !== "none" && (
+      <SectionHeader
+        as="h2"
+        level="card"
+        icon={TrendingUp}
+        title="Projection de votre capital"
+        trailing={
+          <div className="flex items-center gap-3 text-[10px] text-text-dim flex-wrap">
+            {showReal && (
+              <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Euros d'aujourd'hui
+              </span>
+            )}
             <span className="flex items-center gap-1">
-              <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impôts théoriques
-              (liquidation)
+              <span className="w-2 h-2 rounded-full" style={{ background: gainsColor }} /> Gains (bourse)
             </span>
-          )}
-        </div>
-      </div>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: investedColor }} /> Argent épargné
+            </span>
+            {inputs.envelope !== "none" && (
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-0.5 rounded-full" style={{ background: taxColor }} /> Impôts théoriques
+                (liquidation)
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* Quand les courbes sont en euros d'aujourd'hui, la valeur qui sera
           réellement sur le compte reste affichée : l'utilisateur ne perd jamais

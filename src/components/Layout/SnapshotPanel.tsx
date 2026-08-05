@@ -31,7 +31,10 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">💾 Snapshots</div>
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+          <span className="w-1 h-3.5 rounded-full bg-primary shrink-0" aria-hidden />
+          <Camera size={12} className="text-primary" aria-hidden /> Snapshots
+        </div>
         <button
           type="button"
           onClick={onSave}

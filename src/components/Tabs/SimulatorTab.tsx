@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Table } from "lucide-react"
 import { computeKPIs, computeMilestones } from "../../engine"
+import { SectionHeader } from "../shared/SectionHeader"
 import { EquityChart } from "../Charts/EquityChart"
 import { DrawdownChart } from "../Charts/DrawdownChart"
 import { CapitalAllocation } from "../Charts/CapitalAllocation"
@@ -63,8 +64,8 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
           aria-controls="annual-detail-table"
           className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors"
         >
-          <span className="text-xs font-bold flex items-center gap-2">📋 Détail année par année</span>
-          <span className="text-[10px] text-text-dim flex items-center gap-1">
+          <SectionHeader bare level="card" icon={Table} title="Détail année par année" className="flex-1 min-w-0" />
+          <span className="text-[10px] text-text-dim flex items-center gap-1 shrink-0">
             {tableOpen ? (
               <>
                 Réduire <ChevronUp size={12} />

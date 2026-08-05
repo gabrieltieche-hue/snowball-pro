@@ -1,3 +1,5 @@
+import { Landmark, PiggyBank, Receipt, TrendingUp } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { deflationFactor, ENVELOPE_CONFIGS } from "../../engine"
 import { DualAmount } from "../shared/DualAmount"
 import type { SimulationInputs, YearRow } from "../../types"
@@ -17,6 +19,7 @@ interface StatCard {
   real: number
   color: string
   sub?: string
+  icon: LucideIcon
 }
 
 export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
@@ -49,6 +52,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       real: lastRow.real,
       color: "var(--color-text)",
       sub: "avant impôts",
+      icon: TrendingUp,
     },
     {
       label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
@@ -56,6 +60,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       real: netAfterTax * factor,
       color: "var(--color-value-gold)",
       sub: envelope !== "none" ? "après impôts" : "Aucun impôt à payer",
+      icon: Landmark,
     },
     {
       label: "Impôts",
@@ -63,6 +68,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       real: taxAmount * factor,
       color: "var(--color-value-red)",
       sub: envelope === "per" ? "impôt théorique sur gains + versements" : "impôt théorique à la liquidation",
+      icon: Receipt,
     },
     {
       label: "Total épargné",
@@ -70,30 +76,52 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       real: lastRow.investedReal,
       color: "var(--color-text-muted)",
       sub: `Gains de la bourse : +${fmt(Math.max(0, (showReal ? lastRow.real : lastRow.nominal) - (showReal ? lastRow.investedReal : lastRow.investedNom)))}`,
+      icon: PiggyBank,
     },
   ]
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map(card => (
-        <div key={card.label} className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors min-w-0">
-          <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2 truncate" title={card.label}>
-            {card.label}
-          </div>
-          <DualAmount
-            nominal={card.nominal}
-            real={card.real}
-            showReal={showReal}
-            color={card.color}
-            endYear={endYear}
-          />
-          {card.sub && (
-            <div className="text-[10px] text-text-dim mt-1 truncate" title={card.sub}>
-              {card.sub}
+      {cards.map(card => {
+        const Icon = card.icon
+        return (
+          <div
+            key={card.label}
+            className="glass rounded-2xl p-4 card-interactive min-w-0 relative overflow-hidden"
+          >
+            {/* Liseré d'accent en haut de carte : signale la teinte de la
+                valeur (texte neutre / or / rouge) sans alourdir. */}
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-[2px] opacity-70"
+              style={{ background: card.color }}
+            />
+            <div className="flex items-center gap-1.5 mb-2 min-w-0">
+              <span
+                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: `color-mix(in srgb, ${card.color} 14%, transparent)`, color: card.color }}
+              >
+                <Icon size={12} aria-hidden />
+              </span>
+              <div className="text-[10px] text-text-dim uppercase tracking-wider truncate" title={card.label}>
+                {card.label}
+              </div>
             </div>
-          )}
-        </div>
-      ))}
+            <DualAmount
+              nominal={card.nominal}
+              real={card.real}
+              showReal={showReal}
+              color={card.color}
+              endYear={endYear}
+            />
+            {card.sub && (
+              <div className="text-[10px] text-text-dim mt-1 truncate" title={card.sub}>
+                {card.sub}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

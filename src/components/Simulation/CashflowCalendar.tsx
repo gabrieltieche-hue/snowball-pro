@@ -2,6 +2,7 @@ import { useState } from "react"
 import { CalendarRange, ChevronDown } from "lucide-react"
 import { deflationFactor, fmtCompact } from "../../engine"
 import { cn } from "../../utils/cn"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { YearRow } from "../../types"
 
 interface CashflowCalendarProps {
@@ -72,10 +73,8 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
         aria-controls="cashflow-calendar-content"
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-glass-hover transition-colors"
       >
-        <span className="text-xs font-bold flex items-center gap-2">
-          <CalendarRange size={13} className="text-primary" /> Calendrier des flux
-        </span>
-        <ChevronDown size={14} className={cn("text-text-dim transition-transform", open && "rotate-180")} />
+        <SectionHeader bare level="card" icon={CalendarRange} title="Calendrier des flux" className="flex-1 min-w-0" />
+        <ChevronDown size={14} className={cn("text-text-dim transition-transform shrink-0", open && "rotate-180")} />
       </button>
       {open && (
         <div id="cashflow-calendar-content" className="px-5 pb-5 animate-fade-in">

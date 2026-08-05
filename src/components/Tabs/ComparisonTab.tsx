@@ -1,8 +1,10 @@
 import { useMemo } from "react"
 import { motion } from "framer-motion"
+import { Table } from "lucide-react"
 import { fmtCompact } from "../../engine"
 import { ComparisonChart } from "../Charts/ComparisonChart"
 import { ComparisonSummary } from "../Simulation/ComparisonSummary"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { ScenarioComparison, SimulationInputs, YearRow } from "../../types"
 
 interface ComparisonTabProps {
@@ -45,7 +47,7 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
 
       <div className="glass rounded-3xl overflow-hidden">
         <div className="px-5 sm:px-6 py-4 border-b border-border/30">
-          <span className="text-xs font-bold">📋 Tableau comparatif annuel</span>
+          <SectionHeader as="h3" level="card" icon={Table} title="Tableau comparatif annuel" className="mb-0" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">

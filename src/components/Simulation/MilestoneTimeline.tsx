@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { Trophy } from "lucide-react"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { Milestone, YearRow } from "../../types"
 
 interface MilestoneTimelineProps {
@@ -17,7 +18,7 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
 
   return (
     <div className="glass rounded-2xl p-5">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-4">Vos étapes clés</div>
+      <SectionHeader title="Vos étapes clés" icon={Trophy} level="card" />
       <div className="space-y-3">
         {reached.length === 0 && (
           <p className="text-xs text-text-dim">

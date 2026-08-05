@@ -1,22 +1,23 @@
 import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import {
-  TrendingUp,
-  Shield,
-  Wallet,
-  PiggyBank,
-  Coins,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-  ChevronDown,
-  Sparkles,
+  Activity,
   AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  ChevronDown,
+  Coins,
+  HelpCircle,
+  Lightbulb,
+  PiggyBank,
   Play,
   RefreshCw,
-  Lightbulb,
+  Shield,
   ShieldCheck,
-  Activity,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+  XCircle,
 } from "lucide-react"
 import {
   ComposedChart,
@@ -36,6 +37,7 @@ import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
 import { Toggle } from "../shared/Toggle"
+import { SectionHeader } from "../shared/SectionHeader"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 
 import type { DecumulationResult, SimulationInputs, StressTestResult, WithdrawalModel, YearRow } from "../../types"
@@ -141,12 +143,13 @@ export function RenteRetraiteTab({
       <div className="glass rounded-3xl p-4 sm:p-6">
         <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
           <div className="flex-1 min-w-[260px]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                <TrendingUp size={14} className="text-primary" />
-              </div>
-              <h2 className="text-sm sm:text-base font-bold">Simulation de décaissement & rente</h2>
-            </div>
+            <SectionHeader
+              as="h2"
+              level="page"
+              icon={TrendingUp}
+              title="Simulation de décaissement & rente"
+              className="mb-2"
+            />
             <p className="text-[11px] text-text-dim leading-relaxed max-w-xl">
               Analysez la soutenabilité de vos retraits sur{" "}
               <strong className="text-text">{inputs.retirementYears} ans</strong> via une simulation Monte-Carlo.
@@ -179,7 +182,7 @@ export function RenteRetraiteTab({
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Sélecteur de modèle */}
           <div className="lg:col-span-3">
-            <SectionTitle>Modèle de retrait</SectionTitle>
+            <SectionHeader level="label">Modèle de retrait</SectionHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {WITHDRAWAL_MODELS.map(model => {
                 const isActive = inputs.withdrawalModel === model.id
@@ -243,7 +246,7 @@ export function RenteRetraiteTab({
 
           {/* Paramètres */}
           <div className="lg:col-span-2 space-y-3">
-            <SectionTitle>Paramètres</SectionTitle>
+            <SectionHeader level="label">Paramètres</SectionHeader>
 
             {/* Aperçu rente */}
             <div className="glass rounded-xl p-4">
@@ -458,12 +461,7 @@ export function RenteRetraiteTab({
           Fiabilité & sûreté du modèle (options désactivables)
          ────────────────────────────────────────────────────────── */}
       <div className="glass rounded-3xl p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <ShieldCheck size={14} className="text-primary" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-            Fiabilité & sûreté des estimations
-          </h3>
-        </div>
+        <SectionHeader as="h3" level="card" icon={ShieldCheck} title="Fiabilité & sûreté des estimations" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           <Toggle
             checked={inputs.parameterUncertainty}
@@ -525,12 +523,19 @@ export function RenteRetraiteTab({
           aria-expanded={stressOpen}
           className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors text-left"
         >
-          <span className="text-xs font-bold flex items-center gap-2">
-            <Activity size={13} className="text-text-dim" />
-            Et si vous partiez en pleine crise ?{" "}
-            <span className="text-text-dim font-medium">(scénarios réels 1973 · 2000 · 2008)</span>
-          </span>
-          <span className="text-[10px] text-text-dim flex items-center gap-1">
+          <SectionHeader
+            bare
+            level="card"
+            icon={Activity}
+            title={
+              <>
+                Et si vous partiez en pleine crise ?{" "}
+                <span className="text-text-dim font-medium">(scénarios réels 1973 · 2000 · 2008)</span>
+              </>
+            }
+            className="flex-1 min-w-0"
+          />
+          <span className="text-[10px] text-text-dim flex items-center gap-1 shrink-0">
             {stressOpen ? "Réduire" : "Voir le détail"}
             <ChevronDown size={12} className={cn("transition-transform", stressOpen && "rotate-180")} />
           </span>
@@ -546,12 +551,12 @@ export function RenteRetraiteTab({
           Comparatif rapide : 3 taux
          ────────────────────────────────────────────────────────── */}
       <div className="glass rounded-3xl p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles size={13} className="text-text-dim" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-            Aperçu — rente possible selon le taux de retrait
-          </h3>
-        </div>
+        <SectionHeader
+          as="h3"
+          level="card"
+          icon={Sparkles}
+          title="Aperçu — rente possible selon le taux de retrait"
+        />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {comparisonRates.map(rate => {
             const monthly = (startingCapital * rate) / 12
@@ -591,15 +596,6 @@ export function RenteRetraiteTab({
 // ───────────────────────────────────────────────────────────
 // Sous-composants
 // ───────────────────────────────────────────────────────────
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted mb-3">
-      <span className="w-1 h-3 rounded-full bg-primary" />
-      {children}
-    </div>
-  )
-}
 
 function fmtPercent(v: number): string {
   return `${fmtDecimal(v * 100, 1).replace(/,0$/, "")} %`
@@ -670,14 +666,14 @@ function ResultsSection({
             <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
           </p>
           {crisisNote && (
-            <div className="mt-2 rounded-xl bg-danger/8 border-l-2 border-danger/40 px-3 py-2 flex items-start gap-2">
+            <div className="mt-2 rounded-xl bg-danger/8 px-3 py-2 flex items-start gap-2">
               <AlertTriangle size={13} className="text-danger shrink-0 mt-0.5" />
               <p className="text-[11px] leading-relaxed text-text-dim">
                 <strong className="text-danger">Krach simulé :</strong> {crisisNote}
               </p>
             </div>
           )}
-          <div className="mt-2 rounded-xl bg-primary/8 border-l-2 border-primary/50 px-3 py-2 flex items-start gap-2">
+          <div className="mt-2 rounded-xl bg-primary/8 px-3 py-2 flex items-start gap-2">
             <Lightbulb size={13} className="text-primary shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed text-text-dim">
               <strong className="text-text">En clair :</strong>{" "}
@@ -754,12 +750,14 @@ function ResultsSection({
       {/* Histogramme des issues terminales : la queue de chance visible */}
       {decumResult.terminalDistribution.length > 0 && (
         <div className="glass rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              Distribution des capitaux finaux
-            </span>
-            <span className="text-[10px] text-text-dim">0 € = capital épuisé</span>
-          </div>
+          <SectionHeader
+            as="h3"
+            level="card"
+            icon={BarChart3}
+            title="Distribution des capitaux finaux"
+            className="mb-3 px-1"
+            trailing={<span className="text-[10px] text-text-dim">0 € = capital épuisé</span>}
+          />
           <TerminalHistogram
             bins={decumResult.terminalDistribution}
             mean={decumResult.mean}
@@ -774,25 +772,26 @@ function ResultsSection({
       {/* Graphique */}
       {decumResult.years.length > 0 && (
         <div className="glass rounded-2xl p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={13} className="text-text-dim" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Votre capital, année après année
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowGuide(v => !v)}
-              className={cn(
-                "text-[10px] text-text-dim hover:text-text inline-flex items-center gap-1 transition-colors",
-                showGuide && "text-primary",
-              )}
-            >
-              <HelpCircle size={11} /> Comment lire ?
-              <ChevronDown size={11} className={cn("transition-transform", showGuide && "rotate-180")} />
-            </button>
-          </div>
+          <SectionHeader
+            as="h3"
+            level="card"
+            icon={TrendingUp}
+            title="Votre capital, année après année"
+            className="mb-2 px-1"
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowGuide(v => !v)}
+                className={cn(
+                  "text-[10px] text-text-dim hover:text-text inline-flex items-center gap-1 transition-colors",
+                  showGuide && "text-primary",
+                )}
+              >
+                <HelpCircle size={11} /> Comment lire ?
+                <ChevronDown size={11} className={cn("transition-transform", showGuide && "rotate-180")} />
+              </button>
+            }
+          />
           <p className="text-[10px] text-text-dim mb-2 px-1">
             {decumResult.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un
             cas possible

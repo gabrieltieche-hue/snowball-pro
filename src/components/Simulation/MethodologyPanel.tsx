@@ -2,6 +2,7 @@ import { useState } from "react"
 import { BookOpen, ChevronDown } from "lucide-react"
 import { ENVELOPE_CONFIGS, fmtDecimal, getHistoricalDataset } from "../../engine"
 import { cn } from "../../utils/cn"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs } from "../../types"
 
 interface MethodologyPanelProps {
@@ -61,10 +62,8 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
         aria-controls="methodology-content"
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-glass-hover transition-colors"
       >
-        <span className="text-xs font-bold flex items-center gap-2">
-          <BookOpen size={13} className="text-primary" /> Méthodologie & hypothèses
-        </span>
-        <ChevronDown size={14} className={cn("text-text-dim transition-transform", open && "rotate-180")} />
+        <SectionHeader bare level="card" icon={BookOpen} title="Méthodologie & hypothèses" className="flex-1 min-w-0" />
+        <ChevronDown size={14} className={cn("text-text-dim transition-transform shrink-0", open && "rotate-180")} />
       </button>
       {open && (
         <div id="methodology-content" className="px-5 pb-5 space-y-2.5 animate-fade-in">
