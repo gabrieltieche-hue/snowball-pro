@@ -1,4 +1,5 @@
-import { Gauge } from "lucide-react"
+import { Activity, Gauge, Layers, Receipt, Shield, Timer, TrendingDown, TrendingUp, Wallet } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { fmtCurrency } from "../../engine"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { KPIs } from "../../types"
@@ -18,6 +19,7 @@ interface KpiCard {
   digits?: number
   currency?: boolean
   sub: string
+  icon: LucideIcon
   visible?: (k: KPIs) => boolean
 }
 
@@ -34,6 +36,7 @@ const CARDS: KpiCard[] = [
     suffix: "%",
     color: GOLD,
     sub: "XIRR : rendement annuel calculé sur vos flux réels (versements compris)",
+    icon: TrendingUp,
   },
   {
     key: "sharpe",
@@ -42,6 +45,7 @@ const CARDS: KpiCard[] = [
     color: GOLD,
     digits: 2,
     sub: "le gain obtenu pour chaque risque pris (Sharpe)",
+    icon: Activity,
     visible: k => k.sharpe > 0,
   },
   {
@@ -50,6 +54,7 @@ const CARDS: KpiCard[] = [
     suffix: "x",
     color: GOLD,
     sub: "capital final ÷ argent épargné",
+    icon: Layers,
     visible: k => k.capitalMultiple > 0,
   },
   {
@@ -58,6 +63,7 @@ const CARDS: KpiCard[] = [
     suffix: " ans",
     color: GOLD,
     sub: "années pour que votre capital double",
+    icon: Timer,
     visible: k => k.doublingTime !== null,
   },
   {
@@ -66,6 +72,7 @@ const CARDS: KpiCard[] = [
     suffix: "%",
     color: GOLD,
     sub: "votre gain réel, prix de l'inflation déduit",
+    icon: Shield,
   },
   {
     key: "maxDrawdownPct",
@@ -73,6 +80,7 @@ const CARDS: KpiCard[] = [
     suffix: "%",
     color: RED,
     sub: "la plus grosse baisse du capital en cours de route",
+    icon: TrendingDown,
     visible: k => k.maxDrawdownPct > 0.05,
   },
   {
@@ -82,6 +90,7 @@ const CARDS: KpiCard[] = [
     color: RED,
     currency: true,
     sub: "tous les frais cumulés sur la durée",
+    icon: Receipt,
     visible: k => k.totalFees > 0,
   },
   {
@@ -90,6 +99,7 @@ const CARDS: KpiCard[] = [
     suffix: "%",
     color: GOLD,
     sub: "part de la valeur du capital restant après inflation",
+    icon: Wallet,
     visible: k => k.powerPurchaseRatio > 0 && k.powerPurchaseRatio < 100,
   },
 ]
@@ -112,13 +122,22 @@ export function KpiGrid({ kpis }: KpiGridProps) {
           const display = kpi.currency
             ? fmtCurrency(val as number)
             : `${(val as number).toFixed(kpi.digits ?? 1).replace(".", ",")}${kpi.suffix}`
+          const Icon = kpi.icon
           return (
             <div
               key={kpi.key}
-              className="glass rounded-2xl p-4 hover:bg-glass-hover transition-colors flex flex-col min-w-0 min-h-[132px]"
+              className="glass rounded-2xl p-4 card-interactive flex flex-col min-w-0 min-h-[132px]"
             >
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug">
-                {kpi.label}
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">
+                  {kpi.label}
+                </div>
+                <span
+                  className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `color-mix(in srgb, ${kpi.color} 12%, transparent)`, color: kpi.color }}
+                >
+                  <Icon size={12} aria-hidden />
+                </span>
               </div>
               <div className="mono text-lg font-bold mt-2 leading-tight" style={{ color: kpi.color }}>
                 {display}

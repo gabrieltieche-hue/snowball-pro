@@ -56,7 +56,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             onKeyDown={e => handleKeyDown(e, index)}
             className={cn(
               "relative flex-1 min-w-[132px] px-3 py-2.5 rounded-xl text-xs font-bold transition-colors",
-              selected ? "text-[#221b06]" : "text-text-muted hover:text-text hover:bg-glass-hover",
+              selected ? "btn-gold-text" : "text-text-muted hover:text-text hover:bg-glass-hover",
             )}
           >
             {/* Pastille or animée : glisse d'un onglet à l'autre (layoutId). */}

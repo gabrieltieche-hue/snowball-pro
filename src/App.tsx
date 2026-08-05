@@ -430,7 +430,7 @@ export default function App() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
-              <Wallet size={18} className="text-[#221b06]" aria-hidden />
+              <Wallet size={18} className="btn-gold-text" aria-hidden />
               <span className="absolute -inset-px rounded-xl ring-1 ring-primary/50" aria-hidden />
             </div>
             <div className="min-w-0 leading-tight">

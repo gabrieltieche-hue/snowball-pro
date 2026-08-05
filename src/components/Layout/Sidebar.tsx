@@ -1,4 +1,4 @@
-import { Coins, Landmark, Percent, Settings2, TrendingUp, Wallet } from "lucide-react"
+import { Coins, Landmark, Lightbulb, Percent, Settings2, TrendingUp } from "lucide-react"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
 import { SnapshotPanel } from "./SnapshotPanel"
@@ -50,26 +50,18 @@ export function Sidebar({
       {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
           hauteur d'écran et épinglait ses sections basses sous le pli pendant
           tout le scroll. Elle suit désormais le document. */}
-      {/* Logo */}
+      {/* La marque vit dans l'en-tête global — ici, un simple repère de
+          section + le badge de scénario en mode comparaison. */}
       <div className="flex items-center justify-between gap-2 mb-6">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-            <Wallet size={16} className="text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-lg font-extrabold tracking-tight leading-none whitespace-nowrap">
-              SNOWBALL <span className="text-primary">PRO</span>
-            </div>
-            <div className="text-[10px] text-text-dim mt-1 uppercase tracking-[0.2em] truncate">
-              Simulateur patrimonial
-            </div>
-          </div>
-          {scenarioLabel && (
-            <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
-              {scenarioLabel}
-            </span>
-          )}
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
+          <span className="w-1 h-4 rounded-full bg-primary shrink-0" aria-hidden />
+          Réglages
         </div>
+        {scenarioLabel && (
+          <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+            {scenarioLabel}
+          </span>
+        )}
       </div>
 
       {/* Bases */}
@@ -105,7 +97,11 @@ export function Sidebar({
             et la Rente continuent de rééchantillonner l'historique réel. */}
         {/* mb-4 : la carte est un frère des SliderInput (chacun a mb-4) — sans
             cette marge, elle collait au « Durée (années) » en dessous (fix v5.6.2). */}
-        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 mb-4">
+        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 mb-4 relative overflow-hidden">
+          <div
+            className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_0%,rgba(212,175,55,0.14),transparent_60%)] pointer-events-none"
+            aria-hidden
+          />
           <div className="flex items-center gap-1.5">
             <TrendingUp size={12} className="text-primary shrink-0" />
             <span className="text-[11px] font-bold text-text leading-tight">
@@ -284,7 +280,11 @@ export function Sidebar({
       </CollapsibleSection>
 
       {/* Insight */}
-      <div className="mb-5 glass-gold rounded-2xl p-4 border-l-2 border-primary/50">
+      <div className="mb-5 glass-gold rounded-2xl p-4">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Lightbulb size={13} className="text-primary shrink-0" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">Votre projet</span>
+        </div>
         <p className="text-xs leading-relaxed text-text-muted">
           Projection sur <strong className="text-text">{inputs.duration} ans</strong>. Capital final :{" "}
           <strong className="text-primary">{fmtCurrency(displayNominal)}</strong> sur le compte (fin de projet) ·{" "}

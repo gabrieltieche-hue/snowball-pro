@@ -66,9 +66,9 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
     >
       <SectionHeader title="Analyse & conseils" icon={Sparkles} level="card" />
       {insights.map((text, i) => (
-        <p key={i} className="text-xs text-text-muted leading-relaxed mb-1">
-          <span className="text-primary font-bold mr-1">✦</span>
-          {text}
+        <p key={i} className="text-xs text-text-muted leading-relaxed mb-1 flex items-start gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-[5px]" aria-hidden />
+          <span>{text}</span>
         </p>
       ))}
       <p className="text-[10px] text-text-dim mt-3 italic">

@@ -68,7 +68,10 @@ export function SectionHeader({
     )
   }
 
-  const titleSize = level === "page" ? "text-base sm:text-lg" : "text-sm sm:text-base"
+  // Tailles légèrement réduites (demande utilisateur) : le niveau « page »
+  // passait de 16/18 px à 15/17 px et « card » de 14/16 px à 13/14 px — même
+  // hiérarchie (page > card > label), moins de poids visuel.
+  const titleSize = level === "page" ? "text-[15px] sm:text-[17px]" : "text-[13px] sm:text-sm"
   const iconSize = level === "page" ? 18 : 16
 
   // Variante « bare » : uniquement du contenu phrasé (spans) pour vivre dans

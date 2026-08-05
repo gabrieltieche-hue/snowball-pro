@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { BarChart3, Target } from "lucide-react"
+import { BarChart3, PiggyBank, Target, TrendingUp } from "lucide-react"
 import { DEFAULT_INPUTS, fmtCurrency, RECOMMENDED_RETURN_MAX, RECOMMENDED_RETURN_MIN, solveGoal } from "../../engine"
 import { GoalProgress } from "../Simulation/GoalProgress"
 import { SectionHeader } from "../shared/SectionHeader"
@@ -126,8 +126,8 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
         {/* Résultats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-2xl p-5 border-2 border-[#6366F1]/40 bg-[#6366F1]/10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] mb-2">
-              💰 Épargne mensuelle nécessaire
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] mb-2 flex items-center gap-1.5">
+              <PiggyBank size={12} aria-hidden /> Épargne mensuelle nécessaire
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
               {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0
@@ -151,8 +151,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
           </div>
 
           <div className="rounded-2xl p-5 border-2 border-[#4ADE80]/30 bg-[#4ADE80]/8">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#4ADE80] mb-2">
-              📈 Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois d'épargne)
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#4ADE80] mb-2 flex items-center gap-1.5">
+              <TrendingUp size={12} aria-hidden /> Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois
+              d'épargne)
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
               {goalResult.requiredRate !== null

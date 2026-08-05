@@ -25,14 +25,17 @@ export function CollapsibleSection({ title, icon, defaultOpen = true, children }
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-2 group"
       >
-        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted group-hover:text-text transition-colors">
-          <span className="w-1 h-3.5 rounded-full bg-primary shrink-0" aria-hidden />
-          {icon}
-          {title}
+        <span className="flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted group-hover:text-text transition-colors min-w-0">
+          {icon && (
+            <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              {icon}
+            </span>
+          )}
+          <span className="truncate">{title}</span>
         </span>
         <ChevronDown
           size={13}
-          className={cn("text-text-dim transition-transform duration-200 shrink-0", open && "rotate-180")}
+          className={cn("text-text-dim transition-transform duration-200 shrink-0 group-hover:text-text", open && "rotate-180")}
         />
       </button>
       {open && <div className="mt-3 animate-fade-in">{children}</div>}

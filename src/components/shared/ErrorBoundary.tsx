@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
+import { RefreshCw, TriangleAlert } from "lucide-react"
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -34,7 +35,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         <div role="alert" className="glass rounded-3xl p-8 text-center border border-danger/40 bg-danger/10">
-          <div className="text-4xl mb-3">😵</div>
+          <div className="mb-3 flex justify-center">
+            <TriangleAlert size={40} className="text-danger" aria-hidden />
+          </div>
           <h2 className="text-sm font-bold text-text mb-1">
             Une erreur est survenue{this.props.label ? ` dans « ${this.props.label} »` : ""}
           </h2>
@@ -44,14 +47,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </p>
           {this.state.message && (
             <p className="text-[11px] mono text-danger/80 mb-4 break-words max-w-sm mx-auto">{this.state.message}</p>
-          )}
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
-          >
-            🔄 Recharger
-          </button>
+          )}            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
+            >
+              <RefreshCw size={13} aria-hidden /> Recharger
+            </button>
         </div>
       )
     }

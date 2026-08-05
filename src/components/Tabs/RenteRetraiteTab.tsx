@@ -303,7 +303,7 @@ export function RenteRetraiteTab({
                 onChange={e => updateInput("retirementYears", Number(e.target.value))}
                 className="w-full mt-2"
                 aria-label="Durée de la rente en années"
-                style={{ accentColor: "var(--color-primary)" }}
+                style={rangeFill(inputs.retirementYears, 5, 60, "var(--color-primary)")}
               />
               <div className="flex justify-between text-[10px] text-text-dim mt-1">
                 <span>5 ans</span>
@@ -378,7 +378,7 @@ export function RenteRetraiteTab({
                             onChange={e => updateInput("crisisStartOffset", Number(e.target.value))}
                             className="w-full"
                             aria-label="Années avant le krach"
-                            style={{ accentColor: "var(--color-danger)" }}
+                            style={rangeFill(Math.min(inputs.crisisStartOffset, maxOffset), 0, maxOffset, "var(--color-danger)")}
                           />
                           <div className="flex justify-between text-[10px] text-text-dim mt-1">
                             <span>Année 1</span>
@@ -404,7 +404,7 @@ export function RenteRetraiteTab({
                       onChange={e => updateInput("crisisIntensity", Number(e.target.value) / 100)}
                       className="w-full"
                       aria-label="Intensité du krach en pourcentage"
-                      style={{ accentColor: "var(--color-danger)" }}
+                      style={rangeFill(Math.round(inputs.crisisIntensity * 100), 10, 60, "var(--color-danger)")}
                     />
                     <div className="flex justify-between text-[10px] text-text-dim mt-1">
                       <span>−10 %</span>
@@ -429,7 +429,7 @@ export function RenteRetraiteTab({
               className={cn(
                 "w-full rounded-xl py-3.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors",
                 lastRow && lastRow.nominal > 0 && !running
-                  ? "bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary"
+                  ? "btn-shine bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary"
                   : "bg-text-dim/20 text-text-dim cursor-not-allowed",
               )}
             >
@@ -599,6 +599,14 @@ export function RenteRetraiteTab({
 
 function fmtPercent(v: number): string {
   return `${fmtDecimal(v * 100, 1).replace(/,0$/, "")} %`
+}
+
+/** Rail de curseur « rempli » (même langage que SliderInput). */
+function rangeFill(value: number, min: number, max: number, color: string) {
+  const pct = Math.min(100, Math.max(0, ((value - min) / (max - min || 1)) * 100))
+  return {
+    background: `linear-gradient(to right, ${color} ${pct}%, color-mix(in srgb, ${color} 10%, transparent) ${pct}%)`,
+  }
 }
 
 function ResultsSection({

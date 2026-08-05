@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { AlertTriangle } from "lucide-react"
 import { parseCurrencyInput } from "../../engine"
 import { cn } from "../../utils/cn"
 
@@ -118,9 +119,9 @@ export function SmartInput({
       {error && (
         <span
           role="alert"
-          className="absolute right-0 top-full mt-1 z-30 whitespace-nowrap text-[10px] font-bold text-danger bg-glass-strong border border-danger/40 rounded-lg px-2 py-1 shadow-premium animate-fade-in"
+          className="absolute right-0 top-full mt-1 z-50 whitespace-nowrap text-[10px] font-bold text-danger bg-glass-strong border border-danger/40 rounded-lg px-2 py-1 shadow-premium animate-fade-in"
         >
-          ⚠️ {error}
+          <AlertTriangle size={11} className="shrink-0" aria-hidden /> {error}
         </span>
       )}
     </div>

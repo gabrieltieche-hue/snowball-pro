@@ -4,6 +4,43 @@
 
 ---
 
+## v5.7.0 — Overhaul UI/UX : en-tête global, onglets à icônes, cartes héro, design system affiné
+
+Demande utilisateur : *« Améliore drastiquement l'interface et l'UI, l'UX, et tout ça… GO DEEPER »*. Refonte complète de la couche d'affichage (zéro changement moteur) : hiérarchie, motion, micro-interactions, cohérence — l'identité or/ivoire devient plus affirmée et l'app gagne un vrai squelette d'en-tête. Bump 5.6.4 → **5.7.0**.
+
+### 🧭 En-tête global + ActionBar intégrée (`App.tsx`, `ActionBar.tsx`)
+
+- **Nouvel en-tête sticky** (backdrop-blur + bordure fine) : emblème or avec icône Wallet, wordmark « SNOWBALL PRO » en Outfit, tagline — la barre d'actions (Annuler/Rétablir, Comparer, Partager, thème, Exporter) y est intégrée et reste accessible pendant tout le scroll.
+- **Sidebar** : le logo y est retiré (la marque vit dans l'en-tête) — repère de section « Réglages » + badge de scénario en comparaison. Carte « Rendement lissé » avec halo radial, encart « Votre projet » avec icône Lightbulb (plus de `border-l-2`).
+- **Bandeaux nettoyés** : lien partagé et erreurs de validation avec icônes lucide (fini 🔗 ⚠️ ✕).
+
+### 🎛 Onglets à icônes animées (`TabBar.tsx`, `App.tsx`)
+
+- Emojis 📈🎲💸🎯 remplacés par des icônes lucide (**LineChart · Dices · Banknote · Target**) ; la **pastille or glisse** entre les onglets (framer-motion `layoutId`, ressort) ; roving tabindex + flèches ←/→/Home/End conservés.
+
+### 🏛 Design system (`index.css`)
+
+- **`.glass`** : dégradé vertical (plus clair en haut) + **liseré lumineux interne** sur le bord haut — la profondeur sans ombre portée dure. Mode clair aligné (bordures et sheen adaptés).
+- **`.card-interactive`** : élévation douce au survol (transform + ombre + bordure, vrai pointeur uniquement, pas de hover fantôme sur mobile).
+- **`.btn-shine`** : balayage lumineux au survol des CTA or (Lancer MC, Lancer Rente, Exporter, Recharger).
+- **Sliders** : rail 6 px arrondi avec la **partie parcourue remplie en or** (dégradé inline `linear-gradient`), pouce 18 px cerclé, fallback `color-mix` pour les navigateurs récents.
+- **`.mono` en chiffres tabulaires** (`font-variant-numeric`) : les colonnes de montants s'alignent enfin.
+- **Token `--color-success`** ajouté (l'état « Lien copié ! » s'affichait sans fond — classe inexistante) + scrollbars 6 px + fond d'ambiance à 3 halos radiaux.
+- **Dernier `border-l-2` supprimé** (`ComparisonBar`, remplacé par un chip d'icône) — le « tell » des UIs générées disparaît.
+
+### 🃏 Composants (émoticônes → icônes, hiérarchie)
+
+- **`SummaryStats`** : cartes héro avec icône (TrendingUp, Landmark, Receipt, PiggyBank), liseré d'accent en haut, élévation au survol.
+- **`KpiGrid`** : une icône par indicateur (8 icônes), pastille teintée, hover ; libellés et sous-titres inchangés.
+- **`CollapsibleSection`** : l'icône entre dans une pastille or `bg-primary/10` (uniforme avec SectionHeader). **`Toggle`** : lueur or quand coché + bordure.
+- **Emoji sweep** : GoalTab (💰→PiggyBank, 📈→TrendingUp), MonteCarloPanel (🎲→Dices), ErrorBoundary (😵→TriangleAlert, 🔄→RefreshCw), AIInsightCard (✦→point géométrique or), SmartInput/SliderInput (⚠️→AlertTriangle).
+
+### 🧪 Tests & gate
+
+- Aucun texte ni rôle modifié (223 tests existants inchangés et verts) ; gate : typecheck ✓ lint ✓ **223/223 tests** ✓ build ✓ · vérifié en preview réelle (desktop + mobile 320 px, thèmes clair/sombre, console propre) + détecteur impeccable : **0 finding**.
+
+---
+
 ## v5.6.4 — Titres de section UNIFORMES sur tout le site : « Vos impôts » proportionné à « Statistiques clés »
 
 Demande utilisateur : *« le titre de la partie des impôts doit être mieux proportionné par rapport aux statistiques clés… que tout soit uniforme sur le site, sublime, joli et cohérent »*. Avant, chaque carte et chaque graphique utilisaient son propre style de titre (10 px gris muet, `text-sm font-bold`, emoji 📈📊…) à côté de titres de section en extrabold — hiérarchie visuelle déséquilibrée. Bump 5.6.3 → **5.6.4**.

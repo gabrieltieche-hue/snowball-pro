@@ -15,7 +15,10 @@ export function Toggle({ checked, onChange, label, sub }: ToggleProps) {
     <motion.div
       whileTap={{ scale: 0.98 }}
       onClick={() => onChange(!checked)}
-      className="flex items-center justify-between glass rounded-xl px-4 py-3 cursor-pointer hover:bg-glass-hover transition-colors"
+      className={cn(
+        "flex items-center justify-between glass rounded-xl px-4 py-3 cursor-pointer hover:bg-glass-hover transition-colors",
+        checked && "border border-primary/30",
+      )}
       role="switch"
       aria-checked={checked}
       tabIndex={0}
@@ -26,9 +29,9 @@ export function Toggle({ checked, onChange, label, sub }: ToggleProps) {
         }
       }}
     >
-      <div>
+      <div className="min-w-0">
         <div className="text-xs font-semibold text-text">{label}</div>
-        {sub && <div className="text-[10px] text-text-muted mt-0.5">{sub}</div>}
+        {sub && <div className="text-[10px] text-text-muted mt-0.5 leading-snug">{sub}</div>}
       </div>
       <div
         className={cn(
@@ -36,6 +39,9 @@ export function Toggle({ checked, onChange, label, sub }: ToggleProps) {
           checked ? "toggle-on" : "bg-text-dim/30",
         )}
       >
+        {checked && (
+          <span className="absolute inset-0 rounded-full shadow-[0_0_14px_rgba(212,175,55,0.35)]" aria-hidden />
+        )}
         <motion.div
           animate={{ x: checked ? 18 : 2 }}
           transition={springConfig}

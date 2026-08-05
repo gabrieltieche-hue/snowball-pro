@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react"
 import { SmartInput } from "./SmartInput"
 import { HelpTip } from "./HelpTip"
 
@@ -41,6 +42,15 @@ export function SliderInput({
   hardMax,
   allowNegative,
 }: SliderInputProps) {
+  // Rail « rempli » : la partie déjà parcourue est teintée (or, ou la couleur
+  // de l'option quand elle en a une) — le curseur donne un retour immédiat.
+  const span = max - min || 1
+  const pct = Math.min(100, Math.max(0, ((value - min) / span) * 100))
+  const fillColor = color ?? "var(--color-primary)"
+  const trackStyle = {
+    background: `linear-gradient(to right, ${fillColor} ${pct}%, color-mix(in srgb, ${fillColor} 10%, transparent) ${pct}%)`,
+  }
+
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -75,8 +85,8 @@ export function SliderInput({
         value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
         className="w-full"
+        style={trackStyle}
         aria-label={label}
-        style={color ? { accentColor: color } : undefined}
       />
       {/* Bornes min/max affichées (cohérence avec l'onglet Rente « 5 ans / 60 ans ») */}
       <div className="flex items-center justify-between gap-2 text-[10px] text-text-dim mt-1">
@@ -86,12 +96,12 @@ export function SliderInput({
       </div>
       {error && (
         <p role="alert" className="text-[11px] font-semibold text-danger mt-1 flex items-start gap-1">
-          <span aria-hidden>⚠️</span> {error}
+          <AlertTriangle size={11} className="shrink-0 mt-px" aria-hidden /> {error}
         </p>
       )}
       {!error && warning && (
         <p className="text-[11px] font-semibold text-warning mt-1 flex items-start gap-1">
-          <span aria-hidden>⚠️</span> {warning}
+          <AlertTriangle size={11} className="shrink-0 mt-px" aria-hidden /> {warning}
         </p>
       )}
     </div>

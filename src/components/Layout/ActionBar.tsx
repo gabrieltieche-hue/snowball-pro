@@ -1,5 +1,6 @@
 import { AlertTriangle, GitCompareArrows, Link2, Moon, Redo2, Sun, Undo2 } from "lucide-react"
 import type { ValidationError } from "../../engine"
+import { cn } from "../../utils/cn"
 import { ExportMenu } from "./ExportMenu"
 
 interface ActionBarProps {
@@ -18,6 +19,9 @@ interface ActionBarProps {
   onCopyLink: () => void
   linkCopied: boolean
 }
+
+const baseBtn =
+  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]"
 
 export function ActionBar({
   onExportCSV,
@@ -43,67 +47,74 @@ export function ActionBar({
       {(errorCount > 0 || warningCount > 0) && (
         <span
           title={validationErrors.map(e => e.message).join(" · ")}
-          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${
+          className={`inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-[10px] font-bold ${
             errorCount > 0 ? "bg-danger/15 text-danger" : "bg-warning/15 text-warning"
           }`}
         >
-          <AlertTriangle size={11} />
+          <AlertTriangle size={11} aria-hidden />
           {errorCount > 0
             ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}`
             : `${warningCount} avertissement${warningCount > 1 ? "s" : ""}`}
         </span>
       )}
-      <button
-        type="button"
-        onClick={onUndo}
-        disabled={!canUndo}
-        title="Annuler (⌘Z)"
-        aria-label="Annuler la dernière modification"
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
-      >
-        <Undo2 size={12} /> Annuler
-      </button>
-      <button
-        type="button"
-        onClick={onRedo}
-        disabled={!canRedo}
-        title="Rétablir (⌘⇧Z)"
-        aria-label="Rétablir la modification annulée"
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
-      >
-        <Redo2 size={12} /> Rétablir
-      </button>
+
+      {/* Annuler / Rétablir : paire segmentée — ils vont toujours ensemble. */}
+      <div className="inline-flex items-center glass rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Annuler (⌘Z)"
+          aria-label="Annuler la dernière modification"
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed border-r border-border"
+        >
+          <Undo2 size={12} aria-hidden /> Annuler
+        </button>
+        <button
+          type="button"
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Rétablir (⌘⇧Z)"
+          aria-label="Rétablir la modification annulée"
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+        >
+          <Redo2 size={12} aria-hidden /> Rétablir
+        </button>
+      </div>
+
       <button
         type="button"
         onClick={onToggleCompare}
         title="Comparer deux scénarios"
-        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold transition-colors ${
+        className={cn(
+          baseBtn,
           comparing
             ? "bg-primary btn-gold-text shadow-gold"
-            : "glass hover:bg-glass-hover text-primary border border-primary/30"
-        }`}
+            : "glass hover:bg-glass-hover text-primary border border-primary/30",
+        )}
       >
-        <GitCompareArrows size={12} /> {comparing ? "Quitter" : "Comparer"}
+        <GitCompareArrows size={12} aria-hidden /> {comparing ? "Quitter" : "Comparer"}
       </button>
       <button
         type="button"
         onClick={onCopyLink}
         title="Copier le lien de partage de la simulation"
         aria-label="Copier le lien de partage"
-        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold transition-colors ${
-          linkCopied ? "bg-success/15 text-success border border-success/40" : "glass hover:bg-glass-hover"
-        }`}
+        className={cn(
+          baseBtn,
+          linkCopied ? "bg-success/15 text-success border border-success/40" : "glass hover:bg-glass-hover",
+        )}
       >
-        <Link2 size={12} /> {linkCopied ? "Lien copié !" : "Partager"}
+        <Link2 size={12} aria-hidden /> {linkCopied ? "Lien copié !" : "Partager"}
       </button>
       <button
         type="button"
         onClick={onToggleDarkMode}
         title={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
         aria-label={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
+        className={cn(baseBtn, "glass hover:bg-glass-hover")}
       >
-        {darkMode ? <Sun size={12} /> : <Moon size={12} />} {darkMode ? "Clair" : "Sombre"}
+        {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />} {darkMode ? "Clair" : "Sombre"}
       </button>
       <ExportMenu onExportCSV={onExportCSV} onExportJSON={onExportJSON} onPrint={onPrint} />
     </div>

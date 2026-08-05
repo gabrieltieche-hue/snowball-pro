@@ -153,7 +153,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
               "inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-colors whitespace-nowrap",
               running
                 ? "bg-text-dim/20 text-text-dim cursor-not-allowed"
-                : "bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary",
+                : "btn-shine bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary",
             )}
           >
             <Play size={13} fill="currentColor" />{" "}
@@ -201,7 +201,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
 
         {!mcResult && !running && (
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
-            <div className="text-4xl">🎲</div>
+            <Dices size={44} className="text-primary/50" aria-hidden />
             <p className="text-xs font-semibold">
               Cliquez sur « Lancer » pour tester votre plan dans {inputs.mcRuns.toLocaleString("fr-FR")} situations de
               bourse différentes
