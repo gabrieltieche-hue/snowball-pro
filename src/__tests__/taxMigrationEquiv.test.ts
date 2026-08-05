@@ -240,8 +240,10 @@ describe("P0-1 — équivalence ancien moteur (v5.7.2) ↔ nouveau à taxYear 20
 // ────────────────────────────────────────────────────────────────────────────
 
 /** État v5 réel : les inputs tels que stockés par la v5 (aucun champ taxYear). */
-function v5State(): Record<string, unknown> {
-  const s = { ...DEFAULT_INPUTS } as Record<string, unknown>
+function v5State(): SimulationInputs {
+  const s: SimulationInputs = { ...DEFAULT_INPUTS }
+  // taxYear est optionnel dans le type (rétrocompatibilité) : on le retire
+  // pour reproduire EXACTEMENT un état v5 stocké ou partagé.
   delete s.taxYear
   return s
 }
@@ -259,7 +261,9 @@ describe("P0-1 — rétrocompatibilité v5 (localStorage, liens partagés, snaps
     expect(encoded.startsWith("s=")).toBe(true)
     const decoded = decodeInputsFromUrl(encoded)
     expect(decoded).not.toBeNull()
-    expect((decoded as SimulationInputs).taxYear).toBeUndefined() // brut, comme un vrai lien v5
+    // L'état v5 n'avait pas de taxYear : le décodage le résout à l'année
+    // courante (2026) — jamais un taux périmé, jamais un crash.
+    expect((decoded as SimulationInputs).taxYear).toBe(CURRENT_TAX_YEAR)
     const rows = runSimulation(decoded as SimulationInputs)
     const last = rows[rows.length - 1]
     expect(last.taxNet).toBeGreaterThan(0)
