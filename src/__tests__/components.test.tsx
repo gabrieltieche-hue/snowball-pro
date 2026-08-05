@@ -4,6 +4,11 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 import userEvent from "@testing-library/user-event"
 import "@testing-library/jest-dom/vitest"
 import App from "../App"
+import { AuthScreen } from "../components/Auth/AuthScreen"
+import { HeroChart } from "../components/Landing/HeroChart"
+import { LandingPage } from "../components/Landing/LandingPage"
+import { ACCOUNTS_KEY, browserStorage, logout, register } from "../auth/auth"
+import { getCachedSession, resetSessionStoreForTests, syncSession } from "../auth/store"
 import { ErrorBoundary } from "../components/shared/ErrorBoundary"
 import { buildEquitySeries } from "../components/Charts/EquityChart"
 import { DualAmount } from "../components/shared/DualAmount"
@@ -143,6 +148,9 @@ vi.mock("framer-motion", async () => {
 beforeEach(() => {
   localStorage.clear()
   window.location.hash = ""
+  // v6.1 : la session est un cache module-level (useSyncExternalStore) — il
+  // faut l'invalider entre les tests pour ne pas hériter d'une session.
+  resetSessionStoreForTests()
 })
 
 afterEach(() => {
@@ -801,6 +809,141 @@ describe("v5.6.4 — FiscalPanel : titre proportionné à « Statistiques clés 
     const rows = runSimulation(inputs)
     render(<FiscalPanel rows={rows} inputs={inputs} />)
     expect(screen.getByText("Plan d'épargne en actions")).toBeInTheDocument()
+  })
+})
+
+describe("v6.1 — landing page", () => {
+  it("rend le héro (CTA, démo réelle du moteur) et les sections", () => {
+    render(<LandingPage />)
+    // CTA principal (héro + appel final → getAllByRole)
+    expect(screen.getAllByRole("button", { name: /lancer la simulation/i }).length).toBeGreaterThan(0)
+    expect(screen.getByRole("button", { name: /créer un compte/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /se connecter/i })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /100 ans de vraie histoire boursière/i })).toBeInTheDocument()
+    // La démo du héro exécute le vrai moteur (aria-label du graphique SVG)
+    expect(screen.getByRole("img")).toBeInTheDocument()
+    // Sections fonctionnalités + méthodologie + FAQ
+    expect(screen.getByText("Quatre onglets, une question : où va votre argent ?")).toBeInTheDocument()
+    expect(screen.getByText("Pourquoi 10,07 % et pas 5,99 % ?")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /mes données sont-elles envoyées/i })).toBeInTheDocument()
+  })
+
+  it("déplie la FAQ au clic", () => {
+    render(<LandingPage />)
+    const question = screen.getByRole("button", { name: /un compte est-il obligatoire/i })
+    expect(question).toHaveAttribute("aria-expanded", "false")
+    fireEvent.click(question)
+    expect(question).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText(/non, l'application fonctionne intégralement sans compte/i)).toBeInTheDocument()
+  })
+
+  it("le thème partagé avec l'app : le bouton bascule la classe light-mode", () => {
+    render(<LandingPage />)
+    // Défaut clair (comme l'app) → classe light-mode posée sur <html>
+    expect(document.documentElement.classList.contains("light-mode")).toBe(true)
+    fireEvent.click(screen.getByRole("button", { name: "Passer en mode sombre" }))
+    expect(document.documentElement.classList.contains("light-mode")).toBe(false)
+    // La préférence est persistée (même clé que l'app)
+    expect(localStorage.getItem("snowball_v5_theme")).toBe("dark")
+  })
+
+  it("HeroChart : la démo est calculée par le moteur (aucun chiffre codé en dur)", () => {
+    render(<HeroChart />)
+    const chart = screen.getByRole("img")
+    expect(chart).toBeInTheDocument()
+    // La légende affiche un montant de capital final réellement simulé
+    expect(screen.getByText(/capital final/i)).toBeInTheDocument()
+    expect(screen.getByText(/croissance/i)).toBeInTheDocument()
+  })
+})
+
+describe("v6.1 — comptes : inscription, connexion, déconnexion", () => {
+  it("l'inscription ouvre une session, persiste le compte et navigue vers l'app", async () => {
+    const user = userEvent.setup()
+    render(<AuthScreen mode="register" />)
+    await user.type(screen.getByLabelText("Votre nom"), "Marie Dupont")
+    await user.type(screen.getByLabelText("Adresse email"), "marie@exemple.fr")
+    await user.type(screen.getByLabelText("Mot de passe"), "secret12")
+    await user.type(screen.getByLabelText("Confirmer le mot de passe"), "secret12")
+    await user.click(screen.getByRole("button", { name: /créer mon compte/i }))
+
+    expect(getCachedSession()).not.toBeNull()
+    expect(window.location.hash).toBe("#/app")
+    const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]")
+    expect(accounts[0].email).toBe("marie@exemple.fr")
+    // Le mot de passe n'est jamais stocké en clair
+    expect(JSON.stringify(accounts)).not.toContain("secret12")
+  })
+
+  it("refuse une confirmation de mot de passe qui ne correspond pas", async () => {
+    const user = userEvent.setup()
+    render(<AuthScreen mode="register" />)
+    await user.type(screen.getByLabelText("Votre nom"), "Marie")
+    await user.type(screen.getByLabelText("Adresse email"), "marie@exemple.fr")
+    await user.type(screen.getByLabelText("Mot de passe"), "secret12")
+    await user.type(screen.getByLabelText("Confirmer le mot de passe"), "autre123")
+    await user.click(screen.getByRole("button", { name: /créer mon compte/i }))
+
+    expect(screen.getByText(/les deux mots de passe ne correspondent pas/i)).toBeInTheDocument()
+    expect(getCachedSession()).toBeNull()
+  })
+
+  it("un mauvais mot de passe à la connexion est refusé avec un message générique", async () => {
+    const user = userEvent.setup()
+    register(browserStorage, { name: "Marie", email: "marie@exemple.fr", password: "secret12" })
+    logout(browserStorage)
+
+    render(<AuthScreen mode="login" />)
+    await user.type(screen.getByLabelText("Adresse email"), "marie@exemple.fr")
+    await user.type(screen.getByLabelText("Mot de passe"), "mauvais12")
+    await user.click(screen.getByRole("button", { name: /se connecter/i }))
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/email ou mot de passe incorrect/i)
+    expect(getCachedSession()).toBeNull()
+  })
+
+  it("connexion → session ouverte, puis déconnexion depuis le menu de compte de l'app", async () => {
+    const user = userEvent.setup()
+    register(browserStorage, { name: "Marie", email: "marie@exemple.fr", password: "secret12" })
+    logout(browserStorage)
+
+    render(<AuthScreen mode="login" />)
+    await user.type(screen.getByLabelText("Adresse email"), "marie@exemple.fr")
+    await user.type(screen.getByLabelText("Mot de passe"), "secret12")
+    await user.click(screen.getByRole("button", { name: /se connecter/i }))
+    expect(getCachedSession()).not.toBeNull()
+
+    // On bascule sur l'app (rendu direct : pas de routeur dans ce test)
+    cleanup()
+    render(<App />)
+    fireEvent.click(screen.getByTitle(/compte de marie/i))
+    expect(screen.getByRole("menuitem", { name: /se déconnecter/i })).toBeInTheDocument()
+    expect(screen.getByText("marie@exemple.fr")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /se déconnecter/i }))
+    await waitFor(() => expect(getCachedSession()).toBeNull())
+    // Le menu revient à l'état invité
+    expect(screen.getByRole("button", { name: /se connecter/i })).toBeInTheDocument()
+  })
+
+  it("un compte connecté isole ses simulations : données invité intactes après connexion", async () => {
+    // L'invité a des réglages stockés
+    localStorage.setItem("snowball_v5_settings", JSON.stringify({ ...DEFAULT_INPUTS, capitalInitial: 42_000 }))
+    // On crée puis connecte un compte
+    const { session } = register(browserStorage, {
+      name: "Yoric",
+      email: "yoric@exemple.fr",
+      password: "secret12",
+    }) as { ok: true; account: { id: string }; session: { userId: string } }
+    syncSession()
+    expect(session.userId).toBeTruthy()
+
+    render(<App />)
+    // Le compte démarre VIERGE (pas de migration des données invité) :
+    // le capital est le défaut, pas les 42 000 € de l'invité.
+    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue(
+      String(DEFAULT_INPUTS.capitalInitial),
+    )
   })
 })
 

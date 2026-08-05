@@ -593,3 +593,60 @@ Migration du monolithe App.tsx (1906 lignes, moteur inline, Chart.js) vers la pi
 ```bash
 npm run typecheck && npm run lint && npm run test && npm run build
 ```
+
+---
+
+## PISTES V6.1 ENREGISTRÉES — À RAPPELER À L'UTILISATEUR (session 2026-08-05)
+
+> Demandé explicitement par l'utilisateur : « enregistre dans un fichier mémoire pour qu'on fasse ça plus tard, pour que tu me le rappelle ». Ces deux idées sont VALIDÉES par l'utilisateur (« je suis favorable à ces 2 idées ») — à proposer dès la prochaine session, quand la landing + les comptes seront livrés et validés.
+
+### 📌 Idée 1 — Onglet « Retraite par objectif » (fusion Rente + Objectif inversé)
+
+> « V6.1 : créer un onglet « Retraite par objectif » qui fusionne la Rente et l'Objectif inversé — l'utilisateur indique le revenu mensuel souhaité à la retraite, et l'app calcule le capital nécessaire, l'épargne mensuelle requise, l'âge de départ optimal et la probabilité de succès Monte Carlo. »
+
+Points d'ancrage existants : `engine/decumulation.ts` (rente, garde-fous Guyton–Klinger, stress tests), `engine/kpis.ts` (`solveGoal`), `components/Tabs/RenteRetraiteTab.tsx`, `components/Tabs/GoalTab.tsx`, `MonteCarloPanel.tsx` (P10/P50/P90 + % succès). Idée de produit : un seul onglet « Combien investir pour X €/mois de retraite ? » avec bouclage solveGoal → décaissement → probabilité de succès.
+
+### 📌 Idée 2 — Export PDF = vrai rapport patrimonial de synthèse
+
+> « V6.1 : refondre l'export PDF en un vrai rapport patrimonial de synthèse — page de garde, héro du résultat, graphiques, tableau annuel, fiscalité et méthodologie, imprimable et partageable. »
+
+État actuel : l'export PDF est `window.print()` (print CSS existant dans `index.css`, composant `ExportMenu.tsx`) — fonctionnel mais sans mise en page dédiée. Idée de produit : une vue « rapport » imprimable (bandeau « Enregistrer en PDF »), page de garde, héro, graphes, tableau annuel, fiscalité, méthodologie.
+
+---
+
+## SESSION — 2026-08-05 (v6.1.0 : landing page + comptes locaux, inscription/connexion)
+
+### Résumé
+
+Demande utilisateur : *« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »* Workflow APEX -a -x -v + fable-mode + impeccable + webapp-testing. **308 tests** (+71), gate 100 % vert, vérifié en navigateur réel. **Aucun déploiement Vercel — validation utilisateur requise.** Commit local demandé (« quand t'as fini commit ») — PAS de push (aucun remote).
+
+### Landing page (`src/components/Landing/`)
+
+- **Routeur hash** (`src/router.ts`, `src/Root.tsx`, `main.tsx` → `<Root />`) : `#/` landing (défaut) · `#/app` · `#/login` · `#/register` · `#s=…` → app direct (liens partagés intacts). `useSyncExternalStore` sur le hash.
+- **`HeroChart.tsx`** : démo réelle — `runSimulation(parseStoredInputs(null))`, courbe d'équité SVG pur (nominal + réel), animation `pathLength` (reduced-motion respecté via MotionConfig global). Chiffres calculés, pas codés en dur (732 918 € sur les défauts).
+- **`LandingPage.tsx`** : en-tête sticky (marque, nav ancres, thème partagé, Se connecter, Lancer l'app), héro 2 colonnes, chiffres clés, 6 fonctionnalités, 4 enveloppes, méthodologie (10,07 → 8,22 → 5,99 + Fisher), 3 étapes, FAQ accordéon, appel final, footer (disclaimer, v6.1.0). Contenu 100 % factuel. `Brand.tsx` (marque réutilisable).
+- **`PRODUCT.md`** créé (vérité produit, impeccable). Détecteur impeccable : **0 finding**.
+
+### Comptes & login (`src/auth/`)
+
+- **`hash.ts`** : SHA-256 JS pur (vecteurs NIST testés), `hashPassword = sha256(sel:mdp)`, sel/token 16 octets aléatoires (crypto.getRandomValues, repli Math.random). Limite assumée : pas de PBKDF2 — local-first, remplaçable à l'identique.
+- **`auth.ts`** : comptes (`snowball_v6_accounts`), session (`snowball_v6_session`), storage injectable (`memoryStorage` tests / `browserStorage` prod). `register` (doublon refusé, session auto), `login` (message générique « Email ou mot de passe incorrect »), `logout`, `getSession` (purge si compte disparu), `changePassword`, `deleteAccount` (vérification mdp).
+- **`store.ts`** : `useSyncExternalStore` (cache module + `resetSessionStoreForTests`). **`storage.ts`** : `scopeKey(userId, key)` — invité = clés v5 historiques (rétrocompat), compte = `u:<id>:…` ; `removeScopedData` à la suppression.
+- **`App.tsx`** : `App` (session) → `AppShell key={scope}` (remontage = rechargement du bon espace). Persistance settings/B/snapshots scopée. `AccountMenu` ajouté à l'en-tête.
+- **UI auth** (`components/Auth/`) : `TextField` partagé (erreurs inline, toggle afficher/masquer), `LoginForm`, `RegisterForm` (validations par champ + confirmation), `AccountMenu` (avatar initiales, changer mdp, déconnexion, suppression en 2 temps + mdp), `AuthScreen`/`AuthLayout`.
+
+### Revue adverse + détecteur
+
+- code-reviewer : branding index.html (`v5`/« sans inscription » → v6.1), test de purge de session orpheline (branche `getAccount` manquant), `role="menu"` hors formulaires, extraction `utils/theme.ts` (landing + app), `maxLength=128` mots de passe — tous traités. Détecteur impeccable : 0 finding.
+
+### Vérifications navigateur (preview réelle, desktop)
+
+- Landing complète (démo moteur), inscription → session → app, menu compte (nom/email), changement de mot de passe (secret12 → nouveau12), déconnexion → invité (données invité historiques intactes : snapshot antérieur chargé), reconnexion avec le NOUVEAU mot de passe ✓, retour landing via `#/`, lien partagé `#s=…` → app + état chargé (capital 55 555 €) + bandeau « lien partagé ». Console 0 erreur (uniquement logs Vite + info reduced-motion).
+
+### État
+
+- Gate : typecheck ✓ lint ✓ **308/308 tests** ✓ (21 auth + 9 composants v6.1) build ✓ (dist 1 021 kB / 300 kB gzip).
+- Version 6.0.0 → **6.1.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.1.0"`), CHANGELOG (entrée v6.1.0), MEMORY.md (cette entrée + section « PISTES V6.1 » avec les 2 idées validées).
+- ⚠️ **Pas de déploiement Vercel** : attend la validation de l'utilisateur (explicite). Commit local créé à la demande ; pas de remote git.
+
+---

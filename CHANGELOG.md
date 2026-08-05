@@ -4,6 +4,35 @@
 
 ---
 
+## v6.1.0 — Landing page + comptes locaux : l'app a une porte d'entrée
+
+Demande utilisateur : *« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »* Deux gros morceaux : une **landing de persuasion** (mode impeccable) qui prouve la valeur avec une **démo exécutée par le vrai moteur**, et un **système de comptes 100 % local** (inscription, connexion, session persistée, changement de mot de passe, suppression du compte) avec isolation des données par compte. Deux idées v6.1 de l'utilisateur (onglet « Retraite par objectif », rapport PDF) enregistrées dans MEMORY.md pour plus tard. **308 tests**, gate 100 % vert, vérifié en navigateur réel. Bump 6.0.0 → **6.1.0**. Pas de déploiement Vercel (validation utilisateur requise).
+
+### 🌐 Landing page (`components/Landing/`)
+
+- **Routeur hash** (`router.ts`, `Root.tsx`) : `#/` (landing, défaut) · `#/app` (simulateur) · `#/login` · `#/register` — les liens partagés `#s=…` continuent d'ouvrir DIRECTEMENT l'app (rétrocompatibilité totale).
+- **Héro avec démo réelle** (`HeroChart.tsx`) : le graphique de la landing n'est PAS une maquette — il exécute `runSimulation(parseStoredInputs(null))` (réglages par défaut) et dessine la courbe d'équité en SVG pur (nominal + pouvoir d'achat), animée (pathLength, respecte reduced-motion). Chiffres réels : capital final, croissance %.
+- **Sections** : chiffres clés (100 ans · 10 000 scénarios · 4 enveloppes · 100 % local), 6 fonctionnalités, 4 enveloppes fiscales (CTO/PEA/AV/PER), méthodologie à 3 étages (10,07 → 8,22 → 5,99 + Fisher), 3 étapes, FAQ accordéon (5 questions), appel final, footer avec disclaimer. Tout est factuel (issu du CHANGELOG) : aucune promesse de rendement, aucun témoignage inventé.
+- **Thème partagé** : la landing respecte et pilote la préférence claire/sombre de l'app (même clé `snowball_v5_theme`, util partagé `utils/theme.ts` — revue adverse).
+- `PRODUCT.md` créé (vérité produit, workflow impeccable).
+
+### 🔐 Comptes & login (`src/auth/`)
+
+- **Moteur pur** (`auth.ts`, `hash.ts`) : comptes stockés sous `snowball_v6_accounts`, mots de passe JAMAIS en clair — `sha256(sel:mot-de-passe)` avec sel aléatoire de 16 octets (SHA-256 JS pur, vérifié sur les vecteurs NIST ; limité à du local-first, documenté). Session `snowball_v6_session`, purgée si le compte disparaît (jamais de session orpheline). Validations françaises (email, 8 car. + lettre + chiffre, nom).
+- **Store React** (`store.ts`) : `useSyncExternalStore` — App se remonte avec le bon espace de stockage à chaque connexion/déconnexion.
+- **Isolation par compte** (`storage.ts`) : invité = clés historiques (`snowball_v5_settings`…, rétrocompatibilité v4/v5 préservée) ; connecté = clés préfixées `u:<id>:`. Les données de l'invité ne migrent pas vers un compte (choix documenté en FAQ). Le thème reste global.
+- **UI** (`components/Auth/`) : `LoginForm`, `RegisterForm` (erreurs inline par champ, force du mot de passe, confirmation), `AccountMenu` dans l'en-tête de l'app (avatar initiales, nom, email, changer le mot de passe, se déconnecter, supprimer le compte — double confirmation + mot de passe, purge des données scopées), `AuthScreen`/`AuthLayout` (marque or, carte glass, note « données sur cet appareil »).
+- **Partage/export inchangés** : les liens partagés et l'export fonctionnent avec ou sans compte.
+
+### 🧪 Tests & gate
+
+- **+71 tests** (308 au total) : 21 auth (SHA-256 NIST, registre/connexion/déconnexion, doublons, changement de mot de passe, suppression, purge de session orpheline, scoping invité/compte, storage défaillant) + composants (landing complète, démo du héro, FAQ, thème partagé, inscription → session → app, erreurs de confirmation, mauvais mot de passe, déconnexion depuis le menu, isolation des données par compte).
+- Gate : typecheck ✓ lint ✓ **308/308 tests** ✓ build ✓ (dist 1 021 kB / 300 kB gzip) · détecteur impeccable **0 finding** · revue adverse (code-reviewer) : branding index.html/manifest, test de purge orpheline, `role="menu"` hors formulaires, `utils/theme.ts` partagé, `maxLength` 128 — tous traités.
+- Vérifié en navigateur réel (desktop) : landing (démo 732 918 € calculée en direct), inscription, changement de mot de passe, déconnexion, reconnexion avec le nouveau mot de passe, retour landing, lien partagé `#s=…` → app avec état chargé + bandeau, console 0 erreur.
+- Version : package.json, package-lock.json, `public/sw.js` (`CACHE_VERSION = "snowball-pro-v6.1.0"`), CHANGELOG, MEMORY.md. Déploiement Vercel : **en attente de validation utilisateur** (explicite).
+
+---
+
 ## v6.0.0 — Refonte de la hiérarchie : le résultat d'abord (héro, entonnoir, onglets orientés besoin)
 
 Plan v6 validé avec l'utilisateur (synthèse de 3 avis UX externes + audit interne) : le problème n'était pas le moteur mais la **hiérarchie de l'information** — trop de contenu au même niveau, l'insight clé noyé en bas. Zéro changement moteur dans cette couche : uniquement la présentation. Rien n'est supprimé : tout est déplacé derrière des couches.

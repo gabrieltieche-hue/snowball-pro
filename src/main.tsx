@@ -4,7 +4,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { MotionConfig } from "framer-motion"
 import "./index.css"
-import App from "./App"
+import Root from "./Root"
 
 const rootEl = document.getElementById("root")
 if (!rootEl) throw new Error("Élément #root introuvable")
@@ -14,7 +14,7 @@ createRoot(rootEl).render(
     {/* M4 — prefers-reduced-motion : framer-motion coupe les animations
         (whileTap, ressorts) pour les utilisateurs qui les refusent. */}
     <MotionConfig reducedMotion="user">
-      <App />
+      <Root />
     </MotionConfig>
   </StrictMode>,
 )

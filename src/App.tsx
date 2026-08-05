@@ -20,8 +20,12 @@ import {
 import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
 import { useHistory } from "./hooks/useHistory"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { useSession } from "./auth/store"
+import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
+import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
+import { AccountMenu } from "./components/Auth/AccountMenu"
 import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
@@ -44,43 +48,30 @@ const TABS: TabDef[] = [
   { id: "goal", label: "Combien investir ?", icon: Target },
 ]
 
-const THEME_KEY = "snowball_v5_theme"
 const LEGACY_SIDEBAR_KEY = "snowball_v5_sidebar"
-const SETTINGS_B_KEY = "snowball_v5_settings_b"
 
-function loadInitialDarkMode(): boolean {
-  try {
-    const stored = localStorage.getItem(THEME_KEY)
-    if (stored) return stored === "dark"
-  } catch {
-    /* localStorage indisponible */
-  }
-  return false
-}
-
-function applyThemeClass(darkMode: boolean) {
-  document.documentElement.classList.toggle("light-mode", !darkMode)
-}
-
-function loadInitialInputs(): SimulationInputs {
+function loadInitialInputs(scope: string | null): SimulationInputs {
   // Un lien partagé (#s=…) prime sur la sauvegarde locale : c'est l'état
   // explicitement demandé par l'utilisateur à l'ouverture.
   const shared = readSharedState()
   if (shared) return shared
   try {
-    const stored = localStorage.getItem(SETTINGS_KEY)
+    const stored = localStorage.getItem(scopeKey(scope, SETTINGS_KEY))
     if (stored) return parseStoredInputs(stored)
-    const v4 = localStorage.getItem(V4_SETTINGS_KEY)
-    if (v4) return v4SettingsToInputs(JSON.parse(v4))
+    // Migration v4 : uniquement pour l'invité — un compte démarre vierge.
+    if (scope === null) {
+      const v4 = localStorage.getItem(V4_SETTINGS_KEY)
+      if (v4) return v4SettingsToInputs(JSON.parse(v4))
+    }
   } catch {
     /* localStorage indisponible */
   }
   return parseStoredInputs(null)
 }
 
-function loadInitialInputsB(): SimulationInputs | null {
+function loadInitialInputsB(scope: string | null): SimulationInputs | null {
   try {
-    const stored = localStorage.getItem(SETTINGS_B_KEY)
+    const stored = localStorage.getItem(scopeKey(scope, SETTINGS_B_KEY))
     if (stored) return parseStoredInputs(stored)
   } catch {
     /* localStorage indisponible */
@@ -89,13 +80,21 @@ function loadInitialInputsB(): SimulationInputs | null {
 }
 
 export default function App() {
+  // La session pilote le scope de stockage : AppShell est remonté (key) à
+  // chaque connexion/déconnexion pour recharger les données du bon compte.
+  const session = useSession()
+  const scope = session?.userId ?? null
+  return <AppShell key={scope ?? "guest"} scope={scope} />
+}
+
+function AppShell({ scope }: { scope: string | null }) {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const initial = loadInitialDarkMode()
     applyThemeClass(initial)
     return initial
   })
-  const [inputs, setInputs] = useState<SimulationInputs>(loadInitialInputs)
-  const [inputsB, setInputsB] = useState<SimulationInputs | null>(loadInitialInputsB)
+  const [inputs, setInputs] = useState<SimulationInputs>(() => loadInitialInputs(scope))
+  const [inputsB, setInputsB] = useState<SimulationInputs | null>(() => loadInitialInputsB(scope))
   const [comparing, setComparing] = useState(false)
   const [frozenA, setFrozenA] = useState<SimulationInputs | null>(null)
   const [activeTab, setActiveTab] = useState("simulator")
@@ -105,7 +104,7 @@ export default function App() {
   const decumAbortRef = useRef<AbortController | null>(null)
   const decumRunningRef = useRef(false)
   const decumMountedRef = useRef(true)
-  const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(loadSnapshotsFromStorage)
+  const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(() => loadSnapshotsFromStorage(scope))
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
   const [linkCopied, setLinkCopied] = useState(false)
   const history = useHistory()
@@ -194,10 +193,10 @@ export default function App() {
     const snapshot = createSnapshot(activeInputs, rows)
     setSnapshots(prev => {
       const next = addSnapshot(prev, snapshot)
-      saveSnapshotsToStorage(next)
+      saveSnapshotsToStorage(next, scope)
       return next
     })
-  }, [activeInputs, rows])
+  }, [activeInputs, rows, scope])
 
   const handleLoadSnapshot = useCallback(
     (id: string) => {
@@ -207,13 +206,16 @@ export default function App() {
     [snapshots, applyPatch],
   )
 
-  const handleRemoveSnapshot = useCallback((id: string) => {
-    setSnapshots(prev => {
-      const next = removeSnapshot(prev, id)
-      saveSnapshotsToStorage(next)
-      return next
-    })
-  }, [])
+  const handleRemoveSnapshot = useCallback(
+    (id: string) => {
+      setSnapshots(prev => {
+        const next = removeSnapshot(prev, id)
+        saveSnapshotsToStorage(next, scope)
+        return next
+      })
+    },
+    [scope],
+  )
 
   useKeyboardShortcuts({
     onUndo: handleUndo,
@@ -233,29 +235,29 @@ export default function App() {
 
   // Persistance débouncée (500 ms) : on n'écrit pas dans localStorage à
   // chaque keystroke d'un slider — le quota reste sain sur les longues
-  // sessions et l'écriture est groupée.
+  // sessions et l'écriture est groupée. Clé scopée par compte.
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(inputs))
+        localStorage.setItem(scopeKey(scope, SETTINGS_KEY), JSON.stringify(inputs))
       } catch {
         /* localStorage indisponible */
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [inputs])
+  }, [inputs, scope])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        if (inputsB) localStorage.setItem(SETTINGS_B_KEY, JSON.stringify(inputsB))
-        else localStorage.removeItem(SETTINGS_B_KEY)
+        if (inputsB) localStorage.setItem(scopeKey(scope, SETTINGS_B_KEY), JSON.stringify(inputsB))
+        else localStorage.removeItem(scopeKey(scope, SETTINGS_B_KEY))
       } catch {
         /* localStorage indisponible */
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [inputsB])
+  }, [inputsB, scope])
 
   // Partage par URL : le hash reflète l'état actif (replaceState, pas de
   // pollution d'historique), lui aussi débouncé pour éviter un hash à chaque
@@ -444,7 +446,9 @@ export default function App() {
               </div>
             </div>
           </div>
-          <ActionBar
+          <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
+            <AccountMenu />
+            <ActionBar
             onExportCSV={exportCSV}
             onExportJSON={exportJSON}
             onPrint={() => window.print()}
@@ -460,6 +464,7 @@ export default function App() {
             onCopyLink={handleCopyLink}
             linkCopied={linkCopied}
           />
+          </div>
         </div>
       </header>
 
