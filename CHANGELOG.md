@@ -4,6 +4,41 @@
 
 ---
 
+## v6.0.0 — Refonte de la hiérarchie : le résultat d'abord (héro, entonnoir, onglets orientés besoin)
+
+Plan v6 validé avec l'utilisateur (synthèse de 3 avis UX externes + audit interne) : le problème n'était pas le moteur mais la **hiérarchie de l'information** — trop de contenu au même niveau, l'insight clé noyé en bas. Zéro changement moteur dans cette couche : uniquement la présentation. Rien n'est supprimé : tout est déplacé derrière des couches.
+
+### 🏆 Le héro — « le nombre magique » (`Simulation/HeroResult.tsx`, nouveau)
+
+- **Grand chiffre du résultat** sur l'échelle du toggle « Euros d'aujourd'hui » (réel par défaut), en mono très grand — la première chose vue en ouvrant l'app.
+- **L'autre échelle toujours visible** dessous (« sur le compte en 2050 » / « en euros d'aujourd'hui ») — même philosophie que DualAmount.
+- **La décomposition qui manquait** : « dont X € épargnés + Y € générés par la croissance » avec barre de répartition visuelle + « votre épargne est multipliée par ~N ».
+- **Insight central** : « La croissance de la bourse représente X % de votre capital final » — avant noyé tout en bas, maintenant dès l'ouverture.
+
+### 🧭 Entonnoir du Simulateur (`Tabs/SimulatorTab.tsx`)
+
+- Ordre v6 : **Héro → 4 cartes de synthèse (`SummaryStats`, rétrogradé depuis `App.tsx`) → graphique principal → Analyse & conseils (remonté juste après le graphe) → Statistiques clés → jalons + frais**.
+- **Repliés par défaut** : Graphiques détaillés (drawdown + allocation), Fiscalité détaillée, Méthodologie, Calendrier des flux, tableau annuel.
+- `KpiGrid` rétrogradé au niveau `card` : le héro est désormais LE niveau « page » de l'onglet.
+
+### 🎛 Onglets orientés besoin (`App.tsx`)
+
+- Simulateur → **« Projection »** · Monte Carlo → **« Robustesse de votre plan »** · Rente & Retraite · Objectif inversé → **« Combien investir ? »**. Les ids restent inchangés (persistance, tests, partage URL).
+
+### 🛡 Confiance + aide contextuelle (Sprint 3)
+
+- **Bandeau de fiabilité** dans les résultats Monte Carlo et Rente : « Basé sur X scénarios · 100 ans d'historique réel · fiscalité française incluse ».
+- **Tooltips d'une ligne** (`HelpTip`) : P10/P50/P90 (cartes Monte Carlo), XIRR (Statistiques clés), PFU (CTO).
+- **Sidebar allégée** : la carte « Rendement de la bourse » (échelle 10,07 → 8,22 → 5,99 + formule de Fisher) rejoint le panneau **« Pourquoi ces chiffres ? »**, replié par défaut — contenu intégral conservé (déplacement, pas suppression).
+
+### 🧪 Tests & gate
+
+- Test Sidebar adapté : le contenu Fisher est replié par défaut, puis présent **intégral** au dépliage.
+- Gate : typecheck ✓ lint ✓ **237/237 tests** ✓ build ✓ · détecteur impeccable **0 finding** · vérifié en preview réelle (desktop + mobile 320 px, onglet Monte Carlo lancé de bout en bout).
+- Le bump de version (package.json, sw.js `CACHE_VERSION`) et le déploiement Vercel restent à la main de l'utilisateur (pas de déploiement à cette étape).
+
+---
+
 ## v5.7.2 — Formule de Fisher explicitée : pourquoi 5,99 % et pas 8,22 − 2,1 = 6,12 %
 
 Demande utilisateur : *« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vient ce 5,99 ? »* — le piège classique : la soustraction simple est une approximation, la réalité est multiplicative (formule de Fisher). L'app l'explique désormais aux endroits où le chiffre apparaît. Bump 5.7.1 → **5.7.2**.
