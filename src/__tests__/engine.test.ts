@@ -57,6 +57,7 @@ import {
   average,
   MSCI_WORLD_AVG_RETURN,
   EXTENDED_WORLD_RETURNS,
+  getTaxRules,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -1629,18 +1630,21 @@ describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
   it("au-delà du plafond de primes, les gains passent de 7,5 % à 12,8 % (2025)", () => {
     // 200 k€ de primes (célibataire, plafond 150 k€) → 75 % des gains à 7,5 %,
     // 25 % à 12,8 %, après abattement de 4 600 €. AV inchangée en 2026 (exclue
-    // de la hausse) mais on épingle 2025 pour la rétrocompatibilité.
+    // de la hausse) mais on épingle 2025 pour la rétrocompatibilité. Les taux
+    // attendus sont DÉRIVÉS de taxRules (pas de 0,075/0,128 codés en dur).
+    const av25 = getTaxRules(2025)
     const result = computeTaxBreakdown(100000, "av", 10, false, 200_000, { taxYear: 2025 })
     const allowance = 4600
     const taxable = 100000 - allowance
-    const expected = taxable * 0.75 * 0.075 + taxable * 0.25 * 0.128
+    const expected = taxable * 0.75 * av25.avReducedIRRate + taxable * 0.25 * av25.avExcessIRRate
     expect(result.incomeTax).toBeCloseTo(expected, 0)
-    expect(result.incomeTax).toBeGreaterThan(taxable * 0.075) // plus cher que le taux réduit pur
+    expect(result.incomeTax).toBeGreaterThan(taxable * av25.avReducedIRRate) // plus cher que le taux réduit pur
   })
 
   it("sous le plafond, le taux réduit de 7,5 % s'applique intégralement (2025)", () => {
+    const av25 = getTaxRules(2025)
     const result = computeTaxBreakdown(10000, "av", 10, false, 100_000, { taxYear: 2025 })
-    expect(result.incomeTax).toBeCloseTo((10000 - 4600) * 0.075, 0)
+    expect(result.incomeTax).toBeCloseTo((10000 - 4600) * av25.avReducedIRRate, 0)
   })
 
   it("le plafond double pour un couple (300 k€, 2025)", () => {
