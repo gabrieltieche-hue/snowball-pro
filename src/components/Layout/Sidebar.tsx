@@ -138,6 +138,11 @@ export function Sidebar({
             la ligne 1 chaque année (courbe lissée, sans krachs) : son rendement réel est donc plus favorable que la
             référence historique — voir « Après inflation ».
           </p>
+          <p className="text-[9px] text-text-dim mt-1.5 leading-relaxed border-t border-primary/10 pt-1.5">
+            Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est{" "}
+            <span className="mono">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> — l'inflation rogne aussi vos gains,
+            pas seulement votre capital de départ.
+          </p>
         </div>
         <SliderInput
           label="Durée (années)"

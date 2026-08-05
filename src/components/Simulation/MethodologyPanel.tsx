@@ -28,7 +28,7 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
     },
     {
       label: "Rendement réel",
-      value: `${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an — rendement composé après déduction de l'inflation (2,1 %/an) : votre gain de pouvoir d'achat sur la période`,
+      value: `${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an — formule de Fisher : (1 + ${(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %) ÷ (1 + 2,1 %) − 1. Pas une simple soustraction (8,22 − 2,1 = 6,12 serait une approximation) : l'inflation rogne aussi vos gains, pas seulement le capital`,
     },
     {
       label: "Projection & Monte Carlo",

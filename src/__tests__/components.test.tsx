@@ -342,6 +342,11 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     expect(text).toContain("5,99 %/an")
     expect(text).toContain("la volatilité")
     expect(text).toContain("l'inflation")
+    // v5.7.2 : la formule de Fisher est explicitée — 8,22 − 2,1 = 6,12 est une
+    // approximation, la formule exacte (1+8,22%)/(1+2,1%)−1 = 5,99 % explique
+    // pourquoi le chiffre affiché n'est pas une simple soustraction.
+    expect(text).toContain("Pourquoi pas 6,12 %")
+    expect(text).toContain("formule exacte (Fisher)")
     // Le curseur de rendement de la bourse a disparu de la sidebar.
     expect(screen.queryByRole("slider", { name: /rendement annuel de la bourse/i })).not.toBeInTheDocument()
   })

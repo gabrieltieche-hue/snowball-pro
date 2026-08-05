@@ -4,6 +4,27 @@
 
 ---
 
+## v5.7.2 — Formule de Fisher explicitée : pourquoi 5,99 % et pas 8,22 − 2,1 = 6,12 %
+
+Demande utilisateur : *« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vient ce 5,99 ? »* — le piège classique : la soustraction simple est une approximation, la réalité est multiplicative (formule de Fisher). L'app l'explique désormais aux endroits où le chiffre apparaît. Bump 5.7.1 → **5.7.2**.
+
+### 🧮 La formule, vérifiée par le moteur
+
+- `R_réel = (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %` contre `8,22 − 2,1 = 6,12 %` en soustraction simple. L'écart de **0,13 pt** = l'inflation appliquée au rendement déjà net (`6,12 × 2,1 %`) : l'inflation ronge aussi vos gains, pas seulement le capital de départ.
+- C'est la même convention que le reste du moteur (`netReturn` = (1+géométrique)/(1+inflation)−1, `realReturn` KPI = (1+XIRR)/(1+inflation réelle)−1) : trois chemins, une seule formule.
+
+### 🖥 UI — Fisher raconté où le chiffre apparaît
+
+- **`Sidebar`** : nouvelle note sous l'échelle des rendements — « Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 % — l'inflation rogne aussi vos gains, pas seulement votre capital de départ. »
+- **`MethodologyPanel`** : la ligne « Rendement réel » cite la formule complète avec les chiffres réels de la série.
+
+### 🧪 Tests & gate
+
+- Test composant Sidebar enrichi (assertions « Pourquoi pas 6,12 % » et « formule exacte (Fisher) »).
+- Gate : typecheck ✓ lint ✓ **224/224 tests** ✓ build ✓ · vérifié en preview réelle.
+
+---
+
 ## v5.7.1 — Clarté des rendements : l'échelle 10,07 % → 8,22 % → 5,99 % enfin expliquée (plus de « double déduction » apparente)
 
 Demande utilisateur : *« je vois des taux de rendement différents absolument partout, ça me fait très peur… je veux que l'utilisateur comprenne pourquoi on passe du 10 % par an à 5,99 % »*. Audit moteur + recherche : **aucune double déduction dans le moteur** — le problème était pédagogique. Trois taux coexistaient sans le chaînon manquant : la moyenne ARITHMÉTIQUE (10,07 %, appliquée par la courbe lissée) et le rendement RÉEL (5,99 %) étaient affichés, mais la moyenne GÉOMÉTRIQUE (8,22 %, krachs inclus) — l'étape qui explique la baisse — ne l'était jamais. Bump 5.7.0 → **5.7.1**.
