@@ -35,7 +35,7 @@ const CARDS: KpiCard[] = [
     label: "Rendement / an",
     suffix: "%",
     color: GOLD,
-    sub: "XIRR : rendement annuel calculé sur vos flux réels (versements compris)",
+    sub: "XIRR brut (avant inflation) de VOTRE projection — la courbe lissée applique la moyenne des années",
     icon: TrendingUp,
   },
   {
@@ -71,7 +71,7 @@ const CARDS: KpiCard[] = [
     label: "Après inflation",
     suffix: "%",
     color: GOLD,
-    sub: "votre gain réel, prix de l'inflation déduit",
+    sub: "rendement réel de VOTRE projection (courbe lissée, sans krachs) — la référence historique réelle est d'env. 5,99 %/an",
     icon: Shield,
   },
   {

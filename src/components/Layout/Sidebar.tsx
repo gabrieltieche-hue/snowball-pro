@@ -94,9 +94,13 @@ export function Sidebar({
         />
         {/* Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
             référence du MSCI World chaque année — plus de zigzags. Monte Carlo
-            et la Rente continuent de rééchantillonner l'historique réel. */}
-        {/* mb-4 : la carte est un frère des SliderInput (chacun a mb-4) — sans
-            cette marge, elle collait au « Durée (années) » en dessous (fix v5.6.2). */}
+            et la Rente continuent de rééchantillonnent l'historique réel.
+
+            Échelle pédagogique v5.7.1 : la carte affiche les TROIS étages —
+            brut (arithmétique) → composé (géométrique) → réel (après
+            inflation) — pour que le passage de 10,07 % à 5,99 % ne semble
+            plus magique. Le chaînon manquant (8,22 %) était la cause de la
+            confusion : sans lui, l'écart paraissait être une double déduction. */}
         <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 mb-4 relative overflow-hidden">
           <div
             className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_0%,rgba(212,175,55,0.14),transparent_60%)] pointer-events-none"
@@ -104,15 +108,35 @@ export function Sidebar({
           />
           <div className="flex items-center gap-1.5">
             <TrendingUp size={12} className="text-primary shrink-0" />
-            <span className="text-[11px] font-bold text-text leading-tight">
-              Rendement lissé — {(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut
-            </span>
+            <span className="text-[11px] font-bold text-text leading-tight">Rendement de la bourse (MSCI World)</span>
           </div>
-          <p className="text-[10px] text-text-muted mt-1.5 leading-relaxed">
-            Moyenne MSCI World :{" "}
-            <strong className="text-text">{(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an réel</strong>{" "}
-            composé sur 1970-2025 (votre rendement réel sur votre durée dépend de l'inflation — voir « Après
-            inflation »).
+          {/* Les trois étages de l'échelle : chaque ligne déduit UNE chose. */}
+          <dl className="mt-2 space-y-1.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-[10px] text-text-muted">Brut (moyenne des années)</dt>
+              <dd className="mono text-[11px] font-bold text-text">
+                {(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-[10px] text-text-muted">Composé (krachs inclus)</dt>
+              <dd className="mono text-[11px] font-bold text-text">
+                {(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %/an
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-2 border-t border-primary/15 pt-1.5">
+              <dt className="text-[10px] text-text-muted">Réel (après inflation 2,1 %)</dt>
+              <dd className="mono text-[11px] font-extrabold text-primary">
+                {(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an
+              </dd>
+            </div>
+          </dl>
+          <p className="text-[9.5px] text-text-muted mt-2 leading-relaxed">
+            Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
+            <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
+            gain composé) puis <strong className="text-text">l'inflation</strong> (2,1 %/an). Le Simulateur applique
+            la ligne 1 chaque année (courbe lissée, sans krachs) : son rendement réel est donc plus favorable que la
+            référence historique — voir « Après inflation ».
           </p>
         </div>
         <SliderInput

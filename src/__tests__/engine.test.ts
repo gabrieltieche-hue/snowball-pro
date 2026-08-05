@@ -495,6 +495,33 @@ describe("getHistoricalDataset", () => {
     expect(dataset.volatility).toBeGreaterThan(0)
   })
 
+  it("échelle pédagogique v5.7.1 : brut (10,07) → composé (8,22) → réel (5,99), une seule déduction par étage", () => {
+    // La peur d'une « double déduction » venait du chaînon manquant : sans le
+    // rendement composé (8,22 %), l'écart entre 10,07 % et 5,99 % semblait
+    // retirer deux fois quelque chose. En réalité chaque étage déduit UNE
+    // seule chose : la volatilité (10,07 → 8,22) puis l'inflation (8,22 → 5,99).
+    const dataset = getHistoricalDataset("msci-world")
+    // 1. compoundedReturn est bien la moyenne géométrique de la série
+    expect(dataset.compoundedReturn).toBeCloseTo(0.0822, 3)
+    // 2. netReturn = (1 + composé)/(1 + inflation) − 1 : l'inflation est
+    // déduite UNE SEULE fois, exactement à cet étage
+    expect(dataset.netReturn).toBeCloseTo((1 + dataset.compoundedReturn) / 1.021 - 1, 10)
+    expect(dataset.netReturn).toBeCloseTo(0.0599, 3)
+    // 3. L'ordre des étages est strict : brut > composé > réel
+    expect(dataset.avgReturn).toBeGreaterThan(dataset.compoundedReturn)
+    expect(dataset.compoundedReturn).toBeGreaterThan(dataset.netReturn)
+    // 4. Le « volatility drag » (brut − composé) est la différence restante
+    const drag = dataset.avgReturn - dataset.compoundedReturn
+    expect(drag).toBeCloseTo(0.0185, 3)
+    // 5. Pour TOUS les indices : composé toujours < brut (la volatilité ne
+    // peut qu'écraser le rendement composé) et réel toujours < composé
+    for (const id of ["sp500", "nasdaq", "cac40", "gold"] as const) {
+      const d = getHistoricalDataset(id)
+      expect(d.compoundedReturn).toBeLessThan(d.avgReturn)
+      expect(d.netReturn).toBeLessThan(d.compoundedReturn)
+    }
+  })
+
   it("netReturn des autres indices est dérivé à l'inflation forfaitaire de 2,1 %", () => {
     const dataset = getHistoricalDataset("sp500")
     const geometric =

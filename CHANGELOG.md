@@ -4,6 +4,34 @@
 
 ---
 
+## v5.7.1 — Clarté des rendements : l'échelle 10,07 % → 8,22 % → 5,99 % enfin expliquée (plus de « double déduction » apparente)
+
+Demande utilisateur : *« je vois des taux de rendement différents absolument partout, ça me fait très peur… je veux que l'utilisateur comprenne pourquoi on passe du 10 % par an à 5,99 % »*. Audit moteur + recherche : **aucune double déduction dans le moteur** — le problème était pédagogique. Trois taux coexistaient sans le chaînon manquant : la moyenne ARITHMÉTIQUE (10,07 %, appliquée par la courbe lissée) et le rendement RÉEL (5,99 %) étaient affichés, mais la moyenne GÉOMÉTRIQUE (8,22 %, krachs inclus) — l'étape qui explique la baisse — ne l'était jamais. Bump 5.7.0 → **5.7.1**.
+
+### 🔬 Vérification moteur (GO DEEPER, aucune erreur trouvée)
+
+- **La chaîne est mathématiquement saine** : `avgReturn = 10,0655 %` (arithmétique) → `compoundedReturn = 8,2196 %` (géométrique) → `netReturn = 5,9938 %` = (1 + 8,22 %)/(1 + 2,1 %) − 1. Chaque étage déduit UNE seule chose : la **volatilité** (drag arithmétique→géométrique ≈ 1,85 pt) puis l'**inflation** (2,1 %).
+- **Inflation jamais déduite deux fois** : `historical.ts` (`netReturn` = (1+géométrique)/(1+inflation)−1), `kpis.ts` (`realReturn` = (1+XIRR)/(1+inflation réelle)−1) et `simulation.ts` (l'inflation ne sert qu'à l'échelle réelle, jamais au nominal) — trois chemins indépendants, chacun une seule correction.
+- **Explication des deux « réels » différents (7,8 % vs 5,99 %)** : la courbe lissée applique 10,07 % chaque année SANS krachs → le rendement réel de votre projection (KPI) est plus favorable que la référence historique réelle (5,99 %) qui inclut les -37 % de 2008, -33 % de 2022… C'est voulu (courbe lissée) mais c'était incompréhensible sans l'expliquer.
+
+### 📐 Moteur — `compoundedReturn` exposé (`historical.ts`, `types.ts`)
+
+- `HistoricalDataset` expose désormais le **rendement composé (géométrique) nominal** (`compoundedReturn`, ≈ 8,22 %) entre `avgReturn` (brut) et `netReturn` (réel) — le chaînon manquant devient une donnée de premier ordre, documentée dans le type.
+
+### 🖥 UI — échelle pédagogique à trois étages
+
+- **`Sidebar`** : la carte « Rendement lissé » devient une **échelle à 3 lignes** (description list accessible) : « Brut (moyenne des années) 10,07 %/an » → « Composé (krachs inclus) 8,22 %/an » → « Réel (après inflation 2,1 %) 5,99 %/an » (la ligne réelle en or, mise en avant). Note explicative : *« Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire une seule chose : la volatilité puis l'inflation… »*.
+- **`MethodologyPanel`** : la ligne « Rendement » (un mur de texte) est découpée en 4 lignes claires : Rendement brut / Rendement composé / Rendement réel / Projection & Monte Carlo — la même histoire, racontée deux fois (carte + accordéon).
+- **`KpiGrid`** : les sous-titres distinguent explicitement « de VOTRE projection » (XIRR brut 10,1 % ; réel 7,8 %) de la référence historique (5,99 %/an) — fini les deux chiffres « réels » sans explication.
+- **`AIInsightCard`** : la comparaison XIRR fait référence à la « moyenne BRUTE » (arithmétique) — comparer un XIRR nominal à une moyenne composée réelle mélangerait les étages.
+
+### 🧪 Tests & gate
+
+- **+2 tests moteur** : échelle pédagogique complète (brut > composé > réel, netReturn = (1+composé)/(1+2,1%)−1, drag ≈ 1,85 pt, invariant vérifié sur sp500/nasdaq/cac40/gold) + test composant Sidebar mis à jour (les 3 lignes + « la volatilité » + « l'inflation »).
+- Gate : typecheck ✓ lint ✓ **224/224 tests** ✓ build ✓ · vérifié en preview réelle (échelle + accordéon Méthodologie + KPI) · détecteur impeccable : **0 finding**.
+
+---
+
 ## v5.7.0 — Overhaul UI/UX : en-tête global, onglets à icônes, cartes héro, design system affiné
 
 Demande utilisateur : *« Améliore drastiquement l'interface et l'UI, l'UX, et tout ça… GO DEEPER »*. Refonte complète de la couche d'affichage (zéro changement moteur) : hiérarchie, motion, micro-interactions, cohérence — l'identité or/ivoire devient plus affirmée et l'app gagne un vrai squelette d'en-tête. Bump 5.6.4 → **5.7.0**.

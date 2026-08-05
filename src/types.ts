@@ -216,8 +216,16 @@ export interface SimulationInputs {
 export interface HistoricalDataset {
   id: HistoricalIndex
   name: string
+  /** Moyenne ARITHMÉTIQUE des rendements annuels (10,07 % pour le MSCI World) :
+   * le taux moyen d'une année, pas le gain composé. C'est elle que la courbe
+   * lissée du Simulateur applique chaque année. */
   avgReturn: number
-  /** Rendement moyen net d'inflation (affiché en complément du brut). */
+  /** Rendement GÉOMÉTRIQUE (composé) nominal de la série, krachs inclus : ce
+   * que la bourse a réellement fait en moyenne sur toute la période (~8,22 %).
+   * En pratique inférieur à avgReturn (le « volatility drag ») pour tout
+   * indice volatil — égal seulement si toutes les années sont identiques. */
+  compoundedReturn: number
+  /** Rendement réel composé : compoundedReturn corrigé de l'inflation (~5,99 %). */
   netReturn: number
   volatility: number
   years: { year: number; return: number; inflation: number }[]

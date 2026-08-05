@@ -329,13 +329,19 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     // année, plus de zigzags. Le texte est fragmenté par des <strong> : on
     // compare le texte complet du container.
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
-    expect(text).toContain("Rendement lissé")
-    expect(text).toContain("10,07 %/an brut")
-    // Audit v5.6.2 : la note distingue la moyenne ARITHMÉTIQUE brute (courbe
-    // lissée) du rendement réel composé historique — les deux stats de la
-    // série sont désormais explicitement séparées, plus de « la courbe fait
-    // 5,99 % réel » sous-entendu.
-    expect(text).toContain("réel composé sur 1970-2025")
+    expect(text).toContain("Rendement de la bourse (MSCI World)")
+    // Échelle pédagogique v5.7.1 : les TROIS étages sont affichés — brut
+    // (arithmétique), composé (géométrique, chaînon manquant avant v5.7.1) et
+    // réel (après inflation). Chaque étage déduit une seule chose : la
+    // volatilité puis l'inflation — plus de « double déduction » apparente.
+    expect(text).toContain("Brut (moyenne des années)")
+    expect(text).toContain("10,07 %/an")
+    expect(text).toContain("Composé (krachs inclus)")
+    expect(text).toContain("8,22 %/an")
+    expect(text).toContain("Réel (après inflation 2,1 %)")
+    expect(text).toContain("5,99 %/an")
+    expect(text).toContain("la volatilité")
+    expect(text).toContain("l'inflation")
     // Le curseur de rendement de la bourse a disparu de la sidebar.
     expect(screen.queryByRole("slider", { name: /rendement annuel de la bourse/i })).not.toBeInTheDocument()
   })

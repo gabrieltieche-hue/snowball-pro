@@ -19,8 +19,20 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
 
   const rows: { label: string; value: string }[] = [
     {
-      label: "Rendement",
-      value: `Taux constant ${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an brut (moyenne arithmétique ${historical.name}) ; rendement réel composé historique : ${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an après inflation — courbe lissée ; Monte Carlo & Rente rejouent l'historique réel`,
+      label: "Rendement brut",
+      value: `${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an — moyenne ARITHMÉTIQUE des années ${historical.name} (1970-2025) : c'est le taux constant appliqué chaque année par la courbe lissée du Simulateur`,
+    },
+    {
+      label: "Rendement composé",
+      value: `${(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %/an — moyenne GÉOMÉTRIQUE de la série, krachs réels (-37 % en 2008, -33 % en 2002…) inclus : ce que la bourse a réellement rapporté en cumulé`,
+    },
+    {
+      label: "Rendement réel",
+      value: `${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an — rendement composé après déduction de l'inflation (2,1 %/an) : votre gain de pouvoir d'achat sur la période`,
+    },
+    {
+      label: "Projection & Monte Carlo",
+      value: "Le Simulateur applique la moyenne brute (courbe lissée, sans krachs) ; Monte Carlo & la Rente rééchantillonnent l'historique réel et rejouent ses krachs",
     },
     {
       label: "Inflation",

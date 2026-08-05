@@ -39,17 +39,21 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
   // sens — avant, « 10,1 % dépasse 10,1 % » s'affichait avec les réglages par
   // défaut.
   const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
+  // Référence BRUTE (moyenne arithmétique) : c'est elle que la courbe lissée
+  // applique, donc c'est elle qu'un XIRR nominal doit égaler. La référence
+  // composée réelle (5,99 %/an après inflation) est une autre échelle — la
+  // comparer au XIRR brut mélangerait les étages (v5.7.1).
   const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
   const gap = Math.abs(effectiveReturn - datasetAvg)
   if (gap > 0.5) {
     insights.push(
       effectiveReturn > datasetAvg
-        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) dépasse la moyenne de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
-        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) reste sous la moyenne de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
+        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) dépasse la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
+        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) reste sous la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
     )
   } else if (effectiveReturn > 0) {
     insights.push(
-      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) est proche de la moyenne de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
+      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) est proche de la moyenne BRUTE de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
     )
   }
   if (insights.length === 0) {

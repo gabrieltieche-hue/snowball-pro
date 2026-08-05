@@ -132,9 +132,12 @@ export function getHistoricalDataset(index: HistoricalIndex): HistoricalDataset 
         gold: "Gold",
       } as Record<HistoricalIndex, string>
     )[index],
-    // La moyenne arithmétique sert à la courbe lissée ; netReturn est le
-    // rendement composé réel de la série, après inflation forfaitaire.
+    // La moyenne arithmétique sert à la courbe lissée (10,07 %) ;
+    // compoundedReturn est le rendement composé réel de la série (8,22 %) ;
+    // netReturn le même, après inflation forfaitaire (5,99 %). Les trois
+    // étages de l'échelle pédagogique « brut → composé → réel ».
     avgReturn,
+    compoundedReturn: geometricReturn,
     netReturn,
     volatility: standardDeviation(returns),
     years,
