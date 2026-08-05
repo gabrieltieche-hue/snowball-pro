@@ -23,8 +23,9 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
     inputs.envelope,
     // Années de détention COHÉRENTES avec le moteur (correctif v5.2.4) : pour
     // le PEA, le taux dépend de la détention ACTUELLE affichée par le curseur
-    // « Années de détention du PEA » (moins de 5 ans → PFU 30 %, au-delà →
-    // 17,2 %). Avant, on ajoutait la durée de projection : la somme dépassait
+    // « Années de détention du PEA » (moins de 5 ans → PFU, au-delà →
+    // prélèvements sociaux seuls — taux de l'année, taxRules.ts). Avant, on
+    // ajoutait la durée de projection : la somme dépassait
     // presque toujours 5 ans et le taux réduit s'appliquait même pour un PEA
     // détenu moins de 5 ans. L'AV conserve la détention cumulée (abattement
     // annuel de 4 600 €/an).
@@ -35,7 +36,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
         : inputs.duration,
     inputs.taxCouple,
     lastRow.investedNom,
-    { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
+    { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, taxYear: inputs.taxYear },
   )
 
   // Même échelle que les cartes du haut (SummaryStats) : quand l'affichage

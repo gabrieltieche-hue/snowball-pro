@@ -3,6 +3,16 @@ export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY,
 export type { V4Settings } from "./migration"
 export { fmtCurrency, fmtCompact, fmtPercent, fmtDecimal, parseCurrencyInput, escapeCsvCell } from "./formatting"
 export { roundCent, clamp, ENVELOPE_CONFIGS, computeTaxBreakdown, calcXIRR } from "./taxes"
+export {
+  getTaxRules,
+  resolveTaxYear,
+  pfuRate,
+  fmtTaxPercent,
+  TAX_RULES,
+  TAX_YEARS,
+  CURRENT_TAX_YEAR,
+} from "./taxRules"
+export type { TaxYearRules, SupportedTaxYear } from "./taxRules"
 export type { CtoTaxMode, TaxBreakdownOptions } from "../types"
 export { buildCashFlows, computeXIRR } from "./kpis"
 export { applyScenarioPatch, enterComparison, exitComparison, resolveScenarioTarget } from "./scenarios"

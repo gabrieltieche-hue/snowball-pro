@@ -322,12 +322,18 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     expect(screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" })).toHaveValue("10.07")
   })
 
-  it("Sidebar (v5.6.0) : la note « Rendement lissé » remplace le curseur de rendement", () => {
+  it("Sidebar (v6) : l'échelle pédagogique des rendements vit dans « Pourquoi ces chiffres ? », repliée par défaut", () => {
     const { container } = render(<App />)
-    // Plus de « taux saisi » : la sidebar affiche désormais la référence de
-    // courbe LISSÉE (demande utilisateur) — rendement moyen MSCI World chaque
-    // année, plus de zigzags. Le texte est fragmenté par des <strong> : on
-    // compare le texte complet du container.
+    // v6 : le contenu pédagogique (rendement moyen MSCI World + échelle
+    // 10,07 → 8,22 → 5,99 + Fisher) a quitté le chemin de réglages pour un
+    // panneau replié par défaut. Repliée → le contenu n'est pas dans le DOM.
+    expect(screen.getByRole("button", { name: /pourquoi ces chiffres/i })).toBeInTheDocument()
+    expect(container.textContent).not.toContain("Rendement de la bourse (MSCI World)")
+
+    // On déplie → le contenu INTÉGRAL est là (demande : on déplace, on ne
+    // jette rien). Le texte est fragmenté par des <strong> : on compare le
+    // texte complet du container.
+    fireEvent.click(screen.getByRole("button", { name: /pourquoi ces chiffres/i }))
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
     expect(text).toContain("Rendement de la bourse (MSCI World)")
     // Échelle pédagogique v5.7.1 : les TROIS étages sont affichés — brut
@@ -382,6 +388,27 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     fireEvent.click(screen.getByRole("button", { name: "Aide" }))
     expect(screen.getByRole("tooltip")).toHaveTextContent(/ne saisissez jamais un taux déjà net d'inflation/i)
   })
+})
+
+describe("P0-2 — libellé PER : pas d'abattement de 10 % inventé (audit v6)", () => {
+  it(
+    "le suffixe TMI en PER explique la sortie réelle (TMI pleine sans abattement, gains au PFU)",
+    () => {
+      render(<App />)
+      // Sélectionne l'enveloppe PER / PERIN dans le sélecteur de compte.
+      fireEvent.click(screen.getByRole("button", { name: /PER \/ PERIN/i }))
+      // Le curseur TMI apparaît pour le PER.
+      expect(screen.getByRole("slider", { name: "Tranche marginale d'imposition (%)" })).toBeInTheDocument()
+      // L'ancien libellé « sortie taxée à TMI − 10 % » affirmait un abattement
+      // que le moteur (taxes.ts) n'applique JAMAIS sur les versements PER.
+      expect(screen.queryByText(/sortie taxée à TMI/i)).not.toBeInTheDocument()
+      // Le nouveau suffixe dit la vérité : versements imposés à la TMI pleine,
+      // sans abattement de 10 %, gains au PFU (même doctrine que le FiscalPanel).
+      expect(screen.getByText(/versements imposés à votre TMI/i)).toBeInTheDocument()
+      expect(screen.getByText(/gains au PFU/i)).toBeInTheDocument()
+    },
+    APP_TIMEOUT,
+  )
 })
 
 describe("menu Export — toutes les fonctionnalités d'export dans un bouton", () => {
@@ -502,6 +529,18 @@ describe("partage par URL (hash)", () => {
 })
 
 describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () => {
+  // v6 : le panneau « Fiabilité du modèle » est REPLIÉ par défaut — les
+  // options restent cochées (défauts moteur), mais il faut déplier la section
+  // pour les voir et les basculer (demande utilisateur).
+  const openReliability = () => fireEvent.click(screen.getByRole("button", { name: /fiabilité du modèle/i }))
+
+  it("le panneau « Fiabilité du modèle » est replié par défaut (v6)", () => {
+    render(<MonteCarloPanel inputs={DEFAULT_INPUTS} darkMode={false} updateInput={() => {}} />)
+    // Le titre est visible, mais pas les options tant qu'on ne déplie pas.
+    expect(screen.getByRole("button", { name: /fiabilité du modèle/i })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByRole("switch", { name: /incertitude des paramètres/i })).not.toBeInTheDocument()
+  })
+
   it("les 2 options de fiabilité sont COCHÉES par défaut (incertitude + historique étendu)", () => {
     const updateInput = vi.fn()
     render(
@@ -511,6 +550,7 @@ describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () =>
         updateInput={updateInput}
       />,
     )
+    openReliability()
     expect(screen.getByRole("switch", { name: /incertitude des paramètres/i })).toBeChecked()
     expect(screen.getByRole("switch", { name: /historique étendu/i })).toBeChecked()
   })
@@ -524,6 +564,7 @@ describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () =>
         updateInput={updateInput}
       />,
     )
+    openReliability()
     fireEvent.click(screen.getByRole("switch", { name: /incertitude des paramètres/i }))
     expect(updateInput).toHaveBeenCalledWith("parameterUncertainty", true)
   })

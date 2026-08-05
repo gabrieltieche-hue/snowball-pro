@@ -1,6 +1,7 @@
 import { Activity, Gauge, Layers, Receipt, Shield, Timer, TrendingDown, TrendingUp, Wallet } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { fmtCurrency } from "../../engine"
+import { HelpTip } from "../shared/HelpTip"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { KPIs } from "../../types"
 
@@ -111,7 +112,10 @@ export function KpiGrid({ kpis }: KpiGridProps) {
 
   return (
     <div className="animate-fade-in min-w-0">
-      <SectionHeader title="Statistiques clés" icon={Gauge} level="page" as="h3" />
+      {/* v6 : rétrogradé au niveau « card » — le héro est désormais LE niveau
+          « page » de l'onglet, « Statistiques clés » ne doit pas lui faire
+          concurrence en pleine page (revue adverse). */}
+      <SectionHeader title="Statistiques clés" icon={Gauge} level="card" as="h3" />
       {/* Grille 2×3 par défaut (6 cartes) : aucune case vide, contrairement à
           l'ancien auto-fit qui laissait un trou de 2 cartes sur les écrans
           larges. Les cartes sont plus hautes → le bloc remplit mieux la
@@ -131,6 +135,14 @@ export function KpiGrid({ kpis }: KpiGridProps) {
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">
                   {kpi.label}
+                  {/* XIRR : terme technique — une ligne d'explication au survol
+                      (v6), le sous-titre reste la source principale. */}
+                  {kpi.key === "xirr" && (
+                    <HelpTip
+                      text="XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, avant inflation."
+                      className="ml-1 align-[-1px]"
+                    />
+                  )}
                 </div>
                 <span
                   className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"

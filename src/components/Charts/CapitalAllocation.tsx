@@ -65,7 +65,7 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
           : inputs.duration,
       inputs.taxCouple,
       lastRow.investedNom,
-      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
+      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, taxYear: inputs.taxYear },
     )
     // Camembert du capital NET après liquidation théorique : chaque source
     // est diminuée de sa propre fiscalité. Cela reste additif même pour un PER,

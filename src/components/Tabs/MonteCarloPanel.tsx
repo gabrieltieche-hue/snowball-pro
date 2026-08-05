@@ -3,6 +3,7 @@ import { AlertTriangle, BarChart3, Dices, Play, ShieldCheck } from "lucide-react
 import { fmtCurrency, fmtDecimal, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
+import { HelpTip } from "../shared/HelpTip"
 import { Toggle } from "../shared/Toggle"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SectionHeader } from "../shared/SectionHeader"
@@ -113,18 +114,21 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
           value: mcResult.p10[mcResult.p10.length - 1] ?? 0,
           tone: "#F87171",
           sub: "1 cas sur 10 fait encore moins bien",
+          help: "P10 = percentile 10 : seuls 10 % des scénarios finissent avec MOINS que ce montant. C'est le cas défavorable — 9 fois sur 10, vous ferez mieux.",
         },
         {
           label: "Scénario moyen (P50)",
           value: mcResult.p50[mcResult.p50.length - 1] ?? 0,
           tone: "var(--color-primary)",
           sub: "le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien",
+          help: "P50 = la médiane : dans la moitié des scénarios le capital final est supérieur, dans l'autre moitié il est inférieur. Planifiez sur ce chiffre.",
         },
         {
           label: "Bonne période de bourse (P90)",
           value: mcResult.p90[mcResult.p90.length - 1] ?? 0,
           tone: "#4ADE80",
           sub: "1 cas sur 10 fait encore mieux",
+          help: "P90 = percentile 90 : 90 % des scénarios finissent avec MOINS que ce montant. C'est le cas favorable — ne le planifiez pas comme certitude.",
         },
       ]
     : []
@@ -177,11 +181,13 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         )}
 
         {/* Options de fiabilité du modèle : l'honnêteté des estimations prime.
-            Toutes ON par défaut — chacune reste désactivable pour comparer. */}
+            Toutes ON par défaut (chaque option reste désactivable pour
+            comparer), mais le panneau est replié par défaut (v6) : il n'impose
+            plus ses options à chaque visite, on l'ouvre à la demande. */}
         <CollapsibleSection
           title="Fiabilité du modèle"
           icon={<ShieldCheck size={12} className="text-primary" />}
-          defaultOpen
+          defaultOpen={false}
         >
           <div className="space-y-2">
             <Toggle
@@ -212,6 +218,13 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         {mcResult && (
           <div className="space-y-5">
             <MonteCarloChart result={mcResult} darkMode={darkMode} />
+            {/* Bandeau de fiabilité (v6) : un signal de confiance factuel — ce
+                que l'estimation repose réellement sur, en une ligne. */}
+            <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
+              <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
+              Basé sur <strong className="text-text">{mcResult.runs.toLocaleString("fr-FR")} scénarios</strong> ·{" "}
+              {inputs.extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité française incluse
+            </p>
             <p className="text-[10px] text-text-dim italic">
               Montants en <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte,
               non corrigés de l'inflation) et <strong className="text-text not-italic">nets d'impôts</strong> (liquidation
@@ -220,9 +233,12 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
                 <div key={card.label} className="glass rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: card.tone }}>
-                    {card.label}
-                  </p>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: card.tone }}>
+                      {card.label}
+                    </p>
+                    {card.help && <HelpTip text={card.help} className="shrink-0 -mt-0.5" />}
+                  </div>
                   <p className="mono text-lg font-bold text-text">{fmtCurrency(card.value)}</p>
                   <p className="text-[10px] text-text-dim mt-1.5">{card.sub}</p>
                 </div>

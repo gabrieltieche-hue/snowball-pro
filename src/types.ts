@@ -10,6 +10,8 @@ export type CtoTaxMode = "pfu" | "bareme"
 export interface TaxBreakdownOptions {
   tmi?: number
   ctoTaxMode?: CtoTaxMode
+  /** Année fiscale des règles à appliquer (2025 ou 2026). Défaut : année courante. */
+  taxYear?: number
 }
 
 export interface YearRow {
@@ -186,6 +188,10 @@ export interface SimulationInputs {
   seed: number
   tmi: number
   ctoTaxMode: CtoTaxMode
+  /** Année fiscale des règles d'imposition (source : taxRules.ts).
+   * Optionnel pour la rétrocompatibilité des états stockés/partagés v5 :
+   * résolu vers une année supportée par resolveTaxYear (défaut : 2026). */
+  taxYear?: number
   // Fiabilité du modèle (v5.5.0) — toutes activées par défaut : l'honnêteté
   // des estimations prime, chaque option reste désactivable dans l'UI.
   /** Incertitude des paramètres : moyenne et volatilité tirées autour de leur

@@ -1,4 +1,5 @@
 import type { EnvelopeType, SimulationInputs } from "../types"
+import { CURRENT_TAX_YEAR } from "./taxRules"
 
 export const V4_SETTINGS_KEY = "snowball_v4_settings"
 export const SETTINGS_KEY = "snowball_v5_settings"
@@ -58,6 +59,9 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   seed: 42,
   tmi: 0.3,
   ctoTaxMode: "pfu",
+  // Année fiscale par défaut : l'année courante (2026 — LFSS 2026). Un état
+  // stocké ou partagé v5 sans taxYear retombe ici, jamais sur un taux périmé.
+  taxYear: CURRENT_TAX_YEAR,
   // Fiabilité du modèle (v5.5.0) — toutes ON par défaut : l'honnêteté des
   // estimations prime. Chaque option reste désactivable dans l'UI (l'utilisateur
   // peut revenir au comportement historique simple si les bandes s'élargissent
@@ -124,6 +128,7 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "mcRuns",
   "seed",
   "tmi",
+  "taxYear",
   "crisisStartOffset",
   "crisisIntensity",
 ]

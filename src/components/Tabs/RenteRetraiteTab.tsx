@@ -505,7 +505,12 @@ export function RenteRetraiteTab({
               jour les résultats.
             </p>
           )}
-          <ResultsSection decumResult={decumResult} theme={theme} crisisNote={crisisNote} />
+          <ResultsSection
+            decumResult={decumResult}
+            theme={theme}
+            crisisNote={crisisNote}
+            extendedHistory={inputs.extendedHistory}
+          />
         </div>
       ) : (
         <EmptyState hasAccumulation={!!lastRow} />
@@ -613,10 +618,12 @@ function ResultsSection({
   decumResult,
   theme,
   crisisNote,
+  extendedHistory,
 }: {
   decumResult: DecumulationResult
   theme: ReturnType<typeof chartTheme>
   crisisNote?: string | null
+  extendedHistory: boolean
 }) {
   const survival = decumResult.survivalProbability
   const survivalTone = survival >= 90 ? "#4ADE80" : survival >= 75 ? "var(--color-primary)" : "#F87171"
@@ -701,6 +708,32 @@ function ResultsSection({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Bandeau de fiabilité (v6) : un signal de confiance factuel, en une
+          ligne — ce que le taux de survie repose réellement sur. */}
+      {/* Bandeau de fiabilité (v6) — corrigé audit v6 : la rente part du
+          capital BRUT (nominal) et n'applique AUCUNE fiscalité aux retraits.
+          Affirmer « fiscalité française incluse » ici serait faux (le
+          décaissement ne la modélise pas) — on dit la vérité en une ligne. */}
+      <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
+        <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
+        Basé sur <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")} scénarios</strong> ·{" "}
+        {extendedHistory ? "100 ans" : "56 ans"} d'historique réel · capital brut — fiscalité des retraits non modélisée
+      </p>
+
+      {/* Divulgation P0-4a (audit v6) : la rente part du capital AVANT impôts
+          et ne taxe pas les retraits — pour un CTO/PER, la rente réellement
+          disponible serait plus faible. Information d'abord, refonte du
+          calcul (Option B) en cours de décision séparée. */}
+      <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
+        <AlertTriangle size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
+        <p className="text-[10px] leading-relaxed text-text-dim">
+          <strong className="text-text">Rente brute :</strong> le décaissement démarre sur le capital{" "}
+          <strong className="text-text">avant impôts</strong> (valeur nominale du compte) et aucun impôt n'est
+          prélevé sur les retraits. Pour un CTO ou un PER, la rente réellement disponible après fiscalité serait{" "}
+          <strong className="text-text">plus faible</strong> que le montant affiché.
+        </p>
       </div>
 
       {/* 4 KPI cards */}

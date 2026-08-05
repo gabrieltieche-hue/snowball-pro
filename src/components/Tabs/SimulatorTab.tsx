@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronUp, Table } from "lucide-react"
+import { Activity, ChevronDown, ChevronUp, Landmark, Table } from "lucide-react"
 import { computeKPIs, computeMilestones } from "../../engine"
 import { SectionHeader } from "../shared/SectionHeader"
+import { CollapsibleSection } from "../shared/CollapsibleSection"
+import { HeroResult } from "../Simulation/HeroResult"
+import { SummaryStats } from "../Simulation/SummaryStats"
 import { EquityChart } from "../Charts/EquityChart"
 import { DrawdownChart } from "../Charts/DrawdownChart"
 import { CapitalAllocation } from "../Charts/CapitalAllocation"
@@ -26,31 +29,42 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
   const milestones = useMemo(() => computeMilestones(rows), [rows])
   const [tableOpen, setTableOpen] = useState(false)
 
+  /* Entonnoir v6 (refonte hiérarchique) : le résultat d'abord, l'analyse
+     ensuite, les détails techniques repliés par défaut.
+       1. Héro — « le nombre magique » + décomposition épargne / croissance
+       2. 4 cartes de synthèse (SummaryStats, rétrogradé derrière le héro)
+       3. Le graphique principal
+       4. L'insight (« d'où vient votre argent ») — avant, noyé en bas
+       5. Statistiques clés + jalons / frais (toujours visibles)
+       6. Détails repliés par défaut : graphiques détaillés, fiscalité,
+          méthodologie, calendrier, tableau annuel */
   return (
     <div className="space-y-5 animate-fade-in">
+      <HeroResult rows={rows} inputs={inputs} />
+      <SummaryStats rows={rows} inputs={inputs} />
       <EquityChart rows={rows} inputs={inputs} darkMode={darkMode} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <KpiGrid kpis={kpis} />
-        </div>
-        <FiscalPanel rows={rows} inputs={inputs} />
-      </div>
+      <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
+
+      <KpiGrid kpis={kpis} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MilestoneTimeline milestones={milestones} rows={rows} />
         <FeeImpact rows={rows} inputs={inputs} />
       </div>
 
-      {/* La crise synthétique a été supprimée (Option A) : les krachs réels
-          (2000, 2008, 2022…) sont déjà rejoués dans l'historique. Les deux
-          graphiques (drawdown + allocation) sont affichés en permanence. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DrawdownChart rows={rows} darkMode={darkMode} />
-        <CapitalAllocation rows={rows} inputs={inputs} darkMode={darkMode} showReal={inputs.showReal} />
-      </div>
+      {/* Graphiques secondaires repliés : ils racontent des histoires utiles,
+          mais n'appartiennent plus au chemin de lecture principal. */}
+      <CollapsibleSection title="Graphiques détaillés" icon={<Activity size={12} />} defaultOpen={false}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DrawdownChart rows={rows} darkMode={darkMode} />
+          <CapitalAllocation rows={rows} inputs={inputs} darkMode={darkMode} showReal={inputs.showReal} />
+        </div>
+      </CollapsibleSection>
 
-      <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
+      <CollapsibleSection title="Fiscalité détaillée" icon={<Landmark size={12} />} defaultOpen={false}>
+        <FiscalPanel rows={rows} inputs={inputs} />
+      </CollapsibleSection>
 
       <MethodologyPanel inputs={inputs} />
 

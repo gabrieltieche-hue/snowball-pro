@@ -1,4 +1,5 @@
-import { Coins, Landmark, Lightbulb, Percent, Settings2, TrendingUp } from "lucide-react"
+import { Coins, HelpCircle, Landmark, Lightbulb, Percent, Settings2, TrendingUp } from "lucide-react"
+import { HelpTip } from "../shared/HelpTip"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
 import { SnapshotPanel } from "./SnapshotPanel"
@@ -6,7 +7,7 @@ import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
-import { fmtCurrency, getHistoricalDataset, validateInputs } from "../../engine"
+import { fmtCurrency, fmtTaxPercent, getHistoricalDataset, getTaxRules, pfuRate, validateInputs } from "../../engine"
 import type { ValidationError } from "../../engine"
 import type { SavedSnapshot, SimulationInputs, YearRow } from "../../types"
 
@@ -39,6 +40,9 @@ export function Sidebar({
   const displayNominal = lastRow ? lastRow.nominal : 0
   const displayReal = lastRow ? lastRow.real : 0
   const historical = getHistoricalDataset(inputs.historicalIndex)
+  // Règles fiscales de l'année des inputs (défaut : année courante) — tous les
+  // taux affichés ici en dérivent, aucun chiffre codé en dur (v6, taxRules.ts).
+  const rules = getTaxRules(inputs.taxYear)
 
   const validationErrors = validateInputs(inputs)
   const fieldError = (field: keyof SimulationInputs): ValidationError | undefined =>
@@ -92,16 +96,30 @@ export function Sidebar({
           warning={fieldWarning("monthlyPayment")?.message}
           onChange={v => updateInput("monthlyPayment", v)}
         />
-        {/* Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
-            référence du MSCI World chaque année — plus de zigzags. Monte Carlo
-            et la Rente continuent de rééchantillonnent l'historique réel.
+        {/* La carte « Rendement de la bourse » (échelle 10,07 → 8,22 → 5,99 et
+            Fisher) a rejoint le panneau « Pourquoi ces chiffres ? » en bas de
+            la sidebar (v6) : c'est un contenu pédagogique de qualité, mais il
+            n'appartient plus au chemin de réglages — il s'ouvre à la demande. */}
+        <SliderInput
+          label="Durée (années)"
+          id="duration"
+          value={inputs.duration}
+          min={1}
+          max={50}
+          step={1}
+          hardMin={1}
+          hardMax={80}
+          error={fieldError("duration")?.message}
+          warning={fieldWarning("duration")?.message}
+          onChange={v => updateInput("duration", v)}
+        />
+      </CollapsibleSection>
 
-            Échelle pédagogique v5.7.1 : la carte affiche les TROIS étages —
-            brut (arithmétique) → composé (géométrique) → réel (après
-            inflation) — pour que le passage de 10,07 % à 5,99 % ne semble
-            plus magique. Le chaînon manquant (8,22 %) était la cause de la
-            confusion : sans lui, l'écart paraissait être une double déduction. */}
-        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 mb-4 relative overflow-hidden">
+      {/* Pourquoi ces chiffres ? — le contenu pédagogique (rendements,
+          volatilité, Fisher) vit ici, replié par défaut (v6). Contenu intégral
+          conservé depuis la carte « Rendement de la bourse » de la v5.7. */}
+      <CollapsibleSection title="Pourquoi ces chiffres ?" icon={<HelpCircle size={12} />} defaultOpen={false}>
+        <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 relative overflow-hidden">
           <div
             className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_0%,rgba(212,175,55,0.14),transparent_60%)] pointer-events-none"
             aria-hidden
@@ -144,19 +162,6 @@ export function Sidebar({
             pas seulement votre capital de départ.
           </p>
         </div>
-        <SliderInput
-          label="Durée (années)"
-          id="duration"
-          value={inputs.duration}
-          min={1}
-          max={50}
-          step={1}
-          hardMin={1}
-          hardMax={80}
-          error={fieldError("duration")?.message}
-          warning={fieldWarning("duration")?.message}
-          onChange={v => updateInput("duration", v)}
-        />
       </CollapsibleSection>
 
       {/* Paramètres avancés */}
@@ -229,7 +234,11 @@ export function Sidebar({
               step={1}
               hardMin={0}
               hardMax={50}
-              suffix={inputs.peaYearsHeld < 5 ? "moins de 5 ans : PFU 30 %" : "au-delà de 5 ans : taux réduit (17,2 %)"}
+              suffix={
+                inputs.peaYearsHeld < 5
+                  ? `moins de 5 ans : PFU ${fmtTaxPercent(pfuRate(rules))}`
+                  : `au-delà de 5 ans : taux réduit (${fmtTaxPercent(rules.socialRate)})`
+              }
               onChange={v => updateInput("peaYearsHeld", v)}
             />
           </div>
@@ -252,13 +261,25 @@ export function Sidebar({
         )}
         {inputs.envelope === "cto" && (
           <div className="mt-3 space-y-2 animate-fade-in">
+            {/* PFU : terme dur pour un débutant — une ligne d'explication au
+                survol, sans alourdir le libellé (v6). */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                Fiscalité du CTO
+              </span>
+              <HelpTip
+                text={`PFU : Prélèvement Forfaitaire Unique — ${fmtTaxPercent(pfuRate(rules))} sur les gains (${fmtTaxPercent(
+                  rules.socialRate,
+                )} de prélèvements sociaux + ${fmtTaxPercent(rules.pfuIncomeRate)} d'impôt sur le revenu), sans barème.`}
+              />
+            </div>
             <SegmentedControl
               value={inputs.ctoTaxMode}
               onChange={v => updateInput("ctoTaxMode", v)}
               ariaLabel="Fiscalité du CTO"
               options={[
-                { id: "pfu", label: "PFU 30 %", sub: "impôt unique" },
-                { id: "bareme", label: "Barème", sub: "17,2 % + impôt à votre TMI" },
+                { id: "pfu", label: `PFU ${fmtTaxPercent(pfuRate(rules))}`, sub: "impôt unique" },
+                { id: "bareme", label: "Barème", sub: `${fmtTaxPercent(rules.socialRate)} + impôt à votre TMI` },
               ]}
             />
           </div>
@@ -276,7 +297,7 @@ export function Sidebar({
               hardMax={45}
               suffix={
                 inputs.envelope === "per"
-                  ? "Versements déduits à ce taux ; sortie taxée à TMI − 10 %"
+                  ? "Versements déduits à ce taux ; sortie : versements imposés à votre TMI (sans abattement de 10 %), gains au PFU"
                   : "Impôt appliqué à vos gains CTO (barème)"
               }
               error={fieldError("tmi")?.message}

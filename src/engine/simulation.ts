@@ -48,8 +48,9 @@ function annualInflationForYear(inputs: SimulationInputs, yearIndex: number): nu
 
 function taxYearsHeld(inputs: SimulationInputs, projectionYear: number): number {
   // PEA : le taux d'imposition dépend de la détention ACTUELLE (curseur
-  // « Années de détention du PEA ») : moins de 5 ans → PFU 30 %, au-delà →
-  // 17,2 % de cotisations sociales seules. Avant le correctif, la durée de
+  // « Années de détention du PEA ») : moins de 5 ans → PFU (taux de l'année
+  // fiscale, taxRules.ts), au-delà → prélèvements sociaux seuls. Avant le
+  // correctif, la durée de
   // projection était ajoutée (peaYearsHeld + année) : dès qu'elle dépassait
   // 5 ans, le taux réduit s'appliquait même avec 0 an détenu, et le curseur
   // ne changeait aucun chiffre. L'AV conserve, elle, la détention cumulée
@@ -103,7 +104,7 @@ export function runSimulation(rawInputs: SimulationInputs, annualReturnsOverride
       taxYearsHeld(inputs, year),
       inputs.taxCouple,
       investedNom,
-      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
+      { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, taxYear: inputs.taxYear },
     )
     const exitTax = Math.max(0, tax.totalTax)
     const taxNet = Math.max(0, capital - exitTax)

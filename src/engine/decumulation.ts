@@ -326,7 +326,11 @@ export function runDecumulation(
   runs = Math.min(inputs.mcRuns, 10_000),
 ): DecumulationResult {
   const simCount = Math.round(clamp(runs, 100, 10_000))
-  const years = Math.max(1, inputs.retirementYears)
+  // Durée de la rente bornée par le curseur (5-60 ans) : un état partagé ou
+  // stocké avec une valeur aberrante (ex. 120 000) ferait tourner 120 000
+  // mois × N runs — gel de l'interface (audit v6). Le clamp est défensif :
+  // sanitizeInputs applique déjà la même borne en amont.
+  const years = Math.round(clamp(inputs.retirementYears, 1, 60))
   const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
   const acc: DecumAccumulator = {
     paths: [],
@@ -353,7 +357,11 @@ export async function runDecumulationAsync(
   signal?: AbortSignal,
 ): Promise<DecumulationResult> {
   const simCount = Math.round(clamp(runs, 100, 10_000))
-  const years = Math.max(1, inputs.retirementYears)
+  // Durée de la rente bornée par le curseur (5-60 ans) : un état partagé ou
+  // stocké avec une valeur aberrante (ex. 120 000) ferait tourner 120 000
+  // mois × N runs — gel de l'interface (audit v6). Le clamp est défensif :
+  // sanitizeInputs applique déjà la même borne en amont.
+  const years = Math.round(clamp(inputs.retirementYears, 1, 60))
   const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
   const acc: DecumAccumulator = {
     paths: [],

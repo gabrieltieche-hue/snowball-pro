@@ -1,5 +1,6 @@
 import type { SimulationInputs } from "../types"
 import { clamp } from "./taxes"
+import { resolveTaxYear } from "./taxRules"
 
 // Fourchette recommandée pour le rendement de l'onglet Objectif (TOUJOURS
 // brut, avant inflation) : moyenne MSCI World 1970-2025 ≈ 10,07 %/an. Une
@@ -159,6 +160,20 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
+  // Durée de la rente bornée par le curseur (5-60 ans) : un lien partagé
+  // malformé ne doit pas pouvoir faire tourner 120 000 mois de décaissement
+  // (audit v6 — le moteur clamps aussi, cette règle informe l'utilisateur).
+  if (inputs.retirementYears < 1 || inputs.retirementYears > 60) {
+    errors.push({
+      field: "retirementYears",
+      message: "Durée de la rente limitée à la fourchette 1-60 ans pour le calcul",
+      severity: "warning",
+      value: inputs.retirementYears,
+      min: 1,
+      max: 60,
+    })
+  }
+
   return errors
 }
 
@@ -177,11 +192,19 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     peaYearsHeld: clamp(inputs.peaYearsHeld, 0, 50),
     avYearsHeld: clamp(inputs.avYearsHeld, 0, 50),
     mcRuns: Math.round(clamp(inputs.mcRuns, 100, 10000)),
+    // Durée de la rente : alignée sur le curseur (5-60) — un état partagé ou
+    // stocké avec une valeur aberrante (ex. 120 000) est ramené à 60 ans
+    // avant tout calcul (audit v6).
+    retirementYears: Math.round(clamp(inputs.retirementYears, 1, 60)),
     goalTarget: Math.max(inputs.goalTarget, 1),
     goalAnnualReturn: clamp(inputs.goalAnnualReturn, -0.95, 10),
     seed: Math.abs(inputs.seed) || 1,
     tmi: clamp(inputs.tmi, 0, 0.45),
     ctoTaxMode: inputs.ctoTaxMode === "bareme" ? "bareme" : "pfu",
+    // Année fiscale normalisée vers une année supportée (repli : 2026) — un
+    // lien partagé ou un état stocké avec taxYear inconnue ne peut pas faire
+    // diverger l'affichage du calcul (v6).
+    taxYear: resolveTaxYear(inputs.taxYear),
     // Scénario « partir en période difficile » (v5.6.0) : bornes alignées sur
     // l'UI (0-10 ans, 5 %-95 %) — un lien partagé malformé ne peut pas casser
     // l'onglet Rente ni faire diverger UI et moteur.

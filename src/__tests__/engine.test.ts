@@ -199,20 +199,23 @@ describe("computeTaxBreakdown", () => {
     expect(result.netGains).toBe(10000)
   })
 
-  it("applies PFU 30% for CTO", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false)
+  // Ces tests épinglent les règles 2025 (preuve de rétrocompatibilité v6) :
+  // ils passent taxYear: 2025 explicitement. Les règles 2026 (PFU 31,4 %,
+  // prélèvements sociaux 18,6 %, AV exclue) sont couvertes par taxRules.test.ts.
+  it("applies PFU 30% for CTO (2025)", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { taxYear: 2025 })
     expect(result.flatTax).toBeCloseTo(3000, 0)
     expect(result.totalTax).toBeGreaterThan(0)
   })
 
-  it("applies PEA exemption after 5 years", () => {
-    const result = computeTaxBreakdown(10000, "pea", 6, false)
+  it("applies PEA exemption after 5 years (2025)", () => {
+    const result = computeTaxBreakdown(10000, "pea", 6, false, 0, { taxYear: 2025 })
     expect(result.incomeTax).toBe(0)
     expect(result.socialCharges).toBeCloseTo(1720, 0)
   })
 
-  it("applies AV reduced rate after 8 years with allowance", () => {
-    const result = computeTaxBreakdown(10000, "av", 10, false)
+  it("applies AV reduced rate after 8 years with allowance (2025)", () => {
+    const result = computeTaxBreakdown(10000, "av", 10, false, 0, { taxYear: 2025 })
     expect(result.incomeTax).toBeLessThan(750)
   })
 })
@@ -791,7 +794,7 @@ describe("sanitizeInputs", () => {
       withdrawalRate: 4,
       withdrawalFixed: 2500,
       withdrawalInflation: true,
-      retirementYears: 40,
+      retirementYears: 120000,
       goalTarget: 0,
       goalDuration: 20,
       goalCapital: 25000,
@@ -814,6 +817,9 @@ describe("sanitizeInputs", () => {
     expect(safe.monthlyPayment).toBeLessThanOrEqual(200_000)
     expect(safe.goalTarget).toBeGreaterThanOrEqual(1)
     expect(safe.seed).toBeGreaterThanOrEqual(1)
+    // Durée de la rente bornée (audit v6) : une valeur aberrante partagée via
+    // un lien (ex. 120 000) est ramenée à la borne haute du curseur (60 ans).
+    expect(safe.retirementYears).toBe(60)
   })
 })
 
@@ -1383,6 +1389,13 @@ describe("régressions — corrections de l'audit", () => {
     expect(ok.find(e => e.field === "mcRuns")).toBeUndefined()
   })
 
+  it("validateInputs avertit quand retirementYears sort de la fourchette 1-60 (lien partagé malformé)", () => {
+    const tooHigh = validateInputs({ ...DEFAULT_INPUTS, retirementYears: 120_000 })
+    expect(tooHigh.find(e => e.field === "retirementYears")?.severity).toBe("warning")
+    const ok = validateInputs({ ...DEFAULT_INPUTS, retirementYears: 30 })
+    expect(ok.find(e => e.field === "retirementYears")).toBeUndefined()
+  })
+
   it("Sharpe vaut TOUJOURS 0 (plus de mode aléatoire gaussien — ratio sans objet)", () => {
     const inputs = { ...DEFAULT_INPUTS, duration: 10 }
     const kpis = computeKPIs(runSimulation(inputs), inputs)
@@ -1585,8 +1598,8 @@ describe("scénario « partir en période difficile » (v5.6.0) — krach param�
 })
 
 describe("PER — tranche marginale d'imposition (TMI)", () => {
-  it("sortie en capital : versements PER à TMI sans abattement, gains au PFU", () => {
-    const result = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.3 })
+  it("sortie en capital : versements PER à TMI sans abattement, gains au PFU (2025)", () => {
+    const result = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.3, taxYear: 2025 })
     expect(result.taxableContributions).toBeCloseTo(50000, 0)
     expect(result.contributionsTax).toBeCloseTo(15000, 0)
     expect(result.socialCharges).toBeCloseTo(1720, 0)
@@ -1595,9 +1608,9 @@ describe("PER — tranche marginale d'imposition (TMI)", () => {
     expect(result.totalTax).toBeCloseTo(18000, 0)
   })
 
-  it("la TMI change l'impôt sur les versements PER", () => {
-    const low = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.11 })
-    const high = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.41 })
+  it("la TMI change l'impôt sur les versements PER (2025)", () => {
+    const low = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.11, taxYear: 2025 })
+    const high = computeTaxBreakdown(10000, "per", 10, false, 50000, { tmi: 0.41, taxYear: 2025 })
     expect(low.contributionsTax).toBeCloseTo(5500, 0)
     expect(high.contributionsTax).toBeCloseTo(20500, 0)
     expect(high.contributionsTax).toBeGreaterThan(low.contributionsTax)
@@ -1613,10 +1626,11 @@ describe("PER — tranche marginale d'imposition (TMI)", () => {
 })
 
 describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
-  it("au-delà du plafond de primes, les gains passent de 7,5 % à 12,8 %", () => {
+  it("au-delà du plafond de primes, les gains passent de 7,5 % à 12,8 % (2025)", () => {
     // 200 k€ de primes (célibataire, plafond 150 k€) → 75 % des gains à 7,5 %,
-    // 25 % à 12,8 %, après abattement de 4 600 €.
-    const result = computeTaxBreakdown(100000, "av", 10, false, 200_000)
+    // 25 % à 12,8 %, après abattement de 4 600 €. AV inchangée en 2026 (exclue
+    // de la hausse) mais on épingle 2025 pour la rétrocompatibilité.
+    const result = computeTaxBreakdown(100000, "av", 10, false, 200_000, { taxYear: 2025 })
     const allowance = 4600
     const taxable = 100000 - allowance
     const expected = taxable * 0.75 * 0.075 + taxable * 0.25 * 0.128
@@ -1624,26 +1638,26 @@ describe("AV — règle des 150 k€ / 300 k€ de primes", () => {
     expect(result.incomeTax).toBeGreaterThan(taxable * 0.075) // plus cher que le taux réduit pur
   })
 
-  it("sous le plafond, le taux réduit de 7,5 % s'applique intégralement", () => {
-    const result = computeTaxBreakdown(10000, "av", 10, false, 100_000)
+  it("sous le plafond, le taux réduit de 7,5 % s'applique intégralement (2025)", () => {
+    const result = computeTaxBreakdown(10000, "av", 10, false, 100_000, { taxYear: 2025 })
     expect(result.incomeTax).toBeCloseTo((10000 - 4600) * 0.075, 0)
   })
 
-  it("le plafond double pour un couple (300 k€)", () => {
-    const single = computeTaxBreakdown(100000, "av", 10, false, 200_000)
-    const couple = computeTaxBreakdown(100000, "av", 10, true, 200_000)
+  it("le plafond double pour un couple (300 k€, 2025)", () => {
+    const single = computeTaxBreakdown(100000, "av", 10, false, 200_000, { taxYear: 2025 })
+    const couple = computeTaxBreakdown(100000, "av", 10, true, 200_000, { taxYear: 2025 })
     expect(couple.incomeTax).toBeLessThan(single.incomeTax)
   })
 })
 
 describe("CTO — option barème progressif vs PFU", () => {
-  it("PFU (défaut) : impôt unique de 30 %", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "pfu" })
+  it("PFU (défaut) : impôt unique de 30 % (2025)", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "pfu", taxYear: 2025 })
     expect(result.flatTax).toBeCloseTo(3000, 0)
   })
 
-  it("barème : 17,2 % de social + TMI sur les gains, sans PFU", () => {
-    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "bareme", tmi: 0.3 })
+  it("barème : 17,2 % de social + TMI sur les gains, sans PFU (2025)", () => {
+    const result = computeTaxBreakdown(10000, "cto", 1, false, 0, { ctoTaxMode: "bareme", tmi: 0.3, taxYear: 2025 })
     expect(result.flatTax).toBe(0)
     expect(result.socialCharges).toBeCloseTo(1720, 0)
     expect(result.incomeTax).toBeCloseTo(3000, 0) // 10000 × 30 %
@@ -2042,6 +2056,17 @@ describe("régressions — audit v2 (perf & logique moteur)", () => {
       expect(row.yearlyReturn).toBeGreaterThanOrEqual(-1)
       expect(row.netYield).toBeGreaterThanOrEqual(-1)
     }
+  })
+
+  it("runDecumulation borne retirementYears à 60 ans (un lien partagé ne gèle plus l'onglet Rente)", () => {
+    // Avant le correctif : retirementYears=120 000 dans un état partagé → la
+    // boucle mensuelle (120 000 × 12 mois × 100 runs) gelait le thread. Le
+    // clamp moteur ramène à 60 ans → 61 points d'axe (année 0 incluse).
+    const inputs = { ...DEFAULT_INPUTS, mcRuns: 100, retirementYears: 120_000 }
+    const result = runDecumulation(inputs, 100_000, 100)
+    expect(result.years.length).toBe(61)
+    expect(result.years[result.years.length - 1]).toBe(60)
+    expect(result.runs).toBe(100)
   })
 
   it("runDecumulationAsync produit des résultats identiques à runDecumulation", async () => {

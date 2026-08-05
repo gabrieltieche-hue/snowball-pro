@@ -28,18 +28,20 @@ import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
-import { SummaryStats } from "./components/Simulation/SummaryStats"
 import { ComparisonTab } from "./components/Tabs/ComparisonTab"
 import { GoalTab } from "./components/Tabs/GoalTab"
 import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "./components/Tabs/RenteRetraiteTab"
 import { SimulatorTab } from "./components/Tabs/SimulatorTab"
 
+// Libellés v6 orientés BESOIN utilisateur (avis 1 & 2) : on nomme ce que
+// l'onglet apporte, pas sa technique interne. Les ids restent inchangés
+// (persistance, tests, partage).
 const TABS: TabDef[] = [
-  { id: "simulator", label: "Simulateur", icon: LineChart },
-  { id: "montecarlo", label: "Monte Carlo", icon: Dices },
+  { id: "simulator", label: "Projection", icon: LineChart },
+  { id: "montecarlo", label: "Robustesse de votre plan", icon: Dices },
   { id: "rente", label: "Rente & Retraite", icon: Banknote },
-  { id: "goal", label: "Objectif Inversé", icon: Target },
+  { id: "goal", label: "Combien investir ?", icon: Target },
 ]
 
 const THEME_KEY = "snowball_v5_theme"
@@ -496,7 +498,6 @@ export default function App() {
                 </button>
               </div>
             )}
-            <SummaryStats rows={rows} inputs={activeInputs} />
             {validationErrors.filter(e => e.severity === "error").length > 0 && (
               <div
                 role="alert"

@@ -1,33 +1,23 @@
 import type { EnvelopeType, TaxBreakdown, EnvelopeConfig, TaxBreakdownOptions } from "../types"
+import { getTaxRules, pfuRate, fmtTaxPercent } from "./taxRules"
 
-const SOCIAL_TAX_RATE = 0.172
-const PFU_INCOME_RATE = 0.128
-const PFU_RATE = SOCIAL_TAX_RATE + PFU_INCOME_RATE
-const AV_REDUCED_IR_RATE = 0.075
-const AV_EXCESS_IR_RATE = 0.128
-const AV_IR_ALLOWANCE_SINGLE = 4_600
-const AV_IR_ALLOWANCE_COUPLE = 9_200
-const AV_PREMIUM_CAP_SINGLE = 150_000
-const AV_PREMIUM_CAP_COUPLE = 300_000
-
-// PER individuel : à la sortie en capital, les versements volontaires
-// déduits sont imposés au barème sur 100 % de leur montant, sans abattement
-// de 10 %. Les gains relèvent du PFU (règles simplifiées de projection).
-const PER_SOCIAL_RATE = 0.172
+// Libellés des enveloppes DÉRIVÉS des règles de l'année courante : les taux
+// affichés ne peuvent pas diverger de taxRules.ts (aucun chiffre en dur).
+const currentRules = getTaxRules()
 
 export const ENVELOPE_CONFIGS: EnvelopeConfig[] = [
   {
     id: "cto",
     name: "Compte-titres ordinaire",
     shortLabel: "CTO",
-    desc: "Impôt unique de 30 % sur vos gains",
+    desc: `Impôt unique de ${fmtTaxPercent(pfuRate(currentRules))} sur vos gains`,
     color: "var(--color-value-gold)",
   },
   {
     id: "pea",
     name: "Plan d'épargne en actions",
     shortLabel: "PEA",
-    desc: "Après 5 ans : 17,2 % de cotisations sociales seulement",
+    desc: `Après 5 ans : ${fmtTaxPercent(currentRules.socialRate)} de cotisations sociales seulement`,
     color: "var(--color-warning)",
   },
   {
@@ -73,6 +63,10 @@ export function computeTaxBreakdown(
   const grossGains = Math.max(0, grossGainsInput)
   const tmi = opts.tmi ?? 0.3
   const ctoTaxMode = opts.ctoTaxMode ?? "pfu"
+  // Règles de l'année fiscale demandée (défaut : année courante, jamais un
+  // taux périmé) — toute la fiscalité découle de taxRules.ts (v6).
+  const rules = getTaxRules(opts.taxYear)
+  const pfu = pfuRate(rules)
   const notes: string[] = []
   let taxableGains = grossGains
   let taxableContributions = 0
@@ -98,66 +92,73 @@ export function computeTaxBreakdown(
   }
 
   if (envelope === "cto") {
-    socialCharges = grossGains * SOCIAL_TAX_RATE
+    socialCharges = grossGains * rules.socialRate
     if (ctoTaxMode === "bareme") {
       taxableGains = grossGains
       incomeTax = taxableGains * tmi
       notes.push(
-        `CTO en barème progressif : 17,2 % de cotisations sociales + impôt sur le revenu à votre TMI de ${(
+        `CTO en barème progressif : ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + impôt sur le revenu à votre TMI de ${(
           tmi * 100
         ).toFixed(0)} %.`,
       )
     } else {
-      incomeTax = grossGains * PFU_INCOME_RATE
-      flatTax = grossGains * PFU_RATE
+      incomeTax = grossGains * rules.pfuIncomeRate
+      flatTax = grossGains * pfu
       notes.push(
-        "CTO (compte-titres ordinaire) : impôt unique de 30 % = 17,2 % de cotisations sociales + 12,8 % d'impôt sur le revenu.",
+        `CTO (compte-titres ordinaire) : impôt unique de ${fmtTaxPercent(
+          pfu,
+        )} = ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + ${fmtTaxPercent(
+          rules.pfuIncomeRate,
+        )} d'impôt sur le revenu.`,
       )
     }
   }
 
   if (envelope === "pea") {
     if (yearsHeld >= 5) {
-      socialCharges = grossGains * SOCIAL_TAX_RATE
+      socialCharges = grossGains * rules.socialRate
       incomeTax = 0
       flatTax = 0
       notes.push(
-        "PEA détenu plus de 5 ans : pas d'impôt sur le revenu, uniquement 17,2 % de cotisations sociales sur les gains.",
+        `PEA détenu plus de 5 ans : pas d'impôt sur le revenu, uniquement ${fmtTaxPercent(
+          rules.socialRate,
+        )} de cotisations sociales sur les gains.`,
       )
     } else {
-      socialCharges = grossGains * SOCIAL_TAX_RATE
-      incomeTax = grossGains * PFU_INCOME_RATE
-      flatTax = grossGains * PFU_RATE
-      notes.push("PEA détenu moins de 5 ans : impôt unique de 30 % sur les gains.")
+      socialCharges = grossGains * rules.socialRate
+      incomeTax = grossGains * rules.pfuIncomeRate
+      flatTax = grossGains * pfu
+      notes.push(`PEA détenu moins de 5 ans : impôt unique de ${fmtTaxPercent(pfu)} sur les gains.`)
     }
-    const cap = couple ? 300_000 : 150_000
+    const cap = couple ? rules.peaCapCouple : rules.peaCapSingle
     if (contributionBase > cap)
       notes.push(`Plafond PEA dépassé : ce compte est plafonné à ${(cap / 1000).toFixed(0)} k€ de versements au total.`)
   }
 
   if (envelope === "av") {
-    socialCharges = grossGains * SOCIAL_TAX_RATE
+    socialCharges = grossGains * rules.avSocialRate
     if (yearsHeld >= 8) {
-      const allowance = couple ? AV_IR_ALLOWANCE_COUPLE : AV_IR_ALLOWANCE_SINGLE
-      const cap = couple ? AV_PREMIUM_CAP_COUPLE : AV_PREMIUM_CAP_SINGLE
+      const allowance = couple ? rules.avAllowanceCouple : rules.avAllowanceSingle
+      const cap = couple ? rules.avPremiumCapCouple : rules.avPremiumCapSingle
       taxableGains = Math.max(0, grossGains - allowance)
       // Les gains sont répartis au prorata des primes : jusqu'au plafond de
       // primes (150 k€ célibataire / 300 k€ couple), le taux réduit de 7,5 %
       // s'applique ; au-delà, les gains sont taxés à 12,8 %.
       const withinFraction = contributionBase > 0 ? Math.min(1, cap / contributionBase) : 1
       incomeTax =
-        taxableGains * withinFraction * AV_REDUCED_IR_RATE + taxableGains * (1 - withinFraction) * AV_EXCESS_IR_RATE
+        taxableGains * withinFraction * rules.avReducedIRRate +
+        taxableGains * (1 - withinFraction) * rules.avExcessIRRate
       notes.push(
         `Assurance-vie détenue plus de 8 ans : cotisations sociales sur tous les gains + abattement de ${(
           allowance / 1000
         ).toFixed(0)} k€/an. Les gains sur les primes jusqu'à ${(cap / 1000).toFixed(
           0,
-        )} k€ sont taxés à 7,5 %, au-delà à 12,8 %.`,
+        )} k€ sont taxés à ${fmtTaxPercent(rules.avReducedIRRate)}, au-delà à ${fmtTaxPercent(rules.avExcessIRRate)}.`,
       )
     } else {
-      incomeTax = grossGains * PFU_INCOME_RATE
-      flatTax = grossGains * PFU_RATE
-      notes.push("Assurance-vie détenue moins de 8 ans : impôt unique de 30 %.")
+      incomeTax = grossGains * rules.pfuIncomeRate
+      flatTax = grossGains * pfu
+      notes.push(`Assurance-vie détenue moins de 8 ans : impôt unique de ${fmtTaxPercent(pfu)}.`)
     }
   }
 
@@ -165,16 +166,18 @@ export function computeTaxBreakdown(
     // Le moteur passe la base de versements personnels dans contributionBase.
     // Les versements PER déduits à l'entrée sont taxés séparément à la TMI,
     // sans abattement de 10 % et sans cotisations sociales. Les gains sont
-    // soumis au PFU dans cette projection (12,8 % IR + 17,2 % sociaux).
+    // soumis au PFU dans cette projection (12,8 % IR + prélèvements sociaux).
     taxableContributions = Math.max(0, contributionBase)
     contributionsTax = taxableContributions * tmi
-    socialCharges = grossGains * PER_SOCIAL_RATE
-    incomeTax = grossGains * PFU_INCOME_RATE
-    flatTax = grossGains * (PER_SOCIAL_RATE + PFU_INCOME_RATE)
+    socialCharges = grossGains * rules.perSocialRate
+    incomeTax = grossGains * rules.pfuIncomeRate
+    flatTax = grossGains * (rules.perSocialRate + rules.pfuIncomeRate)
     notes.push(
       `PER : les versements déduits à l'entrée (${(tmi * 100).toFixed(
         0,
-      )} % de TMI) sont imposés à la sortie sur 100 % du capital correspondant, sans abattement de 10 %. Les gains sont modélisés au PFU (12,8 % + 17,2 %).`,
+      )} % de TMI) sont imposés à la sortie sur 100 % du capital correspondant, sans abattement de 10 %. Les gains sont modélisés au PFU (${fmtTaxPercent(
+        rules.pfuIncomeRate,
+      )} + ${fmtTaxPercent(rules.perSocialRate)}).`,
     )
   }
 
