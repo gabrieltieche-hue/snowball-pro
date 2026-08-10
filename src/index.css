@@ -61,16 +61,16 @@
   .light-mode {
     color-scheme: light;
   }
-  /* I7 — l'outline or était invisible sur l'onglet actif (fond or) : on
-     passe à un bleu qui contraste sur le fond comme sur l'or, dans les deux
-     thèmes (WCAG 2.4.7). */
+  /* I7 (v6.2) — indicateur de focus dans la charte. L'or pur était invisible
+     sur l'onglet actif (fond or) ; le bleu contrastait mais jurait avec la
+     palette. Double anneau : un liseré de la couleur de surface (creux
+     visuel) + un anneau or — lisible sur fond or, sur fond clair et dans les
+     deux thèmes (WCAG 2.4.7). */
   :focus-visible {
-    outline: 2px solid #60a5fa;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: 4px;
-  }
-  .light-mode :focus-visible {
-    outline-color: #1e40af;
+    box-shadow: 0 0 0 2px var(--color-surface);
+    border-radius: 6px;
   }
 
   ::selection {
@@ -126,6 +126,14 @@
   .glass-gold-hover:hover {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(201, 163, 36, 0.06));
   }
+  /* Carte secondaire (v6.2) : les blocs de support (KPIs, jalons, frais…)
+     restent lisibles sans rivaliser avec la carte principale (héro, verdict).
+     Même rayon que glass (porté par les composants) — seule la surface
+     change : fond quasi transparent, bordure adoucie, pas d'ombre portée. */
+  .card-subtle {
+    background: color-mix(in srgb, var(--color-surface-50) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  }
   /* Carte interactive : élévation douce au survol (mobile : le touch n'a pas
      de hover — l'effet ne se déclenche qu'avec un vrai pointeur). */
   @media (hover: hover) {
@@ -153,12 +161,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 40%,
-      rgba(255, 255, 255, 0.35) 50%,
-      transparent 60%
-    );
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
     transform: translateX(-120%);
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
@@ -466,17 +469,21 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
 }
 
-/* I7 — indicateur de focus visible sur les sliders (le range a outline:none) */
+/* I7 — indicateur de focus visible sur les sliders (le range a outline:none).
+   Même langage que le focus global v6.2 : creux de surface + anneau or. */
 input[type="range"]:focus-visible {
   outline: none;
 }
 input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow:
-    0 0 0 4px rgba(96, 165, 250, 0.55),
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-primary),
     0 0 16px rgba(212, 175, 55, 0.35);
 }
 input[type="range"]:focus-visible::-moz-range-thumb {
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.55);
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-primary);
 }
 
 /* M8 — machines sans backdrop-filter : les panneaux restent lisibles (fond

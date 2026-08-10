@@ -4,9 +4,36 @@
 
 ---
 
+## v6.2.0 — Nettoyage UI P0+P1 : fin du « tout au même poids »
+
+Suite à la critique UX (hiérarchie visuelle, répétitions), chantier d'organisation de l'information sur l'onglet Rente + respiration de la sidebar + hiérarchie typographique. Zéro changement moteur : uniquement la présentation. **308 tests**, gate 100 % vert, vérifié en navigateur réel (desktop 1440 + mobile 375, clair + sombre, clavier).
+
+### 🧹 Onglet Rente & Retraite — le « bordel » concentré
+
+- **Doublon supprimé** : la section du bas « Aperçu — rente possible selon le taux de retrait » redonnait les 3 mêmes montants que les cartes « Modèle de retrait » (2 130 / 3 408 / 4 686 €… affichés deux fois sur le même écran). Les cartes de modèle sont LE comparatif — suppression pure.
+- **% de survie dédoublonné** : il n'apparaît plus que dans le verdict et la carte KPI « La rente dure-t-elle ? ». La boîte « En clair » est reformulée (quand l'argent manque, année de ruine) sans re-citer le chiffre ; le paragraphe de précision dit « ce taux » sans le répéter.
+- **Verdict aplati** : « Krach simulé » et « En clair » sortent du bloc vert (3 niveaux de boîtes imbriquées → 1).
+
+### ↔️ Sidebar repliable (préférence mémorisée)
+
+- Bouton chevron dans l'en-tête « Réglages » (aria-expanded, aria-controls) : plie/déplie TOUTE la sidebar. Repliée, elle devient un **résumé compact** (capital · épargne/mois · durée · enveloppe) + « Rouvrir les réglages » — la largeur de 380 px est rendue au contenu sur les onglets où l'on ne règle rien.
+- État persisté en localStorage (`snowball_v62_sidebar_collapsed`), comme le thème. Remontage simple sans AnimatePresence : **robuste sous prefers-reduced-motion** (une sortie bloquée laissait le panneau vide — bug trouvé en vérification et corrigé).
+
+### 🎚️ Hiérarchie typographique : token « carte secondaire »
+
+- Nouveau token `.card-subtle` (fond quasi transparent, bordure adoucie, pas d'ombre) appliqué aux blocs de support partout : cartes de synthèse, Statistiques clés, jalons, frais (Projection) ; cartes KPI, paramètres statiques, histogrammes (Rente) ; résultats Monte Carlo et progression d'objectif (Goal). Le héro et le verdict gardent le verre — le résultat principal respire enfin.
+- **Focus clavier dans la charte** : fini l'outline bleu qui jurait (I7 v6.1). Double anneau `var(--color-primary)` + liseré surface — or vif en sombre (#d4af37, lisible sur l'onglet or), or assombri en clair (#7c5e0a) — WCAG 2.4.7 conservé, sliders inclus.
+
+### 🧪 Gate
+
+- Typecheck ✓ lint ✓ **308/308 tests** ✓ · détecteur impeccable (scope layout) **0 finding** · vérification Playwright desktop+mobile : grille 2 colonnes, sidebar repli/dépli, focus clavier aux couleurs du thème (clair + sombre), doublon absent, verdict aplati, zéro scroll horizontal (1440 et 375), **0 erreur console**.
+- Version 6.1.0 → **6.2.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.2.0"`), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.2). **Déployé en production** : `vercel --prod` → https://snowball-pro.vercel.app.
+
+---
+
 ## v6.1.0 — Landing page + comptes locaux : l'app a une porte d'entrée
 
-Demande utilisateur : *« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »* Deux gros morceaux : une **landing de persuasion** (mode impeccable) qui prouve la valeur avec une **démo exécutée par le vrai moteur**, et un **système de comptes 100 % local** (inscription, connexion, session persistée, changement de mot de passe, suppression du compte) avec isolation des données par compte. Deux idées v6.1 de l'utilisateur (onglet « Retraite par objectif », rapport PDF) enregistrées dans MEMORY.md pour plus tard. **308 tests**, gate 100 % vert, vérifié en navigateur réel. Bump 6.0.0 → **6.1.0**. Pas de déploiement Vercel (validation utilisateur requise).
+Demande utilisateur : _« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »_ Deux gros morceaux : une **landing de persuasion** (mode impeccable) qui prouve la valeur avec une **démo exécutée par le vrai moteur**, et un **système de comptes 100 % local** (inscription, connexion, session persistée, changement de mot de passe, suppression du compte) avec isolation des données par compte. Deux idées v6.1 de l'utilisateur (onglet « Retraite par objectif », rapport PDF) enregistrées dans MEMORY.md pour plus tard. **308 tests**, gate 100 % vert, vérifié en navigateur réel. Bump 6.0.0 → **6.1.0**. Pas de déploiement Vercel (validation utilisateur requise).
 
 ### 🌐 Landing page (`components/Landing/`)
 
@@ -72,7 +99,7 @@ Plan v6 validé avec l'utilisateur (synthèse de 3 avis UX externes + audit inte
 
 ## v5.7.2 — Formule de Fisher explicitée : pourquoi 5,99 % et pas 8,22 − 2,1 = 6,12 %
 
-Demande utilisateur : *« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vient ce 5,99 ? »* — le piège classique : la soustraction simple est une approximation, la réalité est multiplicative (formule de Fisher). L'app l'explique désormais aux endroits où le chiffre apparaît. Bump 5.7.1 → **5.7.2**.
+Demande utilisateur : _« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vient ce 5,99 ? »_ — le piège classique : la soustraction simple est une approximation, la réalité est multiplicative (formule de Fisher). L'app l'explique désormais aux endroits où le chiffre apparaît. Bump 5.7.1 → **5.7.2**.
 
 ### 🧮 La formule, vérifiée par le moteur
 
@@ -93,7 +120,7 @@ Demande utilisateur : *« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vi
 
 ## v5.7.1 — Clarté des rendements : l'échelle 10,07 % → 8,22 % → 5,99 % enfin expliquée (plus de « double déduction » apparente)
 
-Demande utilisateur : *« je vois des taux de rendement différents absolument partout, ça me fait très peur… je veux que l'utilisateur comprenne pourquoi on passe du 10 % par an à 5,99 % »*. Audit moteur + recherche : **aucune double déduction dans le moteur** — le problème était pédagogique. Trois taux coexistaient sans le chaînon manquant : la moyenne ARITHMÉTIQUE (10,07 %, appliquée par la courbe lissée) et le rendement RÉEL (5,99 %) étaient affichés, mais la moyenne GÉOMÉTRIQUE (8,22 %, krachs inclus) — l'étape qui explique la baisse — ne l'était jamais. Bump 5.7.0 → **5.7.1**.
+Demande utilisateur : _« je vois des taux de rendement différents absolument partout, ça me fait très peur… je veux que l'utilisateur comprenne pourquoi on passe du 10 % par an à 5,99 % »_. Audit moteur + recherche : **aucune double déduction dans le moteur** — le problème était pédagogique. Trois taux coexistaient sans le chaînon manquant : la moyenne ARITHMÉTIQUE (10,07 %, appliquée par la courbe lissée) et le rendement RÉEL (5,99 %) étaient affichés, mais la moyenne GÉOMÉTRIQUE (8,22 %, krachs inclus) — l'étape qui explique la baisse — ne l'était jamais. Bump 5.7.0 → **5.7.1**.
 
 ### 🔬 Vérification moteur (GO DEEPER, aucune erreur trouvée)
 
@@ -107,7 +134,7 @@ Demande utilisateur : *« je vois des taux de rendement différents absolument p
 
 ### 🖥 UI — échelle pédagogique à trois étages
 
-- **`Sidebar`** : la carte « Rendement lissé » devient une **échelle à 3 lignes** (description list accessible) : « Brut (moyenne des années) 10,07 %/an » → « Composé (krachs inclus) 8,22 %/an » → « Réel (après inflation 2,1 %) 5,99 %/an » (la ligne réelle en or, mise en avant). Note explicative : *« Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire une seule chose : la volatilité puis l'inflation… »*.
+- **`Sidebar`** : la carte « Rendement lissé » devient une **échelle à 3 lignes** (description list accessible) : « Brut (moyenne des années) 10,07 %/an » → « Composé (krachs inclus) 8,22 %/an » → « Réel (après inflation 2,1 %) 5,99 %/an » (la ligne réelle en or, mise en avant). Note explicative : _« Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire une seule chose : la volatilité puis l'inflation… »_.
 - **`MethodologyPanel`** : la ligne « Rendement » (un mur de texte) est découpée en 4 lignes claires : Rendement brut / Rendement composé / Rendement réel / Projection & Monte Carlo — la même histoire, racontée deux fois (carte + accordéon).
 - **`KpiGrid`** : les sous-titres distinguent explicitement « de VOTRE projection » (XIRR brut 10,1 % ; réel 7,8 %) de la référence historique (5,99 %/an) — fini les deux chiffres « réels » sans explication.
 - **`AIInsightCard`** : la comparaison XIRR fait référence à la « moyenne BRUTE » (arithmétique) — comparer un XIRR nominal à une moyenne composée réelle mélangerait les étages.
@@ -121,7 +148,7 @@ Demande utilisateur : *« je vois des taux de rendement différents absolument p
 
 ## v5.7.0 — Overhaul UI/UX : en-tête global, onglets à icônes, cartes héro, design system affiné
 
-Demande utilisateur : *« Améliore drastiquement l'interface et l'UI, l'UX, et tout ça… GO DEEPER »*. Refonte complète de la couche d'affichage (zéro changement moteur) : hiérarchie, motion, micro-interactions, cohérence — l'identité or/ivoire devient plus affirmée et l'app gagne un vrai squelette d'en-tête. Bump 5.6.4 → **5.7.0**.
+Demande utilisateur : _« Améliore drastiquement l'interface et l'UI, l'UX, et tout ça… GO DEEPER »_. Refonte complète de la couche d'affichage (zéro changement moteur) : hiérarchie, motion, micro-interactions, cohérence — l'identité or/ivoire devient plus affirmée et l'app gagne un vrai squelette d'en-tête. Bump 5.6.4 → **5.7.0**.
 
 ### 🧭 En-tête global + ActionBar intégrée (`App.tsx`, `ActionBar.tsx`)
 
@@ -158,7 +185,7 @@ Demande utilisateur : *« Améliore drastiquement l'interface et l'UI, l'UX, et 
 
 ## v5.6.4 — Titres de section UNIFORMES sur tout le site : « Vos impôts » proportionné à « Statistiques clés »
 
-Demande utilisateur : *« le titre de la partie des impôts doit être mieux proportionné par rapport aux statistiques clés… que tout soit uniforme sur le site, sublime, joli et cohérent »*. Avant, chaque carte et chaque graphique utilisaient son propre style de titre (10 px gris muet, `text-sm font-bold`, emoji 📈📊…) à côté de titres de section en extrabold — hiérarchie visuelle déséquilibrée. Bump 5.6.3 → **5.6.4**.
+Demande utilisateur : _« le titre de la partie des impôts doit être mieux proportionné par rapport aux statistiques clés… que tout soit uniforme sur le site, sublime, joli et cohérent »_. Avant, chaque carte et chaque graphique utilisaient son propre style de titre (10 px gris muet, `text-sm font-bold`, emoji 📈📊…) à côté de titres de section en extrabold — hiérarchie visuelle déséquilibrée. Bump 5.6.3 → **5.6.4**.
 
 ### 🧩 Composant unique `SectionHeader` (`shared/SectionHeader.tsx`)
 
@@ -228,7 +255,7 @@ Le projet Vercel a été renommé de `v4` vers **`snowball-pro`** (API REST Verc
 
 ## v5.6.0 — Courbe lissée du Simulateur + scénario « Partir en période difficile » (krach paramétrable)
 
-Deux demandes utilisateur fusionnées : (1) *« un truc linéaire, pas une courbe aléatoire »* — le Simulateur affichait les zigzags réels de l'historique ; (2) pouvoir tester *« et si le départ à la retraite tombait en pleine crise ? »* au moment et à l'intensité de son choix, au lieu des seules fenêtres historiques fixes. Bump 5.5.1 → **5.6.0**.
+Deux demandes utilisateur fusionnées : (1) _« un truc linéaire, pas une courbe aléatoire »_ — le Simulateur affichait les zigzags réels de l'historique ; (2) pouvoir tester _« et si le départ à la retraite tombait en pleine crise ? »_ au moment et à l'intensité de son choix, au lieu des seules fenêtres historiques fixes. Bump 5.5.1 → **5.6.0**.
 
 ### 📈 Simulateur : courbe lissée (rendement constant chaque année)
 
@@ -265,11 +292,11 @@ Deux demandes utilisateur fusionnées : (1) *« un truc linéaire, pas une courb
 
 ## v5.5.1 — Fiabilité & sûreté des estimations : incertitude des paramètres, 100 ans d'histoire, inflation stochastique, garde-fous et stress tests
 
-Suite directe de la question utilisateur *« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ ? (4× d'écart) »* — l'écart est mathématiquement correct (volatilité réelle × √durée, rééchantillonnage par blocs), mais le modèle traitait la moyenne 10,07 % et l'inflation 2,1 % comme des **vérités connues**, ce qui rendait les percentiles et le « 95,8 % de survie » **trop confiants**. Deux volets : **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Les 4 options sont **ON par défaut** — chacune reste désactivable dans l'UI pour comparer.
+Suite directe de la question utilisateur _« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ ? (4× d'écart) »_ — l'écart est mathématiquement correct (volatilité réelle × √durée, rééchantillonnage par blocs), mais le modèle traitait la moyenne 10,07 % et l'inflation 2,1 % comme des **vérités connues**, ce qui rendait les percentiles et le « 95,8 % de survie » **trop confiants**. Deux volets : **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Les 4 options sont **ON par défaut** — chacune reste désactivable dans l'UI pour comparer.
 
 ### 🎲 Fiabilité (le moteur dit la vérité)
 
-- **Incertitude des paramètres (Pástor–Stambaugh, Merton)** — `reliability.ts` (nouveau) : la moyenne et la volatilité du vivier sont des *estimations*, pas des vérités. Chaque scénario tire son régime `μ̃ ~ N(μ̂, σ̂/√n_eff)` et `σ̃ ~ σ̂·exp(η)` autour des estimations (taille effective = séries/bloc, le bootstrap ne crée pas d'information). `applyRegime` préserve la structure des blocs (krachs enchaînés) en décalant niveau et ampleur. **Élargit honnêtement P10/P90** : vérifié par test — P10 sans incertitude ≥ P10 avec incertitude.
+- **Incertitude des paramètres (Pástor–Stambaugh, Merton)** — `reliability.ts` (nouveau) : la moyenne et la volatilité du vivier sont des _estimations_, pas des vérités. Chaque scénario tire son régime `μ̃ ~ N(μ̂, σ̂/√n_eff)` et `σ̃ ~ σ̂·exp(η)` autour des estimations (taille effective = séries/bloc, le bootstrap ne crée pas d'information). `applyRegime` préserve la structure des blocs (krachs enchaînés) en décalant niveau et ampleur. **Élargit honnêtement P10/P90** : vérifié par test — P10 sans incertitude ≥ P10 avec incertitude.
 - **Historique étendu : 100 ans** — `historical.ts` : série **S&P 500 SBBI 1926-1969** (dividendes réinvestis, vérifiée sur les ancrages 1929 ≈ −8,4 %, 1931 ≈ −43,3 %, 1933 ≈ +54 %) + MSCI World 1970-2025 = **100 ans de rendements réels** pour le rééchantillonnage. Les krachs de l'entre-deux-guerres sont rejoués. Le **Simulateur reste sur 1970-2025** (sa figure de référence 10,07 %/an est préservée).
 - **Inflation stochastique** — `historical.ts` : série **inflation française réelle INSEE 1970-2025** (56 valeurs : 13,7 % en 1974, 0,0 % en 2015, 5,2 % en 2022) rejouée par blocs pour l'indexation de la rente, au lieu d'un taux fixe 2,1 % qui sous-estime les pires érosions. Independante des rendements (modélisation simple assumée).
 - **Moyenne + intervalle de confiance + histogramme terminal** — `math.ts` : `wilsonScoreCI` (le « 95,8 % » vaut ±0,4 pt à 10 000 runs, ±4 pts à 100) et `buildTerminalHistogram` (30 classes sur [0, p99], la queue droite est absorbée dans la dernière classe). `runMonteCarlo` et `runDecumulation` exposent désormais `mean`, `successRateCI`/`survivalRateCI` et `terminalDistribution` — la **fat tail** que 3 lignes cachaient devient visible.
@@ -300,7 +327,7 @@ Suite directe de la demande « Monte Carlo et Rente rejouent TOUJOURS l'historiq
 
 ### 🧭 Pourquoi (décision discutée et validée avec l'utilisateur)
 
-Après le correctif « MC + Rente toujours en historique », le sélecteur « Comment évolue la bourse ? » ne pilotait plus QUE le Simulateur, et uniquement en « Taux défini ». Question légitime : *« à quoi sert le taux que l'utilisateur rentre au début ? »* — réponse : plus à rien. Option A retenue : un seul modèle mental — *tu rentres ton épargne (capital, mensualité, durée, inflation), la bourse c'est la vraie histoire, pas un taux qu'on invente.*
+Après le correctif « MC + Rente toujours en historique », le sélecteur « Comment évolue la bourse ? » ne pilotait plus QUE le Simulateur, et uniquement en « Taux défini ». Question légitime : _« à quoi sert le taux que l'utilisateur rentre au début ? »_ — réponse : plus à rien. Option A retenue : un seul modèle mental — _tu rentres ton épargne (capital, mensualité, durée, inflation), la bourse c'est la vraie histoire, pas un taux qu'on invente._
 
 ### ⚙️ Moteur
 
@@ -327,7 +354,7 @@ Après le correctif « MC + Rente toujours en historique », le sélecteur « Co
 
 - **`migration.ts`** : `showReal = true` par défaut ; fallback v4 `showReal: s.showReal !== false` — un choix v4 explicitement « false » reste respecté, sinon on retombe sur le défaut (vrai).
 - **Rappel moteur (invariant)** : le moteur calcule **TOUJOURS** les deux échelles (`nominal` + `real = capital / inflationIndex`, cf. `simulation.ts`) — le toggle ne choisit que laquelle est mise en avant. L'infobulle « ne saisissez jamais un taux déjà net d'inflation » est donc vraie **que l'option soit cochée ou non**.
-- **Infobulle clarifiée** (`GoalTab`) : *« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »*
+- **Infobulle clarifiée** (`GoalTab`) : _« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »_
 - **Tests** : défaut `showReal = true` (moteur), migration v4 (undefined → vrai, false → false, true → true), toggle coché au rendu d'App (composant).
 
 ### Tests
@@ -342,7 +369,7 @@ Après le correctif « MC + Rente toujours en historique », le sélecteur « Co
 
 - **Défaut de rendement = 10,07 %/an brut** (`migration.ts`) : moyenne arithmétique MSCI World 1970-2025 (déjà corrigée en v5.3.1). Aligné sur `annualReturn` **et** `goalAnnualReturn` (onglet Objectif Inversé) ; fallback v4 aligné (10,07 % au lieu de 8 %).
 - **Libellés explicites « (% brut) »** : curseur principal (`Sidebar`) **et** onglet Objectif Inversé (`GoalTab`) affichent désormais « Rendement de la bourse (% brut) ».
-- **Note sous le curseur** (les deux onglets) : *« Rendement brut (avant inflation) — taux recommandé : 7 à 12 %/an · défaut 10,07 %/an (moyenne MSCI World) »*.
+- **Note sous le curseur** (les deux onglets) : _« Rendement brut (avant inflation) — taux recommandé : 7 à 12 %/an · défaut 10,07 %/an (moyenne MSCI World) »_.
 - **Infobulle « ? »** (`HelpTip.tsx`, nouveau composant partagé + prop `help` sur `SliderInput`) : explique en une phrase la règle « brut avant inflation, ne saisissez jamais un taux déjà net ».
 - **Avertissement hors fourchette** (`validation.ts`, constantes partagées `RECOMMENDED_RETURN_MIN/MAX` = 7 %/12 %) : warning sous le curseur + message dans la carte insight de la Sidebar expliquant le **risque de double déduction de l'inflation** si le taux saisi était déjà net.
 - **Tests** : défaut 10,07 % > net d'inflation (8,22 %), validation silencieuse à 10,07 % et warning hors fourchette, tolérance d'arrondi assouplie sur un test existant. **167 tests au total.**

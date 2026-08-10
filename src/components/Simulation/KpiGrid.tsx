@@ -130,7 +130,7 @@ export function KpiGrid({ kpis }: KpiGridProps) {
           return (
             <div
               key={kpi.key}
-              className="glass rounded-2xl p-4 card-interactive flex flex-col min-w-0 min-h-[132px]"
+              className="card-subtle rounded-2xl p-4 card-interactive flex flex-col min-w-0 min-h-[132px]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">

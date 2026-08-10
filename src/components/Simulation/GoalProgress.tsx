@@ -10,7 +10,7 @@ export function GoalProgress({ current, target }: GoalProgressProps) {
   const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0
 
   return (
-    <div className="glass rounded-2xl p-5">
+    <div className="card-subtle rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
           Avec votre épargne actuelle

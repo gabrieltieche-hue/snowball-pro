@@ -226,13 +226,13 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
               {inputs.extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité française incluse
             </p>
             <p className="text-[10px] text-text-dim italic">
-              Montants en <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte,
-              non corrigés de l'inflation) et <strong className="text-text not-italic">nets d'impôts</strong> (liquidation
+              Montants en <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte, non
+              corrigés de l'inflation) et <strong className="text-text not-italic">nets d'impôts</strong> (liquidation
               théorique) — pour comparer avec le Simulateur en euros d'aujourd'hui, tenez compte de l'inflation.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
-                <div key={card.label} className="glass rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
+                <div key={card.label} className="card-subtle rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: card.tone }}>
                       {card.label}
@@ -243,7 +243,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                   <p className="text-[10px] text-text-dim mt-1.5">{card.sub}</p>
                 </div>
               ))}
-              <div className="glass rounded-2xl p-4">
+              <div className="card-subtle rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[#60A5FA]">
                   Chances d'atteindre votre objectif
                 </p>
@@ -260,7 +260,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
               </div>
             </div>
             {/* Histogramme des issues terminales : rend la queue droite visible */}
-            <div className="glass rounded-2xl p-4">
+            <div className="card-subtle rounded-2xl p-4">
               <SectionHeader
                 as="h3"
                 level="card"

@@ -656,3 +656,35 @@ Demande utilisateur : *« Je veux créer une landing page de présentation de l'
 - Docs : MEMORY.md (cet ajout) + CHANGELOG (ligne « en attente de validation » → déployée) — petit commit `chore(deploy)`.
 
 ---
+
+## SESSION — 2026-08-10 (v6.2.0 : nettoyage UI P0+P1 — hiérarchie, sidebar repliable, token carte secondaire)
+
+### Résumé
+
+Demande utilisateur : *« Discutons de ces issues et décidons… »* puis *« lance P0 et P1 ensemble, commit et sauvegarde la version actuelle au cas ou, puis implémente, teste, vérifie, improve, go deeper »*. Chantier d'organisation de l'information (zéro changement moteur) : fin du « tout au même poids ». **308 tests**, gate 100 % vert, vérifié navigateur réel (desktop 1440 + mobile 375, clair + sombre, clavier). **Déployé en production** (validation utilisateur obtenue dans la foulée).
+
+### Sauvegarde préalable
+
+- Snapshot `46f0b5d2` sur `main` : WIP `index.html` (meta OG + GoatCounter — code `VOTRE-CODE` à configurer) avant le chantier.
+
+### P0 — Onglet Rente & Retraite (le « bordel » concentré)
+
+- **Doublon supprimé** : « Aperçu — rente possible selon le taux de retrait » redonnait les 3 montants déjà affichés par les cartes « Modèle de retrait » → suppression pure (les cartes de modèle SONT le comparatif).
+- **% de survie dédoublonné** : verdict + carte KPI « La rente dure-t-elle ? » seulement. « En clair » reformulé (année de ruine, sans re-citer le %), paragraphe CI dit « ce taux » sans le répéter.
+- **Verdict aplati** : « Krach simulé » et « En clair » sortis du bloc vert (3 niveaux de boîtes → 1).
+
+### P1 — Sidebar + hiérarchie
+
+- **Sidebar repliable** (`Sidebar.tsx`) : chevron dans l'en-tête « Réglages » (aria-expanded/aria-controls), état persisté `snowball_v62_sidebar_collapsed`, vue repliée = résumé compact (capital · épargne/mois · durée · enveloppe) + « Rouvrir les réglages ». Remontage simple SANS AnimatePresence : bug trouvé en vérif — `mode="wait"` + `prefers-reduced-motion` laissait le panneau vide.
+- **Token `.card-subtle`** (index.css) : fond quasi transparent + bordure adoucie, appliqué aux blocs de support partout (synthèse, stats clés, jalons, frais, KPIs Rente, histogrammes, résultats MC, progression Goal). Héro/verdict gardent le verre.
+- **Focus clavier dans la charte** : double anneau `var(--color-primary)` + liseré `var(--color-surface)` — or vif en sombre (#d4af37, lisible sur l'onglet or), or assombri en clair (#7c5e0a), sliders inclus. Fini l'outline bleu I7 v6.1 (WCAG 2.4.7 conservé).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **308/308 tests** ✓ build ✓ · détecteur impeccable (scope layout) **0 finding** · Playwright 20/20 (grille 2 colonnes, repli/dépli, focus clavier 2 thèmes, doublon absent, verdict aplati, zéro scroll horizontal 1440/375, 0 erreur console).
+- Piège rencontré : une autre app (BOS) a pris le port 5173 entre deux vérifs — premières captures Playwright sur la mauvaise app. Serveur relancé en session détachée sur **5174** (`start_new_session=True`), re-vérifié contre lui.
+
+### État
+
+- Version 6.1.0 → **6.2.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.2.0"`), CHANGELOG (entrée v6.2.0), MEMORY.md (cette entrée).
+- Branche `refactor/ui-cleanup-p0-p1` → merge sur `main`, puis `vercel --prod` → https://snowball-pro.vercel.app (HTTP 200, titre v6.2, `CACHE_VERSION` v6.2.0 vérifiée).

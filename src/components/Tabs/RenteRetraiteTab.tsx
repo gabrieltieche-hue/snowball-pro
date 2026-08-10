@@ -122,9 +122,6 @@ export function RenteRetraiteTab({
     return (startingCapital * selectedModel.rate) / 12
   }, [inputs.withdrawalModel, inputs.withdrawalFixed, startingCapital, selectedModel.rate])
 
-  // Aperçu comparatif (toujours affiché, basé sur le capital)
-  const comparisonRates = [0.025, 0.04, 0.055]
-
   // Note de transparence sur le krach paramétrable, affichée avec les résultats
   const crisisNote = inputs.crisisScenario
     ? `Un krach de −${Math.round(inputs.crisisIntensity * 100)} % frappe chaque scénario en année ${
@@ -236,11 +233,10 @@ export function RenteRetraiteTab({
               </div>
               <p className="text-[10px] text-text-dim leading-relaxed">
                 La <strong className="text-text">règle des 4 %</strong> est le standard historique (Bengen) : elle a
-                tenu sur toutes les périodes de 30 ans testées.{" "}
-                <strong className="text-text">Très prudent</strong> sacrifie du confort pour la sécurité, pendant que{" "}
-                <strong className="text-text">Optimiste</strong> convient si vous pouvez réduire vos retraits les
-                mauvaises années. Le mode <strong className="text-text">Personnalisé</strong> teste le montant exact
-                que vous visez.
+                tenu sur toutes les périodes de 30 ans testées. <strong className="text-text">Très prudent</strong>{" "}
+                sacrifie du confort pour la sécurité, pendant que <strong className="text-text">Optimiste</strong>{" "}
+                convient si vous pouvez réduire vos retraits les mauvaises années. Le mode{" "}
+                <strong className="text-text">Personnalisé</strong> teste le montant exact que vous visez.
               </p>
             </div>
           </div>
@@ -250,7 +246,7 @@ export function RenteRetraiteTab({
             <SectionHeader level="label">Paramètres</SectionHeader>
 
             {/* Aperçu rente */}
-            <div className="glass rounded-xl p-4">
+            <div className="card-subtle rounded-xl p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10px] text-text-dim uppercase tracking-wider">Rente mensuelle initiale</span>
                 <span
@@ -290,7 +286,7 @@ export function RenteRetraiteTab({
             </div>
 
             {/* Durée de la retraite */}
-            <div className="glass rounded-xl p-4">
+            <div className="card-subtle rounded-xl p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10px] text-text-dim uppercase tracking-wider">Durée de la rente</span>
                 <span className="text-xs mono font-bold text-text">{inputs.retirementYears} ans</span>
@@ -379,7 +375,12 @@ export function RenteRetraiteTab({
                             onChange={e => updateInput("crisisStartOffset", Number(e.target.value))}
                             className="w-full"
                             aria-label="Années avant le krach"
-                            style={rangeFill(Math.min(inputs.crisisStartOffset, maxOffset), 0, maxOffset, "var(--color-danger)")}
+                            style={rangeFill(
+                              Math.min(inputs.crisisStartOffset, maxOffset),
+                              0,
+                              maxOffset,
+                              "var(--color-danger)",
+                            )}
                           />
                           <div className="flex justify-between text-[10px] text-text-dim mt-1">
                             <span>Année 1</span>
@@ -497,8 +498,8 @@ export function RenteRetraiteTab({
             />
           </div>
           <p className="text-[9px] text-text-dim mt-2.5">
-            Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges, taux
-            de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
+            Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges,
+            taux de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
           </p>
         </CollapsibleSection>
       </div>
@@ -560,49 +561,6 @@ export function RenteRetraiteTab({
           </div>
         )}
       </div>
-
-      {/* ──────────────────────────────────────────────────────────
-          Comparatif rapide : 3 taux
-         ────────────────────────────────────────────────────────── */}
-      <div className="glass rounded-3xl p-4 sm:p-6">
-        <SectionHeader
-          as="h3"
-          level="card"
-          icon={Sparkles}
-          title="Aperçu — rente possible selon le taux de retrait"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {comparisonRates.map(rate => {
-            const monthly = (startingCapital * rate) / 12
-            const yearly = monthly * 12
-            const isCurrent = Math.abs(selectedModel.rate - rate) < 0.0001
-            const tone = rate <= 0.025 ? "#60A5FA" : rate <= 0.04 ? "#4ADE80" : "var(--color-primary)"
-            const label = rate <= 0.025 ? "Très prudent" : rate <= 0.04 ? "Équilibré (Bengen)" : "Dynamique"
-            return (
-              <div
-                key={rate}
-                className={cn("glass rounded-2xl p-4 transition-all", isCurrent && "ring-1 ring-primary/60")}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-text-dim uppercase tracking-wider">
-                    Taux {fmtDecimal(rate * 100, 1).replace(/,0$/, "")} %
-                  </span>
-                  {isCurrent && (
-                    <span className="text-[10px] mono font-bold text-primary uppercase tracking-wider">Actuel</span>
-                  )}
-                </div>
-                <div className="mono text-lg sm:text-xl font-bold" style={{ color: tone }}>
-                  {fmtCurrency(monthly)}
-                  <span className="text-[10px] text-text-dim font-normal"> / mois</span>
-                </div>
-                <div className="text-[10px] text-text-dim mt-1.5">
-                  <span className="mono">{fmtCurrency(yearly)}</span> / an · {label}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
     </div>
   )
 }
@@ -652,7 +610,8 @@ function ResultsSection({
       transition={{ duration: 0.4 }}
       className="glass rounded-3xl p-4 sm:p-6 space-y-5"
     >
-      {/* Verdict global */}
+      {/* Verdict global — UNE seule boîte : le constat. Les détails (krach
+          simulé, « en clair ») vivent en dessous, à plat — jamais imbriqués. */}
       <div
         className={cn(
           "rounded-2xl p-4 flex items-start gap-3 border",
@@ -689,34 +648,40 @@ function ResultsSection({
             jusqu'au bout dans{" "}
             <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
           </p>
-          {crisisNote && (
-            <div className="mt-2 rounded-xl bg-danger/8 px-3 py-2 flex items-start gap-2">
-              <AlertTriangle size={13} className="text-danger shrink-0 mt-0.5" />
-              <p className="text-[11px] leading-relaxed text-text-dim">
-                <strong className="text-danger">Krach simulé :</strong> {crisisNote}
-              </p>
-            </div>
-          )}
-          <div className="mt-2 rounded-xl bg-primary/8 px-3 py-2 flex items-start gap-2">
-            <Lightbulb size={13} className="text-primary shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-relaxed text-text-dim">
-              <strong className="text-text">En clair :</strong>{" "}
-              {ruinYear !== null ? (
-                <>
-                  sur <strong className="text-text">100 personnes dans votre situation</strong>, environ{" "}
-                  <strong className="text-[#4ADE80]">{Math.round(survival)}</strong> touchent leur rente pendant{" "}
-                  {decumResult.years.length - 1} ans sans manquer d'argent. Pour les quelques cas d'échec, l'argent
-                  manque généralement autour de l'année {ruinYear}.
-                </>
-              ) : (
-                <>
-                  dans <strong className="text-text">100 % des simulations</strong>, votre rente est payée jusqu'au bout
-                  — et il reste toujours de l'argent à la fin.
-                </>
-              )}
-            </p>
-          </div>
         </div>
+      </div>
+
+      {/* Krach simulé — à plat sous le verdict (le bloc vert ne contient plus
+          de sous-boîtes). */}
+      {crisisNote && (
+        <div className="rounded-xl bg-danger/8 border border-danger/20 px-4 py-3 flex items-start gap-2.5">
+          <AlertTriangle size={14} className="text-danger shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed text-text-dim">
+            <strong className="text-danger">Krach simulé :</strong> {crisisNote}
+          </p>
+        </div>
+      )}
+
+      {/* « En clair » — la version grand public. Ne re-cite PAS le taux de
+          survie (déjà dans le verdict + la carte KPI) : il apporte l'info
+          « quand l'argent manque » au lieu de répéter le chiffre. */}
+      <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 flex items-start gap-2.5">
+        <Lightbulb size={14} className="text-primary shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-text-dim">
+          <strong className="text-text">En clair :</strong>{" "}
+          {ruinYear !== null ? (
+            <>
+              quand un plan échoue, l'argent manque généralement autour de l'année{" "}
+              <strong className="text-text">{ruinYear}</strong> — les autres années, la rente est versée sans
+              interruption pendant {decumResult.years.length - 1} ans.
+            </>
+          ) : (
+            <>
+              dans <strong className="text-text">100 % des simulations</strong>, votre rente est payée jusqu'au bout —
+              et il reste toujours de l'argent à la fin.
+            </>
+          )}
+        </p>
       </div>
 
       {/* Bandeau de fiabilité (v6) : un signal de confiance factuel, en une
@@ -739,8 +704,8 @@ function ResultsSection({
         <AlertTriangle size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
         <p className="text-[10px] leading-relaxed text-text-dim">
           <strong className="text-text">Rente brute :</strong> le décaissement démarre sur le capital{" "}
-          <strong className="text-text">avant impôts</strong> (valeur nominale du compte) et aucun impôt n'est
-          prélevé sur les retraits. Pour un CTO ou un PER, la rente réellement disponible après fiscalité serait{" "}
+          <strong className="text-text">avant impôts</strong> (valeur nominale du compte) et aucun impôt n'est prélevé
+          sur les retraits. Pour un CTO ou un PER, la rente réellement disponible après fiscalité serait{" "}
           <strong className="text-text">plus faible</strong> que le montant affiché.
         </p>
       </div>
@@ -786,8 +751,8 @@ function ResultsSection({
       <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
         <HelpCircle size={12} className="text-text-dim shrink-0 mt-0.5" />
         <p className="text-[10px] leading-relaxed text-text-dim">
-          Ce « {fmtPct(survival)} » n'est pas un point exact : sur {decumResult.runs.toLocaleString("fr-FR")}{" "}
-          simulations, le taux de survie réel se situe entre{" "}
+          Ce taux de survie n'est pas un point exact : sur {decumResult.runs.toLocaleString("fr-FR")} simulations, il se
+          situe en réalité entre{" "}
           <strong className="text-text">
             {fmtPct(decumResult.survivalRateCI.low)} et {fmtPct(decumResult.survivalRateCI.high)}
           </strong>{" "}
@@ -799,7 +764,7 @@ function ResultsSection({
 
       {/* Histogramme des issues terminales : la queue de chance visible */}
       {decumResult.terminalDistribution.length > 0 && (
-        <div className="glass rounded-2xl p-4">
+        <div className="card-subtle rounded-2xl p-4">
           <SectionHeader
             as="h3"
             level="card"
@@ -1019,7 +984,7 @@ function KpiCard({
   gauge?: number
 }) {
   return (
-    <div className="glass rounded-2xl p-4">
+    <div className="card-subtle rounded-2xl p-4">
       <div className="flex items-center gap-1.5 mb-2">
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone }} />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{label}</span>

@@ -26,7 +26,7 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
   const feeImpact = (noFeeFinal - lastRow.nominal) * factor
 
   return (
-    <div className="glass rounded-2xl p-5 space-y-2">
+    <div className="card-subtle rounded-2xl p-5 space-y-2">
       <SectionHeader title="Ce que les frais vous coûtent" icon={Percent} level="card" />
       <div className="space-y-1.5">
         {[

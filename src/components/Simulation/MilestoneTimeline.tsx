@@ -17,7 +17,7 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
   const reached = milestones.filter(m => m.reached && m.year >= 0)
 
   return (
-    <div className="glass rounded-2xl p-5">
+    <div className="card-subtle rounded-2xl p-5">
       <SectionHeader title="Vos étapes clés" icon={Trophy} level="card" />
       <div className="space-y-3">
         {reached.length === 0 && (

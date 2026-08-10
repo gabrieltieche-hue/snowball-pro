@@ -87,7 +87,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
         return (
           <div
             key={card.label}
-            className="glass rounded-2xl p-4 card-interactive min-w-0 relative overflow-hidden"
+            className="card-subtle rounded-2xl p-4 card-interactive min-w-0 relative overflow-hidden"
           >
             {/* Liseré d'accent en haut de carte : signale la teinte de la
                 valeur (texte neutre / or / rouge) sans alourdir. */}
