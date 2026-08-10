@@ -7,6 +7,24 @@
       name="description"
       content="Snowball Pro — simulateur d'épargne et de patrimoine français : projection du capital, fiscalité (CTO, PEA, AV, PER), Monte Carlo, rente et retraite. Gratuit, données en local, compte optionnel."
     />
+    <!-- Open Graph / social preview (partage Reddit, Discord, WhatsApp) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app" />
+    <meta property="og:title" content="Snowball Pro — Simulateur patrimonial français" />
+    <meta
+      property="og:description"
+      content="Projetez votre épargne avec les rendements réels du MSCI World (1970-2025) et 100 ans d'historique, la fiscalité française (CTO, PEA, AV, PER) et Monte Carlo. Gratuit, sans inscription, données en local."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Snowball Pro — Simulateur patrimonial français" />
+    <meta
+      name="twitter:description"
+      content="Projetez votre épargne avec les rendements réels du MSCI World et 100 ans d'historique, fiscalité française (CTO, PEA, AV, PER), Monte Carlo. Gratuit, sans inscription, données en local."
+    />
+    <meta name="twitter:image" content="https://snowball-pro.vercel.app/og-image.png" />
     <meta name="theme-color" content="#12100e" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f5f2eb" media="(prefers-color-scheme: light)" />
     <title>Snowball Pro v6.1 — Simulateur Patrimonial</title>
@@ -16,10 +34,12 @@
         La compensation : script-src-attr 'none' (aucun gestionnaire d'événement inline),
         object-src 'none', et aucune origine tierce n'est autorisée pour le script/connect.
       - Ne PAS retirer 'unsafe-inline' sans injecter un hash/nonce au build, sinon l'app casse.
+      - EXCEPTION UNIQUE (6 août 2026) : GoatCounter (gc.zgo.at + *.goatcounter.com) pour le
+        compteur de visites vie privée-friendly. C'est le seul script/connect tierce autorisé.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'"
     />
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -29,6 +49,16 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Compteur de visites GoatCounter (vie privée-friendly : pas de cookies, pas de données perso).
+         ⚠️ À CONFIGURER : remplacer VOTRE-CODE par le code obtenu sur goatcounter.com
+         (ex : snowballpro → https://snowballpro.goatcounter.com/count).
+         Le script reste inoffensif tant que VOTRE-CODE n'est pas remplacé. -->
+    <script
+      data-goatcounter="https://VOTRE-CODE.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
