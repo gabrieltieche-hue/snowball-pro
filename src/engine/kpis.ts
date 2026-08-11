@@ -7,8 +7,9 @@ import type {
   GoalDifficulty,
   ScenarioComparison,
 } from "../types"
-import { roundCent, calcXIRR } from "./taxes"
+import { roundCent, calcXIRR, clamp } from "./taxes"
 import { calcMaxDrawdown, PMTfromFV, monthlyRate, futureValue } from "./math"
+import { runMonteCarlo } from "./montecarlo"
 
 /**
  * Construit les flux de trésorerie mensuels (capital initial + versements
@@ -221,6 +222,65 @@ export function solveGoal(inputs: SimulationInputs): GoalResult {
     achievable: difficulty !== "impossible",
     difficulty,
   }
+}
+
+/**
+ * Inversion Monte-Carlo (paquet 2) : trouve le versement mensuel qui permet
+ * d'atteindre l'objectif dans `targetPct` % des scénarios — P90 (peu de
+ * bourse nécessaire), P50 (le cas médian — le versement « honnête ») et P10
+ * (le cas défavorable — il faut épargner beaucoup plus). Bissection sur le
+ * versement mensuel du scénario PRINCIPAL (capital, durée, frais et fiscalité
+ * du Simulateur) : c'est l'objectif inversé « synchronisé », pas une
+ * calculatrice indépendante. Le goalTarget ne sert pas au calcul des bandes,
+ * seulement à la comparaison — les bandes sont dérivées du moteur MC.
+ */
+export function solveGoalMonteCarlo(
+  inputs: SimulationInputs,
+  goalTarget: number,
+  targetPct: 10 | 50 | 90,
+  runs = 600,
+): number {
+  const runCount = Math.round(clamp(runs, 200, 2_000))
+  let low = 0
+  let high = 20_000
+  for (let i = 0; i < 14; i += 1) {
+    const mid = (low + high) / 2
+    const result = runMonteCarlo({ ...inputs, monthlyPayment: mid, mcRuns: runCount }, runCount, goalTarget)
+    const band = targetPct === 10 ? result.p10 : targetPct === 90 ? result.p90 : result.p50
+    const terminal = band[band.length - 1] ?? 0
+    if (terminal >= goalTarget) high = mid
+    else low = mid
+  }
+  return Math.max(0, Math.round((low + high) / 2 / 10) * 10)
+}
+
+/** Variante asynchrone non bloquante de solveGoalMonteCarlo (mêmes itérations,
+ * le thread respire entre deux pour laisser la barre de progression peindre). */
+export async function solveGoalMonteCarloAsync(
+  inputs: SimulationInputs,
+  goalTarget: number,
+  targetPct: 10 | 50 | 90,
+  runs = 600,
+  onProgress?: (done: number, total: number) => void,
+  signal?: AbortSignal,
+): Promise<number> {
+  const runCount = Math.round(clamp(runs, 200, 2_000))
+  const breathe = () => new Promise<void>(resolve => setTimeout(resolve, 0))
+  let low = 0
+  let high = 20_000
+  const ITER = 14
+  for (let i = 0; i < ITER; i += 1) {
+    if (signal?.aborted) throw new DOMException("Calcul annulé", "AbortError")
+    const mid = (low + high) / 2
+    const result = runMonteCarlo({ ...inputs, monthlyPayment: mid, mcRuns: runCount }, runCount, goalTarget)
+    const band = targetPct === 10 ? result.p10 : targetPct === 90 ? result.p90 : result.p50
+    const terminal = band[band.length - 1] ?? 0
+    if (terminal >= goalTarget) high = mid
+    else low = mid
+    onProgress?.(i + 1, ITER)
+    await breathe()
+  }
+  return Math.max(0, Math.round((low + high) / 2 / 10) * 10)
 }
 
 export function compareScenarios(rowsA: YearRow[], rowsB: YearRow[], showReal = false): ScenarioComparison {

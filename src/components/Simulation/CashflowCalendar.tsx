@@ -87,7 +87,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                     { label: "Date", align: "left" },
                     { label: "Versements", align: "right" },
                     { label: "Frais", align: "right" },
-                    { label: "Impôts", align: "right" },
+                    { label: "Impôt théorique", align: "right" },
                     { label: "Capital net", align: "right" },
                   ].map(h => (
                     <th

@@ -1,7 +1,7 @@
 import type { SimulationInputs, DecumulationResult, StressTestResult, StressTestScenario } from "../types"
 import { mulberry32 } from "./rng"
 import { monthlyRate, percentile, average, buildTerminalHistogram, wilsonScoreCI, calcMaxDrawdown } from "./math"
-import { roundCent, clamp } from "./taxes"
+import { roundCent, clamp, computeTaxBreakdown } from "./taxes"
 import { sampleHistoricalReturns } from "./montecarlo"
 // Rééchantillonnage par blocs NON CHEVAUCHANTS partagé avec l'onglet Monte
 // Carlo (une seule implémentation, pas de copie locale qui dérive) : des blocs
@@ -37,6 +37,9 @@ interface DecumAccumulator {
   paths: number[][]
   ruinYears: number[]
   withdrawalByYear: number[]
+  withdrawalNetByYear: number[]
+  totalTaxPaid: number
+  totalFeesPaid: number
 }
 
 /**
@@ -54,15 +57,37 @@ interface DecumAccumulator {
 function runDecumulationPath(
   inputs: SimulationInputs,
   startingCapital: number,
+  startingBasis: number,
   baseWithdrawal: number,
   years: number,
   returns: number[],
   inflations: number[] | null,
   applyGuardrails: boolean,
   applyCrisis: boolean,
-): { capitalPath: number[]; ruinYear: number | null; withdrawalByYear: number[] } {
+): {
+  capitalPath: number[]
+  ruinYear: number | null
+  withdrawalByYear: number[]
+  withdrawalNetByYear: number[]
+  totalTax: number
+  totalFees: number
+} {
   const capitalPath: number[] = [roundCent(startingCapital)]
   const withdrawalByYear: number[] = Array.from({ length: years + 1 }, () => 0)
+  // Paquet 2 — fiscalité des retraits : on suit le COÛT FISCAL (les versements
+  // réellement investis, PAS le nominal du compte — sinon les gains latents de
+  // l'accumulation ne seraient jamais taxés) pour ne taxer que la PARTIE GAIN
+  // de chaque retrait, et on applique les frais de gestion annuels (mêmes taux
+  // que l'accumulation). Le retrait planifié reste BRUT (il quitte le compte) ;
+  // l'impôt est prélevé sur lui — la rente reçue (nette) est donc plus faible,
+  // jamais le capital drainé.
+  let basis = Math.max(0, Math.min(startingBasis, startingCapital))
+  let totalTax = 0
+  let totalFees = 0
+  const withdrawalNetByYear: number[] = Array.from({ length: years + 1 }, () => 0)
+  const aumFeeRate = monthlyRate(
+    Math.max(0, inputs.etfFees + inputs.managementFees + (inputs.envelope === "av" ? inputs.insuranceFees : 0)),
+  )
   let capital = startingCapital
   let monthlyWithdrawal = baseWithdrawal
   let ruinYear: number | null = null
@@ -95,12 +120,53 @@ function runDecumulationPath(
         : (returns[yearIndex] ?? MSCI_WORLD_AVG_RETURN)
     const marketReturn = monthlyRate(annualReturn)
     const capitalAfterReturn = roundCent(capital * (1 + marketReturn))
+    // Frais de gestion annuels sur l'encours (paquet 2) : mêmes taux que
+    // l'accumulation (ETF + gestion + enveloppe AV) — la rente est « nette de
+    // frais » comme la projection. On ne retient que ce qui existe après frais.
+    const aumFee = roundCent(Math.max(0, capitalAfterReturn * aumFeeRate))
+    const capitalAfterFees = roundCent(Math.max(0, capitalAfterReturn - aumFee))
+    totalFees += aumFee
     // On ne peut retirer que ce qui existe : si le capital ne couvre pas le
     // retrait prévu, seule la part disponible est réellement retirée (le
     // reste serait retiré d'un capital inexistant — retraits « fantômes »,
     // audit B6). actualWithdrawal vaut donc 0 après la faillite.
-    const actualWithdrawal = roundCent(Math.min(monthlyWithdrawal, Math.max(0, capitalAfterReturn)))
-    capital = roundCent(Math.max(0, capitalAfterReturn - monthlyWithdrawal))
+    const actualWithdrawal = roundCent(Math.min(monthlyWithdrawal, Math.max(0, capitalAfterFees)))
+    // Paquet 2 — fiscalité du retrait : seule la partie GAIN du retrait est
+    // imposable (pro rata du coût fiscal restant, même logique que la
+    // liquidation en accumulation). PER : la part capital des versements
+    // déductibles est aussi taxée à la TMI à la sortie. Le retrait net = le
+    // retrait brut moins l'impôt — le compte perd bien le BRUT. Après la
+    // faillite (retrait nul), on SAUTE le calcul fiscal : inutile et coûteux
+    // (la majorité des runs sont ruinés → ~70 % des mois épargnés).
+    let tax = 0
+    let netWithdrawal = 0
+    if (actualWithdrawal > 0) {
+      const gainRatio = capitalAfterFees > 0 ? Math.max(0, (capitalAfterFees - basis) / capitalAfterFees) : 0
+      const taxableGain = roundCent(actualWithdrawal * gainRatio)
+      const principalPortion = roundCent(actualWithdrawal * (1 - gainRatio))
+      const taxYearsHeld =
+        inputs.envelope === "pea" || inputs.envelope === "av"
+          ? inputs.envelope === "pea"
+            ? inputs.peaYearsHeld + yearIndex
+            : inputs.avYearsHeld + yearIndex
+          : yearIndex
+      tax = computeTaxBreakdown(
+        taxableGain,
+        inputs.envelope,
+        taxYearsHeld,
+        inputs.taxCouple,
+        // PER : la base taxée = la part capital du retrait courant ; autres
+        // enveloppes : le coût fiscal restant (prorata des plafonds AV).
+        inputs.envelope === "per" ? principalPortion : basis,
+        { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode, taxYear: inputs.taxYear, noNotes: true },
+      ).totalTax
+      netWithdrawal = roundCent(Math.max(0, actualWithdrawal - tax))
+      if (capitalAfterFees > 0 && basis > 0) {
+        basis = roundCent(Math.max(0, basis - actualWithdrawal * (basis / capitalAfterFees)))
+      }
+    }
+    totalTax += tax
+    capital = roundCent(Math.max(0, capitalAfterFees - actualWithdrawal))
     // Indexation inflation — taux fixe (inflation saisie) OU série française
     // réelle rejouée (stochasticInflation). Sautée l'année d'un garde-fou.
     if (inputs.withdrawalInflation && !guardrailCut) {
@@ -113,6 +179,9 @@ function runDecumulationPath(
     withdrawalByYear[Math.ceil(month / 12)] = roundCent(
       (withdrawalByYear[Math.ceil(month / 12)] ?? 0) + actualWithdrawal,
     )
+    withdrawalNetByYear[Math.ceil(month / 12)] = roundCent(
+      (withdrawalNetByYear[Math.ceil(month / 12)] ?? 0) + netWithdrawal,
+    )
     if (month % 12 === 0) {
       capitalPath.push(roundCent(capital))
       // Rendement EFFECTIF de l'année : pour un krach paramétrable, c'est le
@@ -122,7 +191,7 @@ function runDecumulationPath(
       lastYearReturn = annualReturn
     }
   }
-  return { capitalPath, ruinYear, withdrawalByYear }
+  return { capitalPath, ruinYear, withdrawalByYear, withdrawalNetByYear, totalTax, totalFees }
 }
 
 /**
@@ -134,6 +203,7 @@ function runDecumulationPath(
 function runDecumulationRange(
   inputs: SimulationInputs,
   startingCapital: number,
+  startingBasis: number,
   baseWithdrawal: number,
   years: number,
   simStart: number,
@@ -170,6 +240,7 @@ function runDecumulationRange(
     const path = runDecumulationPath(
       inputs,
       startingCapital,
+      startingBasis,
       baseWithdrawal,
       years,
       historicalReturns,
@@ -181,7 +252,10 @@ function runDecumulationRange(
     acc.paths.push(path.capitalPath)
     for (let y = 1; y <= years; y += 1) {
       acc.withdrawalByYear[y] = roundCent((acc.withdrawalByYear[y] ?? 0) + (path.withdrawalByYear[y] ?? 0))
+      acc.withdrawalNetByYear[y] = roundCent((acc.withdrawalNetByYear[y] ?? 0) + (path.withdrawalNetByYear[y] ?? 0))
     }
+    acc.totalTaxPaid = roundCent(acc.totalTaxPaid + path.totalTax)
+    acc.totalFeesPaid = roundCent(acc.totalFeesPaid + path.totalFees)
   }
 }
 
@@ -191,6 +265,9 @@ function finalizeDecumulation(
   paths: number[][],
   ruinYears: number[],
   withdrawalByYear: number[],
+  withdrawalNetByYear: number[],
+  totalTaxPaid: number,
+  totalFeesPaid: number,
   simCount: number,
   baseWithdrawal: number,
 ): DecumulationResult {
@@ -209,6 +286,7 @@ function finalizeDecumulation(
   // précisément ce qui rendait les 3 lignes difficiles à lire.
   const terminalValues = paths.map(p => p[p.length - 1] ?? 0)
   const survived = simCount - ruinYears.length
+  const withdrawalsNet = withdrawalNetByYear.map(v => roundCent(v / simCount))
 
   return {
     years: yearAxis,
@@ -216,6 +294,15 @@ function finalizeDecumulation(
     p50: band(0.5),
     p90: band(0.9),
     withdrawals,
+    withdrawalsNet,
+    // Total des impôts et frais MOYENNÉS sur toutes les simulations (une
+    // « facture » moyenne sur toute la retraite).
+    totalTaxPaid: roundCent(totalTaxPaid / simCount),
+    totalFeesPaid: roundCent(totalFeesPaid / simCount),
+    // Rente nette mensuelle de la 1re année : retraits nets totaux ÷ 12 — la
+    // meilleure approximation d'un « net dès le départ » (au premier mois, le
+    // capital n'a pas encore de gains, l'impôt est quasi nul).
+    netInitialWithdrawal: roundCent((withdrawalsNet[1] ?? 0) / 12),
     ruinProbability: roundCent(ruinProbability * 100),
     survivalProbability: roundCent((1 - ruinProbability) * 100),
     survivalRateCI: wilsonScoreCI(survived, simCount),
@@ -277,6 +364,7 @@ export function runStressTest(
   inputs: SimulationInputs,
   startingCapital: number,
   scenario: StressTestScenario,
+  startingBasis = startingCapital,
 ): StressTestResult {
   const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
   const startIdx = Math.max(0, scenario.startYear - pool.startYear)
@@ -299,6 +387,7 @@ export function runStressTest(
   const path = runDecumulationPath(
     inputs,
     startingCapital,
+    startingBasis,
     baseWithdrawal,
     windowLen,
     windowReturns,
@@ -324,6 +413,7 @@ export function runDecumulation(
   inputs: SimulationInputs,
   startingCapital: number,
   runs = Math.min(inputs.mcRuns, 10_000),
+  startingBasis = startingCapital,
 ): DecumulationResult {
   const simCount = Math.round(clamp(runs, 100, 10_000))
   // Durée de la rente bornée par le curseur (5-60 ans) : un état partagé ou
@@ -336,9 +426,22 @@ export function runDecumulation(
     paths: [],
     ruinYears: [],
     withdrawalByYear: Array.from({ length: years + 1 }, () => 0),
+    withdrawalNetByYear: Array.from({ length: years + 1 }, () => 0),
+    totalTaxPaid: 0,
+    totalFeesPaid: 0,
   }
-  runDecumulationRange(inputs, startingCapital, baseWithdrawal, years, 0, simCount, acc)
-  return finalizeDecumulation(years, acc.paths, acc.ruinYears, acc.withdrawalByYear, simCount, baseWithdrawal)
+  runDecumulationRange(inputs, startingCapital, startingBasis, baseWithdrawal, years, 0, simCount, acc)
+  return finalizeDecumulation(
+    years,
+    acc.paths,
+    acc.ruinYears,
+    acc.withdrawalByYear,
+    acc.withdrawalNetByYear,
+    acc.totalTaxPaid,
+    acc.totalFeesPaid,
+    simCount,
+    baseWithdrawal,
+  )
 }
 
 /**
@@ -355,6 +458,7 @@ export async function runDecumulationAsync(
   runs = Math.min(inputs.mcRuns, 10_000),
   onProgress?: (done: number, total: number) => void,
   signal?: AbortSignal,
+  startingBasis = startingCapital,
 ): Promise<DecumulationResult> {
   const simCount = Math.round(clamp(runs, 100, 10_000))
   // Durée de la rente bornée par le curseur (5-60 ans) : un état partagé ou
@@ -367,17 +471,30 @@ export async function runDecumulationAsync(
     paths: [],
     ruinYears: [],
     withdrawalByYear: Array.from({ length: years + 1 }, () => 0),
+    withdrawalNetByYear: Array.from({ length: years + 1 }, () => 0),
+    totalTaxPaid: 0,
+    totalFeesPaid: 0,
   }
   const breathe = () => new Promise<void>(resolve => setTimeout(resolve, 0))
 
   for (let sim = 0; sim < simCount; sim += DECUM_CHUNK_SIZE) {
     if (signal?.aborted) throw new DOMException("Décaissement annulé", "AbortError")
     const chunk = Math.min(DECUM_CHUNK_SIZE, simCount - sim)
-    runDecumulationRange(inputs, startingCapital, baseWithdrawal, years, sim, chunk, acc)
+    runDecumulationRange(inputs, startingCapital, startingBasis, baseWithdrawal, years, sim, chunk, acc)
     onProgress?.(Math.min(sim + chunk, simCount), simCount)
     // Laisse le temps à l'interface de peindre entre deux chunks
     await breathe()
   }
 
-  return finalizeDecumulation(years, acc.paths, acc.ruinYears, acc.withdrawalByYear, simCount, baseWithdrawal)
+  return finalizeDecumulation(
+    years,
+    acc.paths,
+    acc.ruinYears,
+    acc.withdrawalByYear,
+    acc.withdrawalNetByYear,
+    acc.totalTaxPaid,
+    acc.totalFeesPaid,
+    simCount,
+    baseWithdrawal,
+  )
 }

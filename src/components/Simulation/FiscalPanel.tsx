@@ -64,7 +64,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   if (taxInfo.incomeTax > 0) {
     lines.push({ label: "Impôt sur le revenu", value: show(taxInfo.incomeTax), tone: RED })
   }
-  lines.push({ label: "Total des impôts", value: show(exitTax), strong: true, tone: RED })
+  lines.push({ label: "Total impôt théorique", value: show(exitTax), strong: true, tone: RED })
   lines.push({ label: "Gains après impôts", value: show(taxInfo.netGains), strong: true, tone: GOLD })
 
   const totalBadge =
@@ -79,7 +79,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
   return (
     <div className="glass rounded-2xl p-5 space-y-2">
       <SectionHeader
-        title="Vos impôts"
+        title="Votre impôt théorique (si vente totale)"
         icon={Shield}
         level="card"
         as="h3"
@@ -99,8 +99,8 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
             <span className="text-[11px] text-text-muted flex items-center gap-1.5">
               {item.label}
               {/* Tag discret du régime : simple pastille, plus la grosse case
-                  rouge qui écrasait la ligne « Total des impôts ». */}
-              {item.label === "Total des impôts" && totalBadge && (
+                  rouge qui écrasait la ligne « Total impôt théorique ». */}
+              {item.label === "Total impôt théorique" && totalBadge && (
                 <span className="inline-flex items-center px-1.5 py-px rounded-full border border-danger/15 bg-danger/5 text-danger/80 text-[9px] font-semibold tracking-wide whitespace-nowrap">
                   {totalBadge}
                 </span>
@@ -140,7 +140,7 @@ export function FiscalPanel({ rows, inputs }: FiscalPanelProps) {
           {((exitTax / Math.max(1, taxInfo.grossGains + (taxInfo.taxableContributions ?? 0))) * 100)
             .toFixed(1)
             .replace(".", ",")}
-            %
+          %
         </span>
       </div>
       {isLiquidationTheorique && (

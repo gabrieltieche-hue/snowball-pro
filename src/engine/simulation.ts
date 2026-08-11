@@ -1,7 +1,7 @@
 import type { SimulationInputs, YearRow } from "../types"
 import { monthlyRate } from "./math"
 import { roundCent, clamp, computeTaxBreakdown } from "./taxes"
-import { INFLATION_SERIES, MSCI_WORLD_AVG_RETURN } from "./historical"
+import { getHistoricalDataset, INFLATION_SERIES } from "./historical"
 import { sanitizeInputs } from "./validation"
 
 // Mémoïsation de la date affichée : elle ne dépend que de (startYear, month)
@@ -12,17 +12,22 @@ import { sanitizeInputs } from "./validation"
 const dateCache = new Map<string, string>()
 
 /**
- * Rendement annuel de l'année de projection : le Simulateur applique le
- * rendement MOYEN de référence (≈ 10,07 %/an brut, moyenne MSCI World) chaque
- * année — la courbe est LISSÉE, identique d'une année à l'autre (demande
- * utilisateur : « un truc linéaire, pas une courbe aléatoire »). Monte Carlo
- * et la Rente, eux, continuent de rééchantillonner l'historique réel (leurs
- * krachs et bull markets rejoués) : seule la figure de référence du
- * Simulateur devient constante. Repli défensif : cette même moyenne si jamais
- * le dataset était vide.
+ * Rendement annuel de l'année de projection (paquet 1 — 3 scénarios) : le
+ * Simulateur applique CHAQUE année le même taux de référence, choisi parmi
+ * les trois étages de l'échelle historique — prudent = rendement RÉEL composé
+ * (netReturn, ≈ 5,99 %/an), central = rendement GÉOMÉTRIQUE composé
+ * (compoundedReturn, ≈ 8,22 %/an), optimiste = moyenne ARITHMÉTIQUE
+ * (avgReturn, ≈ 10,07 %/an). La courbe reste LISSÉE (demande utilisateur :
+ * « un truc linéaire, pas une courbe aléatoire ») ; seuls les krachs et les
+ * bull markets rejoués par Monte Carlo / la Rente fluctuent. Le défaut est
+ * CENTRAL : la projection honnête, pas la meilleure moyenne. Repli défensif :
+ * la moyenne MSCI World si le dataset était vide.
  */
-function returnForYear(_inputs: SimulationInputs, _yearIndex: number): number {
-  return MSCI_WORLD_AVG_RETURN
+function returnForYear(inputs: SimulationInputs, _yearIndex: number): number {
+  const dataset = getHistoricalDataset(inputs.historicalIndex)
+  if (inputs.returnScenario === "prudent") return dataset.netReturn
+  if (inputs.returnScenario === "optimiste") return dataset.avgReturn
+  return dataset.compoundedReturn
 }
 
 /**

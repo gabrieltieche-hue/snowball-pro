@@ -1,17 +1,18 @@
 /**
- * NON-RÉGRESSION v6 — valeurs dorées du moteur (graine 42, runs réduits).
+ * NON-RÉGRESSION v6.4 — valeurs dorées du moteur (graine 42, runs réduits).
  *
- * Ces valeurs FIGENT le comportement mathématique du moteur AVANT les
- * corrections fiscales v6 (migration taxRules.ts). Toute modification qui
- * toucherait les maths (simulation, Monte Carlo, décaissement, XIRR, KPIs)
- * casserait ces ancrages — par construction, une correction qui ne change
- * PAS ces valeurs ne touche pas les mathématiques.
+ * Ces valeurs FIGENT le comportement mathématique du moteur. Toute
+ * modification qui toucherait les maths (simulation, Monte Carlo,
+ * décaissement, XIRR, KPIs) casserait ces ancrages — par construction, une
+ * correction qui ne change PAS ces valeurs ne touche pas les mathématiques.
  *
- * IMPORTANT (v6) : les ancrages utilisent `taxYear: 2025` explicitement — ils
- * sont la PREUVE de rétrocompatibilité des règles 2025 (les taux 2026 sont
- * couverts par taxRules.test.ts). Le défaut de l'app est désormais 2026.
+ * IMPORTANT (v6.4, paquets 1 & 2) : les ancrages utilisent DÉSORMAIS les
+ * DÉFAUTS réalistes — frais ETF 0,25 %/an, scénario CENTRAL (rendement
+ * géométrique composé ≈ 8,22 %/an au lieu de la moyenne arithmétique) et
+ * `taxYear: 2025` explicitement (rétrocompatibilité des règles 2025, les
+ * taux 2026 sont couverts par taxRules.test.ts).
  *
- * Généré le 2026-08-05 à partir du moteur v5.7.2 (audit).
+ * Régénéré le 2026-08-11 à partir du moteur v6.4 (paquets 1 & 2).
  */
 import { describe, it, expect } from "vitest"
 import {
@@ -29,24 +30,23 @@ import {
   MSCI_WORLD_AVG_RETURN,
 } from "../engine"
 
-// Simulation déterministe (courbe lissée 10,07 %, CTO, 10 k€ + 500 €/mois, 25 ans)
-// Règles fiscales 2025 épinglées : ces ancrages couvrent les maths ET la
-// rétrocompatibilité fiscale (voir l'en-tête du fichier).
+// Simulation déterministe (courbe lissée CENTRALE 8,22 %, CTO, frais 0,25 %,
+// 10 k€ + 500 €/mois, 25 ans) — règles fiscales 2025 épinglées.
 const GOLDEN_INPUTS = { ...DEFAULT_INPUTS, taxYear: 2025 }
 const GOLDEN_NOMINAL = [
-  10000, 17278.56, 25289.74, 34107.3, 43812.4, 54494.37, 66251.51, 79192.1, 93435.21, 109111.98, 126366.69,
-  145358.18, 166261.28, 189268.39, 214591.28, 242463.07, 273140.28, 306905.33, 344068.99, 384973.39, 429995.02,
-  479548.33, 534089.47, 594120.44, 660193.84, 732917.88,
+  10000, 17010.59, 24578.48, 32748.02, 41566.97, 51087.01, 61363.89, 72457.74, 84433.5, 97361.33, 111316.87, 126381.84,
+  142644.44, 160199.87, 179150.88, 199608.44, 221692.3, 245531.77, 271266.4, 299046.87, 329035.81, 361408.75, 396355.3,
+  434079.99, 474803.67, 518764.77,
 ]
 const GOLDEN_REAL = [
-  10000, 16923.17, 24260.12, 32045.73, 40317.54, 49115.99, 58484.57, 68470.21, 79123.34, 90498.37, 102653.84,
-  115652.84, 129563.36, 144458.61, 160417.48, 177524.98, 195872.69, 215559.33, 236691.23, 259383.06, 283758.31,
-  309950.11, 338101.96, 368368.45, 400916.25, 435924.99,
+  10000, 16660.71, 23577.81, 30768.61, 38251.23, 46044.93, 54169.95, 62647.62, 71500.46, 80752.28, 90428.13, 100554.5,
+  111159.34, 122272.14, 133924.04, 146147.96, 158978.62, 172452.73, 186609.03, 201488.45, 217134.25, 233592.06,
+  250910.22, 269139.66, 288334.27, 308550.97,
 ]
 const GOLDEN_TAXNET = [
-  10000, 16894.99, 24302.82, 32275.11, 40868.68, 50146.06, 60176.06, 71034.47, 82804.65, 95578.39, 109456.68,
-  124550.73, 140982.9, 158887.87, 178413.9, 199724.15, 222998.2, 248433.73, 276248.29, 306681.37, 339996.51,
-  376483.83, 416462.63, 460284.31, 508335.69, 561042.52,
+  10000, 16707.41, 23804.94, 31323.61, 39296.88, 47760.91, 56754.72, 66320.42, 76503.45, 87352.93, 98921.81, 111267.29,
+  124451.11, 138539.91, 153605.62, 169725.91, 186984.61, 205472.24, 225286.48, 246532.81, 269325.07, 293786.12,
+  320048.71, 348255.99, 378562.57, 411135.34,
 ]
 
 describe("NON-RÉGRESSION — simulation déterministe (maths figées)", () => {
@@ -67,33 +67,34 @@ describe("NON-RÉGRESSION — simulation déterministe (maths figées)", () => {
 
   it("dernière ligne : montants clés = ancrage", () => {
     const last = runSimulation(GOLDEN_INPUTS)[25]
-    expect(last.nominal).toBeCloseTo(732917.88, 1)
+    expect(last.nominal).toBeCloseTo(518764.77, 1)
     expect(last.investedNom).toBe(160000)
-    expect(last.interestsNom).toBeCloseTo(572917.88, 1)
-    expect(last.tax).toBeCloseTo(171875.36, 1)
-    expect(last.taxNet).toBeCloseTo(561042.52, 1)
-    expect(last.feesLost).toBe(0)
+    expect(last.interestsNom).toBeCloseTo(358764.77, 1)
+    expect(last.tax).toBeCloseTo(107629.43, 1)
+    expect(last.taxNet).toBeCloseTo(411135.34, 1)
+    // Paquet 1 : des frais réalistes sont appliqués par défaut (0,25 %/an).
+    expect(last.feesLost).toBeCloseTo(11751.48, 1)
   })
 
-  it("KPIs = ancrage (xirr 10,07 %, cagr, realReturn)", () => {
+  it("KPIs = ancrage (xirr ≈ 7,95 %, cagr, realReturn)", () => {
     const rows = runSimulation(GOLDEN_INPUTS)
     const k = computeKPIs(rows, GOLDEN_INPUTS)
-    expect(k.cagr).toBeCloseTo(18.74, 1)
-    expect(k.xirr).toBeCloseTo(10.07, 1)
+    expect(k.cagr).toBeCloseTo(17.11, 1)
+    expect(k.xirr).toBeCloseTo(7.95, 1)
     expect(k.sharpe).toBe(0)
-    expect(k.capitalMultiple).toBeCloseTo(4.58, 1)
-    expect(k.doublingTime).toBeCloseTo(7.23, 1)
-    expect(k.realReturn).toBeCloseTo(7.8, 1)
-    expect(k.contributionPct).toBeCloseTo(21.83, 1)
-    expect(k.gainsPct).toBeCloseTo(78.17, 1)
+    expect(k.capitalMultiple).toBeCloseTo(3.24, 1)
+    expect(k.doublingTime).toBeCloseTo(9.06, 1)
+    expect(k.realReturn).toBeCloseTo(5.73, 1)
+    expect(k.contributionPct).toBeCloseTo(30.84, 1)
+    expect(k.gainsPct).toBeCloseTo(69.16, 1)
     expect(k.powerPurchaseRatio).toBeCloseTo(59.48, 1)
-    expect(k.totalTax).toBeCloseTo(171875.36, 1)
-    expect(k.netCapital).toBeCloseTo(561042.52, 1)
+    expect(k.totalTax).toBeCloseTo(107629.43, 1)
+    expect(k.netCapital).toBeCloseTo(411135.34, 1)
   })
 
-  it("XIRR de la projection = ancrage (≈ 10,07 % brut)", () => {
+  it("XIRR de la projection = ancrage (≈ 7,95 % brut, central avec frais)", () => {
     const last = runSimulation(GOLDEN_INPUTS)[25]
-    expect(computeXIRR(GOLDEN_INPUTS, last.nominal)).toBeCloseTo(0.10065535, 6)
+    expect(computeXIRR(GOLDEN_INPUTS, last.nominal)).toBeCloseTo(0.07949708, 6)
   })
 })
 
@@ -102,20 +103,29 @@ describe("NON-RÉGRESSION — Monte Carlo (graine fixe, 200 runs)", () => {
   const last = mc.p50.length - 1
 
   it("bandes terminales = ancrage", () => {
-    expect(mc.p5[last]).toBeCloseTo(127486.14, 1)
-    expect(mc.p10[last]).toBeCloseTo(161137.62, 1)
-    expect(mc.p25[last]).toBeCloseTo(233123.89, 1)
-    expect(mc.p50[last]).toBeCloseTo(409805.03, 1)
-    expect(mc.p75[last]).toBeCloseTo(799116.12, 1)
-    expect(mc.p90[last]).toBeCloseTo(1357308.54, 1)
-    expect(mc.p95[last]).toBeCloseTo(2007876.42, 1)
+    expect(mc.p5[last]).toBeCloseTo(122961.58, 1)
+    expect(mc.p10[last]).toBeCloseTo(157018.59, 1)
+    expect(mc.p25[last]).toBeCloseTo(226142.31, 1)
+    expect(mc.p50[last]).toBeCloseTo(395015.75, 1)
+    expect(mc.p75[last]).toBeCloseTo(765202.58, 1)
+    expect(mc.p90[last]).toBeCloseTo(1292573.34, 1)
+    expect(mc.p95[last]).toBeCloseTo(1909533.53, 1)
   })
 
   it("taux de succès, moyenne, extrêmes = ancrage", () => {
-    expect(mc.successRate).toBe(42)
-    expect(mc.mean).toBeCloseTo(631200.99, 1)
-    expect(mc.bestCase).toBeCloseTo(3637046.71, 1)
-    expect(mc.worstCase).toBeCloseTo(57934.26, 1)
+    expect(mc.successRate).toBe(40.5)
+    expect(mc.mean).toBeCloseTo(604427.32, 1)
+    expect(mc.bestCase).toBeCloseTo(3451217.67, 1)
+    expect(mc.worstCase).toBeCloseTo(56963.45, 1)
+  })
+
+  it("paquet 1 — bandes RÉELLES (euros d'aujourd'hui) et succès réel = ancrage", () => {
+    expect(mc.p10r[last]).toBeCloseTo(93391.53, 1)
+    expect(mc.p50r[last]).toBeCloseTo(234947.52, 1)
+    expect(mc.p90r[last]).toBeCloseTo(768796.94, 1)
+    // Le succès en pouvoir d'achat est TOUJOURS ≤ le succès nominal.
+    expect(mc.successRateReal).toBe(22.5)
+    expect(mc.successRateReal).toBeLessThanOrEqual(mc.successRate)
   })
 })
 
@@ -129,19 +139,33 @@ describe("NON-RÉGRESSION — décaissement (graine fixe, 200 runs, 100 k€)", 
     expect(dec.p90[last]).toBeCloseTo(0, 1)
     expect(dec.ruinProbability).toBeCloseTo(99.5, 1)
     expect(dec.survivalProbability).toBeCloseTo(0.5, 1)
-    expect(dec.mean).toBeCloseTo(16695.49, 1)
+    // Paquet 2 : les frais de gestion (0,25 %/an) rognent la moyenne terminale.
+    expect(dec.mean).toBeCloseTo(14096.11, 1)
     expect(dec.ruinYearMedian).toBe(6)
   })
 
   it("retrait mensuel initial = ancrage (custom 2000 €)", () => {
     expect(dec.initialWithdrawal).toBe(2000)
   })
+
+  it("paquet 2 — fiscalité et frais du décaissement = ancrage (CTO)", () => {
+    // La rente nette est inférieure à la brute (impôt sur les gains des retraits)
+    expect(dec.netInitialWithdrawal).toBeCloseTo(1968.65, 1)
+    expect(dec.netInitialWithdrawal).toBeLessThan(dec.initialWithdrawal)
+    expect(dec.totalTaxPaid).toBeCloseTo(11578.65, 1)
+    expect(dec.totalFeesPaid).toBeCloseTo(1073.52, 1)
+    expect(dec.totalTaxPaid).toBeGreaterThan(0)
+  })
 })
 
 describe("NON-RÉGRESSION — formules mathématiques (indépendantes du moteur)", () => {
-  it("runSimulation = formule fermée des intérêts composés (0 frais, 0 inflation)", () => {
+  it("runSimulation = formule fermée des intérêts composés (0 frais, 0 inflation, optimiste)", () => {
     const rows = runSimulation({
       ...DEFAULT_INPUTS,
+      // Scénario optimiste : la formule fermée compare la capitalisation à la
+      // moyenne arithmétique (MSCI_WORLD_AVG_RETURN) — le défaut de l'app est
+      // désormais Central/géométrique (paquet 1).
+      returnScenario: "optimiste",
       capitalInitial: 10_000,
       monthlyPayment: 500,
       duration: 5,
@@ -164,7 +188,7 @@ describe("NON-RÉGRESSION — formules mathématiques (indépendantes du moteur)
   })
 
   it("XIRR indépendant (Newton maison) = XIRR du moteur", () => {
-    const { flows, months } = buildCashFlows(DEFAULT_INPUTS, 732_917.88)
+    const { flows, months } = buildCashFlows(DEFAULT_INPUTS, 518_764.77)
     const myXirr = (cf: number[], mo: number[]): number => {
       const t0 = mo[0]
       let rate = 0.05

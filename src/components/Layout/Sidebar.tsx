@@ -10,6 +10,7 @@ import {
   Percent,
   Settings2,
   TrendingUp,
+  UserRound,
 } from "lucide-react"
 import { HelpTip } from "../shared/HelpTip"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
@@ -239,8 +240,8 @@ export function Sidebar({
                 Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
                 <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
                 gain composé) puis <strong className="text-text">l'inflation</strong> (2,1 %/an). Le Simulateur applique
-                la ligne 1 chaque année (courbe lissée, sans krachs) : son rendement réel est donc plus favorable que la
-                référence historique — voir « Après inflation ».
+                le scénario choisi en haut de l'onglet (défaut : <strong className="text-text">Central</strong> = ligne
+                composée) chaque année — courbe lissée, sans krachs.
               </p>
               <p className="text-[9px] text-text-dim mt-1.5 leading-relaxed border-t border-primary/10 pt-1.5">
                 Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est{" "}
@@ -413,6 +414,90 @@ export function Sidebar({
           {/* Frais */}
           <CollapsibleSection title="Frais" icon={<Percent size={12} />}>
             <ExpenseForm inputs={inputs} updateInput={updateInput} />
+          </CollapsibleSection>
+
+          {/* Profil (paquet 3) — le contexte de retraite et de risque : nourrit
+              la couverture des dépenses et l'alerte « plan trop risqué » de
+              l'onglet Rente. Replié par défaut (réglages secondaires). */}
+          <CollapsibleSection title="Votre profil" icon={<UserRound size={12} />} defaultOpen={false}>
+            <SliderInput
+              label="Âge actuel"
+              id="age-now"
+              value={inputs.ageNow}
+              min={16}
+              max={100}
+              step={1}
+              hardMin={16}
+              hardMax={100}
+              suffix="utilisé pour situer votre retraite"
+              onChange={v => updateInput("ageNow", Math.round(v))}
+            />
+            <SliderInput
+              label="Âge de départ à la retraite"
+              id="age-retirement"
+              value={inputs.ageRetirement}
+              min={16}
+              max={100}
+              step={1}
+              hardMin={16}
+              hardMax={100}
+              suffix="votre rente démarre à cet âge"
+              onChange={v => updateInput("ageRetirement", Math.round(v))}
+            />
+            <SliderInput
+              label="Dépenses à la retraite (€/mois)"
+              id="retirement-expenses"
+              value={inputs.retirementExpenses}
+              min={0}
+              max={10000}
+              step={50}
+              hardMin={0}
+              hardMax={1000000}
+              suffix="ce dont vous aurez besoin chaque mois (profil)"
+              onChange={v => updateInput("retirementExpenses", v)}
+            />
+            <SliderInput
+              label="Autres revenus à la retraite (€/mois)"
+              id="other-pensions"
+              value={inputs.otherPensions}
+              min={0}
+              max={10000}
+              step={50}
+              hardMin={0}
+              hardMax={1000000}
+              suffix="pensions publiques, immobilier… s'ajoutent à votre rente"
+              onChange={v => updateInput("otherPensions", v)}
+            />
+            <div className="mt-1 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                  Tolérance au risque
+                </span>
+                <HelpTip text="Votre profil de risque sert à l'alerte « plan trop risqué » de l'onglet Rente (pire repli historique vs perte acceptée)." />
+              </div>
+              <SegmentedControl
+                value={inputs.riskTolerance}
+                onChange={v => updateInput("riskTolerance", v)}
+                ariaLabel="Tolérance au risque"
+                options={[
+                  { id: "prudent", label: "Prudent", sub: "repli faible" },
+                  { id: "equilibre", label: "Équilibré", sub: "compromis" },
+                  { id: "audacieux", label: "Audacieux", sub: "repli fort" },
+                ]}
+              />
+            </div>
+            <SliderInput
+              label="Perte maximale acceptée (%)"
+              id="max-drawdown-tolerance"
+              value={Math.round(inputs.maxDrawdownTolerance * 100)}
+              min={5}
+              max={60}
+              step={5}
+              hardMin={5}
+              hardMax={60}
+              suffix="le pire repli de bourse que vous acceptez de traverser"
+              onChange={v => updateInput("maxDrawdownTolerance", v / 100)}
+            />
           </CollapsibleSection>
 
           {/* Insight */}

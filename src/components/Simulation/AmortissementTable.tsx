@@ -19,7 +19,7 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
               { label: "Capital", align: "right" },
               { label: "En € d'aujourd'hui", align: "right" },
               { label: "Frais", align: "right" },
-              { label: "Après impôts", align: "right" },
+              { label: "Après impôt théorique", align: "right" },
             ].map(h => (
               <th
                 key={h.label}

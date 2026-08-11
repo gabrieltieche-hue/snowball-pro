@@ -21,6 +21,9 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [computedFor, setComputedFor] = useState("")
+  // Paquet 1 — le graphique peut s'afficher en euros courants (défaut) ou en
+  // euros d'aujourd'hui (bandes déflatées). Préférence d'affichage locale.
+  const [showRealChart, setShowRealChart] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
 
@@ -226,7 +229,32 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
 
         {mcResult && (
           <div className="space-y-5">
-            <MonteCarloChart result={mcResult} darkMode={darkMode} />
+            {/* Toggle d'échelle du graphique : la même courbe en euros courants
+                ou en euros d'aujourd'hui (paquet 1) — la carte de succès montre
+                les deux en permanence, le toggle ne change que le graphe. */}
+            <div className="flex items-center justify-end gap-1.5">
+              {(
+                [
+                  { id: false, label: "Euros courants" },
+                  { id: true, label: "Euros d'aujourd'hui" },
+                ] as const
+              ).map(opt => (
+                <button
+                  key={String(opt.id)}
+                  type="button"
+                  onClick={() => setShowRealChart(opt.id)}
+                  aria-pressed={showRealChart === opt.id}
+                  className={
+                    showRealChart === opt.id
+                      ? "px-2.5 py-1 rounded-lg text-[10px] font-bold bg-primary/15 text-primary border border-primary/40"
+                      : "px-2.5 py-1 rounded-lg text-[10px] font-semibold text-text-dim border border-border hover:bg-glass-hover"
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <MonteCarloChart result={mcResult} darkMode={darkMode} real={showRealChart} />
             {/* Bandeau de fiabilité (v6) : un signal de confiance factuel — ce
                 que l'estimation repose réellement sur, en une ligne. */}
             <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
@@ -235,9 +263,10 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
               {inputs.extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité française incluse
             </p>
             <p className="text-[10px] text-text-dim italic">
-              Montants en <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte, non
-              corrigés de l'inflation) et <strong className="text-text not-italic">nets d'impôts</strong> (liquidation
-              théorique) — pour comparer avec le Simulateur en euros d'aujourd'hui, tenez compte de l'inflation.
+              Montants <strong className="text-text not-italic">nets d'impôts</strong> (liquidation théorique), en{" "}
+              <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte) ou en{" "}
+              <strong className="text-text not-italic">euros d'aujourd'hui</strong> selon le toggle du graphique — les
+              cartes ci-dessous sont en euros courants.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
@@ -260,10 +289,17 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[var(--color-success)]">
                   Chances d'atteindre votre objectif
                 </p>
-                <p className="mono text-lg font-bold text-text">{mcResult.successRate.toFixed(0)}%</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="mono text-lg font-bold text-text">{mcResult.successRate.toFixed(0)}%</p>
+                  <p className="mono text-[11px] font-semibold text-text-dim">
+                    dont {mcResult.successRateReal.toFixed(0)} % en pouvoir d'achat réel
+                  </p>
+                </div>
                 <p className="text-[10px] text-text-dim mt-1.5">
                   sur {mcResult.runs.toLocaleString("fr-FR")} cas, le capital final atteint au moins{" "}
-                  {fmtCurrency(mcResult.goalTarget)}
+                  {fmtCurrency(mcResult.goalTarget)} en euros courants — et dans {mcResult.successRateReal.toFixed(0)} %
+                  des cas, ce même objectif en <strong className="text-text">euros d'aujourd'hui</strong> (après
+                  inflation).
                 </p>
                 <p className="text-[9px] text-text-dim mt-1 border-t border-border/60 pt-1.5">
                   Précision : {fmtDecimal(mcResult.successRate, 1)} % ±{" "}

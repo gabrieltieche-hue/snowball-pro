@@ -4,6 +4,53 @@
 
 ---
 
+## v6.4.0 — Honnêteté des hypothèses : frais réalistes, projection médiane, rente nette, profil de risque
+
+Checklist produit de l'utilisateur (« corrections prioritaires », 10 sections) passée au crible du moteur, puis implémentée en 3 paquets : (1) **honnêteté des hypothèses** — plus jamais 0 % de frais par défaut, projection centrale sur la médiane historique, Monte Carlo en euros réels ; (2) **rente nette + objectif inversé robuste** — le décaissement applique enfin la fiscalité des retraits et les frais de gestion, et l'objectif inversé calcule le versement pour P10/P50/P90 ; (3) **profil utilisateur** — âge, pensions, dépenses, tolérance au risque et alerte « plan trop risqué ». **Changement de paradigme moteur** : la projection par défaut passe de la moyenne arithmétique (10,07 %) au rendement géométrique composé (8,22 %) — le chiffre honnête (733 k€ → 519 k€ sur le scénario par défaut). **327 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile, zéro erreur console).
+
+### 📉 Projection centrale sur la médiane historique (paquet 1)
+
+- **3 scénarios de rendement** (`returnScenario` : `prudent` / `central` / `optimiste`) sur l'onglet Projection — les trois étages de l'échelle historique : réel composé 5,99 % (prudent), **géométrique composé 8,22 % (central, DÉFAUT)** et moyenne arithmétique 10,07 % (optimiste). Bandeau « Projection centrale basée sur la médiane historique, pas sur la meilleure moyenne ».
+- **`simulation.ts`** : `returnForYear` lit le scénario (au lieu de la constante 10,07 %) — la courbe lissée reste constante, seule la référence change. `getHistoricalDataset` (avait déjà les 3 étages) reste la source de vérité.
+- **Ancrages dorés régénérés** : le fichier golden fige désormais le scénario central + frais 0,25 % (`taxYear: 2025` conservé pour la rétrocompatibilité fiscale). Les tests « courbe lissée » et « formule fermée » fixent explicitement le scénario optimiste pour préserver leur sens.
+
+### 💶 Frais réalistes par défaut (paquet 1)
+
+- **0,25 %/an d'ETF et 0,75 %/an d'assurance-vie** par défaut (applications : ETF sur tous les comptes, enveloppe AV seulement sur l'AV — même logique que le moteur). Courtage et gestion pilotée restent à 0 (optionnels). Les états STOCKÉS conservent leurs frais saisis (choix des utilisateurs respecté).
+- **`FeeImpact`** : état positif « 🎉 Aucun frais : votre croissance n'est pas rognée » quand tout est à 0, avec les défauts réalistes rappelés.
+
+### 💶 Monte Carlo en euros réels (paquet 1)
+
+- Chaque scénario calcule désormais DEUX échelles : nominal net d'impôts et **déflaté par l'inflation réellement rejouée** (`taxNet × real / nominal`). Nouvelles bandes `p10r`/`p50r`/`p90r` + **`successRateReal`** (proba d'atteindre l'objectif en pouvoir d'achat — toujours ≤ le taux nominal : 22,5 % vs 40,5 % sur le défaut).
+- **UI** : toggle « Euros courants / Euros d'aujourd'hui » sur le graphique + carte « Chances d'atteindre votre objectif » qui montre les deux taux.
+
+### 🏦 Rente nette — le décaissement applique enfin la fiscalité et les frais (paquet 2)
+
+- **`decumulation.ts`** : chaque retrait est taxé au prorata du coût fiscal restant (base = les VERSEMENTS `investedNom`, pas le nominal — sinon les gains latents de l'accumulation n'étaient jamais taxés, revue adverse) : CTO (PFU ou barème), PEA (sociales seules après 5 ans), AV (abattement après 8 ans), PER (versements déductibles à la TMI + gains au PFU). Frais de gestion annuels sur l'encours, comme en accumulation. La rente reçue est NETTE (brut − impôt) ; le capital draine le brut.
+- Nouveaux résultats : `withdrawalsNet`, `totalTaxPaid`, `totalFeesPaid`, `netInitialWithdrawal` — affichés dans le verdict (rente nette en moyenne, facture fiscale totale) au lieu de la divulgation « fiscalité non modélisée ».
+- **Perf** : notes fiscales optionnelles (`noNotes`, boucle chaude) + saut du calcul après ruine → décaissement 2 000 runs = 665 ms (10 k ≈ 3 s).
+
+### 🎯 Objectif inversé robuste (paquet 2)
+
+- **Toggle « Utiliser mon scénario principal »** (`goalSync`) : l'onglet reprend le capital, la durée, l'épargne et le rendement du scénario courant du Simulateur — fin de la calculatrice indépendante à 10 k€.
+- **Versement nécessaire pour P10/P50/P90 par bisection Monte-Carlo** (`solveGoalMonteCarlo` / `solveGoalMonteCarloAsync`) : combien épargner pour atteindre l'objectif en période difficile (P10), médiane (P50) et favorable (P90) — calculé sur VOTRE capital, vos frais, votre fiscalité. Tableau comparatif : les 3 taux de scénario sont marqués d'un badge (Prudent / Central / Optimiste).
+
+### 👤 Profil utilisateur & risque (paquet 3)
+
+- **Section « Votre profil »** dans la sidebar : âge actuel, âge de départ à la retraite, dépenses retraite (€/mois), autres revenus retraite (€/mois), tolérance au risque (prudent/équilibré/audacieux), perte maximale acceptée (% ).
+- **Onglet Rente** : repère d'âge (« retraite à X ans · fin de rente à Y ans »), **couverture des dépenses** (rente nette + pensions vs dépenses, manque à gagner si < 100 %) et **alerte « plan trop risqué »** (pire repli historique réellement rejoué vs tolérance du profil — ambre si dépassé).
+
+### ✏️ Libellés « impôt théorique » (paquet 1)
+
+- Colonnes et cartes renommées : « Impôt théorique » (Calendrier des flux, carte de synthèse), « Après impôt théorique » (détail annuel), « Votre impôt théorique (si vente totale) » et « Total impôt théorique » (panneau fiscal) — l'impôt latent n'est jamais présenté comme payé (il l'était déjà en note, il l'est maintenant dans les en-têtes).
+
+### 🧪 Gate
+
+- Typecheck ✓ lint ✓ **327/327 tests** ✓ build ✓ (dist 1 052 kB / 307 kB gzip) · 18 nouveaux tests (scénarios, MC réel, fiscalité du décaissement, base fiscale, inversion MC, bornes du profil) · vérification Playwright : sélecteur de scénario + bandeau médiane, MC 10 k avec succès réel, rente nette + tolérance au risque après run, sync Goal active, inversion P10/P50/P90 au clic, section Profil, 0 erreur console, aucun débordement mobile (390 px).
+- Version 6.3.0 → **6.4.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.4.0"`, titre index.html), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.4).
+
+---
+
 ## v6.3.0 — Passe d'harmonisation design system : les couleurs parlent enfin le même langage
 
 Suite d'un audit externe (50 détections, généré depuis des captures d'une version ≤ v6.1) : vérification visuelle en navigateur réel (phase B) puis correction des incohérences confirmées (phase A). L'audit contenait ~40 % de points déjà corrigés en v6.2 et quelques affirmations fausses (éliminées par mesure) ; le noyau restant — couleurs hors charte, rouge sémantique mal utilisé, alignements — est traité ici. **Zéro changement moteur** : uniquement la couche d'affichage. **308 tests**, gate 100 % vert, vérifié en navigateur réel (desktop 1440 + mobile 390, clair + sombre).

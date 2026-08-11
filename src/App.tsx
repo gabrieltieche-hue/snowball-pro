@@ -402,6 +402,10 @@ function AppShell({ scope }: { scope: string | null }) {
           if (decumMountedRef.current) setDecumProgress(Math.round((done / total) * 100))
         },
         controller.signal,
+        // Paquet 2 — base fiscale du capital : le COÛT (versements investis),
+        // pas le nominal — sinon les gains latents de l'accumulation ne seraient
+        // jamais taxés pendant le décaissement.
+        lastRow.investedNom,
       )
       // Seul le run le plus récent peut écrire les résultats (un run annulé
       // par une relance ne doit pas écraser les nouveaux résultats).
@@ -449,21 +453,21 @@ function AppShell({ scope }: { scope: string | null }) {
           <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
             <AccountMenu />
             <ActionBar
-            onExportCSV={exportCSV}
-            onExportJSON={exportJSON}
-            onPrint={() => window.print()}
-            darkMode={darkMode}
-            onToggleDarkMode={() => setDarkMode(d => !d)}
-            comparing={comparing}
-            onToggleCompare={toggleComparing}
-            canUndo={history.canUndo}
-            canRedo={history.canRedo}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            validationErrors={validationErrors}
-            onCopyLink={handleCopyLink}
-            linkCopied={linkCopied}
-          />
+              onExportCSV={exportCSV}
+              onExportJSON={exportJSON}
+              onPrint={() => window.print()}
+              darkMode={darkMode}
+              onToggleDarkMode={() => setDarkMode(d => !d)}
+              comparing={comparing}
+              onToggleCompare={toggleComparing}
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              validationErrors={validationErrors}
+              onCopyLink={handleCopyLink}
+              linkCopied={linkCopied}
+            />
           </div>
         </div>
       </header>
@@ -543,7 +547,7 @@ function AppShell({ scope }: { scope: string | null }) {
                       comparison={comparison}
                     />
                   ) : (
-                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} />
+                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} updateInput={updateInput} />
                   ))}
                 {activeTab === "montecarlo" && (
                   <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} updateInput={updateInput} />

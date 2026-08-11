@@ -63,7 +63,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       icon: Landmark,
     },
     {
-      label: "Impôts",
+      label: "Impôt théorique",
       nominal: taxAmount,
       real: taxAmount * factor,
       color: "var(--color-value-red)",

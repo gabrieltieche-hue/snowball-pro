@@ -3,17 +3,9 @@ export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY,
 export type { V4Settings } from "./migration"
 export { fmtCurrency, fmtCompact, fmtPercent, fmtDecimal, parseCurrencyInput, escapeCsvCell } from "./formatting"
 export { roundCent, clamp, ENVELOPE_CONFIGS, computeTaxBreakdown, calcXIRR } from "./taxes"
-export {
-  getTaxRules,
-  resolveTaxYear,
-  pfuRate,
-  fmtTaxPercent,
-  TAX_RULES,
-  TAX_YEARS,
-  CURRENT_TAX_YEAR,
-} from "./taxRules"
+export { getTaxRules, resolveTaxYear, pfuRate, fmtTaxPercent, TAX_RULES, TAX_YEARS, CURRENT_TAX_YEAR } from "./taxRules"
 export type { TaxYearRules, SupportedTaxYear } from "./taxRules"
-export type { CtoTaxMode, TaxBreakdownOptions } from "../types"
+export type { CtoTaxMode, ReturnScenario, RiskTolerance, TaxBreakdownOptions } from "../types"
 export { buildCashFlows, computeXIRR } from "./kpis"
 export { applyScenarioPatch, enterComparison, exitComparison, resolveScenarioTarget } from "./scenarios"
 export type { ScenarioState, ScenarioPatchResult } from "./scenarios"
@@ -34,7 +26,14 @@ export {
 export { runSimulation } from "./simulation"
 export { runMonteCarlo, runMonteCarloAsync, sampleHistoricalReturns } from "./montecarlo"
 export { runDecumulation, runDecumulationAsync, runStressTest, STRESS_TEST_SCENARIOS } from "./decumulation"
-export { computeKPIs, computeMilestones, solveGoal, compareScenarios } from "./kpis"
+export {
+  computeKPIs,
+  computeMilestones,
+  solveGoal,
+  solveGoalMonteCarlo,
+  solveGoalMonteCarloAsync,
+  compareScenarios,
+} from "./kpis"
 export { validateInputs, sanitizeInputs, RECOMMENDED_RETURN_MIN, RECOMMENDED_RETURN_MAX } from "./validation"
 export type { ValidationError } from "./validation"
 export { createHistory, pushHistory, undoHistory, redoHistory, HISTORY_LIMIT } from "./history"

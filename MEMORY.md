@@ -724,3 +724,45 @@ Demande utilisateur : *« j'ai des problèmes à te signaler et je veux qu'on en
 - Headers sticky sur tableaux longs (fragile avec le header app sticky — à faire proprement).
 - Carte « Votre projet » en bas de sidebar (redondante avec le héro).
 - **Mobile dédié** : le plus gros chantier produit (responsive-stacké aujourd'hui, pas de layout mobile propre).
+
+## SESSION — 2026-08-11 (v6.4.0 : Honnêteté des hypothèses — frais réalistes, projection médiane, rente nette, profil)
+
+### Résumé
+
+Checklist produit de l'utilisateur (« corrections prioritaires », version ultra-courte : *corrige impôts latents, projection trop optimiste, frais à 0, Monte Carlo brut, rente non fiscalisée ; ajoute frais réalistes, fiscalité réelle, scénarios prudent/central/optimiste, euros réels, comparateur, tests, validation*) passée au crible du moteur — ~40 % était déjà fait (MC net de frais et fiscalité, taxRules par année, XIRR, garde-fous, validation) — puis implémentée en **3 paquets**. **Changement de paradigme** : la projection par défaut passe de la moyenne arithmétique (10,07 %) au **rendement géométrique composé (8,22 %, scénario central)** — le chiffre honnête (733 k€ → 519 k€ sur le défaut). **327 tests** (18 nouveaux), gate 100 % vert, vérifié Playwright desktop + mobile, 0 erreur console. **Non commité au fil de l'eau — release v6.4.0 complète (bump, sw.js, titre, CHANGELOG, MEMORY) puis Vercel.**
+
+### Paquet 1 — Honnêteté des hypothèses
+
+- **`returnScenario`** (`prudent`/`central`/`optimiste`) : `simulation.ts` `returnForYear` lit le scénario via `getHistoricalDataset` (l'échelle 10,07/8,22/5,99 existait déjà). Défaut **central**. `ScenarioSelector.tsx` (nouveau) : 3 cartes + bandeau « médiane historique ». La courbe lissée suit désormais l'indice choisi (avant : toujours MSCI — sans impact produit, la migration force msci-world).
+- **Frais par défaut** : `migration.ts` `etfFees 0.0025`, `insuranceFees 0.0075` (AV seulement). États STOCKÉS conservés (choix utilisateur). `FeeImpact` : état positif « 🎉 Aucun frais ».
+- **MC réel** : `montecarlo.ts` `runSinglePath` renvoie `{nominal, real}` (`taxNet × real/nominal`), `finalize` ajoute `p10r/p50r/p90r` + `successRateReal`. UI : toggle Euros courants/d'aujourd'hui + carte succès nominal/réel.
+- **Libellés** : « Impôt théorique » partout (CashflowCalendar, SummaryStats, AmortissementTable, FiscalPanel titre+total). Le test composant `components.test.tsx` attendu mis à jour.
+
+### Paquet 2 — Rente nette + objectif inversé
+
+- **`decumulation.ts`** : chaque retrait taxé au prorata du coût fiscal (**base = versements `investedNom`** — correctif revue adverse : basis = nominal ne taxait jamais les gains latents de l'accumulation). `runDecumulation*` et `runStressTest` prennent `startingBasis` (défaut = startingCapital pour la rétrocompat des tests) ; `App.tsx` passe `lastRow.investedNom`. Frais d'encours mensuels. Résultats : `withdrawalsNet`, `totalTaxPaid`, `totalFeesPaid`, `netInitialWithdrawal`. Perf : `noNotes` (TaxBreakdownOptions) + saut du calcul après ruine → 2000 runs = 665 ms.
+- **`solveGoalMonteCarlo(Async)`** (`kpis.ts`) : bisection 14 itérations × runs sur le scénario principal → versement pour P10/P50/P90. `GoalTab` : toggle `goalSync` + bloc inversion avec progress (P90 → P50 → P10).
+- Test d'inversion lent (3×14×300 runs) → runs 200-250 + timeout 60 s (flaky sinon).
+
+### Paquet 3 — Profil utilisateur
+
+- Champs : `ageNow`, `ageRetirement`, `retirementExpenses`, `otherPensions`, `riskTolerance`, `maxDrawdownTolerance`, `goalSync` — types + migration + sanitize (bornes 16-100, 0-1 M€, 5-60 %).
+- Sidebar « Votre profil » (repliée) ; Rente : repère d'âge, **couverture des dépenses** (rente nette + pensions vs dépenses), **alerte tolérance au risque** (pire drawdown du vivier réellement rejoué vs tolérance).
+
+### Décisions produit prises (l'utilisateur a dit « fait tout »)
+
+- Projection par défaut = **Central/géométrique** (médiane historique). Prudent = réel composé (nominal conservateur), Optimiste = moyenne arithmétique.
+- Frais par défaut 0,25/0,75 — les états existants gardent leurs frais (à migrer si demandé).
+- Rente : le retrait planifié reste BRUT (le compte draine le brut), l'impôt est prélevé dessus → rente nette affichée. Survie calculée sur le brut.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **327/327** ✓ build ✓ (1 052 kB / 307 kB gzip). Ancrages dorés **régénérés** (frais + central) ; tests « courbe lissée »/« formule fermée » fixés sur optimiste.
+- Playwright : sélecteur + bandeau médiane, MC 10 k (succès réel), rente nette + tolérance après run (10 k ≈ 3-15 s headless), sync Goal, inversion P10/P50/P90 au clic (1 570/620/120 €), section Profil, 0 erreur console, mobile sans débordement.
+
+### Pistes restantes (discutées avec l'utilisateur)
+
+- **Web Worker + Float64Array** pour MC/décum (le chunking suffit aujourd'hui).
+- **Comparateur multi-enveloppes dédié** (CTO/PEA/AV/PER sur un même scénario).
+- **Migrer les frais des états stockés** v6.3 (0 % → 0,25/0,75 %) si décision.
+- Mobile dédié (toujours le plus gros chantier produit) ; tests e2e automatisés (webapp-testing skill).

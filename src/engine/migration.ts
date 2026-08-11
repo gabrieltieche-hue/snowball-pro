@@ -33,9 +33,15 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   peaYearsHeld: 0,
   avYearsHeld: 0,
   historicalIndex: "msci-world",
-  etfFees: 0,
+  // Frais réalistes par défaut (paquet 1 — « plus jamais 0 % par défaut ») :
+  // 0,25 %/an d'ETF (CW8 0,38 %, VWCE 0,22 % — 0,25 % est la médiane des
+  // ETF Monde) et 0,75 %/an d'enveloppe AV (appliqués seulement quand
+  // l'enveloppe est une assurance-vie, cf. simulation.ts). Courtage et
+  // gestion pilotée restent à 0 (optionnels, l'utilisateur les active). Les
+  // états STOCKÉS conservent leurs frais saisis (migration respectée).
+  etfFees: 0.0025,
   brokerageFees: 0,
-  insuranceFees: 0,
+  insuranceFees: 0.0075,
   managementFees: 0,
   // Affichage par défaut = EUROS D'AUJOURD'HUI (les vraies valeurs nettes
   // d'inflation). Le moteur calcule TOUJOURS les deux échelles (nominal + real,
@@ -55,6 +61,20 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   // Défaut aligné sur le rendement de l'onglet principal : 10,07 %/an BRUT
   // (moyenne MSCI World) — jamais un taux net d'inflation (demande utilisateur).
   goalAnnualReturn: 0.1007,
+  // Projection principale : scénario CENTRAL par défaut (paquet 1) — le
+  // Simulateur applique le rendement GÉOMÉTRIQUE composé de l'historique
+  // (≈ 8,22 %/an) au lieu de la moyenne arithmétique (10,07 %) : c'est la
+  // projection honnête « médiane », pas la meilleure moyenne. Prudent et
+  // Optimiste restent disponibles dans l'onglet Simulateur.
+  returnScenario: "central",
+  goalSync: false,
+  // Profil (paquet 3) — réglages de retraite et de risque.
+  ageNow: 30,
+  ageRetirement: 62,
+  retirementExpenses: 2000,
+  otherPensions: 0,
+  riskTolerance: "equilibre",
+  maxDrawdownTolerance: 0.35,
   mcRuns: 10000,
   seed: 42,
   tmi: 0.3,
@@ -125,6 +145,11 @@ const NUMERIC_KEYS: (keyof SimulationInputs)[] = [
   "goalCapital",
   "goalPayment",
   "goalAnnualReturn",
+  "ageNow",
+  "ageRetirement",
+  "retirementExpenses",
+  "otherPensions",
+  "maxDrawdownTolerance",
   "mcRuns",
   "seed",
   "tmi",
@@ -142,6 +167,7 @@ const BOOLEAN_KEYS: (keyof SimulationInputs)[] = [
   "stochasticInflation",
   "dynamicGuardrails",
   "crisisScenario",
+  "goalSync",
 ]
 
 const STRING_KEYS: (keyof SimulationInputs)[] = [
@@ -150,6 +176,8 @@ const STRING_KEYS: (keyof SimulationInputs)[] = [
   "historicalIndex",
   "withdrawalModel",
   "ctoTaxMode",
+  "returnScenario",
+  "riskTolerance",
 ]
 
 const ENUM_VALUES: Record<string, string[]> = {
@@ -158,6 +186,8 @@ const ENUM_VALUES: Record<string, string[]> = {
   historicalIndex: ["msci-world", "sp500", "nasdaq", "cac40", "bitcoin", "gold"],
   withdrawalModel: ["rule-4", "ultra-safe", "optimistic", "custom"],
   ctoTaxMode: ["pfu", "bareme"],
+  returnScenario: ["prudent", "central", "optimiste"],
+  riskTolerance: ["prudent", "equilibre", "audacieux"],
 }
 
 export function parseStoredInputs(raw: string | null): SimulationInputs {

@@ -328,6 +328,7 @@ describe("défauts — inflation 2,1 %, référence MSCI World 10,07 % et Monte 
 
 describe("runSimulation", () => {
   const baseInputs: SimulationInputs = {
+    ...DEFAULT_INPUTS,
     capitalInitial: 25000,
     monthlyPayment: 1000,
     duration: 10,
@@ -414,6 +415,10 @@ describe("runSimulation", () => {
     // %/an brut) à chaque année — plus de zigzags historiques sur la courbe.
     const histInputs: SimulationInputs = {
       ...baseInputs,
+      // Scénario optimiste = moyenne arithmétique : la courbe lissée applique
+      // MSCI_WORLD_AVG_RETURN, la référence du test (paquet 1 — le défaut de
+      // l'app est désormais Central/géométrique).
+      returnScenario: "optimiste",
       historicalIndex: "sp500",
       monthlyPayment: 0,
       etfFees: 0,
@@ -424,7 +429,9 @@ describe("runSimulation", () => {
       duration: 3,
     }
     const rows = runSimulation(histInputs)
-    expect(rows[1].yearlyReturn).toBeCloseTo(MSCI_WORLD_AVG_RETURN, 3)
+    // Paquet 1 : la courbe lissée suit l'indice choisi (scénario optimiste =
+    // moyenne arithmétique de CET indice — ici le S&P 500, pas le MSCI).
+    expect(rows[1].yearlyReturn).toBeCloseTo(getHistoricalDataset("sp500").avgReturn, 3)
     // Année 1 et année 2 identiques : la même courbe, chaque année.
     expect(rows[2].yearlyReturn).toBeCloseTo(rows[1].yearlyReturn, 6)
   })
@@ -540,6 +547,7 @@ describe("getHistoricalDataset", () => {
 
 describe("computeKPIs", () => {
   const baseInputs: SimulationInputs = {
+    ...DEFAULT_INPUTS,
     capitalInitial: 25000,
     monthlyPayment: 1000,
     duration: 10,
@@ -591,6 +599,7 @@ describe("computeKPIs", () => {
 describe("solveGoal", () => {
   it("returns a result for a reachable goal", () => {
     const inputs: SimulationInputs = {
+      ...DEFAULT_INPUTS,
       capitalInitial: 25000,
       monthlyPayment: 1000,
       duration: 25,
@@ -638,6 +647,7 @@ describe("solveGoal", () => {
 describe("validateInputs", () => {
   it("returns no errors for valid inputs", () => {
     const base: SimulationInputs = {
+      ...DEFAULT_INPUTS,
       capitalInitial: 25000,
       monthlyPayment: 1000,
       duration: 10,
@@ -682,6 +692,7 @@ describe("validateInputs", () => {
 
   it("returns errors for extreme values", () => {
     const base: SimulationInputs = {
+      ...DEFAULT_INPUTS,
       capitalInitial: -1,
       monthlyPayment: 200000,
       duration: 100,
@@ -728,6 +739,7 @@ describe("validateInputs", () => {
 describe("solveGoal with goalAnnualReturn", () => {
   it("goalAnnualReturn pilote seul le taux de l'objectif (plus de taux saisi)", () => {
     const inputs: SimulationInputs = {
+      ...DEFAULT_INPUTS,
       capitalInitial: 25000,
       monthlyPayment: 1000,
       duration: 25,
@@ -775,6 +787,7 @@ describe("solveGoal with goalAnnualReturn", () => {
 describe("sanitizeInputs", () => {
   it("clamps extreme values to safe ranges", () => {
     const base: SimulationInputs = {
+      ...DEFAULT_INPUTS,
       capitalInitial: 1e9,
       monthlyPayment: 500000,
       duration: 200,
@@ -1142,13 +1155,27 @@ describe("buildCashFlows / computeXIRR", () => {
     // versements jamais investis et sous-évaluait le rendement (6,2 % au lieu
     // de ~10 %). Le XIRR doit refléter les flux réellement investis.
     const solo = buildCashFlows(
-      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: false, capitalInitial: 10_000, monthlyPayment: 2000, duration: 30 },
+      {
+        ...DEFAULT_INPUTS,
+        envelope: "pea" as const,
+        taxCouple: false,
+        capitalInitial: 10_000,
+        monthlyPayment: 2000,
+        duration: 30,
+      },
       2_000_000,
     )
     const outflowsSolo = solo.flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
     expect(Math.abs(outflowsSolo)).toBeCloseTo(150_000, 0)
     const couple = buildCashFlows(
-      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: true, capitalInitial: 0, monthlyPayment: 2000, duration: 30 },
+      {
+        ...DEFAULT_INPUTS,
+        envelope: "pea" as const,
+        taxCouple: true,
+        capitalInitial: 0,
+        monthlyPayment: 2000,
+        duration: 30,
+      },
       2_000_000,
     )
     const outflowsCouple = couple.flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
@@ -1157,7 +1184,14 @@ describe("buildCashFlows / computeXIRR", () => {
 
   it("buildCashFlows : capital initial déjà au plafond PEA → aucun versement", () => {
     const { flows } = buildCashFlows(
-      { ...DEFAULT_INPUTS, envelope: "pea" as const, taxCouple: false, capitalInitial: 200_000, monthlyPayment: 2000, duration: 30 },
+      {
+        ...DEFAULT_INPUTS,
+        envelope: "pea" as const,
+        taxCouple: false,
+        capitalInitial: 200_000,
+        monthlyPayment: 2000,
+        duration: 30,
+      },
       2_000_000,
     )
     const outflows = flows.filter(f => f < 0).reduce((s, f) => s + f, 0)
@@ -1340,6 +1374,9 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
       // réel (c'est leur raison d'être).
       const inputs = {
         ...DEFAULT_INPUTS,
+        // Scénario optimiste (moyenne arithmétique) : la courbe lissée vaut
+        // MSCI_WORLD_AVG_RETURN — la référence de ce test (paquet 1).
+        returnScenario: "optimiste" as const,
         monthlyPayment: 0,
         etfFees: 0,
         brokerageFees: 0,
@@ -1350,7 +1387,9 @@ describe("runMonteCarlo — rééchantillonnage historique", () => {
         historicalIndex: "sp500" as const,
       }
       const rows = runSimulation(inputs)
-      expect(rows[1].yearlyReturn).toBeCloseTo(MSCI_WORLD_AVG_RETURN, 3)
+      // Paquet 1 : la courbe lissée suit l'indice choisi (scénario optimiste =
+      // moyenne arithmétique de CET indice — ici le S&P 500, pas le MSCI).
+      expect(rows[1].yearlyReturn).toBeCloseTo(getHistoricalDataset("sp500").avgReturn, 3)
       expect(rows[2].yearlyReturn).toBeCloseTo(rows[1].yearlyReturn, 6)
     },
     MC_TIMEOUT,

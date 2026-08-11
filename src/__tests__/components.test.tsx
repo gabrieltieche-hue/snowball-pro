@@ -22,7 +22,15 @@ import { SliderInput } from "../components/shared/SliderInput"
 import { SmartInput } from "../components/shared/SmartInput"
 import { SectionHeader } from "../components/shared/SectionHeader"
 import { Shield } from "lucide-react"
-import { DEFAULT_INPUTS, fmtCompact, fmtCurrency, runSimulation, runDecumulation, buildTerminalHistogram, solveGoal } from "../engine"
+import {
+  DEFAULT_INPUTS,
+  fmtCompact,
+  fmtCurrency,
+  runSimulation,
+  runDecumulation,
+  buildTerminalHistogram,
+  solveGoal,
+} from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
@@ -774,16 +782,14 @@ describe("v5.6.4 — SectionHeader : anatomie de titre uniforme sur tout le site
     expect(screen.getByText("€ d'aujourd'hui")).toBeInTheDocument()
   })
 
-  it("level=\"label\" rend un mini-titre via children (Modèle de retrait / Paramètres)", () => {
+  it('level="label" rend un mini-titre via children (Modèle de retrait / Paramètres)', () => {
     render(<SectionHeader level="label">Modèle de retrait</SectionHeader>)
     expect(screen.getByText("Modèle de retrait")).toBeInTheDocument()
     expect(screen.queryByRole("heading")).not.toBeInTheDocument()
   })
 
   it("mode bare : aucun <div>/<p> (valide dans un <button>) — revue adverse v5.6.4", () => {
-    const { container } = render(
-      <SectionHeader bare level="card" icon={Shield} title="Calendrier des flux" />,
-    )
+    const { container } = render(<SectionHeader bare level="card" icon={Shield} title="Calendrier des flux" />)
     const root = container.firstElementChild as HTMLElement
     expect(root.tagName).toBe("SPAN")
     expect(root.querySelector("div, p")).toBeNull()
@@ -792,16 +798,16 @@ describe("v5.6.4 — SectionHeader : anatomie de titre uniforme sur tout le site
 })
 
 describe("v5.6.4 — FiscalPanel : titre proportionné à « Statistiques clés »", () => {
-  it("affiche « Vos impôts » en TITRE et l'enveloppe en sous-titre (plus de tiret dans le titre)", () => {
+  it("affiche « Votre impôt théorique (si vente totale) » en TITRE et l'enveloppe en sous-titre (plus de tiret dans le titre)", () => {
     const inputs = { ...DEFAULT_INPUTS, envelope: "cto" as const, duration: 10 }
     const rows = runSimulation(inputs)
     render(<FiscalPanel rows={rows} inputs={inputs} />)
-    const title = screen.getByRole("heading", { name: /vos impôts/i })
+    const title = screen.getByRole("heading", { name: /impôt/i })
     // Le titre est court et lisible (même anatomie que « Statistiques clés »)
-    expect(title.textContent).toBe("Vos impôts")
+    expect(title.textContent).toBe("Votre impôt théorique (si vente totale)")
     // L'enveloppe n'est plus collée au titre par un tiret : sous-titre séparé
     expect(screen.getByText("Compte-titres ordinaire")).toBeInTheDocument()
-    expect(screen.queryByText(/Vos impôts —/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Votre impôt théorique —/)).not.toBeInTheDocument()
   })
 
   it("le sous-titre suit l'enveloppe choisie (PEA → Plan d'épargne en actions)", () => {

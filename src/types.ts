@@ -5,6 +5,11 @@ export type WithdrawalModel = "rule-4" | "ultra-safe" | "optimistic" | "custom"
 export type InflationMode = "custom" | "historical" | "dynamic"
 export type GoalDifficulty = "easy" | "moderate" | "ambitious" | "impossible"
 export type CtoTaxMode = "pfu" | "bareme"
+/** Scénario de rendement de la projection principale (courbe lissée du Simulateur) :
+ * prudent = rendement réel composé, central = rendement géométrique composé,
+ * optimiste = moyenne arithmétique. Les 3 étages de l'échelle historique. */
+export type ReturnScenario = "prudent" | "central" | "optimiste"
+export type RiskTolerance = "prudent" | "equilibre" | "audacieux"
 
 /** Options de calcul fiscal transmises à computeTaxBreakdown. */
 export interface TaxBreakdownOptions {
@@ -12,6 +17,10 @@ export interface TaxBreakdownOptions {
   ctoTaxMode?: CtoTaxMode
   /** Année fiscale des règles à appliquer (2025 ou 2026). Défaut : année courante. */
   taxYear?: number
+  /** Saute la construction des libellés explicatifs (notes) : réservé aux
+   * boucles chaudes (fiscalité mensuelle du décaissement) où les notes ne
+   * sont jamais lues — évite 7,2 M d'allocations de chaînes à 10 k runs. */
+  noNotes?: boolean
 }
 
 export interface YearRow {
@@ -62,6 +71,14 @@ export interface MonteCarloResult {
   p75: number[]
   p90: number[]
   p95: number[]
+  /** Bandes P10/P50/P90 en EUROS D'AUJOURD'HUI (nets d'impôts et déflatés
+   * de l'inflation réellement appliquée par chaque scénario). */
+  p10r: number[]
+  p50r: number[]
+  p90r: number[]
+  /** Probabilité d'atteindre l'objectif en euros réels (valeur terminale
+   * déflatée ≥ objectif) : plus honnête que le taux nominal. */
+  successRateReal: number
   successRate: number
   /** Moyenne arithmétique des capitaux terminaux (tirée par la queue droite). */
   mean: number
@@ -81,6 +98,14 @@ export interface DecumulationResult {
   p50: number[]
   p90: number[]
   withdrawals: number[]
+  /** Retraits NETS moyens par année (après fiscalité des retraits). */
+  withdrawalsNet: number[]
+  /** Total des impôts payés sur les retraits, moyenné sur toutes les sims. */
+  totalTaxPaid: number
+  /** Total des frais de gestion prélevés pendant le décaissement, moyenné. */
+  totalFeesPaid: number
+  /** Rente nette mensuelle initiale (après impôt du premier mois). */
+  netInitialWithdrawal: number
   ruinProbability: number
   survivalProbability: number
   /** Intervalle de confiance à 95 % (Wilson) du taux de survie. */
@@ -188,6 +213,22 @@ export interface SimulationInputs {
   seed: number
   tmi: number
   ctoTaxMode: CtoTaxMode
+  /** Scénario de rendement de la projection principale (Simulateur) :
+   * prudent / central / optimiste (défaut : central = géométrique composé). */
+  returnScenario: ReturnScenario
+  /** Objectif inversé synchronisé avec le scénario principal (capital, durée
+   * et rendement liés au Simulateur au lieu de réglages séparés). */
+  goalSync: boolean
+  // Profil de l'utilisateur (paquet 3) — utilisé pour la retraite et le risque.
+  ageNow: number
+  ageRetirement: number
+  /** Dépenses mensuelles prévues à la retraite (euros courants). */
+  retirementExpenses: number
+  /** Autres revenus mensuels à la retraite (pensions, immobilier…). */
+  otherPensions: number
+  riskTolerance: RiskTolerance
+  /** Perte maximale acceptée en % POSITIF (0,35 = 35 %). */
+  maxDrawdownTolerance: number
   /** Année fiscale des règles d'imposition (source : taxRules.ts).
    * Optionnel pour la rétrocompatibilité des états stockés/partagés v5 :
    * résolu vers une année supportée par resolveTaxYear (défaut : 2026). */

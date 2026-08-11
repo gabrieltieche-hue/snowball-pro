@@ -198,6 +198,18 @@ export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
     retirementYears: Math.round(clamp(inputs.retirementYears, 1, 60)),
     goalTarget: Math.max(inputs.goalTarget, 1),
     goalAnnualReturn: clamp(inputs.goalAnnualReturn, -0.95, 10),
+    // Profil + scénarios (paquet 1 & 3) : bornes alignées sur les curseurs UI
+    // pour qu'un lien partagé malformé ne puisse pas casser l'interface.
+    returnScenario:
+      inputs.returnScenario === "prudent" || inputs.returnScenario === "optimiste" ? inputs.returnScenario : "central",
+    goalSync: Boolean(inputs.goalSync),
+    ageNow: Math.round(clamp(inputs.ageNow, 16, 100)),
+    ageRetirement: Math.round(clamp(inputs.ageRetirement, 16, 100)),
+    retirementExpenses: clamp(inputs.retirementExpenses, 0, 1_000_000),
+    otherPensions: clamp(inputs.otherPensions, 0, 1_000_000),
+    riskTolerance:
+      inputs.riskTolerance === "prudent" || inputs.riskTolerance === "audacieux" ? inputs.riskTolerance : "equilibre",
+    maxDrawdownTolerance: clamp(inputs.maxDrawdownTolerance, 0.05, 0.6),
     seed: Math.abs(inputs.seed) || 1,
     tmi: clamp(inputs.tmi, 0, 0.45),
     ctoTaxMode: inputs.ctoTaxMode === "bareme" ? "bareme" : "pfu",

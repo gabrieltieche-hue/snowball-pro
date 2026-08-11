@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Coins,
   HelpCircle,
+  Landmark,
   Lightbulb,
   PiggyBank,
   Play,
@@ -31,7 +32,15 @@ import {
   ReferenceLine,
 } from "recharts"
 
-import { fmtCurrency, fmtCompact, fmtDecimal, runStressTest, STRESS_TEST_SCENARIOS } from "../../engine"
+import {
+  ENVELOPE_CONFIGS,
+  fmtCurrency,
+  fmtCompact,
+  fmtDecimal,
+  getHistoricalPool,
+  runStressTest,
+  STRESS_TEST_SCENARIOS,
+} from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
@@ -113,6 +122,13 @@ export function RenteRetraiteTab({
   const theme = chartTheme(darkMode)
   const startingCapital = lastRow?.nominal && lastRow.nominal > 0 ? lastRow.nominal : inputs.capitalInitial
   const selectedModel = WITHDRAWAL_MODELS.find(m => m.id === inputs.withdrawalModel) ?? WITHDRAWAL_MODELS[0]
+  const envelopeLabel = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.shortLabel ?? "BRUT"
+  // Profil (paquet 3) : un repère d'âge dans l'en-tête quand le profil est
+  // renseigné — « retraite à X ans, fin de rente à Y ans ».
+  const retirementAgeInfo =
+    inputs.ageRetirement > inputs.ageNow
+      ? `${inputs.ageRetirement} ans au départ de la retraite · ${inputs.ageRetirement + inputs.retirementYears} ans à la fin de la rente`
+      : null
 
   // Rente mensuelle estimée (avant simulation Monte-Carlo) — affichage instantané
   const estimatedMonthly = useMemo(() => {
@@ -156,6 +172,14 @@ export function RenteRetraiteTab({
               <AlertTriangle size={11} className="text-primary" />
               <span>La rente n'est pas garantie — les performances passées ne préjugent pas des résultats futurs.</span>
             </div>
+            {retirementAgeInfo && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-text-muted">
+                <Coins size={11} className="text-text-dim shrink-0" />
+                <span>
+                  Profil : <strong className="text-text">{retirementAgeInfo}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="glass rounded-2xl px-4 py-3 min-w-[200px]">
@@ -523,6 +547,8 @@ export function RenteRetraiteTab({
             theme={theme}
             crisisNote={crisisNote}
             extendedHistory={inputs.extendedHistory}
+            inputs={inputs}
+            envelopeLabel={envelopeLabel}
           />
         </div>
       ) : (
@@ -560,7 +586,12 @@ export function RenteRetraiteTab({
         </button>
         {stressOpen && (
           <div className="px-4 sm:px-6 pb-5 animate-fade-in">
-            <StressTestsSection inputs={inputs} startingCapital={startingCapital} darkMode={darkMode} />
+            <StressTestsSection
+              inputs={inputs}
+              startingCapital={startingCapital}
+              startingBasis={lastRow?.investedNom && lastRow.investedNom > 0 ? lastRow.investedNom : startingCapital}
+              darkMode={darkMode}
+            />
           </div>
         )}
       </div>
@@ -589,11 +620,15 @@ function ResultsSection({
   theme,
   crisisNote,
   extendedHistory,
+  inputs,
+  envelopeLabel,
 }: {
   decumResult: DecumulationResult
   theme: ReturnType<typeof chartTheme>
   crisisNote?: string | null
   extendedHistory: boolean
+  inputs: SimulationInputs
+  envelopeLabel: string
 }) {
   const survival = decumResult.survivalProbability
   const survivalTone =
@@ -606,6 +641,34 @@ function ResultsSection({
   const [showGuide, setShowGuide] = useState(false)
   const chartRef = useChartA11y("Votre capital pendant la retraite — P10, P50 et P90")
   const coarse = useIsCoarsePointer()
+
+  // Paquet 2 — rente nette : retraits nets moyens par mois sur toute la
+  // retraite (moyenne des années 1..N, divisée par 12).
+  const netMonthly =
+    decumResult.withdrawalsNet.slice(1).reduce((s, v) => s + v, 0) /
+      Math.max(1, decumResult.withdrawalsNet.length - 1) /
+      12 || 0
+  // Paquet 3 — alerte risque : le pire repli pic→creux du vivier réellement
+  // rejoué (56 ou 100 ans selon l'option) comparé à la tolérance du profil.
+  const worstDrawdown = useMemo(() => {
+    const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
+    let cap = 1
+    let peak = 1
+    let worst = 0
+    for (const r of pool.returns) {
+      cap *= 1 + r
+      peak = Math.max(peak, cap)
+      worst = Math.max(worst, peak > 0 ? (peak - cap) / peak : 0)
+    }
+    return worst
+  }, [inputs.historicalIndex, inputs.extendedHistory])
+  const exceedsRisk = worstDrawdown > inputs.maxDrawdownTolerance
+  // Couverture des dépenses de retraite : rente nette + autres pensions vs
+  // dépenses prévues (paquet 3).
+  const retirementIncome = netMonthly + inputs.otherPensions
+  const coverage =
+    inputs.retirementExpenses > 0 ? Math.round((retirementIncome / inputs.retirementExpenses) * 100) : null
+  const shortfall = inputs.retirementExpenses - retirementIncome
 
   return (
     <motion.div
@@ -697,27 +760,107 @@ function ResultsSection({
 
       {/* Bandeau de fiabilité (v6) : un signal de confiance factuel, en une
           ligne — ce que le taux de survie repose réellement sur. */}
-      {/* Bandeau de fiabilité (v6) — corrigé audit v6 : la rente part du
-          capital BRUT (nominal) et n'applique AUCUNE fiscalité aux retraits.
-          Affirmer « fiscalité française incluse » ici serait faux (le
-          décaissement ne la modélise pas) — on dit la vérité en une ligne. */}
+      {/* Bandeau de fiabilité (paquet 2) : la rente applique désormais la
+          fiscalité des retraits ET les frais de gestion — on dit la vérité. */}
       <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
         <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
         Basé sur <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")} scénarios</strong> ·{" "}
-        {extendedHistory ? "100 ans" : "56 ans"} d'historique réel · capital brut — fiscalité des retraits non modélisée
+        {extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité des retraits incluse (enveloppe{" "}
+        {envelopeLabel})
       </p>
 
-      {/* Divulgation P0-4a (audit v6) : la rente part du capital AVANT impôts
-          et ne taxe pas les retraits — pour un CTO/PER, la rente réellement
-          disponible serait plus faible. Information d'abord, refonte du
-          calcul (Option B) en cours de décision séparée. */}
+      {/* Paquet 2 — la fiscalité des retraits est désormais modélisée : on
+          montre la rente NETTE réelle (retraits nets moyens par mois, impôts
+          et frais de gestion déduits), au lieu de divulguer une absence. */}
       <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
-        <AlertTriangle size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
+        <Landmark size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
+        {inputs.envelope === "none" ? (
+          <p className="text-[10px] leading-relaxed text-text-dim">
+            <strong className="text-text">Sans fiscalité :</strong> l'enveloppe choisie est « BRUT » — aucun impôt n'est
+            prélevé sur les retraits. La rente affichée est donc la rente brute.
+          </p>
+        ) : (
+          <p className="text-[10px] leading-relaxed text-text-dim">
+            <strong className="text-text">Rente nette :</strong> après impôt sur les retraits (enveloppe{" "}
+            <strong className="text-text">{envelopeLabel}</strong>), vous recevez en moyenne{" "}
+            <strong className="text-text">{fmtCurrency(Math.round(netMonthly))} / mois</strong> — soit{" "}
+            <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong> d'impôts et{" "}
+            <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong> de frais de gestion payés
+            pendant toute la retraite (la rente brute reste {fmtCurrency(decumResult.initialWithdrawal)}/mois).
+          </p>
+        )}
+      </div>
+
+      {/* Paquet 3 — vos revenus de retraite face à vos dépenses (profil). */}
+      {(inputs.retirementExpenses > 0 || inputs.otherPensions > 0) && coverage !== null && (
+        <div
+          className={cn(
+            "rounded-xl px-3 py-2 flex items-start gap-2 border",
+            coverage >= 100
+              ? "bg-[var(--color-success)]/8 border-[var(--color-success)]/25"
+              : "bg-warning/8 border-warning/25",
+          )}
+        >
+          {coverage >= 100 ? (
+            <CheckCircle2 size={12} className="text-[var(--color-success)] shrink-0 mt-0.5" />
+          ) : (
+            <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
+          )}
+          <p className="text-[10px] leading-relaxed text-text-dim">
+            {coverage >= 100 ? (
+              <>
+                <strong className="text-text">Revenus couverts :</strong> votre rente nette ({" "}
+                <strong className="text-text">{fmtCurrency(Math.round(netMonthly))}/mois</strong>) plus vos autres
+                revenus ( <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) couvrent{" "}
+                <strong className="text-[var(--color-success)]">{coverage} %</strong> de vos dépenses prévues ({" "}
+                {fmtCurrency(inputs.retirementExpenses)}/mois).
+              </>
+            ) : (
+              <>
+                <strong className="text-text">Manque à couvrir :</strong> rente nette ({" "}
+                <strong className="text-text">{fmtCurrency(Math.round(netMonthly))}/mois</strong>) + autres revenus ({" "}
+                <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) ={" "}
+                <strong className="text-text">{fmtCurrency(Math.round(retirementIncome))}/mois</strong>, soit{" "}
+                <strong className="text-text">{coverage} %</strong> de vos dépenses prévues ({" "}
+                {fmtCurrency(inputs.retirementExpenses)}/mois) — il manque{" "}
+                <strong className="text-warning">{fmtCurrency(Math.round(Math.max(0, shortfall)))}/mois</strong>.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* Paquet 3 — alerte tolérance au risque : le pire repli réellement rejoué
+          face à la perte maximale acceptée (profil). Ambre = réglage choisi. */}
+      <div
+        className={cn(
+          "rounded-xl px-3 py-2 flex items-start gap-2 border",
+          exceedsRisk
+            ? "bg-warning/8 border-warning/25"
+            : "bg-[var(--color-success)]/8 border-[var(--color-success)]/25",
+        )}
+      >
+        {exceedsRisk ? (
+          <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
+        ) : (
+          <ShieldCheck size={12} className="text-[var(--color-success)] shrink-0 mt-0.5" />
+        )}
         <p className="text-[10px] leading-relaxed text-text-dim">
-          <strong className="text-text">Rente brute :</strong> le décaissement démarre sur le capital{" "}
-          <strong className="text-text">avant impôts</strong> (valeur nominale du compte) et aucun impôt n'est prélevé
-          sur les retraits. Pour un CTO ou un PER, la rente réellement disponible après fiscalité serait{" "}
-          <strong className="text-text">plus faible</strong> que le montant affiché.
+          {exceedsRisk ? (
+            <>
+              <strong className="text-warning">Tolérance au risque dépassée :</strong> le pire repli historique de votre
+              indice est de <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>, au-delà de
+              votre tolérance de −{Math.round(inputs.maxDrawdownTolerance * 100)} %. Ce plan peut être{" "}
+              <strong className="text-text">trop risqué pour vous</strong> — envisagez une part plus prudente
+              (obligations, livrets) ou un taux de retrait plus faible.
+            </>
+          ) : (
+            <>
+              <strong className="text-text">Risque maîtrisé :</strong> le pire repli historique de votre indice (−
+              {Math.round(worstDrawdown * 100)} %) reste dans votre tolérance de −
+              {Math.round(inputs.maxDrawdownTolerance * 100)} %.
+            </>
+          )}
         </p>
       </div>
 
@@ -730,7 +873,11 @@ function ResultsSection({
         <KpiCard
           label="Votre rente"
           value={fmtCurrency(decumResult.initialWithdrawal)}
-          sub={`par mois, pendant ${decumResult.years.length - 1} ans`}
+          sub={
+            inputs.envelope === "none"
+              ? `par mois, pendant ${decumResult.years.length - 1} ans (brute, sans fiscalité)`
+              : `par mois (brute) — net ≈ ${fmtCurrency(Math.round(netMonthly))}/mois après impôt`
+          }
           tone="var(--color-primary)"
         />
         <KpiCard
@@ -1055,19 +1202,21 @@ function EmptyState({ hasAccumulation }: { hasAccumulation: boolean }) {
 function StressTestsSection({
   inputs,
   startingCapital,
+  startingBasis,
   darkMode,
 }: {
   inputs: SimulationInputs
   startingCapital: number
+  startingBasis: number
   darkMode: boolean
 }) {
   const results = useMemo(() => {
     if (startingCapital <= 0) return []
     return STRESS_TEST_SCENARIOS.map(scenario => ({
       scenario,
-      result: runStressTest(inputs, startingCapital, scenario),
+      result: runStressTest(inputs, startingCapital, scenario, startingBasis),
     }))
-  }, [inputs, startingCapital])
+  }, [inputs, startingCapital, startingBasis])
 
   if (results.length === 0) return null
 

@@ -21,18 +21,24 @@ import type { MonteCarloResult } from "../../types"
 interface MonteCarloChartProps {
   result: MonteCarloResult
   darkMode: boolean
+  /** Affiche les bandes en euros d'aujourd'hui (déflatées) au lieu des euros
+   * courants (paquet 1). */
+  real?: boolean
 }
 
-export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
+export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloChartProps) {
   const theme = chartTheme(darkMode)
   const chartRef = useChartA11y("Votre capital année après année — P10, P50 et P90")
   const coarse = useIsCoarsePointer()
   const data = useMemo(
     () =>
       result.years.map((y, i) => {
-        const p10 = result.p10[i] ?? 0
-        const p50 = result.p50[i] ?? 0
-        const p90 = result.p90[i] ?? 0
+        // En euros réels, on lit les bandes déflatées de chaque scénario
+        // (p10r/p50r/p90r) — la ligne d'objectif reste en euros d'aujourd'hui,
+        // l'objectif étant exprimé dans cette échelle par l'utilisateur.
+        const p10 = real ? (result.p10r[i] ?? 0) : (result.p10[i] ?? 0)
+        const p50 = real ? (result.p50r[i] ?? 0) : (result.p50[i] ?? 0)
+        const p90 = real ? (result.p90r[i] ?? 0) : (result.p90[i] ?? 0)
         return {
           year: y === 0 ? "Aujourd'hui" : `+${y}`,
           p10,
@@ -41,7 +47,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
           bande: [p10, p90],
         }
       }),
-    [result],
+    [result, real],
   )
 
   return (
@@ -60,7 +66,12 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
       />
       <p className="text-[10px] text-text-dim mb-2 px-1">
         {result.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un cas
-        possible
+        possible ·{" "}
+        {real ? (
+          <strong className="text-text not-italic">en euros d'aujourd'hui (nets d'impôts et d'inflation)</strong>
+        ) : (
+          <strong className="text-text not-italic">en euros courants (nets d'impôts)</strong>
+        )}
       </p>
       <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">

@@ -16,15 +16,17 @@ import { FiscalPanel } from "../Simulation/FiscalPanel"
 import { KpiGrid } from "../Simulation/KpiGrid"
 import { MethodologyPanel } from "../Simulation/MethodologyPanel"
 import { MilestoneTimeline } from "../Simulation/MilestoneTimeline"
+import { ScenarioSelector } from "../Simulation/ScenarioSelector"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface SimulatorTabProps {
   rows: YearRow[]
   inputs: SimulationInputs
   darkMode: boolean
+  updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
 }
 
-export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
+export function SimulatorTab({ rows, inputs, darkMode, updateInput }: SimulatorTabProps) {
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const milestones = useMemo(() => computeMilestones(rows), [rows])
   const [tableOpen, setTableOpen] = useState(false)
@@ -40,6 +42,7 @@ export function SimulatorTab({ rows, inputs, darkMode }: SimulatorTabProps) {
           méthodologie, calendrier, tableau annuel */
   return (
     <div className="space-y-5 animate-fade-in">
+      <ScenarioSelector inputs={inputs} updateInput={updateInput} />
       <HeroResult rows={rows} inputs={inputs} />
       <SummaryStats rows={rows} inputs={inputs} />
       <EquityChart rows={rows} inputs={inputs} darkMode={darkMode} />

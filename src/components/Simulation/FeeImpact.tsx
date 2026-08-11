@@ -56,8 +56,13 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
           {fmtCurrency(lastRow.nominal * factor)}).
         </div>
       ) : (
+        /* M17 — état positif : des frais nuls ne sont pas un problème, c'est
+            un bon point. On le dit clairement, et on invite à des frais
+            réalistes (les défauts de l'app sont 0,25 % ETF / 0,75 % AV). */
         <div className="text-[10px] text-text-dim">
-          Aucun écart de frais mesurable dans cette projection : les frais sont nuls ou leur effet est arrondi.
+          🎉 <strong className="text-text">Aucun frais : votre croissance n'est pas rognée.</strong> Les défauts
+          réalistes sont 0,25 %/an d'ETF et 0,75 %/an d'assurance-vie — réglez-les dans les paramètres pour voir leur
+          coût réel.
         </div>
       )}
     </div>
