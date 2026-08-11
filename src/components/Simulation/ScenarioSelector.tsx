@@ -80,17 +80,21 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
   }
 
   return (
-    <div className="mt-4 pt-3.5 border-t border-border">
+    <div className="mt-3">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-          Scénario de rendement
-        </span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">Scénario de rendement</span>
         <HelpTip
           text="Le Simulateur applique chaque année le même taux de référence, choisi parmi trois scénarios. Monte Carlo et la Rente, eux, rejouent toujours l'historique réel année par année — leur médiane se calcule toute seule."
           className="ml-0.5"
         />
       </div>
-      <div ref={groupRef} role="radiogroup" aria-label="Scénario de rendement" onKeyDown={handleKeyDown} className="grid gap-1.5">
+      <div
+        ref={groupRef}
+        role="radiogroup"
+        aria-label="Scénario de rendement"
+        onKeyDown={handleKeyDown}
+        className="grid gap-1.5"
+      >
         {SCENARIOS.map(sc => {
           const isActive = inputs.returnScenario === sc.id
           return (
@@ -102,18 +106,15 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
               tabIndex={isActive ? 0 : -1}
               onClick={() => updateInput("returnScenario", sc.id)}
               className={cn(
-                "w-full flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition-all",
+                "w-full flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-all",
                 isActive
                   ? "border-primary/60 bg-primary/10 shadow-[inset_0_0_0_1px_rgba(var(--color-primary-rgb),0.25)]"
-                  : "glass border-border hover:bg-glass-hover",
+                  : "bg-surface-50/60 border-border hover:bg-glass-hover",
               )}
             >
               <span className="min-w-0">
                 <span
-                  className={cn(
-                    "block text-[11px] font-bold leading-tight",
-                    isActive ? "text-primary" : "text-text",
-                  )}
+                  className={cn("block text-[11px] font-bold leading-tight", isActive ? "text-primary" : "text-text")}
                 >
                   {sc.label}
                   {isActive && (
@@ -131,7 +132,7 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
         })}
       </div>
       {inputs.returnScenario === "central" && (
-        <p className="text-[10px] text-text-muted mt-2.5 leading-relaxed flex items-start gap-1.5 bg-primary/8 border border-primary/20 rounded-xl px-3 py-2">
+        <p className="text-[10px] text-text-muted mt-2 leading-relaxed flex items-start gap-1.5 bg-primary/8 border border-primary/20 rounded-xl px-3 py-2">
           <CheckCircle2 size={11} className="text-primary shrink-0 mt-0.5" aria-hidden />
           <span>
             Projection centrale basée sur la <strong className="text-text">médiane historique</strong> (rendement

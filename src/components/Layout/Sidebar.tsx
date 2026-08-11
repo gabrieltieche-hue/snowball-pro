@@ -259,8 +259,8 @@ export function Sidebar({
                 Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
                 <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
                 gain composé) puis <strong className="text-text">l'inflation</strong> (2,1 %/an). Le Simulateur applique
-                le scénario choisi dans « Votre épargne » (défaut : <strong className="text-text">Central</strong> = ligne
-                composée) chaque année — courbe lissée, sans krachs.
+                le scénario choisi dans « Votre épargne » (défaut : <strong className="text-text">Central</strong> =
+                ligne composée) chaque année — courbe lissée, sans krachs.
               </p>
               {/* Formule de Fisher : réservée au mode Avancé (audit). */}
               {uiMode === "avance" && (

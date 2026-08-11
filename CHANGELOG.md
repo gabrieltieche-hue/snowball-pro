@@ -4,6 +4,27 @@
 
 ---
 
+## v6.5.1 — Scénario de rendement : intégration fluide dans la sidebar
+
+Retour utilisateur : _« cette nouvelle partie ne s'intègre pas très bien… supprime la sorte de trait entre durée et cette partie »_. Le sélecteur prudent / central / optimiste (déjà déplacé dans « Votre épargne ») s'intègre désormais naturellement à la section, sans rupture visuelle.
+
+### 🎨 Intégration
+
+- **`ScenarioSelector.tsx`** : le trait séparateur (`border-t`) entre « Durée » et « Scénario de rendement » est supprimé — simple espacement de 12 px, même rythme que « Tolérance au risque » du même panneau.
+- **Cartes inactives allégées** (`bg-surface-50/60` au lieu du verre) : même langage que les cartes internes de la sidebar ; cartes légèrement plus compactes.
+- Sémantique **radiogroup** conservée (roving tabindex, flèches ←/→/↑/↓/Home/End) — le héro de l'onglet Projection reste la première chose vue.
+
+### 🔧 Hygiène de version
+
+- Synchronisation v6.5.0 incomplète corrigée : `package-lock.json` (6.4.0 → 6.5.1) et `public/sw.js` `CACHE_VERSION` (`snowball-pro-v6.4.0` → `snowball-pro-v6.5.1`) étaient restés en retard.
+
+### 🧪 Gate
+
+- Typecheck ✓ lint ✓ **353/353 tests** ✓ build ✓ · vérifié en navigateur réel (sombre + clair : trait absent, cartes intégrées, bandeau médiane intact, 0 erreur console).
+- Version 6.5.0 → **6.5.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`, titre index.html), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.5.1). Déploiement `vercel --prod`.
+
+---
+
 ## v6.5.0 — Audit honnêteté : les 30 points vérifiés et corrigés
 
 Audit systématique des 30 points d'honnêteté (moteur, fiscalité, affichage) — chaque correction est couverte par un test ou une vérification navigateur. Deux nouveautés produit notables : un **mode Débutant / Avancé** (les notions techniques — XIRR, PFU, TMI, Fisher, Pástor–Stambaugh, Guyton–Klinger — sont masquées par défaut) et une **validation de cohérence âge / durée / retraite**. **353 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile, zéro erreur console).

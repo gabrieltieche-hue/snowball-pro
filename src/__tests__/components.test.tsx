@@ -428,8 +428,7 @@ describe("scénario de rendement — déplacé dans les réglages « Votre épar
       // Le bandeau « médiane historique » est fragmenté par des <strong> (même
       // technique que le test « Pourquoi ces chiffres ? ») : on compare le
       // texte complet de la sidebar plutôt que queryByText.
-      const sidebarText = () =>
-        (document.querySelector("aside")?.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+      const sidebarText = () => (document.querySelector("aside")?.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
       // Défaut : Central → le bandeau « médiane historique » est visible.
       expect(sidebarText()).toContain("médiane historique")
       const before = hero.textContent

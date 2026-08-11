@@ -4,6 +4,27 @@
 
 ---
 
+## SESSION — 2026-08-11 (v6.5.1 : Scénario de rendement dans la sidebar — intégration fluide + déploiement)
+
+### Résumé
+
+Suite de la demande « mets le Scénario de rendement dans les réglages, il gâche la vue » : le sélecteur prudent / central / optimiste vit dans « Votre épargne » (travail déplacé en cours de session, inclus dans le commit parallèle v6.5.0 `dd19ccac`). Cette session finalise l'intégration demandée : **suppression du trait entre « Durée » et le bloc**, cartes inactives allégées (`bg-surface-50/60`), espacement 12 px (même rythme que « Tolérance au risque »), sémantique radiogroup conservée (roving tabindex + flèches). Version 6.5.0 → **6.5.1** avec synchronisation des fichiers restés en retard (`package-lock.json` 6.4.0, `sw.js` v6.4.0). **353 tests**, gate 100 % vert, déploiement `vercel --prod`.
+
+### Décisions
+
+- Le sélecteur n'a plus de carte externe ni de trait : il suit le rythme des curseurs de la section — le résultat (héro) ouvre l'onglet Projection sans sélecteur.
+- Le bandeau « médiane historique » reste intégral (honnêteté de la projection) — piste de condensation au survol du « ? » pour une prochaine session.
+- Un commit parallèle (`dd19ccac`, v6.5.0 : audit honnêteté + mode Débutant/Avancé) a capturé le travail de scénario en cours — réconcilié sans écrasement, rien n'a été perdu.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **353/353 tests** ✓ build ✓.
+- Navigateur (preview réelle, sombre + clair) : trait absent (border-top 0), cartes intégrées, radiogroup 3 radios, clic Optimiste → 682 770 € → 919 801 €, bandeau médiane masqué puis restauré, héro premier dans l'onglet, 0 erreur console.
+- Version 6.5.0 → 6.5.1 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.5.1`, titre index.html), CHANGELOG (entrée v6.5.1), MEMORY.md (cette entrée).
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app** (HTTP 200, titre v6.5.1, CACHE_VERSION vérifiée).
+
+---
+
 ## SESSION — 2026-08-03 (v5.6.0 : Courbe lissée du Simulateur + scénario « Partir en période difficile »)
 
 ### Résumé
