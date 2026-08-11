@@ -12,8 +12,10 @@ import {
   exitComparison,
   parseStoredInputs,
   removeSnapshot,
+  DEFAULT_INPUTS,
   runDecumulationAsync,
   runSimulation,
+  serializeInputs,
   v4SettingsToInputs,
   validateInputs,
 } from "./engine"
@@ -23,6 +25,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { useSession } from "./auth/store"
 import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
+import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
 import { AccountMenu } from "./components/Auth/AccountMenu"
@@ -93,6 +96,18 @@ function AppShell({ scope }: { scope: string | null }) {
     applyThemeClass(initial)
     return initial
   })
+  // Mode Débutant / Avancé (audit) : en Débutant, les notions techniques
+  // (XIRR, PFU, TMI, Fisher, Pástor–Stambaugh, Guyton–Klinger) sont masquées.
+  // Préférence locale persistée — hors de SimulationInputs pour ne pas
+  // polluer les liens partagés ni la persistance des scénarios.
+  const [uiMode, setUiMode] = useState<UiMode>(loadUiMode)
+  const toggleUiMode = useCallback(() => {
+    setUiMode(prev => {
+      const next = prev === "debutant" ? "avance" : "debutant"
+      saveUiMode(next)
+      return next
+    })
+  }, [])
   const [inputs, setInputs] = useState<SimulationInputs>(() => loadInitialInputs(scope))
   const [inputsB, setInputsB] = useState<SimulationInputs | null>(() => loadInitialInputsB(scope))
   const [comparing, setComparing] = useState(false)
@@ -217,6 +232,28 @@ function AppShell({ scope }: { scope: string | null }) {
     [scope],
   )
 
+  // « Tout réinitialiser » (audit) : repart des réglages par défaut et purge
+  // les données locales du scénario (réglages A, scénario B, snapshots). Les
+  // comptes ne sont pas touchés — c'est une remise à zéro des simulations.
+  const handleResetSettings = useCallback(() => {
+    try {
+      localStorage.removeItem(scopeKey(scope, SETTINGS_KEY))
+      localStorage.removeItem(scopeKey(scope, SETTINGS_B_KEY))
+      saveSnapshotsToStorage([], scope)
+    } catch {
+      /* localStorage indisponible */
+    }
+    inputsRef.current = { ...DEFAULT_INPUTS }
+    inputsBRef.current = null
+    setInputs({ ...DEFAULT_INPUTS })
+    setInputsB(null)
+    setComparing(false)
+    setFrozenA(null)
+    setSnapshots([])
+    setDecumResult(null)
+    setDecumComputedFor("")
+  }, [scope])
+
   useKeyboardShortcuts({
     onUndo: handleUndo,
     onRedo: handleRedo,
@@ -239,7 +276,7 @@ function AppShell({ scope }: { scope: string | null }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(scopeKey(scope, SETTINGS_KEY), JSON.stringify(inputs))
+        localStorage.setItem(scopeKey(scope, SETTINGS_KEY), serializeInputs(inputs))
       } catch {
         /* localStorage indisponible */
       }
@@ -250,7 +287,7 @@ function AppShell({ scope }: { scope: string | null }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        if (inputsB) localStorage.setItem(scopeKey(scope, SETTINGS_B_KEY), JSON.stringify(inputsB))
+        if (inputsB) localStorage.setItem(scopeKey(scope, SETTINGS_B_KEY), serializeInputs(inputsB))
         else localStorage.removeItem(scopeKey(scope, SETTINGS_B_KEY))
       } catch {
         /* localStorage indisponible */
@@ -467,6 +504,9 @@ function AppShell({ scope }: { scope: string | null }) {
               validationErrors={validationErrors}
               onCopyLink={handleCopyLink}
               linkCopied={linkCopied}
+              uiMode={uiMode}
+              onToggleUiMode={toggleUiMode}
+              onReset={handleResetSettings}
             />
           </div>
         </div>
@@ -484,6 +524,7 @@ function AppShell({ scope }: { scope: string | null }) {
               onSaveSnapshot={handleSaveSnapshot}
               onLoadSnapshot={handleLoadSnapshot}
               onRemoveSnapshot={handleRemoveSnapshot}
+              uiMode={uiMode}
             />
           </ErrorBoundary>
 
@@ -547,10 +588,15 @@ function AppShell({ scope }: { scope: string | null }) {
                       comparison={comparison}
                     />
                   ) : (
-                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} updateInput={updateInput} />
+                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} uiMode={uiMode} />
                   ))}
                 {activeTab === "montecarlo" && (
-                  <MonteCarloPanel inputs={activeInputs} darkMode={darkMode} updateInput={updateInput} />
+                  <MonteCarloPanel
+                    inputs={activeInputs}
+                    darkMode={darkMode}
+                    updateInput={updateInput}
+                    uiMode={uiMode}
+                  />
                 )}
                 {activeTab === "rente" && (
                   <RenteRetraiteTab
@@ -564,6 +610,7 @@ function AppShell({ scope }: { scope: string | null }) {
                     isStale={decumStale}
                     running={decumRunning}
                     progress={decumProgress}
+                    uiMode={uiMode}
                   />
                 )}
                 {activeTab === "goal" && (

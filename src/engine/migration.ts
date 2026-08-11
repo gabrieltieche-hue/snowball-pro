@@ -4,6 +4,17 @@ import { CURRENT_TAX_YEAR } from "./taxRules"
 export const V4_SETTINGS_KEY = "snowball_v4_settings"
 export const SETTINGS_KEY = "snowball_v5_settings"
 
+// Version du format d'état stocké (audit) : chaque enveloppe écrite porte un
+// numéro de schéma, pour migrer proprement quand SimulationInputs évolue. La
+// LECTURE accepte à la fois l'enveloppe versionnée ET le format historique
+// (objet plat) — aucune donnée existante n'est perdue.
+export const STORAGE_VERSION = 1
+
+/** Enveloppe l'état avant écriture : `{ version, inputs }` (schéma versionné). */
+export function serializeInputs(inputs: SimulationInputs): string {
+  return JSON.stringify({ version: STORAGE_VERSION, inputs })
+}
+
 export interface V4Settings {
   p: number
   m: number
@@ -196,18 +207,26 @@ export function parseStoredInputs(raw: string | null): SimulationInputs {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return DEFAULT_INPUTS
 
+    // Enveloppe versionnée `{ version, inputs }` (écrite depuis v6.5) : on
+    // lit l'état à partir du sous-objet inputs. Format historique (objet plat,
+    // v5) : on lit parsed directement. Les deux chemins partagent la même
+    // liste de clés connues — les clés inconnues sont ignorées sans effet.
+    const source =
+      (parsed.version as number | undefined) === STORAGE_VERSION && parsed.inputs
+        ? (parsed.inputs as Record<string, unknown>)
+        : parsed
     const merged = { ...DEFAULT_INPUTS } as SimulationInputs
     const target = merged as unknown as Record<string, unknown>
     for (const key of NUMERIC_KEYS) {
-      const v = parsed[key]
+      const v = source[key]
       if (typeof v === "number" && Number.isFinite(v)) target[key] = v
     }
     for (const key of BOOLEAN_KEYS) {
-      const v = parsed[key]
+      const v = source[key]
       if (typeof v === "boolean") target[key] = v
     }
     for (const key of STRING_KEYS) {
-      const v = parsed[key]
+      const v = source[key]
       const allowed = ENUM_VALUES[key]
       if (typeof v === "string" && allowed && allowed.includes(v)) target[key] = v
     }

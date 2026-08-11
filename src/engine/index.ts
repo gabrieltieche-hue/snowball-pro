@@ -1,5 +1,13 @@
 export { mulberry32 } from "./rng"
-export { v4SettingsToInputs, parseStoredInputs, DEFAULT_INPUTS, V4_SETTINGS_KEY, SETTINGS_KEY } from "./migration"
+export {
+  v4SettingsToInputs,
+  parseStoredInputs,
+  serializeInputs,
+  DEFAULT_INPUTS,
+  V4_SETTINGS_KEY,
+  SETTINGS_KEY,
+  STORAGE_VERSION,
+} from "./migration"
 export type { V4Settings } from "./migration"
 export { fmtCurrency, fmtCompact, fmtPercent, fmtDecimal, parseCurrencyInput, escapeCsvCell } from "./formatting"
 export { roundCent, clamp, ENVELOPE_CONFIGS, computeTaxBreakdown, calcXIRR } from "./taxes"

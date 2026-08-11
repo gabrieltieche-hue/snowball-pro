@@ -15,6 +15,7 @@ import {
 import { HelpTip } from "../shared/HelpTip"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
+import { ScenarioSelector } from "../Simulation/ScenarioSelector"
 import { SnapshotPanel } from "./SnapshotPanel"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SegmentedControl } from "../shared/SegmentedControl"
@@ -31,6 +32,16 @@ import {
 } from "../../engine"
 import type { ValidationError } from "../../engine"
 import type { SavedSnapshot, SimulationInputs, YearRow } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
+
+// Perte maximale acceptée associée à chaque profil de risque (audit) : le
+// choix du profil modifie RÉELLEMENT le verdict « plan trop risqué » de
+// l'onglet Rente (au lieu de n'être qu'une étiquette).
+const RISK_TOLERANCE_DEFAULTS: Record<SimulationInputs["riskTolerance"], number> = {
+  prudent: 0.2,
+  equilibre: 0.35,
+  audacieux: 0.5,
+}
 
 // Préférence UI (v6.2) : l'état replié/déplié de la sidebar persiste d'une
 // visite à l'autre — comme le thème, c'est une préférence d'affichage, pas
@@ -54,6 +65,8 @@ interface SidebarProps {
   onLoadSnapshot: (id: string) => void
   onRemoveSnapshot: (id: string) => void
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
+  /** Mode Débutant / Avancé (audit) : masque PFU, TMI et la formule de Fisher. */
+  uiMode?: UiMode
 }
 
 export function Sidebar({
@@ -65,6 +78,7 @@ export function Sidebar({
   onLoadSnapshot,
   onRemoveSnapshot,
   updateInput,
+  uiMode = "debutant",
 }: SidebarProps) {
   const lastRow = rows[rows.length - 1]
   // Les deux échelles sont TOUJOURS affichées côte à côte : le montant qui
@@ -198,6 +212,11 @@ export function Sidebar({
               warning={fieldWarning("duration")?.message}
               onChange={v => updateInput("duration", v)}
             />
+            {/* Scénario de rendement (v6.4.1) : le choix prudent / central /
+            optimiste a quitté le haut de l'onglet Projection — il vit ici,
+            dans les réglages, et le résultat s'affiche directement à
+            l'ouverture. Même updateInput : la courbe lissée suit le choix. */}
+            <ScenarioSelector inputs={inputs} updateInput={updateInput} />
           </CollapsibleSection>
 
           {/* Pourquoi ces chiffres ? — le contenu pédagogique (rendements,
@@ -240,19 +259,23 @@ export function Sidebar({
                 Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
                 <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
                 gain composé) puis <strong className="text-text">l'inflation</strong> (2,1 %/an). Le Simulateur applique
-                le scénario choisi en haut de l'onglet (défaut : <strong className="text-text">Central</strong> = ligne
+                le scénario choisi dans « Votre épargne » (défaut : <strong className="text-text">Central</strong> = ligne
                 composée) chaque année — courbe lissée, sans krachs.
               </p>
-              <p className="text-[9px] text-text-dim mt-1.5 leading-relaxed border-t border-primary/10 pt-1.5">
-                Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est{" "}
-                <span className="mono">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> — l'inflation rogne aussi vos
-                gains, pas seulement votre capital de départ.
-              </p>
+              {/* Formule de Fisher : réservée au mode Avancé (audit). */}
+              {uiMode === "avance" && (
+                <p className="text-[9px] text-text-dim mt-1.5 leading-relaxed border-t border-primary/10 pt-1.5">
+                  Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est{" "}
+                  <span className="mono">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> — l'inflation rogne aussi vos
+                  gains, pas seulement votre capital de départ.
+                </p>
+              )}
             </div>
           </CollapsibleSection>
 
-          {/* Paramètres avancés */}
-          <CollapsibleSection title="Paramètres avancés" icon={<Settings2 size={12} />}>
+          {/* Paramètres avancés — replié par défaut (audit) : seuls les réglages
+              essentiels s'imposent à la lecture. */}
+          <CollapsibleSection title="Paramètres avancés" icon={<Settings2 size={12} />} defaultOpen={false}>
             <SliderInput
               label="Augmentation de votre épargne (%/an)"
               id="indexation"
@@ -307,8 +330,9 @@ export function Sidebar({
             />
           </CollapsibleSection>
 
-          {/* Enveloppe fiscale */}
-          <CollapsibleSection title="Compte d'investissement" icon={<Landmark size={12} />}>
+          {/* Enveloppe fiscale — repliée par défaut (audit) : le compte reste
+              visible dans le résumé replié et « Votre épargne ». */}
+          <CollapsibleSection title="Compte d'investissement" icon={<Landmark size={12} />} defaultOpen={false}>
             <EnvelopeSelector value={inputs.envelope} onChange={v => updateInput("envelope", v)} />
             {inputs.envelope === "pea" && (
               <div className="mt-3 animate-fade-in">
@@ -348,30 +372,54 @@ export function Sidebar({
             )}
             {inputs.envelope === "cto" && (
               <div className="mt-3 space-y-2 animate-fade-in">
-                {/* PFU : terme dur pour un débutant — une ligne d'explication au
-                survol, sans alourdir le libellé (v6). */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                    Fiscalité du CTO
-                  </span>
-                  <HelpTip
-                    text={`PFU : Prélèvement Forfaitaire Unique — ${fmtTaxPercent(pfuRate(rules))} sur les gains (${fmtTaxPercent(
-                      rules.socialRate,
-                    )} de prélèvements sociaux + ${fmtTaxPercent(rules.pfuIncomeRate)} d'impôt sur le revenu), sans barème.`}
-                  />
-                </div>
-                <SegmentedControl
-                  value={inputs.ctoTaxMode}
-                  onChange={v => updateInput("ctoTaxMode", v)}
-                  ariaLabel="Fiscalité du CTO"
-                  options={[
-                    { id: "pfu", label: `PFU ${fmtTaxPercent(pfuRate(rules))}`, sub: "impôt unique" },
-                    { id: "bareme", label: "Barème", sub: `${fmtTaxPercent(rules.socialRate)} + impôt à votre TMI` },
-                  ]}
-                />
+                {/* PFU : le sélecteur est réservé au mode Avancé (audit) ; en
+                    Débutant on affiche une ligne simple — l'impôt unique reste
+                    le défaut et le calcul ne change pas. */}
+                {uiMode === "avance" ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                        Fiscalité du CTO
+                      </span>
+                      <HelpTip
+                        text={`PFU : Prélèvement Forfaitaire Unique — ${fmtTaxPercent(pfuRate(rules))} sur les gains (${fmtTaxPercent(
+                          rules.socialRate,
+                        )} de prélèvements sociaux + ${fmtTaxPercent(rules.pfuIncomeRate)} d'impôt sur le revenu), sans barème.`}
+                      />
+                    </div>
+                    <SegmentedControl
+                      value={inputs.ctoTaxMode}
+                      onChange={v => updateInput("ctoTaxMode", v)}
+                      ariaLabel="Fiscalité du CTO"
+                      options={[
+                        { id: "pfu", label: `PFU ${fmtTaxPercent(pfuRate(rules))}`, sub: "impôt unique" },
+                        {
+                          id: "bareme",
+                          label: "Barème",
+                          sub: `${fmtTaxPercent(rules.socialRate)} + impôt à votre TMI`,
+                        },
+                      ]}
+                    />
+                  </>
+                ) : inputs.ctoTaxMode === "bareme" ? (
+                  <p className="text-[10px] text-text-muted leading-relaxed rounded-lg bg-glass px-3 py-2">
+                    Barème progressif : <strong className="text-text">{fmtTaxPercent(rules.socialRate)}</strong> de
+                    prélèvements sociaux + impôt sur le revenu à votre TMI de{" "}
+                    <strong className="text-text">{(inputs.tmi * 100).toFixed(0)} %</strong> (réglage hérité du mode
+                    Avancé).
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-text-muted leading-relaxed rounded-lg bg-glass px-3 py-2">
+                    Impôt unique de <strong className="text-text">{fmtTaxPercent(pfuRate(rules))}</strong> sur vos gains
+                    (prélèvement forfaitaire) — pour le barème progressif, passez en mode Avancé.
+                  </p>
+                )}
               </div>
             )}
-            {(inputs.envelope === "per" || (inputs.envelope === "cto" && inputs.ctoTaxMode === "bareme")) && (
+            {/* TMI : toujours visible pour le PER (la déduction d'entrée en
+                dépend) ; pour le CTO en barème, réservée au mode Avancé (audit). */}
+            {(inputs.envelope === "per" ||
+              (uiMode === "avance" && inputs.envelope === "cto" && inputs.ctoTaxMode === "bareme")) && (
               <div className="mt-3 animate-fade-in">
                 <SliderInput
                   label="Tranche marginale d'imposition (%)"
@@ -411,8 +459,8 @@ export function Sidebar({
           (2000, 2008, 2022…) sont déjà dans les rendements rejoués par toutes
           les simulations — en simuler un les compterait deux fois. */}
 
-          {/* Frais */}
-          <CollapsibleSection title="Frais" icon={<Percent size={12} />}>
+          {/* Frais — repliés par défaut (audit). */}
+          <CollapsibleSection title="Frais" icon={<Percent size={12} />} defaultOpen={false}>
             <ExpenseForm inputs={inputs} updateInput={updateInput} />
           </CollapsibleSection>
 
@@ -473,11 +521,16 @@ export function Sidebar({
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
                   Tolérance au risque
                 </span>
-                <HelpTip text="Votre profil de risque sert à l'alerte « plan trop risqué » de l'onglet Rente (pire repli historique vs perte acceptée)." />
+                <HelpTip text="Votre profil de risque sert à l'alerte « plan trop risqué » de l'onglet Rente (pire repli historique vs perte acceptée) et recalibre la perte maximale acceptée (Prudent 20 %, Équilibré 35 %, Audacieux 50 %)." />
               </div>
               <SegmentedControl
                 value={inputs.riskTolerance}
-                onChange={v => updateInput("riskTolerance", v)}
+                onChange={v => {
+                  // Le profil modifie RÉELLEMENT le verdict de risque : changer
+                  // de profil recalibre la perte maximale acceptée (audit).
+                  updateInput("riskTolerance", v)
+                  updateInput("maxDrawdownTolerance", RISK_TOLERANCE_DEFAULTS[v])
+                }}
                 ariaLabel="Tolérance au risque"
                 options={[
                   { id: "prudent", label: "Prudent", sub: "repli faible" },
@@ -498,6 +551,17 @@ export function Sidebar({
               suffix="le pire repli de bourse que vous acceptez de traverser"
               onChange={v => updateInput("maxDrawdownTolerance", v / 100)}
             />
+            {/* Cohérence âge / durée / retraite (audit) : la projection doit
+                atteindre l'âge de retraite — sinon le capital à décumuler ne
+                correspond pas au départ en retraite. */}
+            {inputs.ageRetirement >= inputs.ageNow && inputs.ageNow + inputs.duration !== inputs.ageRetirement && (
+              <p className="text-[9px] text-warning leading-snug rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-2">
+                Âge actuel ({inputs.ageNow}) + durée ({inputs.duration} ans) ={" "}
+                <strong>{inputs.ageNow + inputs.duration} ans</strong>, mais retraite prévue à{" "}
+                <strong>{inputs.ageRetirement} ans</strong> — le capital de l'onglet Rente ne correspond pas à votre
+                départ en retraite.
+              </p>
+            )}
           </CollapsibleSection>
 
           {/* Insight */}

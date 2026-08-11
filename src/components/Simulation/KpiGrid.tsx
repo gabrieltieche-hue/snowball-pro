@@ -4,9 +4,12 @@ import { fmtCurrency } from "../../engine"
 import { HelpTip } from "../shared/HelpTip"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { KPIs } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 interface KpiGridProps {
   kpis: KPIs | null
+  /** Mode Débutant / Avancé (audit) : le terme « XIRR » est masqué en Débutant. */
+  uiMode?: UiMode
 }
 
 const GOLD = "var(--color-value-gold)"
@@ -20,6 +23,8 @@ interface KpiCard {
   digits?: number
   currency?: boolean
   sub: string
+  /** Variante du sous-titre sans jargon, pour le mode Débutant (audit). */
+  subDebutant?: string
   icon: LucideIcon
   visible?: (k: KPIs) => boolean
 }
@@ -37,6 +42,8 @@ const CARDS: KpiCard[] = [
     suffix: "%",
     color: GOLD,
     sub: "XIRR brut (avant inflation) de VOTRE projection — la courbe lissée applique la moyenne des années",
+    subDebutant:
+      "rendement annuel moyen de votre projection, avant inflation — la courbe lissée applique la moyenne des années",
     icon: TrendingUp,
   },
   {
@@ -105,7 +112,7 @@ const CARDS: KpiCard[] = [
   },
 ]
 
-export function KpiGrid({ kpis }: KpiGridProps) {
+export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
   if (!kpis) return null
 
   const cards = CARDS.filter(card => !card.visible || card.visible(kpis))
@@ -135,9 +142,9 @@ export function KpiGrid({ kpis }: KpiGridProps) {
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">
                   {kpi.label}
-                  {/* XIRR : terme technique — une ligne d'explication au survol
-                      (v6), le sous-titre reste la source principale. */}
-                  {kpi.key === "xirr" && (
+                  {/* XIRR : terme technique masqué en mode Débutant (audit) ;
+                      le sous-titre devient la source principale. */}
+                  {kpi.key === "xirr" && uiMode === "avance" && (
                     <HelpTip
                       text="XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, avant inflation."
                       className="ml-1 align-[-1px]"
@@ -154,7 +161,11 @@ export function KpiGrid({ kpis }: KpiGridProps) {
               <div className="mono text-lg font-bold mt-2 leading-tight" style={{ color: kpi.color }}>
                 {display}
               </div>
-              <div className="text-[10px] text-text-muted mt-auto pt-2 leading-snug">{kpi.sub}</div>
+              <div className="text-[10px] text-text-muted mt-auto pt-2 leading-snug">
+                {kpi.key === "xirr" && uiMode === "debutant" && "subDebutant" in kpi
+                  ? (kpi as KpiCard & { subDebutant: string }).subDebutant
+                  : kpi.sub}
+              </div>
             </div>
           )
         })}

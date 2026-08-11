@@ -3,20 +3,24 @@ import { AlertTriangle, BarChart3, Dices, Play, ShieldCheck } from "lucide-react
 import { fmtCurrency, fmtDecimal, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
+import { DualAmount } from "../shared/DualAmount"
 import { HelpTip } from "../shared/HelpTip"
 import { Toggle } from "../shared/Toggle"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SectionHeader } from "../shared/SectionHeader"
 import { cn } from "../../utils/cn"
 import type { MonteCarloResult, SimulationInputs } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 interface MonteCarloPanelProps {
   inputs: SimulationInputs
   darkMode: boolean
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
+  /** Mode Débutant / Avancé (audit) : masque les notions techniques (Pástor–Stambaugh…). */
+  uiMode?: UiMode
 }
 
-export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPanelProps) {
+export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debutant" }: MonteCarloPanelProps) {
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -114,21 +118,24 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
     ? [
         {
           label: "Mauvaise période de bourse (P10)",
-          value: mcResult.p10[mcResult.p10.length - 1] ?? 0,
+          nominal: mcResult.p10[mcResult.p10.length - 1] ?? 0,
+          real: mcResult.p10r[mcResult.p10r.length - 1] ?? 0,
           tone: "var(--color-danger)",
           sub: "1 cas sur 10 fait encore moins bien",
           help: "P10 = percentile 10 : seuls 10 % des scénarios finissent avec MOINS que ce montant. C'est le cas défavorable — 9 fois sur 10, vous ferez mieux.",
         },
         {
           label: "Scénario moyen (P50)",
-          value: mcResult.p50[mcResult.p50.length - 1] ?? 0,
+          nominal: mcResult.p50[mcResult.p50.length - 1] ?? 0,
+          real: mcResult.p50r[mcResult.p50r.length - 1] ?? 0,
           tone: "var(--color-primary)",
           sub: "le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien",
           help: "P50 = la médiane : dans la moitié des scénarios le capital final est supérieur, dans l'autre moitié il est inférieur. Planifiez sur ce chiffre.",
         },
         {
           label: "Bonne période de bourse (P90)",
-          value: mcResult.p90[mcResult.p90.length - 1] ?? 0,
+          nominal: mcResult.p90[mcResult.p90.length - 1] ?? 0,
+          real: mcResult.p90r[mcResult.p90r.length - 1] ?? 0,
           tone: "var(--color-success)",
           sub: "1 cas sur 10 fait encore mieux",
           help: "P90 = percentile 90 : 90 % des scénarios finissent avec MOINS que ce montant. C'est le cas favorable — ne le planifiez pas comme certitude.",
@@ -186,27 +193,30 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         {/* Options de fiabilité du modèle : l'honnêteté des estimations prime.
             Toutes ON par défaut (chaque option reste désactivable pour
             comparer), mais le panneau est replié par défaut (v6) : il n'impose
-            plus ses options à chaque visite, on l'ouvre à la demande. */}
-        <CollapsibleSection
-          title="Fiabilité du modèle"
-          icon={<ShieldCheck size={12} className="text-primary" />}
-          defaultOpen={false}
-        >
-          <div className="space-y-2">
-            <Toggle
-              checked={inputs.parameterUncertainty}
-              onChange={v => updateInput("parameterUncertainty", v)}
-              label="Incertitude des paramètres"
-              sub="La moyenne 10,07 % et la volatilité ne sont PAS des vérités connues : chaque scénario tire les siennes autour des estimations historiques (Pástor–Stambaugh). Élargit honnêtement P10 et P90."
-            />
-            <Toggle
-              checked={inputs.extendedHistory}
-              onChange={v => updateInput("extendedHistory", v)}
-              label="Historique étendu (100 ans)"
-              sub="Rejoue 100 ans de rendements réels (S&P 500 1926-1969 + MSCI World 1970-2025) au lieu de 56 : les krachs de 1929, 1931, 1933 sont rejoués."
-            />
-          </div>
-        </CollapsibleSection>
+            plus ses options à chaque visite, on l'ouvre à la demande. Réservé
+            au mode Avancé (audit) : Pástor–Stambaugh est une notion technique. */}
+        {uiMode === "avance" && (
+          <CollapsibleSection
+            title="Fiabilité du modèle"
+            icon={<ShieldCheck size={12} className="text-primary" />}
+            defaultOpen={false}
+          >
+            <div className="space-y-2">
+              <Toggle
+                checked={inputs.parameterUncertainty}
+                onChange={v => updateInput("parameterUncertainty", v)}
+                label="Incertitude des paramètres"
+                sub="La moyenne 10,07 % et la volatilité ne sont PAS des vérités connues : chaque scénario tire les siennes autour des estimations historiques (Pástor–Stambaugh). Élargit honnêtement P10 et P90."
+              />
+              <Toggle
+                checked={inputs.extendedHistory}
+                onChange={v => updateInput("extendedHistory", v)}
+                label="Historique étendu (100 ans)"
+                sub="Rejoue 100 ans de rendements réels (S&P 500 1926-1969 + MSCI World 1970-2025) au lieu de 56 : les krachs de 1929, 1931, 1933 sont rejoués."
+              />
+            </div>
+          </CollapsibleSection>
+        )}
 
         {!mcResult && !running && (
           /* M14 — le CTA vit DANS l'état vide (avant, il était en haut de
@@ -263,10 +273,9 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
               {inputs.extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité française incluse
             </p>
             <p className="text-[10px] text-text-dim italic">
-              Montants <strong className="text-text not-italic">nets d'impôts</strong> (liquidation théorique), en{" "}
-              <strong className="text-text not-italic">euros courants</strong> (valeur sur le compte) ou en{" "}
-              <strong className="text-text not-italic">euros d'aujourd'hui</strong> selon le toggle du graphique — les
-              cartes ci-dessous sont en euros courants.
+              Montants <strong className="text-text not-italic">nets d'impôts</strong> (liquidation théorique) — les
+              cartes ci-dessous suivent le toggle « Euros d'aujourd'hui » (la valeur du compte reste affichée en
+              dessous), comme les cartes de l'onglet Projection.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
@@ -281,7 +290,10 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                     </p>
                     {card.help && <HelpTip text={card.help} className="shrink-0 -mt-0.5" />}
                   </div>
-                  <p className="mono text-lg font-bold text-text">{fmtCurrency(card.value)}</p>
+                  {/* Les DEUX échelles suivent le toggle « Euros d'aujourd'hui »
+                      (même convention que les cartes de l'onglet Projection) :
+                      la valeur du compte reste toujours visible. */}
+                  <DualAmount nominal={card.nominal} real={card.real} showReal={inputs.showReal} color={card.tone} />
                   <p className="text-[10px] text-text-dim mt-1.5">{card.sub}</p>
                 </div>
               ))}

@@ -100,6 +100,10 @@ export interface DecumulationResult {
   withdrawals: number[]
   /** Retraits NETS moyens par année (après fiscalité des retraits). */
   withdrawalsNet: number[]
+  /** Retraits nets moyens par année, déflatés en euros du DÉPART retraite
+   * (pouvoir d'achat) — l'échelle honnête pour comparer à des dépenses
+   * exprimées en euros d'aujourd'hui. */
+  withdrawalsNetReal: number[]
   /** Total des impôts payés sur les retraits, moyenné sur toutes les sims. */
   totalTaxPaid: number
   /** Total des frais de gestion prélevés pendant le décaissement, moyenné. */

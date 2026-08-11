@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent, ReactNode } from "react"
 import { ChevronDown, KeyRound, LogOut, Trash2, User, UserPlus } from "lucide-react"
-import {
-  browserStorage,
-  changePassword,
-  deleteAccount,
-  getAccount,
-  logout,
-} from "../../auth/auth"
+import { browserStorage, changePassword, deleteAccount, getAccount, logout } from "../../auth/auth"
 import { removeScopedData } from "../../auth/storage"
 import { syncSession, useSession } from "../../auth/store"
 import { navigateTo } from "../../router"
@@ -126,7 +120,9 @@ export function AccountMenu() {
           {panel === "menu" && !account && (
             <div className="p-2 space-y-1">
               <p className="text-[10px] text-text-dim px-3 pt-1 pb-2 leading-relaxed">
-                Compte invité — vos simulations restent sur cet appareil.
+                Compte invité — vos simulations restent sur cet appareil. Créer un compte ne transfère rien en ligne :
+                il crée des espaces de simulation séparés et protégés par mot de passe, pour plusieurs projets sur le
+                même appareil.
               </p>
               <button type="button" role="menuitem" className={itemClass} onClick={() => navigateTo("login")}>
                 <User size={13} className="text-primary" aria-hidden /> Se connecter
@@ -150,7 +146,12 @@ export function AccountMenu() {
                 <LogOut size={13} className="text-primary" aria-hidden /> Se déconnecter
               </button>
               <div className="border-t border-border/70 pt-1 mt-1">
-                <button type="button" role="menuitem" className={cn(itemClass, "text-danger hover:bg-danger/10")} onClick={() => setPanel("delete")}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={cn(itemClass, "text-danger hover:bg-danger/10")}
+                  onClick={() => setPanel("delete")}
+                >
                   <Trash2 size={13} aria-hidden /> Supprimer mon compte
                 </button>
               </div>
@@ -189,7 +190,15 @@ function PanelShell({ title, onBack, children }: { title: string; onBack: () => 
   )
 }
 
-function PasswordPanel({ accountName, onClose, onBack }: { accountName: string; onClose: () => void; onBack: () => void }) {
+function PasswordPanel({
+  accountName,
+  onClose,
+  onBack,
+}: {
+  accountName: string
+  onClose: () => void
+  onBack: () => void
+}) {
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -206,7 +215,11 @@ function PasswordPanel({ accountName, onClose, onBack }: { accountName: string; 
       return
     }
     if (!session) return
-    const result = changePassword(browserStorage, { userId: session.userId, currentPassword: current, newPassword: next })
+    const result = changePassword(browserStorage, {
+      userId: session.userId,
+      currentPassword: current,
+      newPassword: next,
+    })
     if (!result.ok) {
       setError(result.error)
       return

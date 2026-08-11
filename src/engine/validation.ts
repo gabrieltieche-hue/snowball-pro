@@ -174,6 +174,38 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
     })
   }
 
+  // Cohérence âge / durée / retraite (audit) : le capital projeté par le
+  // Simulateur (âge actuel + durée de projection) doit atteindre l'âge de
+  // retraite du profil — sinon le « capital à décumuler » de l'onglet Rente
+  // ne correspond pas à l'âge où la rente démarre.
+  if (inputs.ageRetirement < inputs.ageNow) {
+    errors.push({
+      field: "ageRetirement",
+      message: `Âge de retraite (${inputs.ageRetirement} ans) antérieur à l'âge actuel (${inputs.ageNow} ans) : la rente démarrerait avant aujourd'hui.`,
+      severity: "error",
+      value: inputs.ageRetirement,
+      min: inputs.ageNow,
+    })
+  }
+  if (inputs.ageRetirement >= inputs.ageNow) {
+    const ageAtEnd = inputs.ageNow + inputs.duration
+    if (ageAtEnd < inputs.ageRetirement) {
+      errors.push({
+        field: "ageRetirement",
+        message: `La projection s'arrête à ${ageAtEnd} ans (âge actuel ${inputs.ageNow} + durée ${inputs.duration} ans), avant la retraite prévue à ${inputs.ageRetirement} ans : le capital projeté ne couvre pas votre retraite. Allongez la durée ou avancez l'âge de retraite.`,
+        severity: "warning",
+        value: inputs.ageRetirement,
+      })
+    } else if (ageAtEnd > inputs.ageRetirement) {
+      errors.push({
+        field: "ageRetirement",
+        message: `La projection s'étend jusqu'à ${ageAtEnd} ans alors que votre retraite démarre à ${inputs.ageRetirement} ans : les ${ageAtEnd - inputs.ageRetirement} dernières années de projection ne servent pas au capital de la rente (ou réduisez la durée).`,
+        severity: "warning",
+        value: inputs.ageRetirement,
+      })
+    }
+  }
+
   return errors
 }
 

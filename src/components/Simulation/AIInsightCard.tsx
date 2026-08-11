@@ -3,14 +3,17 @@ import { Sparkles } from "lucide-react"
 import { deflationFactor, fmtCurrency, getHistoricalDataset } from "../../engine"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow, KPIs } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 interface AIInsightCardProps {
   rows: YearRow[]
   inputs: SimulationInputs
   kpis: KPIs | null
+  /** Mode Débutant / Avancé (audit) : le terme « XIRR » est masqué en Débutant. */
+  uiMode?: UiMode
 }
 
-export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
+export function AIInsightCard({ rows, inputs, kpis, uiMode = "debutant" }: AIInsightCardProps) {
   const lastRow = rows[rows.length - 1]
   if (!lastRow || !kpis) return null
 
@@ -45,15 +48,19 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
   // comparer au XIRR brut mélangerait les étages (v5.7.1).
   const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
   const gap = Math.abs(effectiveReturn - datasetAvg)
+  // Le terme « XIRR » est réservé au mode Avancé (audit) ; en Débutant, on
+  // dit « rendement annuel (versements inclus) » — même chiffre, sans jargon.
+  const returnLabel =
+    uiMode === "avance" ? "(XIRR brut avant inflation, versements inclus)" : "(avant inflation, versements inclus)"
   if (gap > 0.5) {
     insights.push(
       effectiveReturn > datasetAvg
-        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) dépasse la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
-        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) reste sous la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
+        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} dépasse la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
+        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} reste sous la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
     )
   } else if (effectiveReturn > 0) {
     insights.push(
-      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% (XIRR brut avant inflation, versements inclus) est proche de la moyenne BRUTE de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
+      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} est proche de la moyenne BRUTE de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
     )
   }
   if (insights.length === 0) {
@@ -63,11 +70,7 @@ export function AIInsightCard({ rows, inputs, kpis }: AIInsightCardProps) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-gold rounded-2xl p-5"
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-gold rounded-2xl p-5">
       <SectionHeader title="Analyse & conseils" icon={Sparkles} level="card" />
       {insights.map((text, i) => (
         <p key={i} className="text-xs text-text-muted leading-relaxed mb-1 flex items-start gap-2">

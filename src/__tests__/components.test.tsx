@@ -215,8 +215,11 @@ describe("comparaison A/B", () => {
     "entre en comparaison, édite le scénario B, puis en sort",
     () => {
       render(<App />)
+      // « Comparer » vit désormais dans le menu « ⋯ » du header (audit).
+      const openMore = () => fireEvent.click(screen.getByRole("button", { name: "Autres actions" }))
 
-      fireEvent.click(screen.getByRole("button", { name: /comparer/i }))
+      openMore()
+      fireEvent.click(screen.getByRole("menuitem", { name: /comparer deux scénarios/i }))
       expect(screen.getByText("Mode Comparaison actif")).toBeInTheDocument()
       // Le panneau édite désormais le scénario B : le badge Sidebar ET le
       // libellé de la barre de comparaison l'affichent → getAllByText.
@@ -226,7 +229,8 @@ describe("comparaison A/B", () => {
       fireEvent.change(slider, { target: { value: "30" } })
       expect(slider).toHaveValue("30")
 
-      fireEvent.click(screen.getByRole("button", { name: /quitter la comparaison/i }))
+      openMore()
+      fireEvent.click(screen.getByRole("menuitem", { name: /quitter la comparaison/i }))
       expect(screen.queryByText("Mode Comparaison actif")).not.toBeInTheDocument()
     },
     APP_TIMEOUT,
@@ -339,6 +343,9 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
   })
 
   it("Sidebar (v6) : l'échelle pédagogique des rendements vit dans « Pourquoi ces chiffres ? », repliée par défaut", () => {
+    // La formule de Fisher est une notion technique : mode Avancé pour
+    // vérifier le contenu intégral (audit — masquée en Débutant).
+    localStorage.setItem("snowball_v5_ui_mode", "avance")
     const { container } = render(<App />)
     // v6 : le contenu pédagogique (rendement moyen MSCI World + échelle
     // 10,07 → 8,22 → 5,99 + Fisher) a quitté le chemin de réglages pour un
@@ -384,6 +391,8 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     render(<App />)
     // Demande utilisateur : l'affichage par défaut montre les vraies valeurs
     // nettes d'inflation — le montant sur le compte reste affiché partout.
+    // Le toggle vit dans « Paramètres avancés », replié par défaut (audit).
+    fireEvent.click(screen.getByRole("button", { name: /paramètres avancés/i }))
     const toggle = screen.getByRole("switch", { name: /euros d'aujourd'hui/i })
     expect(toggle).toBeChecked()
   })
@@ -406,12 +415,50 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
   })
 })
 
+describe("scénario de rendement — déplacé dans les réglages « Votre épargne » (v6.4.1)", () => {
+  it(
+    "le sélecteur vit dans la sidebar et change le résultat de la projection",
+    () => {
+      render(<App />)
+      // Le sélecteur a quitté le haut de l'onglet Projection : il vit dans la
+      // section « Votre épargne » de la sidebar (ouverte par défaut).
+      expect(screen.getByText("Scénario de rendement")).toBeInTheDocument()
+
+      const hero = screen.getByLabelText("Résultat principal de la projection")
+      // Le bandeau « médiane historique » est fragmenté par des <strong> (même
+      // technique que le test « Pourquoi ces chiffres ? ») : on compare le
+      // texte complet de la sidebar plutôt que queryByText.
+      const sidebarText = () =>
+        (document.querySelector("aside")?.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+      // Défaut : Central → le bandeau « médiane historique » est visible.
+      expect(sidebarText()).toContain("médiane historique")
+      const before = hero.textContent
+
+      // Changer de scénario depuis les réglages → la projection change. Le
+      // groupe est un radiogroup (même pattern ARIA que « Tolérance au
+      // risque ») : on cible les radios, pas les boutons.
+      fireEvent.click(screen.getByRole("radio", { name: /^Optimiste/ }))
+      expect(hero.textContent).not.toBe(before)
+      // Le bandeau « médiane historique » ne concerne que le scénario central.
+      expect(sidebarText()).not.toContain("médiane historique")
+
+      // Retour au Central → le bandeau réapparaît et le résultat revient.
+      fireEvent.click(screen.getByRole("radio", { name: /^Central/ }))
+      expect(sidebarText()).toContain("médiane historique")
+      expect(hero.textContent).toBe(before)
+    },
+    APP_TIMEOUT,
+  )
+})
+
 describe("P0-2 — libellé PER : pas d'abattement de 10 % inventé (audit v6)", () => {
   it(
     "le suffixe TMI en PER explique la sortie réelle (TMI pleine sans abattement, gains au PFU)",
     () => {
       render(<App />)
-      // Sélectionne l'enveloppe PER / PERIN dans le sélecteur de compte.
+      // Le sélecteur de compte vit dans « Compte d'investissement », repliée
+      // par défaut (audit) — on déplie puis on sélectionne PER / PERIN.
+      fireEvent.click(screen.getByRole("button", { name: /compte d'investissement/i }))
       fireEvent.click(screen.getByRole("button", { name: /PER \/ PERIN/i }))
       // Le curseur TMI apparaît pour le PER.
       expect(screen.getByRole("slider", { name: "Tranche marginale d'imposition (%)" })).toBeInTheDocument()
@@ -550,8 +597,13 @@ describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () =>
   // pour les voir et les basculer (demande utilisateur).
   const openReliability = () => fireEvent.click(screen.getByRole("button", { name: /fiabilité du modèle/i }))
 
-  it("le panneau « Fiabilité du modèle » est replié par défaut (v6)", () => {
+  it("mode Débutant (défaut) : la section « Fiabilité du modèle » est masquée (audit)", () => {
     render(<MonteCarloPanel inputs={DEFAULT_INPUTS} darkMode={false} updateInput={() => {}} />)
+    expect(screen.queryByRole("button", { name: /fiabilité du modèle/i })).not.toBeInTheDocument()
+  })
+
+  it("mode Avancé : le panneau « Fiabilité du modèle » est replié par défaut (v6)", () => {
+    render(<MonteCarloPanel inputs={DEFAULT_INPUTS} darkMode={false} updateInput={() => {}} uiMode="avance" />)
     // Le titre est visible, mais pas les options tant qu'on ne déplie pas.
     expect(screen.getByRole("button", { name: /fiabilité du modèle/i })).toHaveAttribute("aria-expanded", "false")
     expect(screen.queryByRole("switch", { name: /incertitude des paramètres/i })).not.toBeInTheDocument()
@@ -564,6 +616,7 @@ describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () =>
         inputs={{ ...DEFAULT_INPUTS, parameterUncertainty: true, extendedHistory: true }}
         darkMode={false}
         updateInput={updateInput}
+        uiMode="avance"
       />,
     )
     openReliability()
@@ -578,6 +631,7 @@ describe("fiabilité v5.5.0 — MonteCarloPanel : options et histogramme", () =>
         inputs={{ ...DEFAULT_INPUTS, parameterUncertainty: false, extendedHistory: false }}
         darkMode={false}
         updateInput={updateInput}
+        uiMode="avance"
       />,
     )
     openReliability()
@@ -630,8 +684,13 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
     runDecum: vi.fn(),
   }
 
-  it("la section « Fiabilité & sûreté des estimations » est repliée par défaut (v6)", () => {
+  it("mode Débutant (défaut) : « Fiabilité & sûreté » est masquée (audit)", () => {
     render(<RenteRetraiteTab {...baseProps} />)
+    expect(screen.queryByRole("button", { name: /fiabilité & sûreté des estimations/i })).not.toBeInTheDocument()
+  })
+
+  it("mode Avancé : la section « Fiabilité & sûreté des estimations » est repliée par défaut (v6)", () => {
+    render(<RenteRetraiteTab {...baseProps} uiMode="avance" />)
     // v6 (comme Monte Carlo) : le titre est visible, mais pas les options
     // tant qu'on ne déplie pas — les 4 restent actives par défaut au moteur.
     expect(screen.getByRole("button", { name: /fiabilité & sûreté des estimations/i })).toHaveAttribute(
@@ -642,7 +701,7 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
   })
 
   it("les 4 options de fiabilité sont COCHÉES par défaut", () => {
-    render(<RenteRetraiteTab {...baseProps} />)
+    render(<RenteRetraiteTab {...baseProps} uiMode="avance" />)
     // Le panneau est replié par défaut : on le déplie pour inspecter les toggles.
     fireEvent.click(screen.getByRole("button", { name: /fiabilité & sûreté des estimations/i }))
     expect(screen.getByRole("switch", { name: /incertitude des paramètres/i })).toBeChecked()
@@ -759,6 +818,42 @@ describe("audit v5.6.3 — CashflowCalendar : capital initial réconcilié avec 
     // Le total des versements affiché = investedNom final (comme la carte)
     const last = rows[rows.length - 1]
     expect(screen.getByText(fmtCompact(last.investedNom))).toBeInTheDocument()
+  })
+})
+
+describe("audit v6.5 — GoalTab : synchronisation et lignes dédupliquées", () => {
+  it("mode synchronisé : les cartes citent la durée du scénario principal, pas goalDuration", () => {
+    const inputs = {
+      ...DEFAULT_INPUTS,
+      goalSync: true,
+      goalDuration: 15,
+      duration: 25,
+    }
+    const rows = runSimulation(inputs)
+    const { container } = render(<GoalTab inputs={inputs} rows={rows} darkMode={false} updateInput={() => {}} />)
+    const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    // Le calcul (et donc le texte) utilise 25 ans (scénario principal), pas 15.
+    expect(text).toContain("en 25 ans")
+    expect(text).not.toContain("en 15 ans")
+  })
+
+  it("une seule ligne « 10,07 % ← » dans la comparaison (plus de doublon Optimiste)", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    render(<GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />)
+    // Avant le correctif, le taux courant (10,07) et la moyenne arithmétique
+    // (10,0655) produisaient DEUX lignes « 10,07 % ← Optimiste » avec des
+    // montants différents. Il n'en reste qu'une.
+    expect(screen.getAllByText(/←/).length).toBe(1)
+    expect(screen.getAllByText(/10,07% ←/).length).toBe(1)
+  })
+})
+
+describe("audit v6.5 — CashflowCalendar : total des impôts non cumulable", () => {
+  it("le pied de tableau affiche « — » pour les impôts (somme sans sens, pas un total trompeur)", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    render(<CashflowCalendar rows={rows} showReal={false} />)
+    fireEvent.click(screen.getByRole("button", { name: /calendrier des flux/i }))
+    expect(screen.getByTitle(/impôts non cumulables/i)).toHaveTextContent("—")
   })
 })
 

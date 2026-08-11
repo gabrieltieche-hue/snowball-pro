@@ -1,39 +1,72 @@
 import { useState } from "react"
 import { BookOpen, ChevronDown } from "lucide-react"
-import { ENVELOPE_CONFIGS, fmtDecimal, getHistoricalDataset } from "../../engine"
+import {
+  CURRENT_TAX_YEAR,
+  ENVELOPE_CONFIGS,
+  fmtDecimal,
+  getHistoricalDataset,
+  getTaxRules,
+  pfuRate,
+  fmtTaxPercent,
+} from "../../engine"
 import { cn } from "../../utils/cn"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 interface MethodologyPanelProps {
   inputs: SimulationInputs
+  /** Mode Débutant / Avancé (audit) : la formule de Fisher est masquée en Débutant. */
+  uiMode?: UiMode
 }
 
-export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
+const SCENARIO_LABELS = { prudent: "Prudent", central: "Central", optimiste: "Optimiste" } as const
+
+export function MethodologyPanel({ inputs, uiMode = "debutant" }: MethodologyPanelProps) {
   const [open, setOpen] = useState(false)
   const envelope = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)
-  // Courbe lissée (v5.6.0) : le Simulateur applique le rendement moyen de
-  // référence du MSCI World chaque année — plus de zigzags, la même courbe
-  // chaque année. Monte Carlo et la Rente rééchantillonnent toujours la série.
+  // Courbe lissée (v5.6.0) : le Simulateur applique CHAQUE ANNÉE le taux du
+  // scénario choisi (prudent / central / optimiste — défaut : central =
+  // rendement composé ≈ 8,22 %/an), pas la moyenne arithmétique. Monte Carlo
+  // et la Rente rééchantillonnent toujours la série réelle.
   const historical = getHistoricalDataset(inputs.historicalIndex)
+  const appliedRate =
+    inputs.returnScenario === "prudent"
+      ? historical.netReturn
+      : inputs.returnScenario === "optimiste"
+        ? historical.avgReturn
+        : historical.compoundedReturn
+  const rules = getTaxRules(inputs.taxYear)
+  const fmtPct = (r: number) => `${(r * 100).toFixed(2).replace(".", ",")} %`
 
   const rows: { label: string; value: string }[] = [
     {
+      label: "Rendement appliqué",
+      value: `${fmtPct(appliedRate)}/an — le taux du scénario « ${
+        SCENARIO_LABELS[inputs.returnScenario]
+      } » choisi en haut de l'onglet, appliqué chaque année par la courbe lissée du Simulateur (défaut : Central = rendement composé ≈ 8,22 %/an)`,
+    },
+    {
       label: "Rendement brut",
-      value: `${(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an — moyenne ARITHMÉTIQUE des années ${historical.name} (1970-2025) : c'est le taux constant appliqué chaque année par la courbe lissée du Simulateur`,
+      value: `${fmtPct(historical.avgReturn)}/an — moyenne ARITHMÉTIQUE des années ${historical.name} (1970-2025) : le taux moyen d'une année, PAS ce que la bourse a réellement composé`,
     },
     {
       label: "Rendement composé",
-      value: `${(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %/an — moyenne GÉOMÉTRIQUE de la série, krachs réels (-37 % en 2008, -33 % en 2002…) inclus : ce que la bourse a réellement rapporté en cumulé`,
+      value: `${fmtPct(historical.compoundedReturn)}/an — moyenne GÉOMÉTRIQUE de la série, krachs réels (-37 % en 2008, -33 % en 2002…) inclus : ce que la bourse a réellement rapporté en cumulé`,
     },
     {
       label: "Rendement réel",
-      value: `${(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an — formule de Fisher : (1 + ${(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %) ÷ (1 + 2,1 %) − 1. Pas une simple soustraction (8,22 − 2,1 = 6,12 serait une approximation) : l'inflation rogne aussi vos gains, pas seulement le capital`,
+      value:
+        uiMode === "avance"
+          ? `${fmtPct(historical.netReturn)}/an — formule de Fisher : (1 + ${fmtPct(
+              historical.compoundedReturn,
+            )}) ÷ (1 + ${fmtPct(inputs.inflation)}) − 1. Pas une simple soustraction : l'inflation rogne aussi vos gains, pas seulement le capital`
+          : `${fmtPct(historical.netReturn)}/an — le rendement composé une fois l'inflation déduite (le pouvoir d'achat de votre capital)`,
     },
     {
       label: "Projection & Monte Carlo",
       value:
-        "Le Simulateur applique la moyenne brute (courbe lissée, sans krachs) ; Monte Carlo & la Rente rééchantillonnent l'historique réel et rejouent ses krachs",
+        "Le Simulateur applique le scénario choisi chaque année (courbe lissée, sans krachs) ; Monte Carlo & la Rente rééchantillonnent l'historique réel par blocs de 5 ans et rejouent ses krachs",
     },
     {
       label: "Inflation",
@@ -46,7 +79,9 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
     },
     {
       label: "Enveloppe fiscale",
-      value: `${envelope?.name ?? "CTO"} — taux et abattements en vigueur`,
+      value: `${envelope?.name ?? "CTO"} — taux et abattements de l'année fiscale ${
+        rules.year
+      } (${fmtTaxPercent(pfuRate(rules))} PFU CTO / ${fmtTaxPercent(rules.avSocialRate)} AV)`,
     },
     {
       label: "Rendement interne (XIRR)",
@@ -63,6 +98,14 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
         ]
           .filter(Boolean)
           .join(" + ") || "Aucun frais",
+    },
+    {
+      label: "Devise & dividendes",
+      value: `Euros (EUR) — indice capitalisant : les dividendes sont réinvestis dans l'indice (MSCI World), aucun dividende séparé`,
+    },
+    {
+      label: "Mise à jour",
+      value: `Taux de l'année fiscale ${CURRENT_TAX_YEAR} · historique MSCI World 1970-2025 · règle de rééchantillonnage : bootstrap par blocs non chevauchants de 5 ans`,
     },
   ]
 

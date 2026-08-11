@@ -16,17 +16,18 @@ import { FiscalPanel } from "../Simulation/FiscalPanel"
 import { KpiGrid } from "../Simulation/KpiGrid"
 import { MethodologyPanel } from "../Simulation/MethodologyPanel"
 import { MilestoneTimeline } from "../Simulation/MilestoneTimeline"
-import { ScenarioSelector } from "../Simulation/ScenarioSelector"
 import type { SimulationInputs, YearRow } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 interface SimulatorTabProps {
   rows: YearRow[]
   inputs: SimulationInputs
   darkMode: boolean
-  updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
+  /** Mode Débutant / Avancé (audit) : transmis aux panneaux techniques. */
+  uiMode?: UiMode
 }
 
-export function SimulatorTab({ rows, inputs, darkMode, updateInput }: SimulatorTabProps) {
+export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: SimulatorTabProps) {
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const milestones = useMemo(() => computeMilestones(rows), [rows])
   const [tableOpen, setTableOpen] = useState(false)
@@ -39,17 +40,20 @@ export function SimulatorTab({ rows, inputs, darkMode, updateInput }: SimulatorT
        4. L'insight (« d'où vient votre argent ») — avant, noyé en bas
        5. Statistiques clés + jalons / frais (toujours visibles)
        6. Détails repliés par défaut : graphiques détaillés, fiscalité,
-          méthodologie, calendrier, tableau annuel */
+          méthodologie, calendrier, tableau annuel
+
+     Le choix du scénario de rendement (prudent / central / optimiste) vit
+     désormais dans les réglages « Votre épargne » (v6.4.1) : le héro ouvre
+     la vue, sans sélecteur qui gâche le résultat. */
   return (
     <div className="space-y-5 animate-fade-in">
-      <ScenarioSelector inputs={inputs} updateInput={updateInput} />
       <HeroResult rows={rows} inputs={inputs} />
       <SummaryStats rows={rows} inputs={inputs} />
       <EquityChart rows={rows} inputs={inputs} darkMode={darkMode} />
 
-      <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />
+      <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} uiMode={uiMode} />
 
-      <KpiGrid kpis={kpis} />
+      <KpiGrid kpis={kpis} uiMode={uiMode} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MilestoneTimeline milestones={milestones} rows={rows} />
@@ -69,7 +73,7 @@ export function SimulatorTab({ rows, inputs, darkMode, updateInput }: SimulatorT
         <FiscalPanel rows={rows} inputs={inputs} />
       </CollapsibleSection>
 
-      <MethodologyPanel inputs={inputs} />
+      <MethodologyPanel inputs={inputs} uiMode={uiMode} />
 
       <CashflowCalendar rows={rows} showReal={inputs.showReal} />
 

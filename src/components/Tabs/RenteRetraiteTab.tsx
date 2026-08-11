@@ -51,6 +51,7 @@ import { SectionHeader } from "../shared/SectionHeader"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 
 import type { DecumulationResult, SimulationInputs, StressTestResult, WithdrawalModel, YearRow } from "../../types"
+import type { UiMode } from "../../utils/uiMode"
 
 const WITHDRAWAL_MODELS: {
   id: WithdrawalModel
@@ -105,6 +106,8 @@ interface RenteRetraiteTabProps {
   isStale?: boolean
   running?: boolean
   progress?: number
+  /** Mode Débutant / Avancé (audit) : masque les notions techniques (Guyton–Klinger…). */
+  uiMode?: UiMode
 }
 
 export function RenteRetraiteTab({
@@ -118,6 +121,7 @@ export function RenteRetraiteTab({
   isStale = false,
   running = false,
   progress = 0,
+  uiMode = "debutant",
 }: RenteRetraiteTabProps) {
   const theme = chartTheme(darkMode)
   const startingCapital = lastRow?.nominal && lastRow.nominal > 0 ? lastRow.nominal : inputs.capitalInitial
@@ -129,6 +133,23 @@ export function RenteRetraiteTab({
     inputs.ageRetirement > inputs.ageNow
       ? `${inputs.ageRetirement} ans au départ de la retraite · ${inputs.ageRetirement + inputs.retirementYears} ans à la fin de la rente`
       : null
+  // Le pire repli pic→creux du vivier réellement rejoué (56 ou 100 ans selon
+  // l'option), comparé à la tolérance du profil : le verdict « trop risqué »
+  // ne dépend que des inputs → il s'affiche en BANDEAU EN HAUT de l'onglet,
+  // pas seulement au bas des résultats (audit).
+  const worstDrawdown = useMemo(() => {
+    const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
+    let cap = 1
+    let peak = 1
+    let worst = 0
+    for (const r of pool.returns) {
+      cap *= 1 + r
+      peak = Math.max(peak, cap)
+      worst = Math.max(worst, peak > 0 ? (peak - cap) / peak : 0)
+    }
+    return worst
+  }, [inputs.historicalIndex, inputs.extendedHistory])
+  const exceedsRisk = worstDrawdown > inputs.maxDrawdownTolerance
 
   // Rente mensuelle estimée (avant simulation Monte-Carlo) — affichage instantané
   const estimatedMonthly = useMemo(() => {
@@ -187,13 +208,26 @@ export function RenteRetraiteTab({
               <Coins size={11} className="text-text-dim" />
               <span className="text-[10px] text-text-dim uppercase tracking-wider">Capital à décumuler</span>
             </div>
+            {/* La simulation démarre du montant BRUT (ce qui est sur le compte
+                en fin d'accumulation) : les impôts ne sont prélevés qu'AU
+                MOMENT de chaque retrait, proportionnellement à la part de
+                gains (audit). Le net après liquidation (tout vendre d'un
+                coup) est affiché en repère — il n'est PAS le point de départ. */}
             <div className="mono text-lg sm:text-xl font-bold text-primary leading-tight">
               {fmtCurrency(startingCapital)}
             </div>
             <div className="text-[10px] text-text-dim mt-1">
-              {lastRow?.nominal && lastRow.nominal > 0
-                ? `Nominal en fin d'accumulation`
-                : `Capital initial (aucune simulation)`}
+              {lastRow?.nominal && lastRow.nominal > 0 ? (
+                <>
+                  Brut en fin d'accumulation — après impôts de sortie :{" "}
+                  <strong className="mono text-text">{fmtCurrency(lastRow.taxNet)}</strong>
+                </>
+              ) : (
+                "Capital initial (aucune simulation)"
+              )}
+            </div>
+            <div className="text-[9px] text-text-dim mt-1 leading-snug">
+              La rente est calculée sur le brut ; chaque retrait n'est imposé que sur sa part de gains.
             </div>
           </div>
         </div>
@@ -486,50 +520,111 @@ export function RenteRetraiteTab({
         </div>
       </div>
 
+      {/* Alerte « plan trop risqué » en BANDEAU (audit) : visible dès
+          l'ouverture de l'onglet, sans avoir lancé la simulation. */}
+      <div
+        className={cn(
+          "rounded-xl px-3.5 py-2.5 flex items-start gap-2 border",
+          exceedsRisk
+            ? "bg-warning/8 border-warning/25"
+            : "bg-[var(--color-success)]/8 border-[var(--color-success)]/25",
+        )}
+      >
+        {exceedsRisk ? (
+          <AlertTriangle size={13} className="text-warning shrink-0 mt-0.5" />
+        ) : (
+          <ShieldCheck size={13} className="text-[var(--color-success)] shrink-0 mt-0.5" />
+        )}
+        <p className="text-[10px] leading-relaxed text-text-dim">
+          {exceedsRisk ? (
+            <>
+              <strong className="text-warning">Tolérance au risque dépassée :</strong> le pire repli historique de votre
+              indice est de <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>, au-delà de
+              votre tolérance de −{Math.round(inputs.maxDrawdownTolerance * 100)} %. Ce plan peut être{" "}
+              <strong className="text-text">trop risqué pour vous</strong> — envisagez une part plus prudente
+              (obligations, livrets) ou un taux de retrait plus faible.
+            </>
+          ) : (
+            <>
+              <strong className="text-text">Risque maîtrisé :</strong> le pire repli historique de votre indice (−
+              {Math.round(worstDrawdown * 100)} %) reste dans votre tolérance de −
+              {Math.round(inputs.maxDrawdownTolerance * 100)} %.
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* Incohérence âge / durée / retraite (audit) : le capital projeté
+          s'arrête avant la retraite prévue — l'utilisateur doit le savoir. */}
+      {inputs.ageRetirement >= inputs.ageNow && inputs.ageNow + inputs.duration !== inputs.ageRetirement && (
+        <div className="rounded-xl bg-primary/8 border border-primary/20 px-3.5 py-2.5 flex items-start gap-2">
+          <Coins size={13} className="text-primary shrink-0 mt-0.5" />
+          <p className="text-[10px] leading-relaxed text-text-dim">
+            Votre projection s'arrête à <strong className="text-text">{inputs.ageNow + inputs.duration} ans</strong>{" "}
+            (âge actuel {inputs.ageNow} + durée {inputs.duration} ans) et votre retraite est prévue à{" "}
+            <strong className="text-text">{inputs.ageRetirement} ans</strong>. Le capital à décumuler correspond à{" "}
+            {inputs.ageNow + inputs.duration < inputs.ageRetirement ? (
+              <>
+                un âge <strong className="text-warning">antérieur</strong> à votre départ — allongez la durée ou avancez
+                la retraite pour que le capital projeté couvre la rente.
+              </>
+            ) : (
+              <>
+                un âge <strong className="text-warning">postérieur</strong> à votre départ — les{" "}
+                {inputs.ageNow + inputs.duration - inputs.ageRetirement} dernières années de projection ne servent pas à
+                la rente.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
       {/* ──────────────────────────────────────────────────────────
           Fiabilité & sûreté du modèle (options désactivables).
           Repliée par défaut (v6, comme l'onglet Monte Carlo) : les 4
           options restent actives par défaut, mais elles ne s'imposent
           plus à chaque visite — on les ouvre à la demande.
          ────────────────────────────────────────────────────────── */}
-      <div className="glass rounded-3xl p-4 sm:p-6">
-        <CollapsibleSection
-          title="Fiabilité & sûreté des estimations"
-          icon={<ShieldCheck size={12} className="text-primary" />}
-          defaultOpen={false}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            <Toggle
-              checked={inputs.parameterUncertainty}
-              onChange={v => updateInput("parameterUncertainty", v)}
-              label="Incertitude des paramètres"
-              sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
-            />
-            <Toggle
-              checked={inputs.extendedHistory}
-              onChange={v => updateInput("extendedHistory", v)}
-              label="Historique étendu (100 ans)"
-              sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
-            />
-            <Toggle
-              checked={inputs.stochasticInflation}
-              onChange={v => updateInput("stochasticInflation", v)}
-              label="Inflation stochastique"
-              sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
-            />
-            <Toggle
-              checked={inputs.dynamicGuardrails}
-              onChange={v => updateInput("dynamicGuardrails", v)}
-              label="Garde-fous dynamiques (Guyton–Klinger)"
-              sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
-            />
-          </div>
-          <p className="text-[9px] text-text-dim mt-2.5">
-            Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges,
-            taux de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
-          </p>
-        </CollapsibleSection>
-      </div>
+      {uiMode === "avance" && (
+        <div className="glass rounded-3xl p-4 sm:p-6">
+          <CollapsibleSection
+            title="Fiabilité & sûreté des estimations"
+            icon={<ShieldCheck size={12} className="text-primary" />}
+            defaultOpen={false}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <Toggle
+                checked={inputs.parameterUncertainty}
+                onChange={v => updateInput("parameterUncertainty", v)}
+                label="Incertitude des paramètres"
+                sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
+              />
+              <Toggle
+                checked={inputs.extendedHistory}
+                onChange={v => updateInput("extendedHistory", v)}
+                label="Historique étendu (100 ans)"
+                sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
+              />
+              <Toggle
+                checked={inputs.stochasticInflation}
+                onChange={v => updateInput("stochasticInflation", v)}
+                label="Inflation stochastique"
+                sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
+              />
+              <Toggle
+                checked={inputs.dynamicGuardrails}
+                onChange={v => updateInput("dynamicGuardrails", v)}
+                label="Garde-fous dynamiques (Guyton–Klinger)"
+                sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
+              />
+            </div>
+            <p className="text-[9px] text-text-dim mt-2.5">
+              Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges,
+              taux de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
+            </p>
+          </CollapsibleSection>
+        </div>
+      )}
 
       {/* ──────────────────────────────────────────────────────────
           Résultats de la simulation
@@ -548,6 +643,7 @@ export function RenteRetraiteTab({
             crisisNote={crisisNote}
             extendedHistory={inputs.extendedHistory}
             inputs={inputs}
+            lastRow={lastRow}
             envelopeLabel={envelopeLabel}
           />
         </div>
@@ -621,6 +717,7 @@ function ResultsSection({
   crisisNote,
   extendedHistory,
   inputs,
+  lastRow,
   envelopeLabel,
 }: {
   decumResult: DecumulationResult
@@ -628,6 +725,7 @@ function ResultsSection({
   crisisNote?: string | null
   extendedHistory: boolean
   inputs: SimulationInputs
+  lastRow: YearRow | undefined
   envelopeLabel: string
 }) {
   const survival = decumResult.survivalProbability
@@ -648,24 +746,19 @@ function ResultsSection({
     decumResult.withdrawalsNet.slice(1).reduce((s, v) => s + v, 0) /
       Math.max(1, decumResult.withdrawalsNet.length - 1) /
       12 || 0
-  // Paquet 3 — alerte risque : le pire repli pic→creux du vivier réellement
-  // rejoué (56 ou 100 ans selon l'option) comparé à la tolérance du profil.
-  const worstDrawdown = useMemo(() => {
-    const pool = getHistoricalPool(inputs.historicalIndex, inputs.extendedHistory)
-    let cap = 1
-    let peak = 1
-    let worst = 0
-    for (const r of pool.returns) {
-      cap *= 1 + r
-      peak = Math.max(peak, cap)
-      worst = Math.max(worst, peak > 0 ? (peak - cap) / peak : 0)
-    }
-    return worst
-  }, [inputs.historicalIndex, inputs.extendedHistory])
-  const exceedsRisk = worstDrawdown > inputs.maxDrawdownTolerance
-  // Couverture des dépenses de retraite : rente nette + autres pensions vs
-  // dépenses prévues (paquet 3).
-  const retirementIncome = netMonthly + inputs.otherPensions
+  // Même moyenne sur l'échelle RÉELLE (euros du départ de la retraite) puis
+  // ramenée en EUROS D'AUJOURD'HUI par le facteur de déflation de
+  // l'accumulation (lastRow.real/nominal) : la comparaison avec des dépenses
+  // exprimées en euros d'aujourd'hui devient cohérente (audit).
+  const netMonthlyReal =
+    decumResult.withdrawalsNetReal.slice(1).reduce((s, v) => s + v, 0) /
+      Math.max(1, decumResult.withdrawalsNetReal.length - 1) /
+      12 || 0
+  const accumulationDeflation = lastRow && lastRow.nominal > 0 ? lastRow.real / lastRow.nominal : 1
+  const netMonthlyToday = netMonthlyReal * accumulationDeflation
+  // Couverture des dépenses de retraite : rente nette (en euros d'aujourd'hui)
+  // + autres pensions vs dépenses prévues (paquet 3).
+  const retirementIncome = netMonthlyToday + inputs.otherPensions
   const coverage =
     inputs.retirementExpenses > 0 ? Math.round((retirementIncome / inputs.retirementExpenses) * 100) : null
   const shortfall = inputs.retirementExpenses - retirementIncome
@@ -783,15 +876,21 @@ function ResultsSection({
           <p className="text-[10px] leading-relaxed text-text-dim">
             <strong className="text-text">Rente nette :</strong> après impôt sur les retraits (enveloppe{" "}
             <strong className="text-text">{envelopeLabel}</strong>), vous recevez en moyenne{" "}
-            <strong className="text-text">{fmtCurrency(Math.round(netMonthly))} / mois</strong> — soit{" "}
-            <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong> d'impôts et{" "}
+            <strong className="text-text">{fmtCurrency(Math.round(netMonthly))} / mois</strong> (euros courants) — soit{" "}
+            <strong className="text-text">
+              {fmtCurrency(Math.round(netMonthlyToday))} / mois en euros d'aujourd'hui
+            </strong>
+            . Au total : <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong> d'impôts et{" "}
             <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong> de frais de gestion payés
             pendant toute la retraite (la rente brute reste {fmtCurrency(decumResult.initialWithdrawal)}/mois).
           </p>
         )}
       </div>
 
-      {/* Paquet 3 — vos revenus de retraite face à vos dépenses (profil). */}
+      {/* Paquet 3 — vos revenus de retraite face à vos dépenses (profil).
+          Comparaison en EUROS D'AUJOURD'HUI : la rente nette moyenne est
+          déflatée (pouvoir d'achat) pour être comparable aux dépenses, que
+          l'utilisateur pense dans sa monnaie actuelle (audit). */}
       {(inputs.retirementExpenses > 0 || inputs.otherPensions > 0) && coverage !== null && (
         <div
           className={cn(
@@ -810,15 +909,17 @@ function ResultsSection({
             {coverage >= 100 ? (
               <>
                 <strong className="text-text">Revenus couverts :</strong> votre rente nette ({" "}
-                <strong className="text-text">{fmtCurrency(Math.round(netMonthly))}/mois</strong>) plus vos autres
-                revenus ( <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) couvrent{" "}
+                <strong className="text-text">{fmtCurrency(Math.round(netMonthlyToday))}/mois</strong> en euros
+                d'aujourd'hui) plus vos autres revenus ({" "}
+                <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) couvrent{" "}
                 <strong className="text-[var(--color-success)]">{coverage} %</strong> de vos dépenses prévues ({" "}
                 {fmtCurrency(inputs.retirementExpenses)}/mois).
               </>
             ) : (
               <>
                 <strong className="text-text">Manque à couvrir :</strong> rente nette ({" "}
-                <strong className="text-text">{fmtCurrency(Math.round(netMonthly))}/mois</strong>) + autres revenus ({" "}
+                <strong className="text-text">{fmtCurrency(Math.round(netMonthlyToday))}/mois</strong> en euros
+                d'aujourd'hui) + autres revenus ({" "}
                 <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) ={" "}
                 <strong className="text-text">{fmtCurrency(Math.round(retirementIncome))}/mois</strong>, soit{" "}
                 <strong className="text-text">{coverage} %</strong> de vos dépenses prévues ({" "}
@@ -829,40 +930,6 @@ function ResultsSection({
           </p>
         </div>
       )}
-
-      {/* Paquet 3 — alerte tolérance au risque : le pire repli réellement rejoué
-          face à la perte maximale acceptée (profil). Ambre = réglage choisi. */}
-      <div
-        className={cn(
-          "rounded-xl px-3 py-2 flex items-start gap-2 border",
-          exceedsRisk
-            ? "bg-warning/8 border-warning/25"
-            : "bg-[var(--color-success)]/8 border-[var(--color-success)]/25",
-        )}
-      >
-        {exceedsRisk ? (
-          <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
-        ) : (
-          <ShieldCheck size={12} className="text-[var(--color-success)] shrink-0 mt-0.5" />
-        )}
-        <p className="text-[10px] leading-relaxed text-text-dim">
-          {exceedsRisk ? (
-            <>
-              <strong className="text-warning">Tolérance au risque dépassée :</strong> le pire repli historique de votre
-              indice est de <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>, au-delà de
-              votre tolérance de −{Math.round(inputs.maxDrawdownTolerance * 100)} %. Ce plan peut être{" "}
-              <strong className="text-text">trop risqué pour vous</strong> — envisagez une part plus prudente
-              (obligations, livrets) ou un taux de retrait plus faible.
-            </>
-          ) : (
-            <>
-              <strong className="text-text">Risque maîtrisé :</strong> le pire repli historique de votre indice (−
-              {Math.round(worstDrawdown * 100)} %) reste dans votre tolérance de −
-              {Math.round(inputs.maxDrawdownTolerance * 100)} %.
-            </>
-          )}
-        </p>
-      </div>
 
       {/* 4 KPI cards */}
       <p className="text-[10px] text-text-dim italic">

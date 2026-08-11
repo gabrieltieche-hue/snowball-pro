@@ -628,6 +628,8 @@ describe("solveGoal", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
+      // Cohérence âge/durée/retraite (audit) : 30 + 10 = 40 → aucune alerte.
+      ageRetirement: 40,
       tmi: 0.3,
       ctoTaxMode: "pfu",
       parameterUncertainty: true,
@@ -676,6 +678,8 @@ describe("validateInputs", () => {
       goalAnnualReturn: 0.07,
       mcRuns: 100,
       seed: 41041,
+      // Cohérence âge/durée/retraite (audit) : 30 + 10 = 40 → aucune alerte.
+      ageRetirement: 40,
       tmi: 0.3,
       ctoTaxMode: "pfu",
       parameterUncertainty: true,

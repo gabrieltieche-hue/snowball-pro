@@ -65,7 +65,17 @@ function EnvelopeCard({ badge, title, children }: { badge: string; title: string
   )
 }
 
-function FaqItem({ question, children, open, onToggle }: { question: string; children: React.ReactNode; open: boolean; onToggle: () => void }) {
+function FaqItem({
+  question,
+  children,
+  open,
+  onToggle,
+}: {
+  question: string
+  children: React.ReactNode
+  open: boolean
+  onToggle: () => void
+}) {
   return (
     <div className={cn("glass rounded-2xl overflow-hidden transition-colors", open && "border-primary/25")}>
       <button
@@ -179,8 +189,7 @@ export function LandingPage() {
               <Sparkles size={11} aria-hidden /> Fiscalité française 2026 · 100 ans d'historique réel
             </p>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold tracking-tight leading-[1.06]">
-              Votre patrimoine, éclairé par{" "}
-              <span className="text-primary">100 ans de vraie histoire boursière</span>
+              Votre patrimoine, éclairé par <span className="text-primary">100 ans de vraie histoire boursière</span>
             </h2>
             <p className="text-sm sm:text-[15px] text-text-muted mt-5 leading-relaxed max-w-xl">
               Snowball Pro projette votre épargne avec les rendements réels du MSCI World — krachs et bulles compris —
@@ -276,12 +285,12 @@ export function LandingPage() {
             durée de détention du PEA.
           </FeatureCard>
           <FeatureCard icon={Target} title="Objectif inversé">
-            « Combien investir pour atteindre X € ? » — l'épargne mensuelle nécessaire est calculée en une seconde,
-            avec une jauge d'atteignabilité.
+            « Combien investir pour atteindre X € ? » — l'épargne mensuelle nécessaire est calculée en une seconde, avec
+            une jauge d'atteignabilité.
           </FeatureCard>
           <FeatureCard icon={Share2} title="Partage & comparaison">
-            Lien de partage de votre scénario, comparaison A/B, snapshots, annuler/rétablir, export CSV, JSON et
-            rapport PDF.
+            Lien de partage de votre scénario, comparaison A/B, snapshots, annuler/rétablir, export CSV, JSON et rapport
+            PDF.
           </FeatureCard>
         </div>
       </section>
@@ -326,8 +335,17 @@ export function LandingPage() {
             <dl className="space-y-4">
               {[
                 { label: "Brut — moyenne des années", value: "10,07 %/an", note: "moyenne arithmétique MSCI World" },
-                { label: "Composé — krachs inclus", value: "8,22 %/an", note: "moyenne géométrique (2000, 2008, 2022…)" },
-                { label: "Réel — après inflation", value: "5,99 %/an", note: "formule de Fisher, déflaté de 2,1 %/an", highlight: true },
+                {
+                  label: "Composé — krachs inclus",
+                  value: "8,22 %/an",
+                  note: "moyenne géométrique (2000, 2008, 2022…)",
+                },
+                {
+                  label: "Réel — après inflation",
+                  value: "5,99 %/an",
+                  note: "formule de Fisher, déflaté de 2,1 %/an",
+                  highlight: true,
+                },
               ].map((row, i) => (
                 <div key={row.label}>
                   <div className="flex items-baseline justify-between gap-3">
@@ -345,9 +363,8 @@ export function LandingPage() {
             </dl>
             <p className="text-[10.5px] text-text-muted mt-5 pt-4 border-t border-border/60 leading-relaxed">
               Pourquoi pas 6,12 % (8,22 − 2,1) ? La soustraction simple est une approximation : la formule exacte de
-              Fisher est{" "}
-              <span className="mono font-semibold text-text">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> — l'inflation
-              rogne aussi vos gains, pas seulement votre capital de départ.
+              Fisher est <span className="mono font-semibold text-text">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> —
+              l'inflation rogne aussi vos gains, pas seulement votre capital de départ.
             </p>
             <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
               <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
@@ -379,25 +396,45 @@ export function LandingPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <SectionTitle eyebrow="FAQ" title="Questions fréquentes" />
           <div className="space-y-3">
-            <FaqItem question="Mes données sont-elles envoyées sur un serveur ?" open={openFaq === 0} onToggle={() => setOpenFaq(openFaq === 0 ? null : 0)}>
+            <FaqItem
+              question="Mes données sont-elles envoyées sur un serveur ?"
+              open={openFaq === 0}
+              onToggle={() => setOpenFaq(openFaq === 0 ? null : 0)}
+            >
               Non. Tout est calculé et stocké dans votre navigateur (localStorage) : aucune donnée ne quitte votre
               appareil. Un compte crée un espace isolé pour vos simulations sur cet appareil — la synchronisation cloud
               n'existe pas encore.
             </FaqItem>
-            <FaqItem question="Un compte est-il obligatoire ?" open={openFaq === 1} onToggle={() => setOpenFaq(openFaq === 1 ? null : 1)}>
+            <FaqItem
+              question="Un compte est-il obligatoire ?"
+              open={openFaq === 1}
+              onToggle={() => setOpenFaq(openFaq === 1 ? null : 1)}
+            >
               Non, l'application fonctionne intégralement sans compte. Un compte vous permet d'isoler vos simulations de
               celles des autres utilisateurs de l'appareil et prépare la synchronisation future.
             </FaqItem>
-            <FaqItem question="Pourquoi 10,07 % et pas 6,12 % ?" open={openFaq === 2} onToggle={() => setOpenFaq(openFaq === 2 ? null : 2)}>
+            <FaqItem
+              question="Pourquoi 10,07 % et pas 6,12 % ?"
+              open={openFaq === 2}
+              onToggle={() => setOpenFaq(openFaq === 2 ? null : 2)}
+            >
               Parce que la soustraction simple est une approximation : l'inflation ronge aussi vos gains. La formule
               exacte (Fisher) est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %/an réel.
             </FaqItem>
-            <FaqItem question="Qu'est-ce que Monte Carlo ?" open={openFaq === 3} onToggle={() => setOpenFaq(openFaq === 3 ? null : 3)}>
+            <FaqItem
+              question="Qu'est-ce que Monte Carlo ?"
+              open={openFaq === 3}
+              onToggle={() => setOpenFaq(openFaq === 3 ? null : 3)}
+            >
               Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous
               obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette
               estimation.
             </FaqItem>
-            <FaqItem question="L'application est-elle vraiment gratuite ?" open={openFaq === 4} onToggle={() => setOpenFaq(openFaq === 4 ? null : 4)}>
+            <FaqItem
+              question="L'application est-elle vraiment gratuite ?"
+              open={openFaq === 4}
+              onToggle={() => setOpenFaq(openFaq === 4 ? null : 4)}
+            >
               Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain.
             </FaqItem>
           </div>
@@ -439,7 +476,10 @@ export function LandingPage() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <Brand />
-            <nav aria-label="Navigation pied de page" className="flex items-center gap-5 flex-wrap text-[11px] font-bold text-text-muted">
+            <nav
+              aria-label="Navigation pied de page"
+              className="flex items-center gap-5 flex-wrap text-[11px] font-bold text-text-muted"
+            >
               {NAV.map(item => (
                 <a key={item.href} href={item.href} className="hover:text-text transition-colors">
                   {item.label}
@@ -457,7 +497,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.1.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.5.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

@@ -73,6 +73,14 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
   const lastRow = rows[rows.length - 1]
   const difficulty = DIFFICULTY_META[goalResult.difficulty]
   const scenarioRates = [historical.netReturn * 100, historical.compoundedReturn * 100, historical.avgReturn * 100]
+  // Affichage TOUJOURS aligné sur le calcul : en mode synchronisé, les textes
+  // des cartes citent les valeurs du scénario principal (durée, rendement,
+  // épargne, capital) au lieu des réglages de l'onglet Objectif qui restent
+  // figés (audit — « 15 ans » à côté d'un calcul à 20 ans).
+  const effDuration = eff?.goalDuration ?? inputs.goalDuration
+  const effRate = eff?.goalAnnualReturn ?? inputs.goalAnnualReturn
+  const effCapital = eff?.goalCapital ?? inputs.goalCapital
+  const effPayment = eff?.goalPayment ?? inputs.goalPayment
 
   // Inversion Monte-Carlo (paquet 2) : versement mensuel pour atteindre
   // l'objectif dans P10/P50/P90 des scénarios — calculé sur le scénario
@@ -244,9 +252,10 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
               Pour atteindre <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
-              <strong className="text-text">{inputs.goalDuration} ans</strong> avec un rendement de{" "}
-              <strong className="text-text">{fmtRate(inputs.goalAnnualReturn * 100)}</strong>/an
-              {inputs.goalCapital > 0 && ` et un capital de départ de ${fmtCurrency(inputs.goalCapital)}`}.
+              <strong className="text-text">{effDuration} ans</strong> avec un rendement de{" "}
+              <strong className="text-text">{fmtRate(effRate * 100)}</strong>/an
+              {effCapital > 0 && ` et un capital de départ de ${fmtCurrency(effCapital)}`}
+              {inputs.goalSync && " (hypothèses du scénario principal)"}.
             </p>
             {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 && (
               <div
@@ -260,8 +269,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
 
           <div className="card-subtle rounded-2xl p-5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
-              <TrendingUp size={12} aria-hidden /> Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois
-              d'épargne)
+              <TrendingUp size={12} aria-hidden /> Rendement nécessaire ({fmtCurrency(effPayment)}/mois d'épargne)
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
               {goalResult.requiredRate !== null
@@ -271,9 +279,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             <p className="text-[11px] text-text-muted leading-relaxed">
               Rendement de la bourse nécessaire chaque année pour obtenir{" "}
               <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
-              <strong className="text-text">{inputs.goalDuration} ans</strong> en épargnant{" "}
-              <strong className="text-text">{fmtCurrency(inputs.goalPayment)}/mois</strong>
-              {inputs.goalCapital > 0 && ` avec un capital initial de ${fmtCurrency(inputs.goalCapital)}`}.
+              <strong className="text-text">{effDuration} ans</strong> en épargnant{" "}
+              <strong className="text-text">{fmtCurrency(effPayment)}/mois</strong>
+              {effCapital > 0 && ` avec un capital initial de ${fmtCurrency(effCapital)}`}.
             </p>
             <div className={`mt-3 flex items-center gap-2 p-2.5 rounded-lg ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: difficulty.tone }} />
@@ -323,77 +331,87 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                     correspondante (audit v5.6.3 — avant, deux chiffres pour la
                     même étiquette). Les 3 taux de scénario (prudent / central /
                     optimiste du Simulateur) sont inclus avec un badge (paquet 2). */}
-                {Array.from(
-                  new Set(
-                    COMPARISON_RATES.concat(scenarioRates).concat([
-                      (eff?.goalAnnualReturn ?? inputs.goalAnnualReturn) * 100,
-                    ]),
-                  ),
-                )
-                  .sort((a, b) => a - b)
-                  .map(rr => {
-                    const res = solveGoal({ ...inputs, goalAnnualReturn: rr / 100 })
-                    if (res.pmtPerMonth === null || res.pmtPerMonth <= 0) return null
-                    const isCurrent = Math.abs((eff?.goalAnnualReturn ?? inputs.goalAnnualReturn) * 100 - rr) < 0.01
-                    const scenarioId = (Object.keys(SCENARIO_LABELS) as (keyof typeof SCENARIO_LABELS)[]).find(
-                      s =>
-                        Math.abs(
-                          historical[
-                            s === "prudent" ? "netReturn" : s === "optimiste" ? "avgReturn" : "compoundedReturn"
-                          ] *
-                            100 -
-                            rr,
-                        ) < 0.01,
-                    )
-                    const gains = res.totalGains ?? 0
-                    const totalPaid = res.totalInvested ?? 0
-                    return (
-                      <tr
-                        key={rr}
+                {(() => {
+                  // Déduplication sur la valeur ARRONDIE (audit) : 10,07 (taux
+                  // courant) et 10,0655 (moyenne arithmétique) s'affichaient en
+                  // deux lignes « 10,07 % ← Optimiste » avec des montants
+                  // différents — une seule ligne par taux affiché. FIRST WINS :
+                  // le taux COURANT est inséré en premier, c'est SA valeur
+                  // exacte qui reste (le montant de la carte principale se
+                  // retrouve à l'identique dans la ligne correspondante).
+                  const seen = new Set<string>()
+                  const dedup: number[] = []
+                  for (const rr of [(eff?.goalAnnualReturn ?? inputs.goalAnnualReturn) * 100]
+                    .concat(COMPARISON_RATES)
+                    .concat(scenarioRates)) {
+                    const key = rr.toFixed(2)
+                    if (!seen.has(key)) {
+                      seen.add(key)
+                      dedup.push(rr)
+                    }
+                  }
+                  return dedup.sort((a, b) => a - b)
+                })().map(rr => {
+                  const res = solveGoal({ ...inputs, goalAnnualReturn: rr / 100 })
+                  if (res.pmtPerMonth === null || res.pmtPerMonth <= 0) return null
+                  const isCurrent = Math.abs((eff?.goalAnnualReturn ?? inputs.goalAnnualReturn) * 100 - rr) < 0.01
+                  const scenarioId = (Object.keys(SCENARIO_LABELS) as (keyof typeof SCENARIO_LABELS)[]).find(
+                    s =>
+                      Math.abs(
+                        historical[
+                          s === "prudent" ? "netReturn" : s === "optimiste" ? "avgReturn" : "compoundedReturn"
+                        ] *
+                          100 -
+                          rr,
+                      ) < 0.01,
+                  )
+                  const gains = res.totalGains ?? 0
+                  const totalPaid = res.totalInvested ?? 0
+                  return (
+                    <tr
+                      key={rr}
+                      className={cn(
+                        "border-b border-border/30",
+                        isCurrent && "bg-primary/10",
+                        !isCurrent && "odd:bg-glass/40",
+                      )}
+                    >
+                      <td className={cn("py-2.5 px-3 font-bold text-right", isCurrent ? "text-primary" : "text-text")}>
+                        {fmtRate(rr)}
+                        {isCurrent && " ←"}
+                        {scenarioId && (
+                          <span
+                            className={cn(
+                              "ml-1.5 text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded align-middle",
+                              scenarioId === inputs.returnScenario
+                                ? "bg-primary/15 text-primary"
+                                : "bg-glass text-text-dim",
+                            )}
+                          >
+                            {SCENARIO_LABELS[scenarioId]}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 mono text-primary font-semibold text-right">
+                        {fmtCurrency(res.pmtPerMonth)}
+                      </td>
+                      <td className="py-2.5 px-3 mono text-text text-right">{fmtCurrency(totalPaid)}</td>
+                      <td
                         className={cn(
-                          "border-b border-border/30",
-                          isCurrent && "bg-primary/10",
-                          !isCurrent && "odd:bg-glass/40",
+                          "py-2.5 px-3 mono font-semibold text-right",
+                          gains > 0 ? "text-primary" : gains < 0 ? "text-danger" : "text-text-dim",
                         )}
                       >
-                        <td
-                          className={cn("py-2.5 px-3 font-bold text-right", isCurrent ? "text-primary" : "text-text")}
-                        >
-                          {fmtRate(rr)}
-                          {isCurrent && " ←"}
-                          {scenarioId && (
-                            <span
-                              className={cn(
-                                "ml-1.5 text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded align-middle",
-                                scenarioId === inputs.returnScenario
-                                  ? "bg-primary/15 text-primary"
-                                  : "bg-glass text-text-dim",
-                              )}
-                            >
-                              {SCENARIO_LABELS[scenarioId]}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 mono text-primary font-semibold text-right">
-                          {fmtCurrency(res.pmtPerMonth)}
-                        </td>
-                        <td className="py-2.5 px-3 mono text-text text-right">{fmtCurrency(totalPaid)}</td>
-                        <td
-                          className={cn(
-                            "py-2.5 px-3 mono font-semibold text-right",
-                            gains > 0 ? "text-primary" : gains < 0 ? "text-danger" : "text-text-dim",
-                          )}
-                        >
-                          {gains > 0 ? "+" : ""}
-                          {fmtCurrency(gains)}
-                        </td>
-                        <td className="py-2.5 px-3 text-text-dim">
-                          {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
-                          provient de votre épargne
-                        </td>
-                      </tr>
-                    )
-                  })}
+                        {gains > 0 ? "+" : ""}
+                        {fmtCurrency(gains)}
+                      </td>
+                      <td className="py-2.5 px-3 text-text-dim">
+                        {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
+                        provient de votre épargne
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -480,6 +498,13 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                   </p>
                   <p className="mono text-lg font-bold text-text mt-1.5">{fmtCurrency(card.value)} /mois</p>
                   <p className="text-[10px] text-text-dim mt-1.5 leading-snug">{card.desc}</p>
+                  {/* Audit : « P90 à 0 € » n'est pas une erreur — le capital de
+                      départ suffit déjà dans ce scénario favorable. */}
+                  {card.value === 0 && (
+                    <p className="text-[9px] text-success mt-1.5 leading-snug">
+                      ✓ Votre capital de départ suffit déjà dans ce scénario — aucun versement nécessaire.
+                    </p>
+                  )}
                 </div>
               ))}
               <div className="sm:col-span-3 rounded-xl bg-primary/8 border border-primary/20 px-3.5 py-2.5 flex items-start gap-2">

@@ -38,6 +38,8 @@ interface DecumAccumulator {
   ruinYears: number[]
   withdrawalByYear: number[]
   withdrawalNetByYear: number[]
+  /** Retraits nets déflatés en euros du DÉPART retraite (voir runDecumulationPath). */
+  withdrawalNetRealByYear: number[]
   totalTaxPaid: number
   totalFeesPaid: number
 }
@@ -69,6 +71,7 @@ function runDecumulationPath(
   ruinYear: number | null
   withdrawalByYear: number[]
   withdrawalNetByYear: number[]
+  withdrawalNetRealByYear: number[]
   totalTax: number
   totalFees: number
 } {
@@ -85,6 +88,8 @@ function runDecumulationPath(
   let totalTax = 0
   let totalFees = 0
   const withdrawalNetByYear: number[] = Array.from({ length: years + 1 }, () => 0)
+  const withdrawalNetRealByYear: number[] = Array.from({ length: years + 1 }, () => 0)
+  let inflationIndex = 1
   const aumFeeRate = monthlyRate(
     Math.max(0, inputs.etfFees + inputs.managementFees + (inputs.envelope === "av" ? inputs.insuranceFees : 0)),
   )
@@ -93,6 +98,10 @@ function runDecumulationPath(
   let ruinYear: number | null = null
   let lastYearReturn = 0
   let guardrailCut = false
+  // Index d'inflation CUMULÉ depuis le départ de la retraite : sert à exprimer
+  // chaque retrait net dans l'€ du départ (pouvoir d'achat) — croît que
+  // l'indexation soit appliquée ou non (l'érosion du pouvoir d'achat ne
+  // s'arrête jamais).
 
   for (let month = 1; month <= years * 12; month += 1) {
     const yearIndex = Math.floor((month - 1) / 12)
@@ -169,8 +178,8 @@ function runDecumulationPath(
     capital = roundCent(Math.max(0, capitalAfterFees - actualWithdrawal))
     // Indexation inflation — taux fixe (inflation saisie) OU série française
     // réelle rejouée (stochasticInflation). Sautée l'année d'un garde-fou.
+    const annualInflation = inflations?.[yearIndex] ?? inputs.inflation
     if (inputs.withdrawalInflation && !guardrailCut) {
-      const annualInflation = inflations?.[yearIndex] ?? inputs.inflation
       monthlyWithdrawal = roundCent(monthlyWithdrawal * (1 + monthlyRate(annualInflation)))
     }
     if (capital <= 0 && ruinYear === null) ruinYear = Math.ceil(month / 12)
@@ -184,6 +193,12 @@ function runDecumulationPath(
     )
     if (month % 12 === 0) {
       capitalPath.push(roundCent(capital))
+      // Retrait net de l'année exprimé en € du départ de la retraite : divisé
+      // par l'inflation cumulée jusqu'à cette année (les euros nominaux de
+      // l'année y valent moins au départ). L'inflation est prise en compte
+      // même si l'indexation de la rente est désactivée ou sautée (garde-fou).
+      inflationIndex *= 1 + annualInflation
+      withdrawalNetRealByYear[yearIndex + 1] = roundCent((withdrawalNetByYear[yearIndex + 1] ?? 0) / inflationIndex)
       // Rendement EFFECTIF de l'année : pour un krach paramétrable, c'est le
       // choc appliqué (pas le rendement d'origine) — sinon le garde-fou de
       // l'année suivante verrait une année « positive » et ne couperait pas
@@ -191,7 +206,15 @@ function runDecumulationPath(
       lastYearReturn = annualReturn
     }
   }
-  return { capitalPath, ruinYear, withdrawalByYear, withdrawalNetByYear, totalTax, totalFees }
+  return {
+    capitalPath,
+    ruinYear,
+    withdrawalByYear,
+    withdrawalNetByYear,
+    withdrawalNetRealByYear,
+    totalTax,
+    totalFees,
+  }
 }
 
 /**
@@ -253,6 +276,9 @@ function runDecumulationRange(
     for (let y = 1; y <= years; y += 1) {
       acc.withdrawalByYear[y] = roundCent((acc.withdrawalByYear[y] ?? 0) + (path.withdrawalByYear[y] ?? 0))
       acc.withdrawalNetByYear[y] = roundCent((acc.withdrawalNetByYear[y] ?? 0) + (path.withdrawalNetByYear[y] ?? 0))
+      acc.withdrawalNetRealByYear[y] = roundCent(
+        (acc.withdrawalNetRealByYear[y] ?? 0) + (path.withdrawalNetRealByYear[y] ?? 0),
+      )
     }
     acc.totalTaxPaid = roundCent(acc.totalTaxPaid + path.totalTax)
     acc.totalFeesPaid = roundCent(acc.totalFeesPaid + path.totalFees)
@@ -266,6 +292,7 @@ function finalizeDecumulation(
   ruinYears: number[],
   withdrawalByYear: number[],
   withdrawalNetByYear: number[],
+  withdrawalNetRealByYear: number[],
   totalTaxPaid: number,
   totalFeesPaid: number,
   simCount: number,
@@ -295,6 +322,9 @@ function finalizeDecumulation(
     p90: band(0.9),
     withdrawals,
     withdrawalsNet,
+    // Retraits nets déflatés en euros du départ retraite (pouvoir d'achat) :
+    // l'échelle honnête pour comparer aux « dépenses en euros d'aujourd'hui ».
+    withdrawalsNetReal: withdrawalNetRealByYear.map(v => roundCent(v / simCount)),
     // Total des impôts et frais MOYENNÉS sur toutes les simulations (une
     // « facture » moyenne sur toute la retraite).
     totalTaxPaid: roundCent(totalTaxPaid / simCount),
@@ -427,6 +457,7 @@ export function runDecumulation(
     ruinYears: [],
     withdrawalByYear: Array.from({ length: years + 1 }, () => 0),
     withdrawalNetByYear: Array.from({ length: years + 1 }, () => 0),
+    withdrawalNetRealByYear: Array.from({ length: years + 1 }, () => 0),
     totalTaxPaid: 0,
     totalFeesPaid: 0,
   }
@@ -437,6 +468,7 @@ export function runDecumulation(
     acc.ruinYears,
     acc.withdrawalByYear,
     acc.withdrawalNetByYear,
+    acc.withdrawalNetRealByYear,
     acc.totalTaxPaid,
     acc.totalFeesPaid,
     simCount,
@@ -472,6 +504,7 @@ export async function runDecumulationAsync(
     ruinYears: [],
     withdrawalByYear: Array.from({ length: years + 1 }, () => 0),
     withdrawalNetByYear: Array.from({ length: years + 1 }, () => 0),
+    withdrawalNetRealByYear: Array.from({ length: years + 1 }, () => 0),
     totalTaxPaid: 0,
     totalFeesPaid: 0,
   }
@@ -492,6 +525,7 @@ export async function runDecumulationAsync(
     acc.ruinYears,
     acc.withdrawalByYear,
     acc.withdrawalNetByYear,
+    acc.withdrawalNetRealByYear,
     acc.totalTaxPaid,
     acc.totalFeesPaid,
     simCount,

@@ -4,6 +4,52 @@
 
 ---
 
+## v6.5.0 — Audit honnêteté : les 30 points vérifiés et corrigés
+
+Audit systématique des 30 points d'honnêteté (moteur, fiscalité, affichage) — chaque correction est couverte par un test ou une vérification navigateur. Deux nouveautés produit notables : un **mode Débutant / Avancé** (les notions techniques — XIRR, PFU, TMI, Fisher, Pástor–Stambaugh, Guyton–Klinger — sont masquées par défaut) et une **validation de cohérence âge / durée / retraite**. **353 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile, zéro erreur console).
+
+### 🎛️ Mode Débutant / Avancé (audit item 12)
+
+- **`Sidebar.tsx` / `ActionBar.tsx`** : bascule « Mode Débutant / Avancé » dans le nouveau menu « ⋯ » du header — la préférence persiste (`uiMode.ts`). En Débutant : XIRR, sélecteur PFU / barème TMI, formule de Fisher, Pástor–Stambaugh et Guyton–Klinger sont masqués (remplacés par des résumés clairs) ; en Avancé, tout redevient visible.
+
+### 📊 Moteur & chiffres (items 1/3/8/11/13/22/24/27)
+
+- **`decumulation.ts`** : `withdrawalsNetReal` — la rente en € d'aujourd'hui, déflatée comme le reste de l'app.
+- **`validation.ts`** : cohérence âge actuel + durée vs âge de retraite (avertissement visible sur l'onglet Rente).
+- **`migration.ts`** : enveloppe versionnée `{ version, inputs }` — lecture rétro-compatible, réécriture à la prochaine sauvegarde.
+- **`taxRules.ts`** : inchangé — les taux 2026 (18,6 % social CTO / 17,2 % AV) étaient déjà corrects.
+
+### 🖥️ Affichage honnête (items 2/4/5/6/7/10/15/16/17/19/20/30)
+
+- **Rente** : capital à décumuler explicite (brut + net de sortie), bandeau risque en haut, couverture en € d'aujourd'hui, cartes P10/P50/P90 à double échelle (nominal + réel).
+- **Objectif** : synchronisation avec le scénario principal (la durée et le rendement du Simulateur pilotent les cartes), tableau de comparaison dédupliqué (une seule ligne « 10,07 % ← »), P90 = 0 expliqué.
+- **Méthodologie** : le panneau cite le scénario réellement appliqué (Central 8,22 %) au lieu de la moyenne arithmétique — plus de contradiction.
+- **Calendrier des flux** : le total des impôts est remplacé par « — » (non cumulable : somme sans sens) ; le capital initial réconcilie le total versements.
+- **Sidebar** : accordéons repliés par défaut, « Risque » → « Tolérance », âge / durée / retraite visibles.
+- **Header** : actions secondaires (Comparer, Partager, mode, réinitialiser) dans le menu « ⋯ » ; « Se connecter » clarifié.
+
+### 🧪 Tests
+
+- `audit-fixes.test.ts` (20 nouveaux) : taux effectif du 1er retrait, réconciliation des retraits, validation d'âge, migration, percentiles. Tests composants mis à jour pour le mode Débutant/Avancé.
+
+---
+
+## v6.4.1 — Scénario de rendement dans les réglages : le résultat d'abord
+
+Demande utilisateur : _« le Scénario de rendement gâche la vue, mets-le dans les réglages, dans Votre épargne »_. Le sélecteur prudent / central / optimiste quitte le haut de l'onglet Projection et rejoint la section **« Votre épargne »** de la sidebar, sous la durée — le héro ouvre désormais la vue sans écran de réglages. Zéro changement moteur : seule la couche d'affichage est déplacée.
+
+### ↔️ Déplacement (même composant, même logique)
+
+- **`ScenarioSelector.tsx`** : version compacte verticale (3 rangées radio label + taux, bandeau « médiane historique » conservé pour le scénario Central) — adaptée à la largeur de la sidebar (380 px), là où la grille 3 colonnes écrasait les cartes.
+- **`Sidebar.tsx`** : le sélecteur s'insère dans « Votre épargne » (capital → mensualité → durée → scénario). Le texte de « Pourquoi ces chiffres ? » référence la nouvelle position (« le scénario choisi dans « Votre épargne » »).
+- **`SimulatorTab.tsx`** : le sélecteur est retiré du haut de l'onglet — le héro « Votre patrimoine estimé » est la première chose vue (cohérent avec l'entonnoir v6 : le résultat d'abord).
+
+### 🧪 Gate
+
+- Typecheck ✓ lint ✓ tests ✓ · nouveau test composant : le sélecteur vit dans la sidebar, un clic sur Optimiste change la projection et retire le bandeau médiane (retour Central = bandeau restauré).
+
+---
+
 ## v6.4.0 — Honnêteté des hypothèses : frais réalistes, projection médiane, rente nette, profil de risque
 
 Checklist produit de l'utilisateur (« corrections prioritaires », 10 sections) passée au crible du moteur, puis implémentée en 3 paquets : (1) **honnêteté des hypothèses** — plus jamais 0 % de frais par défaut, projection centrale sur la médiane historique, Monte Carlo en euros réels ; (2) **rente nette + objectif inversé robuste** — le décaissement applique enfin la fiscalité des retraits et les frais de gestion, et l'objectif inversé calcule le versement pour P10/P50/P90 ; (3) **profil utilisateur** — âge, pensions, dépenses, tolérance au risque et alerte « plan trop risqué ». **Changement de paradigme moteur** : la projection par défaut passe de la moyenne arithmétique (10,07 %) au rendement géométrique composé (8,22 %) — le chiffre honnête (733 k€ → 519 k€ sur le scénario par défaut). **327 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile, zéro erreur console).

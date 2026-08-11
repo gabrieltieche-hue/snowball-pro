@@ -138,10 +138,14 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                   >
                     {fmtCompact(totals.frais)}
                   </td>
+                  {/* Les impôts sont « si liquidation cette année » — leur somme
+                      n'a pas de sens (non cumulable, audit) : on affiche « — »
+                      au lieu d'un total trompeur. */}
                   <td
-                    className={`py-2 px-3 mono text-[11px] font-bold text-right ${totals.impots > 0 ? "text-danger" : "text-text-dim"}`}
+                    title="Impôts non cumulables : somme théorique si liquidation chaque année — pas un impôt réel"
+                    className="py-2 px-3 mono text-[11px] font-bold text-text-dim text-right"
                   >
-                    {fmtCompact(totals.impots)}
+                    —
                   </td>
                   <td className="py-2 px-3" />
                 </tr>
@@ -151,7 +155,8 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
           <p className="text-[10px] text-text-dim italic mt-2">
             « Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à l'impôt
             théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés réellement
-            payés et ne deviennent dus qu'à la revente.
+            payés et ne deviennent dus qu'à la revente — leur total n'est donc pas affiché (non cumulable). Seuls les
+            versements et les frais se cumulent.
           </p>
         </div>
       )}
