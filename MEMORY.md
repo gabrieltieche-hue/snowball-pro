@@ -688,3 +688,39 @@ Demande utilisateur : *« Discutons de ces issues et décidons… »* puis *« l
 
 - Version 6.1.0 → **6.2.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.2.0"`), CHANGELOG (entrée v6.2.0), MEMORY.md (cette entrée).
 - Branche `refactor/ui-cleanup-p0-p1` → merge sur `main`, puis `vercel --prod` → https://snowball-pro.vercel.app (HTTP 200, titre v6.2, `CACHE_VERSION` v6.2.0 vérifiée).
+
+---
+
+## SESSION — 2026-08-11 (v6.3.0 : passe d'harmonisation design system — couleurs, rouge sémantique, tableaux)
+
+### Résumé
+
+Demande utilisateur : *« j'ai des problèmes à te signaler et je veux qu'on en discute »* + un audit externe de 50 détections (« à prendre avec des pincettes »). Deux phases décidées ensemble : **B — vérification visuelle** (Playwright desktop 1440 + mobile 390) puis **A — harmonisation** du noyau de détections confirmées. **Zéro changement moteur** : uniquement la couche d'affichage. **308 tests**, gate 100 % vert, **déployé en production** (commit + `vercel --prod`).
+
+### Phase B — verdict sur l'audit (mesuré, pas supposé)
+
+- **~40 % de détections déjà corrigées en v6.2** (sidebar repliable, focus, grille KPI, colonne Rente) — l'audit était généré sur ≤ v6.1.
+- **Fausses** : « sidebar 100 k€ ≠ Goal 10 k€ » (les deux sont à 10 k€ — le vrai sujet est l'indépendance des inputs), « pas de tooltip » (les deux graphiques en ont), « Comparer jamais montré » (ComparisonTab câblé).
+- **Confirmées et corrigées** : débordement des inputs « Augmentation de l'épargne »/« Courtage » (~34 px, dépendant de la largeur réelle de JetBrains Mono), CTA de l'état vide MC à ~520 px de la zone vide, « grand vide » Goal ÉCARTÉ (gap 0 px), contrastes tokens OK (seul l'ambre clair était sous AA — corrigé).
+
+### Phase A — modifications (13 fichiers, 273+/145-)
+
+- **Rouge sémantique** : frais/impôts rouges seulement si > 0 (CashflowCalendar, AmortissementTable, FeeImpact — qui avait des hex sombres illisibles en dark) ; « Krach simulé » + bloc réglage crise en **ambre** (réglage choisi ≠ erreur) ; carte verte « Objectif irréaliste » neutralisée (pastille de difficulté porte le statut).
+- **Onglet Goal rebrandé or** : `#6366F1` → `var(--color-primary)` partout (sliders, cartes, tableau), GoalProgress sans dégradé néon.
+- **Graphiques sur tokens** : P10/P90/médiane/moyenne/ruine → `--color-success`/`danger`/`accent` ; **ligne objectif étiquetée « Objectif »** (ReferenceLine ambre + label) ; modèles de retrait Rente tokenisés ; **tons hex-alpha `#XX18` → `color-mix()`** (bug latent : `var(--color-primary)20` = CSS invalide).
+- **Méthodologie alignée à gauche** ; **tableaux** montants à droite + zebra + totaux teintés + zéros neutres (Goal, Comparison, Cashflow, Amortissement).
+- **Badge « FIXE » → « Montant fixe »** ; **CTA « Lancer » dans l'état vide MC**.
+- **SliderInput** : label `flex-1` + saisie `shrink-0` → fin du débordement.
+- **Token `--color-warning` clair** `#b8860b` → `#8a6508` (**2,9:1 → 4,76:1 AA** — bénéficie aux usages existants).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **308/308 tests** ✓ build ✓ (dist 1 031 kB / 302 kB gzip) — les classes arbitraires Tailwind `bg-[var(--color-success)]/8` vérifiées **dans le CSS de production** (color-mix oklab) et au navigateur.
+- Playwright : overflow sidebar éliminé (scrollWidth = clientWidth), indigo à 0 occurrence, label « Objectif » rendu, bloc krach ambre (label #8a6508) après run Rente avec crise activée, MC complet depuis l'état vide, 0 erreur console, mobile 390 px sans débordement.
+- Version 6.2.0 → **6.3.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.3.0"`, titre index.html), CHANGELOG (entrée v6.3.0), MEMORY.md (cette entrée).
+
+### Pistes restantes (hors périmètre, discutées avec l'utilisateur)
+
+- Headers sticky sur tableaux longs (fragile avec le header app sticky — à faire proprement).
+- Carte « Votre projet » en bas de sidebar (redondante avec le héro).
+- **Mobile dédié** : le plus gros chantier produit (responsive-stacké aujourd'hui, pas de layout mobile propre).

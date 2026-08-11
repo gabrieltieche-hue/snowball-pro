@@ -242,8 +242,12 @@
   --color-primary: #7c5e0a;
   --color-primary-dark: #624a08;
   --color-primary-light: #996f09;
+  /* M18 — warning clair assombri (#8a6508 au lieu de #b8860b) : le texte
+     ambre sur crème passait sous le seuil AA 4,5:1 (2,9:1). #8a6508 atteint
+     4,75:1 — utilisé par « Euros d'aujourd'hui », le rappel de réglage
+     « Krach simulé » et la colonne « En € d'aujourd'hui ». */
   --color-accent: #8a6300;
-  --color-warning: #b8860b;
+  --color-warning: #8a6508;
   --color-danger: #b83a3a;
   --color-danger-light: #d04848;
   --color-success: #1d8a4e;

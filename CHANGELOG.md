@@ -4,6 +4,52 @@
 
 ---
 
+## v6.3.0 — Passe d'harmonisation design system : les couleurs parlent enfin le même langage
+
+Suite d'un audit externe (50 détections, généré depuis des captures d'une version ≤ v6.1) : vérification visuelle en navigateur réel (phase B) puis correction des incohérences confirmées (phase A). L'audit contenait ~40 % de points déjà corrigés en v6.2 et quelques affirmations fausses (éliminées par mesure) ; le noyau restant — couleurs hors charte, rouge sémantique mal utilisé, alignements — est traité ici. **Zéro changement moteur** : uniquement la couche d'affichage. **308 tests**, gate 100 % vert, vérifié en navigateur réel (desktop 1440 + mobile 390, clair + sombre).
+
+### 🎨 Rouge sémantique — le rouge ne signale plus que de vrais coûts
+
+- **Frais et impôts à 0 € en neutre** (Calendrier des flux, Détail année par année, carte « Ce que les frais vous coûtent ») : avant, les colonnes étaient rouges même à 0,00 € — le rouge ne marque plus que les montants réellement payés.
+- **« Krach simulé » et le bloc réglage « Partir en période difficile » en ambre** : c'est un scénario durci CHOSI par l'utilisateur, pas une erreur — le danger rouge est réservé aux échecs réels.
+- **Carte verte « Objectif irréaliste » neutralisée** (onglet Combien investir ?) : la difficulté est portée par la pastille de couleur, plus par le fond de carte.
+
+### 🎯 Onglet « Combien investir ? » rebrandé or
+
+- **Fini l'indigo `#6366F1`** : sliders, cartes de résultat, ligne du tableau comparatif et surlignage passent sur les tokens or/ivoire de la charte.
+- **Barre de progression sans arc-en-ciel** : le dégradé néon indigo/vert/ambre est remplacé par un dégradé or — le statut est porté par le pourcentage, pas par la couleur.
+
+### 📊 Graphiques alignés sur les tokens (clair et sombre)
+
+- P10/P90, médiane/moyenne de l'histogramme, barres de ruine et cartes de scénarios Monte Carlo : les hex « Tailwind par défaut » (`#4ADE80`, `#F87171`, `#60A5FA`) sont remplacés par `--color-success` / `--color-danger` / `--color-accent` — les couleurs s'adaptent désormais au thème.
+- **Ligne objectif étiquetée « Objectif »** sur le graphique Monte Carlo (avant : un trait bleu muet) et passée en ambre.
+- **Modèles de retrait de la Rente tokenisés** (menthe/bleu vif → succès/accent) ; les tons alpha hex `#XX18` deviennent `color-mix()` (les variables CSS n'acceptent pas le suffixe hex-alpha).
+
+### 📐 Méthodologie & tableaux
+
+- **Méthodologie alignée à gauche** : les longues explications n'ont plus un bord gauche en dents de scie.
+- **Tableaux** (comparaison annuelle, calendrier des flux, détail annuel, comparatif d'objectif) : montants alignés à droite, zebra léger, totaux sur fond teinté, zéros en neutre.
+
+### ✏️ Micro-texte & états
+
+- **Badge « FIXE » → « Montant fixe »** à côté de la rente personnalisée.
+- **CTA « Lancer » dans l'état vide Monte Carlo** : avant, il était en haut de l'onglet, à ~520 px de la zone vide — l'action vit maintenant là où l'utilisateur la cherche.
+
+### 🐛 Bug visuel confirmé en vérification : débordement des champs de la sidebar
+
+- Les saisies directes « Augmentation de votre épargne » et « Courtage sur chaque versement » dépassaient le bord droit de la sidebar (rognées par `overflow-hidden`, ~34 px) — dépendant de la largeur réelle de la police mono, donc invisible en dev rapide. Fix : label `flex-1` (s'enroule) + zone de saisie `shrink-0` dans `SliderInput`.
+
+### 🎚️ Tokens
+
+- **`--color-warning` clair assombri** (`#b8860b` → `#8a6508`) : le texte ambre sur crème passait sous le seuil AA (2,9:1) → **4,76:1** — bénéficie à tous les usages existants (Euros d'aujourd'hui, colonne « En € d'aujourd'hui »…).
+
+### 🧪 Gate
+
+- Typecheck ✓ lint ✓ **308/308 tests** ✓ build ✓ (dist 1 031 kB / 302 kB gzip) · vérification Playwright : overflow éliminé (scrollWidth = clientWidth), indigo à 0 occurrence, label « Objectif » rendu sur le graphe, bloc krach ambre après lancement, run Monte Carlo complet depuis l'état vide, 0 erreur console, aucun débordement mobile (390 px).
+- Version 6.2.0 → **6.3.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION = "snowball-pro-v6.3.0"`, titre index.html), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.3).
+
+---
+
 ## v6.2.0 — Nettoyage UI P0+P1 : fin du « tout au même poids »
 
 Suite à la critique UX (hiérarchie visuelle, répétitions), chantier d'organisation de l'information sur l'onglet Rente + respiration de la sidebar + hiérarchie typographique. Zéro changement moteur : uniquement la présentation. **308 tests**, gate 100 % vert, vérifié en navigateur réel (desktop 1440 + mobile 375, clair + sombre, clavier).

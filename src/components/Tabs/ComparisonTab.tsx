@@ -53,12 +53,19 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border">
-                {["Année", "Scénario A", "Scénario B", "Écart (B − A)"].map(h => (
+                {[
+                  { label: "Année", align: "left" },
+                  { label: "Scénario A", align: "right" },
+                  { label: "Scénario B", align: "right" },
+                  { label: "Écart (B − A)", align: "right" },
+                ].map(h => (
                   <th
-                    key={h}
-                    className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
+                    key={h.label}
+                    className={`text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 whitespace-nowrap ${
+                      h.align === "right" ? "text-right" : "text-left"
+                    }`}
                   >
-                    {h}
+                    {h.label}
                   </th>
                 ))}
               </tr>
@@ -70,13 +77,13 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.005 }}
-                  className="border-b border-border/30 hover:bg-glass transition-colors"
+                  className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
                 >
                   <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
-                  <td className="py-2 px-3 mono text-text">{fmtCompact(row.A)}</td>
-                  <td className="py-2 px-3 mono text-text">{fmtCompact(row.B)}</td>
+                  <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.A)}</td>
+                  <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.B)}</td>
                   <td
-                    className={`py-2 px-3 mono font-semibold ${
+                    className={`py-2 px-3 mono font-semibold text-right ${
                       row.diff > 0 ? "text-primary" : row.diff < 0 ? "text-danger" : "text-text-dim"
                     }`}
                   >

@@ -18,18 +18,17 @@ export function GoalProgress({ current, target }: GoalProgressProps) {
         <span className="mono text-xs font-bold text-text">{pct.toFixed(1).replace(".", ",")}%</span>
       </div>
       <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+        {/* M12 — la barre de progression suit la charte (or/ivoire) au lieu du
+            dégradé néon indigo/vert/ambre : le statut (atteint ou non) est
+            porté par le pourcentage et le badge de difficulté, pas par la
+            couleur de la jauge. */}
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="h-full rounded-full"
           style={{
-            background:
-              pct >= 100
-                ? "linear-gradient(90deg, #00f291, #6366f1)"
-                : pct > 50
-                  ? "linear-gradient(90deg, #6366f1, #f59e0b)"
-                  : "linear-gradient(90deg, #6366f1, #818cf8)",
+            background: "linear-gradient(90deg, var(--color-primary-dark), var(--color-primary-light))",
           }}
         />
       </div>

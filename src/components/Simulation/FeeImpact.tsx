@@ -29,13 +29,20 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
     <div className="card-subtle rounded-2xl p-5 space-y-2">
       <SectionHeader title="Ce que les frais vous coûtent" icon={Percent} level="card" />
       <div className="space-y-1.5">
+        {/* M17 — zéro en neutre, pas en rouge : des frais nuls ne sont pas un
+            problème. Le rouge (token danger, plus de hex hardcodés qui
+            s'effaçaient sur fond sombre) ne sert que quand il y a un vrai
+            coût. */}
         {[
-          { label: "Frais débités au total", value: lastRow.feesLost * factor, color: "#8B3A3A" },
-          { label: "Capital perdu à cause des frais", value: feeImpact, color: "#A84A4A" },
+          { label: "Frais débités au total", value: lastRow.feesLost * factor },
+          { label: "Capital perdu à cause des frais", value: feeImpact },
         ].map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">
             <span className="text-[11px] text-text-dim">{item.label}</span>
-            <span className="mono text-xs font-semibold" style={{ color: item.color }}>
+            <span
+              className="mono text-xs font-semibold"
+              style={{ color: item.value > 0 ? "var(--color-danger)" : "var(--color-text-dim)" }}
+            >
               {fmtCurrency(item.value)}
             </span>
           </div>

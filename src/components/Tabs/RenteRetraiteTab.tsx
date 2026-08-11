@@ -57,7 +57,7 @@ const WITHDRAWAL_MODELS: {
     desc: "Retrait prudent de 4 %/an (Bengen)",
     rate: 0.04,
     icon: Shield,
-    tone: "#4ADE80",
+    tone: "var(--color-success)",
   },
   {
     id: "ultra-safe",
@@ -65,7 +65,7 @@ const WITHDRAWAL_MODELS: {
     desc: "Retrait conservateur de 2,5 %/an",
     rate: 0.025,
     icon: PiggyBank,
-    tone: "#60A5FA",
+    tone: "var(--color-accent)",
   },
   {
     id: "optimistic",
@@ -200,7 +200,7 @@ export function RenteRetraiteTab({
                     <div className="flex items-start gap-2.5">
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: `${model.tone}18`, color: model.tone }}
+                        style={{ background: `color-mix(in srgb, ${model.tone} 18%, transparent)`, color: model.tone }}
                       >
                         <Icon size={15} />
                       </div>
@@ -251,10 +251,13 @@ export function RenteRetraiteTab({
                 <span className="text-[10px] text-text-dim uppercase tracking-wider">Rente mensuelle initiale</span>
                 <span
                   className="text-[10px] mono font-bold px-1.5 py-0.5 rounded"
-                  style={{ background: `${selectedModel.tone}20`, color: selectedModel.tone }}
+                  style={{
+                    background: `color-mix(in srgb, ${selectedModel.tone} 20%, transparent)`,
+                    color: selectedModel.tone,
+                  }}
                 >
                   {inputs.withdrawalModel === "custom"
-                    ? "FIXE"
+                    ? "Montant fixe"
                     : `${fmtDecimal(selectedModel.rate * 100, 1).replace(/,0$/, "")} %`}
                 </span>
               </div>
@@ -341,7 +344,7 @@ export function RenteRetraiteTab({
 
             {/* Partir en période difficile : un krach déterministe choisi par
                 l'utilisateur, appliqué à CHAQUE scénario Monte-Carlo. */}
-            <div className="glass rounded-xl p-4 border border-danger/20">
+            <div className="glass rounded-xl p-4 border border-warning/20">
               <Toggle
                 checked={inputs.crisisScenario}
                 onChange={v => updateInput("crisisScenario", v)}
@@ -379,7 +382,7 @@ export function RenteRetraiteTab({
                               Math.min(inputs.crisisStartOffset, maxOffset),
                               0,
                               maxOffset,
-                              "var(--color-danger)",
+                              "var(--color-warning)",
                             )}
                           />
                           <div className="flex justify-between text-[10px] text-text-dim mt-1">
@@ -393,7 +396,7 @@ export function RenteRetraiteTab({
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-[10px] text-text-dim uppercase tracking-wider">Intensité du krach</span>
-                      <span className="text-xs mono font-bold text-danger">
+                      <span className="text-xs mono font-bold text-warning">
                         −{Math.round(inputs.crisisIntensity * 100)} %
                       </span>
                     </div>
@@ -406,7 +409,7 @@ export function RenteRetraiteTab({
                       onChange={e => updateInput("crisisIntensity", Number(e.target.value) / 100)}
                       className="w-full"
                       aria-label="Intensité du krach en pourcentage"
-                      style={rangeFill(Math.round(inputs.crisisIntensity * 100), 10, 60, "var(--color-danger)")}
+                      style={rangeFill(Math.round(inputs.crisisIntensity * 100), 10, 60, "var(--color-warning)")}
                     />
                     <div className="flex justify-between text-[10px] text-text-dim mt-1">
                       <span>−10 %</span>
@@ -414,7 +417,7 @@ export function RenteRetraiteTab({
                     </div>
                   </div>
                   <p className="text-[9px] text-text-dim leading-snug flex items-start gap-1">
-                    <AlertTriangle size={10} className="shrink-0 mt-0.5 text-danger" />
+                    <AlertTriangle size={10} className="shrink-0 mt-0.5 text-warning" />
                     Chaque scénario subit cette chute la même année — le « et si le départ tombait en pleine crise ? »
                     appliqué à 100 % des cas, pas seulement au cas pessimiste.
                   </p>
@@ -593,7 +596,8 @@ function ResultsSection({
   extendedHistory: boolean
 }) {
   const survival = decumResult.survivalProbability
-  const survivalTone = survival >= 90 ? "#4ADE80" : survival >= 75 ? "var(--color-primary)" : "#F87171"
+  const survivalTone =
+    survival >= 90 ? "var(--color-success)" : survival >= 75 ? "var(--color-primary)" : "var(--color-danger)"
   const survivalLabel = survival >= 90 ? "Excellente" : survival >= 75 ? "Correcte" : "Risquée"
   const ruinYear = decumResult.ruinYearMedian
   const finalMedian = decumResult.p50[decumResult.p50.length - 1] ?? 0
@@ -615,19 +619,21 @@ function ResultsSection({
       <div
         className={cn(
           "rounded-2xl p-4 flex items-start gap-3 border",
-          success ? "bg-[#4ADE80]/8 border-[#4ADE80]/30" : "bg-[#F87171]/8 border-[#F87171]/30",
+          success
+            ? "bg-[var(--color-success)]/8 border-[var(--color-success)]/30"
+            : "bg-[var(--color-danger)]/8 border-[var(--color-danger)]/30",
         )}
       >
         <div
           className={cn(
             "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-            success ? "bg-[#4ADE80]/20" : "bg-[#F87171]/20",
+            success ? "bg-[var(--color-success)]/20" : "bg-[var(--color-danger)]/20",
           )}
         >
           {success ? (
-            <CheckCircle2 size={18} className="text-[#4ADE80]" />
+            <CheckCircle2 size={18} className="text-[var(--color-success)]" />
           ) : (
-            <XCircle size={18} className="text-[#F87171]" />
+            <XCircle size={18} className="text-[var(--color-danger)]" />
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -635,7 +641,7 @@ function ResultsSection({
             <h3 className="text-sm font-bold">{success ? "Votre rente est sûre" : "Votre rente est risquée"}</h3>
             <span
               className="text-[10px] mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-              style={{ background: `${survivalTone}20`, color: survivalTone }}
+              style={{ background: `color-mix(in srgb, ${survivalTone} 20%, transparent)`, color: survivalTone }}
             >
               {survivalLabel}
             </span>
@@ -646,18 +652,23 @@ function ResultsSection({
             de bourse différentes à chaque fois. Résultat : votre rente de{" "}
             <strong className="text-text">{fmtCurrency(decumResult.initialWithdrawal)} / mois</strong> est payée
             jusqu'au bout dans{" "}
-            <strong className={success ? "text-[#4ADE80]" : "text-[#F87171]"}>{fmtPct(survival)}</strong> des cas.
+            <strong className={success ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}>
+              {fmtPct(survival)}
+            </strong>{" "}
+            des cas.
           </p>
         </div>
       </div>
 
       {/* Krach simulé — à plat sous le verdict (le bloc vert ne contient plus
-          de sous-boîtes). */}
+          de sous-boîtes). M18 — ambre, pas rouge : c'est un réglage CHOISI
+          par l'utilisateur (scénario durci), pas une erreur ni un danger
+          imprévu. */}
       {crisisNote && (
-        <div className="rounded-xl bg-danger/8 border border-danger/20 px-4 py-3 flex items-start gap-2.5">
-          <AlertTriangle size={14} className="text-danger shrink-0 mt-0.5" />
+        <div className="rounded-xl bg-warning/8 border border-warning/20 px-4 py-3 flex items-start gap-2.5">
+          <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed text-text-dim">
-            <strong className="text-danger">Krach simulé :</strong> {crisisNote}
+            <strong className="text-warning">Krach simulé :</strong> {crisisNote}
           </p>
         </div>
       )}
@@ -737,13 +748,13 @@ function ResultsSection({
               ? `l'argent manque vers l'année ${ruinYear} dans les cas défavorables`
               : "le capital résiste dans 100 % des cas"
           }
-          tone={ruinYear !== null ? "#F87171" : "#4ADE80"}
+          tone={ruinYear !== null ? "var(--color-danger)" : "var(--color-success)"}
         />
         <KpiCard
           label="Capital restant"
           value={fmtCurrency(finalMedian)}
           sub={`reste à la fin dans le scénario moyen (sur ${decumResult.years.length - 1} ans)`}
-          tone={finalSurvival ? "#4ADE80" : "#F87171"}
+          tone={finalSurvival ? "var(--color-success)" : "var(--color-danger)"}
         />
       </div>
 
@@ -829,12 +840,12 @@ function ResultsSection({
                   quelque part entre la ligne verte et la ligne rouge.
                 </li>
                 <li>
-                  <strong className="text-[#4ADE80]">Ligne verte (bonne période de bourse)</strong> : la bourse vous
-                  sourit. Seul 1 cas sur 10 fait encore mieux.
+                  <strong className="text-[var(--color-success)]">Ligne verte (bonne période de bourse)</strong> : la
+                  bourse vous sourit. Seul 1 cas sur 10 fait encore mieux.
                 </li>
                 <li>
-                  <strong className="text-[#F87171]">Ligne rouge (période difficile)</strong> : la bourse est décevante.
-                  Seul 1 cas sur 10 fait encore moins bien.
+                  <strong className="text-[var(--color-danger)]">Ligne rouge (période difficile)</strong> : la bourse
+                  est décevante. Seul 1 cas sur 10 fait encore moins bien.
                 </li>
                 <li>
                   <strong className="text-text">Quand une ligne touche 0 €</strong> : dans ce scénario, tout le capital
@@ -915,7 +926,7 @@ function ResultsSection({
                   type="monotone"
                   dataKey="p90"
                   name="Bonne période de bourse (P90)"
-                  stroke="#4ADE80"
+                  stroke="var(--color-success)"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
                   dot={false}
@@ -932,12 +943,12 @@ function ResultsSection({
                   type="monotone"
                   dataKey="p10"
                   name="Période difficile (P10)"
-                  stroke="#F87171"
+                  stroke="var(--color-danger)"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
                   dot={false}
                 />
-                <ReferenceLine y={0} stroke="#F87171" strokeWidth={1} strokeDasharray="2 2" />
+                <ReferenceLine y={0} stroke="var(--color-danger)" strokeWidth={1} strokeDasharray="2 2" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -945,7 +956,7 @@ function ResultsSection({
           {/* Légende simplifiée — langage débutant */}
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] leading-snug">
             <LegendItem
-              color="#4ADE80"
+              color="var(--color-success)"
               label="Bonne période de bourse (P90)"
               desc="La bourse vous sourit — seul 1 cas sur 10 fait encore mieux"
             />
@@ -955,7 +966,7 @@ function ResultsSection({
               desc="Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien"
             />
             <LegendItem
-              color="#F87171"
+              color="var(--color-danger)"
               label="Période difficile (P10)"
               desc="La bourse est décevante — seul 1 cas sur 10 fait encore moins bien"
             />
@@ -1105,7 +1116,9 @@ function StressTestCard({
         <span
           className={cn(
             "text-[9px] mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0",
-            survived ? "bg-[#4ADE80]/20 text-[#4ADE80]" : "bg-[#F87171]/20 text-[#F87171]",
+            survived
+              ? "bg-[var(--color-success)]/20 text-[var(--color-success)]"
+              : "bg-[var(--color-danger)]/20 text-[var(--color-danger)]",
           )}
         >
           {survived ? "Survit" : "Épuisé"}
@@ -1115,13 +1128,18 @@ function StressTestCard({
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-glass p-2">
           <div className="text-[9px] text-text-dim uppercase tracking-wider">Capital final</div>
-          <div className={cn("mono text-xs font-bold", survived ? "text-[#4ADE80]" : "text-[#F87171]")}>
+          <div
+            className={cn(
+              "mono text-xs font-bold",
+              survived ? "text-[var(--color-success)]" : "text-[var(--color-danger)]",
+            )}
+          >
             {survived ? fmtCurrency(result.finalCapital) : "0 €"}
           </div>
         </div>
         <div className="rounded-xl bg-glass p-2">
           <div className="text-[9px] text-text-dim uppercase tracking-wider">Perte max</div>
-          <div className="mono text-xs font-bold text-[#F87171]">
+          <div className="mono text-xs font-bold text-[var(--color-danger)]">
             −{Math.round(drawdown * 100)}% <span className="text-[9px] text-text-dim font-normal">(pic → creux)</span>
           </div>
         </div>
@@ -1155,7 +1173,9 @@ function StressTestCard({
                 title={`${year} : ${fmtDecimal(r * 100, 1)} %`}
                 className={cn(
                   "mono text-[9px] px-1 py-0.5 rounded",
-                  r >= 0 ? "bg-[#4ADE80]/15 text-[#4ADE80]" : "bg-[#F87171]/15 text-[#F87171]",
+                  r >= 0
+                    ? "bg-[var(--color-success)]/15 text-[var(--color-success)]"
+                    : "bg-[var(--color-danger)]/15 text-[var(--color-danger)]",
                 )}
               >
                 {year} {(r * 100).toFixed(1).replace(".", ",")} %
@@ -1188,7 +1208,7 @@ function StressTestCard({
                   dot={false}
                   isAnimationActive={false}
                 />
-                <ReferenceLine y={0} stroke="#F87171" strokeWidth={1} strokeDasharray="2 2" />
+                <ReferenceLine y={0} stroke="var(--color-danger)" strokeWidth={1} strokeDasharray="2 2" />
                 <XAxis dataKey="y" hide />
                 <YAxis hide domain={[0, "auto"]} />
               </ComposedChart>

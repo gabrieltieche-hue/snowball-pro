@@ -80,8 +80,8 @@ export function TerminalHistogram({
                   !hasCount && "bg-text-dim/10",
                   isRuin
                     ? isHovered
-                      ? "bg-[#EF4444]"
-                      : "bg-[#F87171]/80"
+                      ? "bg-[var(--color-danger)]"
+                      : "bg-[var(--color-danger)]/80"
                     : isHovered
                       ? "bg-gradient-to-t from-primary/60 to-primary"
                       : "bg-gradient-to-t from-primary/25 to-primary/65",
@@ -103,15 +103,15 @@ export function TerminalHistogram({
 
         {/* Repère médiane */}
         <div className="absolute inset-y-0 pointer-events-none" style={{ left: `${posOf(median)}%` }} aria-hidden>
-          <div className="h-full w-px bg-[#4ADE80]/80" />
-          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[#4ADE80] drop-shadow">
+          <div className="h-full w-px bg-[var(--color-success)]/80" />
+          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[var(--color-success)] drop-shadow">
             méd.
           </div>
         </div>
         {/* Repère moyenne */}
         <div className="absolute inset-y-0 pointer-events-none" style={{ left: `${posOf(mean)}%` }} aria-hidden>
-          <div className="h-full w-px bg-[#60A5FA]/80 border-l border-dashed border-[#60A5FA]/50" />
-          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[#60A5FA] drop-shadow">
+          <div className="h-full w-px bg-[var(--color-accent)]/80 border-l border-dashed border-[var(--color-accent)]/50" />
+          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[var(--color-accent)] drop-shadow">
             moy.
           </div>
         </div>
@@ -124,10 +124,12 @@ export function TerminalHistogram({
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[9px] text-text-dim">
         <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-0.5 bg-[#4ADE80] inline-block" /> Médiane : {format(median)} — 1 cas sur 2 fait mieux
+          <span className="w-2 h-0.5 bg-[var(--color-success)] inline-block" /> Médiane : {format(median)} — 1 cas sur 2
+          fait mieux
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-0.5 bg-[#60A5FA] inline-block" /> Moyenne : {format(mean)} — tirée par la queue droite
+          <span className="w-2 h-0.5 bg-[var(--color-accent)] inline-block" /> Moyenne : {format(mean)} — tirée par la
+          queue droite
         </span>
         <span>· La dernière barre regroupe aussi les cas au-delà de {format(xMax)} (queue droite).</span>
       </div>

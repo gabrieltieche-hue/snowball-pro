@@ -53,16 +53,21 @@ export function SliderInput({
 
   return (
     <div className="mb-4">
+      {/* M11 — débordement des champs à libellé long (Augmentation de
+          l'épargne, Courtage) : le label prend flex-1 (il s'enroule sur
+          l'espace restant) et la zone de saisie est shrink-0 — le champ ne
+          déborde plus du bord droit de la sidebar, quelle que soit la
+          largeur de la police mono. */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <label
           htmlFor={id}
-          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted min-w-0 leading-snug flex items-center gap-1.5"
+          className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted min-w-0 flex-1 leading-snug flex items-center gap-1.5"
           style={color ? { color } : undefined}
         >
           {label}
           {help && <HelpTip text={help} className="shrink-0" />}
         </label>
-        <div className="flex items-center gap-1 min-w-0">
+        <div className="flex items-center gap-1 shrink-0">
           {prefix && <span className="text-[11px] text-text-dim">{prefix}</span>}
           {/* C2 — la saisie directe doit avoir un nom accessible (le label
               htmlFor pointe sur le slider, pas sur cette textbox) */}

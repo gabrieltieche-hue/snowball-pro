@@ -15,10 +15,10 @@ interface GoalTabProps {
 }
 
 const DIFFICULTY_META: Record<GoalDifficulty, { label: string; tone: string }> = {
-  easy: { label: "Atteignable (livrets, obligations)", tone: "#4ADE80" },
+  easy: { label: "Atteignable (livrets, obligations)", tone: "var(--color-success)" },
   moderate: { label: "Marché actions diversifié", tone: "var(--color-primary)" },
-  ambitious: { label: "Très ambitieux", tone: "#F87171" },
-  impossible: { label: "Objectif irréaliste", tone: "#F87171" },
+  ambitious: { label: "Très ambitieux", tone: "var(--color-danger)" },
+  impossible: { label: "Objectif irréaliste", tone: "var(--color-danger)" },
 }
 
 const COMPARISON_RATES = [3, 5, 7, 10, 12]
@@ -59,7 +59,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             min={10000}
             max={5000000}
             step={10000}
-            color="#6366F1"
+            color="var(--color-primary)"
             onChange={v => updateInput("goalTarget", v)}
           />
           <SliderInput
@@ -69,7 +69,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             min={0}
             max={200000}
             step={1000}
-            color="#6366F1"
+            color="var(--color-primary)"
             onChange={v => updateInput("goalCapital", v)}
           />
           <SliderInput
@@ -79,7 +79,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             min={1}
             max={50}
             step={1}
-            color="#6366F1"
+            color="var(--color-primary)"
             onChange={v => updateInput("goalDuration", v)}
           />
           <SliderInput
@@ -89,7 +89,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             min={0.1}
             max={20}
             step={0.1}
-            color="#6366F1"
+            color="var(--color-primary)"
             hardMin={-95}
             hardMax={1000}
             allowNegative
@@ -104,7 +104,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             min={0}
             max={10000}
             step={50}
-            color="#6366F1"
+            color="var(--color-primary)"
             suffix="utilisée pour calculer le rendement nécessaire"
             onChange={v => updateInput("goalPayment", v)}
           />
@@ -119,14 +119,14 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
           <strong className="text-text">
             {(DEFAULT_INPUTS.goalAnnualReturn * 100).toFixed(2).replace(".", ",")} % brut (moyenne MSCI World)
           </strong>{" "}
-          · taux recommandé : {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à{" "}
-          {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)} %/an
+          · taux recommandé : {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)}{" "}
+          %/an
         </p>
 
         {/* Résultats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl p-5 border-2 border-[#6366F1]/40 bg-[#6366F1]/10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] mb-2 flex items-center gap-1.5">
+          <div className="rounded-2xl p-5 border-2 border-primary/40 bg-primary/10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
               <PiggyBank size={12} aria-hidden /> Épargne mensuelle nécessaire
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
@@ -150,8 +150,8 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             )}
           </div>
 
-          <div className="rounded-2xl p-5 border-2 border-[#4ADE80]/30 bg-[#4ADE80]/8">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#4ADE80] mb-2 flex items-center gap-1.5">
+          <div className="card-subtle rounded-2xl p-5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
               <TrendingUp size={12} aria-hidden /> Rendement nécessaire ({fmtCurrency(inputs.goalPayment)}/mois
               d'épargne)
             </p>
@@ -191,17 +191,19 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               <thead>
                 <tr className="border-b border-border">
                   {[
-                    "Rendement/an",
-                    "Épargne /mois",
-                    "Total épargné",
-                    "Gains de la bourse",
-                    "Part de l'objectif épargnée",
+                    { label: "Rendement/an", align: "right" },
+                    { label: "Épargne /mois", align: "right" },
+                    { label: "Total épargné", align: "right" },
+                    { label: "Gains de la bourse", align: "right" },
+                    { label: "Part de l'objectif épargnée", align: "left" },
                   ].map(h => (
                     <th
-                      key={h}
-                      className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
+                      key={h.label}
+                      className={`text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 whitespace-nowrap ${
+                        h.align === "right" ? "text-right" : "text-left"
+                      }`}
                     >
-                      {h}
+                      {h.label}
                     </th>
                   ))}
                 </tr>
@@ -221,24 +223,40 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                     const gains = res.totalGains ?? 0
                     const totalPaid = res.totalInvested ?? 0
                     return (
-                      <tr key={rr} className={cn("border-b border-border/30", isCurrent && "bg-[#6366F1]/10")}>
-                        <td className={cn("py-2.5 px-3 font-bold", isCurrent ? "text-[#6366F1]" : "text-text")}>
+                      <tr
+                        key={rr}
+                        className={cn(
+                          "border-b border-border/30",
+                          isCurrent && "bg-primary/10",
+                          !isCurrent && "odd:bg-glass/40",
+                        )}
+                      >
+                        <td
+                          className={cn("py-2.5 px-3 font-bold text-right", isCurrent ? "text-primary" : "text-text")}
+                        >
                           {fmtRate(rr)}
                           {isCurrent && " ←"}
                         </td>
-                      <td className="py-2.5 px-3 mono text-primary font-semibold">{fmtCurrency(res.pmtPerMonth)}</td>
-                      <td className="py-2.5 px-3 mono text-text">{fmtCurrency(totalPaid)}</td>
-                      <td className={cn("py-2.5 px-3 mono font-semibold", gains > 0 ? "text-primary" : "text-danger")}>
-                        {gains > 0 ? "+" : ""}
-                        {fmtCurrency(gains)}
-                      </td>
-                      <td className="py-2.5 px-3 text-text-dim">
-                        {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
-                        provient de votre épargne
-                      </td>
-                    </tr>
-                  )
-                })}
+                        <td className="py-2.5 px-3 mono text-primary font-semibold text-right">
+                          {fmtCurrency(res.pmtPerMonth)}
+                        </td>
+                        <td className="py-2.5 px-3 mono text-text text-right">{fmtCurrency(totalPaid)}</td>
+                        <td
+                          className={cn(
+                            "py-2.5 px-3 mono font-semibold text-right",
+                            gains > 0 ? "text-primary" : gains < 0 ? "text-danger" : "text-text-dim",
+                          )}
+                        >
+                          {gains > 0 ? "+" : ""}
+                          {fmtCurrency(gains)}
+                        </td>
+                        <td className="py-2.5 px-3 text-text-dim">
+                          {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
+                          provient de votre épargne
+                        </td>
+                      </tr>
+                    )
+                  })}
               </tbody>
             </table>
           </div>

@@ -12,12 +12,22 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="border-b border-border">
-            {["Année", "Épargné", "Gains bourse", "Capital", "En € d'aujourd'hui", "Frais", "Après impôts"].map(h => (
+            {[
+              { label: "Année", align: "left" },
+              { label: "Épargné", align: "right" },
+              { label: "Gains bourse", align: "right" },
+              { label: "Capital", align: "right" },
+              { label: "En € d'aujourd'hui", align: "right" },
+              { label: "Frais", align: "right" },
+              { label: "Après impôts", align: "right" },
+            ].map(h => (
               <th
-                key={h}
-                className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 text-left whitespace-nowrap"
+                key={h.label}
+                className={`text-[10px] font-bold uppercase tracking-wider text-text-dim py-2.5 px-3 whitespace-nowrap ${
+                  h.align === "right" ? "text-right" : "text-left"
+                }`}
               >
-                {h}
+                {h.label}
               </th>
             ))}
           </tr>
@@ -29,15 +39,17 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.005 }}
-              className="border-b border-border/30 hover:bg-glass transition-colors"
+              className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
             >
               <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
-              <td className="py-2 px-3 mono text-text">{fmtCompact(row.investedNom)}</td>
-              <td className="py-2 px-3 mono text-primary font-semibold">{fmtCompact(row.interestsNom)}</td>
-              <td className="py-2 px-3 mono text-text font-semibold">{fmtCompact(row.nominal)}</td>
-              <td className="py-2 px-3 mono text-warning">{fmtCompact(row.real)}</td>
-              <td className="py-2 px-3 mono text-danger">{fmtCompact(row.fees)}</td>
-              <td className="py-2 px-3 mono text-accent">{fmtCompact(row.taxNet)}</td>
+              <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.investedNom)}</td>
+              <td className="py-2 px-3 mono text-primary font-semibold text-right">{fmtCompact(row.interestsNom)}</td>
+              <td className="py-2 px-3 mono text-text font-semibold text-right">{fmtCompact(row.nominal)}</td>
+              <td className="py-2 px-3 mono text-warning text-right">{fmtCompact(row.real)}</td>
+              <td className={`py-2 px-3 mono text-right ${row.fees > 0 ? "text-danger" : "text-text-dim"}`}>
+                {fmtCompact(row.fees)}
+              </td>
+              <td className="py-2 px-3 mono text-accent text-right">{fmtCompact(row.taxNet)}</td>
             </motion.tr>
           ))}
         </tbody>

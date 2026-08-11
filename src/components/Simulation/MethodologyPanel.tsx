@@ -32,7 +32,8 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
     },
     {
       label: "Projection & Monte Carlo",
-      value: "Le Simulateur applique la moyenne brute (courbe lissée, sans krachs) ; Monte Carlo & la Rente rééchantillonnent l'historique réel et rejouent ses krachs",
+      value:
+        "Le Simulateur applique la moyenne brute (courbe lissée, sans krachs) ; Monte Carlo & la Rente rééchantillonnent l'historique réel et rejouent ses krachs",
     },
     {
       label: "Inflation",
@@ -84,7 +85,10 @@ export function MethodologyPanel({ inputs }: MethodologyPanelProps) {
               <span className="text-[10px] font-semibold uppercase tracking-wider text-text-dim whitespace-nowrap">
                 {row.label}
               </span>
-              <span className="text-[11px] text-text-muted text-right leading-snug">{row.value}</span>
+              {/* M15 — valeur alignée à GAUCHE : le texte justifié à droite
+                  créait un bord gauche en dents de scie, pénible à lire sur
+                  les longues explications. Label à gauche, valeur lisible. */}
+              <span className="text-[11px] text-text-muted text-left leading-snug">{row.value}</span>
             </div>
           ))}
           <p className="text-[10px] text-text-dim italic leading-relaxed pt-2 border-t border-border/50">

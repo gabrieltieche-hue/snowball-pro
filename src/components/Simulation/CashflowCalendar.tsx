@@ -82,47 +82,76 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border">
-                  {["Année", "Date", "Versements", "Frais", "Impôts", "Capital net"].map(h => (
+                  {[
+                    { label: "Année", align: "left" },
+                    { label: "Date", align: "left" },
+                    { label: "Versements", align: "right" },
+                    { label: "Frais", align: "right" },
+                    { label: "Impôts", align: "right" },
+                    { label: "Capital net", align: "right" },
+                  ].map(h => (
                     <th
-                      key={h}
-                      className="text-[10px] font-bold uppercase tracking-wider text-text-dim py-2 px-3 text-left whitespace-nowrap"
+                      key={h.label}
+                      className={`text-[10px] font-bold uppercase tracking-wider text-text-dim py-2 px-3 whitespace-nowrap ${
+                        h.align === "right" ? "text-right" : "text-left"
+                      }`}
                     >
-                      {h}
+                      {h.label}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {flows.map((row, i) => (
-                  <tr key={`${row.year}-${i}`} className="border-b border-border/30 hover:bg-glass transition-colors">
+                  /* M16 — zéros en neutre (le rouge ne signale que des frais/
+                      impôts réellement payés) + montants alignés à droite +
+                      zebra léger. */
+                  <tr
+                    key={`${row.year}-${i}`}
+                    className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
+                  >
                     <td className="py-2 px-3 text-text-dim whitespace-nowrap">
                       {row.year === 0 ? "Capital initial" : `Année ${row.year}`}
                     </td>
                     <td className="py-2 px-3 text-text-dim whitespace-nowrap">{row.date}</td>
-                    <td className="py-2 px-3 mono text-text">{fmtCompact(row.versements)}</td>
-                    <td className="py-2 px-3 mono text-danger">{fmtCompact(row.frais)}</td>
-                    <td className="py-2 px-3 mono text-danger">{fmtCompact(row.impots)}</td>
-                    <td className="py-2 px-3 mono text-primary font-semibold">{fmtCompact(row.net)}</td>
+                    <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.versements)}</td>
+                    <td className={`py-2 px-3 mono text-right ${row.frais > 0 ? "text-danger" : "text-text-dim"}`}>
+                      {fmtCompact(row.frais)}
+                    </td>
+                    <td className={`py-2 px-3 mono text-right ${row.impots > 0 ? "text-danger" : "text-text-dim"}`}>
+                      {fmtCompact(row.impots)}
+                    </td>
+                    <td className="py-2 px-3 mono text-primary font-semibold text-right">{fmtCompact(row.net)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-border">
+                <tr className="border-t-2 border-border bg-surface-100/40">
                   <td className="py-2 px-3 text-[10px] font-bold text-text" colSpan={2}>
                     Totaux
                   </td>
-                  <td className="py-2 px-3 mono text-[11px] font-bold text-text">{fmtCompact(totals.versements)}</td>
-                  <td className="py-2 px-3 mono text-[11px] font-bold text-danger">{fmtCompact(totals.frais)}</td>
-                  <td className="py-2 px-3 mono text-[11px] font-bold text-danger">{fmtCompact(totals.impots)}</td>
+                  <td className="py-2 px-3 mono text-[11px] font-bold text-text text-right">
+                    {fmtCompact(totals.versements)}
+                  </td>
+                  <td
+                    className={`py-2 px-3 mono text-[11px] font-bold text-right ${totals.frais > 0 ? "text-danger" : "text-text-dim"}`}
+                  >
+                    {fmtCompact(totals.frais)}
+                  </td>
+                  <td
+                    className={`py-2 px-3 mono text-[11px] font-bold text-right ${totals.impots > 0 ? "text-danger" : "text-text-dim"}`}
+                  >
+                    {fmtCompact(totals.impots)}
+                  </td>
                   <td className="py-2 px-3" />
                 </tr>
               </tfoot>
             </table>
           </div>
           <p className="text-[10px] text-text-dim italic mt-2">
-            « Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à
-            l'impôt théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés
-            réellement payés et ne deviennent dus qu'à la revente.
+            « Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à l'impôt
+            théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés réellement
+            payés et ne deviennent dus qu'à la revente.
           </p>
         </div>
       )}

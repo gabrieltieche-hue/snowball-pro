@@ -112,7 +112,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         {
           label: "Mauvaise période de bourse (P10)",
           value: mcResult.p10[mcResult.p10.length - 1] ?? 0,
-          tone: "#F87171",
+          tone: "var(--color-danger)",
           sub: "1 cas sur 10 fait encore moins bien",
           help: "P10 = percentile 10 : seuls 10 % des scénarios finissent avec MOINS que ce montant. C'est le cas défavorable — 9 fois sur 10, vous ferez mieux.",
         },
@@ -126,7 +126,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         {
           label: "Bonne période de bourse (P90)",
           value: mcResult.p90[mcResult.p90.length - 1] ?? 0,
-          tone: "#4ADE80",
+          tone: "var(--color-success)",
           sub: "1 cas sur 10 fait encore mieux",
           help: "P90 = percentile 90 : 90 % des scénarios finissent avec MOINS que ce montant. C'est le cas favorable — ne le planifiez pas comme certitude.",
         },
@@ -206,12 +206,21 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
         </CollapsibleSection>
 
         {!mcResult && !running && (
+          /* M14 — le CTA vit DANS l'état vide (avant, il était en haut de
+              l'onglet, à ~500 px de la zone vide) : l'action et son objet
+              sont au même endroit. */
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
             <Dices size={44} className="text-primary/50" aria-hidden />
             <p className="text-xs font-semibold">
-              Cliquez sur « Lancer » pour tester votre plan dans {inputs.mcRuns.toLocaleString("fr-FR")} situations de
-              bourse différentes
+              Testez votre plan dans {inputs.mcRuns.toLocaleString("fr-FR")} situations de bourse différentes
             </p>
+            <button
+              type="button"
+              onClick={handleRun}
+              className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary"
+            >
+              <Play size={13} fill="currentColor" /> Lancer {inputs.mcRuns.toLocaleString("fr-FR")} simulations
+            </button>
           </div>
         )}
 
@@ -232,7 +241,11 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
-                <div key={card.label} className="card-subtle rounded-2xl p-4" style={{ borderColor: `${card.tone}30` }}>
+                <div
+                  key={card.label}
+                  className="card-subtle rounded-2xl p-4"
+                  style={{ borderColor: `color-mix(in srgb, ${card.tone} 30%, transparent)` }}
+                >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: card.tone }}>
                       {card.label}
@@ -244,7 +257,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                 </div>
               ))}
               <div className="card-subtle rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[#60A5FA]">
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[var(--color-success)]">
                   Chances d'atteindre votre objectif
                 </p>
                 <p className="mono text-lg font-bold text-text">{mcResult.successRate.toFixed(0)}%</p>
@@ -281,9 +294,9 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput }: MonteCarloPan
                 leftNote="0 €"
               />
               <p className="text-[10px] text-text-dim mt-2 px-1 leading-relaxed">
-                L'écart entre la <strong className="text-[#4ADE80]">médiane</strong> (cas le plus courant) et la{" "}
-                <strong className="text-[#60A5FA]">moyenne</strong> montre la « queue de chance » : quelques cas très
-                heureux tirent la moyenne vers le haut. Planifiez sur la médiane, pas sur la moyenne.
+                L'écart entre la <strong className="text-[var(--color-success)]">médiane</strong> (cas le plus courant)
+                et la <strong className="text-[var(--color-accent)]">moyenne</strong> montre la « queue de chance » :
+                quelques cas très heureux tirent la moyenne vers le haut. Planifiez sur la médiane, pas sur la moyenne.
               </p>
             </div>
             {isStale && (

@@ -124,7 +124,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
               type="monotone"
               dataKey="p90"
               name="Bonne période de bourse (P90)"
-              stroke="#4ADE80"
+              stroke="var(--color-success)"
               strokeWidth={1.5}
               strokeDasharray="4 3"
               dot={false}
@@ -141,19 +141,27 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
               type="monotone"
               dataKey="p10"
               name="Période difficile (P10)"
-              stroke="#F87171"
+              stroke="var(--color-danger)"
               strokeWidth={1.5}
               strokeDasharray="4 3"
               dot={false}
             />
-            <ReferenceLine y={result.goalTarget} stroke="#60A5FA" strokeWidth={1} strokeDasharray="2 2" />
+            {/* M13 — la ligne objectif est étiquetée (plus de trait bleu muet) et
+                suit la charte : ambre, comme les repères de réglage. */}
+            <ReferenceLine
+              y={result.goalTarget}
+              stroke="var(--color-warning)"
+              strokeWidth={1}
+              strokeDasharray="2 2"
+              label={{ value: "Objectif", position: "right", fill: theme.tick, fontSize: 10 }}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] leading-snug">
         <div className="flex items-start gap-2 px-1">
-          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[#4ADE80]" />
+          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[var(--color-success)]" />
           <div>
             <div className="font-bold text-text">Bonne période de bourse (P90)</div>
             <div className="text-text-dim">La bourse vous sourit — seul 1 cas sur 10 fait encore mieux</div>
@@ -167,7 +175,7 @@ export function MonteCarloChart({ result, darkMode }: MonteCarloChartProps) {
           </div>
         </div>
         <div className="flex items-start gap-2 px-1">
-          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[#F87171]" />
+          <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[var(--color-danger)]" />
           <div>
             <div className="font-bold text-text">Période difficile (P10)</div>
             <div className="text-text-dim">La bourse est décevante — seul 1 cas sur 10 fait encore moins bien</div>
