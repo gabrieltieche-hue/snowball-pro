@@ -4,6 +4,29 @@
 
 ---
 
+## v6.5.2 — Clarté des taux : la chaîne brut → net de frais → réel est enfin visible (8,22 → 7,95 → 5,73)
+
+Demande utilisateur : _« pourquoi quand je mets 8,22 %/an, ça me met 8 % et 5,7 % net ??? je crois que les rendements ne sont pas synchronisés, tout est différent partout »_. Audit moteur + vérification chiffrée : **aucune désynchronisation des calculs** — le XIRR 7,95 % = scénario 8,22 %/an brut − 0,25 %/an de frais (sans frais, le XIRR = 8,22 % pile, prouvé), et le réel 5,73 % = (1 + 7,95 %) ÷ (1 + 2,1 %) − 1. Mais l'**affichage était trompeur** : la carte « Rendement / an » disait « brut » alors que le XIRR est net de frais, les taux étaient arrondis à 1 décimale (« 8,0 % » pour 7,95), le taux appliqué (8,22 %/an brut) n'apparaissait nulle part dans les KPIs, et l'insight comparait au 10,07 % arithmétique (référence périmée depuis v6.4). Bump 6.5.1 → **6.5.2**. Zéro changement moteur (ancrages dorés intacts).
+
+### 🖥 `KpiGrid` — la chaîne devient explicite
+
+- **Ligne de chaîne sous « Statistiques clés »** : « Taux appliqué : **8,22 %/an brut** (scénario Central) → **7,95 % net de frais** → **5,73 % après inflation** » — dérivée du moteur (scénario + XIRR + réel), aucune valeur en dur.
+- **Carte « Rendement / an » → « Rendement net / an »** : le XIRR est net de frais, l'étiquette « brut » qui faisait croire à une désynchronisation est supprimée ; sous-titre « net de tous vos frais, avant impôts et inflation ».
+- **Carte « Après inflation »** : la **formule de Fisher avec les valeurs affichées** « (1 + 7,95 %) ÷ (1 + 2,10 %) − 1 = 5,73 % » — l'inflation est IMPLIQUÉE par les deux valeurs (exacte au centième dans toutes les configurations ; le test a attrapé un arrondi ratio/pourcentage qui affichait « 2,00 % → 5,83 % » à côté de « 5,73 % »). La mention confuse « référence historique réelle ≈ 5,99 %/an » est retirée.
+- **2 décimales sur les deux cartes de taux** (7,95 % au lieu de « 8,0 % ») : la collision « 5,7 % = 5,7 % » (réel du Central = net de frais du Prudent) disparaît, chaque étage a son étiquette.
+
+### 🔍 `AIInsightCard` — référence alignée sur le scénario courant
+
+- L'insight comparait le XIRR à la moyenne arithmétique **10,07 %** (commentaire « c'est elle que la courbe lissée applique » devenu faux depuis v6.4) — il est désormais comparé au **taux brut du scénario choisi** : « proche du taux brut appliqué de 8,22 %/an (scénario Central) ». 2 décimales partout, « après frais » au lieu de « brut ».
+
+### 🧪 Tests & gate
+
+- **+5 tests composants** (358 au total) : chaîne complète Central (8,22 → 7,95 → 5,73), suivi du scénario (Optimiste 10,07 → 9,79 → 7,53), frais = 0 → brut = net de frais (le scénario est le seul levier), AIInsight (référence scénario + « XIRR après frais » en mode Avancé).
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓ build ✓ · détecteur impeccable **0 finding** · vérifié en navigateur réel (3 scénarios : chaînes exactes + formules Fisher cohérentes au centième, 0 erreur console).
+- Version 6.5.1 → **6.5.2** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION`, titre index.html), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.5.2). Déploiement `vercel --prod`.
+
+---
+
 ## v6.5.1 — Scénario de rendement : intégration fluide dans la sidebar
 
 Retour utilisateur : _« cette nouvelle partie ne s'intègre pas très bien… supprime la sorte de trait entre durée et cette partie »_. Le sélecteur prudent / central / optimiste (déjà déplacé dans « Votre épargne ») s'intègre désormais naturellement à la section, sans rupture visuelle.

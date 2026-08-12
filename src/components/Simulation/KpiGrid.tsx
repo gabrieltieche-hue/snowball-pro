@@ -1,13 +1,17 @@
 import { Activity, Gauge, Layers, Receipt, Shield, Timer, TrendingDown, TrendingUp, Wallet } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { fmtCurrency } from "../../engine"
+import { fmtCurrency, getHistoricalDataset } from "../../engine"
 import { HelpTip } from "../shared/HelpTip"
 import { SectionHeader } from "../shared/SectionHeader"
-import type { KPIs } from "../../types"
+import type { KPIs, SimulationInputs } from "../../types"
 import type { UiMode } from "../../utils/uiMode"
 
 interface KpiGridProps {
   kpis: KPIs | null
+  /** Hypothèses de la projection : le scénario appliqué et l'inflation servent
+   * à expliquer la chaîne brut → net de frais → réel (audit v6.6 — les trois
+   * taux coexistaient sans le chaînon qui les relie). */
+  inputs: SimulationInputs
   /** Mode Débutant / Avancé (audit) : le terme « XIRR » est masqué en Débutant. */
   uiMode?: UiMode
 }
@@ -38,12 +42,15 @@ interface KpiCard {
 const CARDS: KpiCard[] = [
   {
     key: "xirr",
-    label: "Rendement / an",
+    label: "Rendement net / an",
     suffix: "%",
     color: GOLD,
-    sub: "XIRR brut (avant inflation) de VOTRE projection — la courbe lissée applique la moyenne des années",
-    subDebutant:
-      "rendement annuel moyen de votre projection, avant inflation — la courbe lissée applique la moyenne des années",
+    digits: 2,
+    // Sous-titres DYNAMIQUES (construits dans le composant) : la carte ne dit
+    // plus « brut » alors que le XIRR est net de frais — c'était la source de
+    // la confusion « 8,22 %/an vs 8,0 % » (audit v6.6).
+    sub: "",
+    subDebutant: "",
     icon: TrendingUp,
   },
   {
@@ -79,7 +86,10 @@ const CARDS: KpiCard[] = [
     label: "Après inflation",
     suffix: "%",
     color: GOLD,
-    sub: "rendement réel de VOTRE projection (courbe lissée, sans krachs) — la référence historique réelle est d'env. 5,99 %/an",
+    digits: 2,
+    // Sous-titre dynamique : la formule de Fisher avec les valeurs affichées,
+    // plus de « référence historique 5,99 % » qui mélangeait deux notions.
+    sub: "",
     icon: Shield,
   },
   {
@@ -112,8 +122,60 @@ const CARDS: KpiCard[] = [
   },
 ]
 
-export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
+export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
   if (!kpis) return null
+
+  // Chaîne de rendement de la projection (audit v6.6) : le taux BRUT appliqué
+  // par le scénario, le rendement net de frais (XIRR) et le rendement réel
+  // (net de frais ET d'inflation). Les trois valeurs viennent du moteur — le
+  // scénario est la seule chose que l'utilisateur choisit, tout le reste est
+  // dérivé (mêmes sources que GoalTab / MethodologyPanel).
+  const historical = getHistoricalDataset(inputs.historicalIndex)
+  const scenarioRate =
+    inputs.returnScenario === "prudent"
+      ? historical.netReturn
+      : inputs.returnScenario === "optimiste"
+        ? historical.avgReturn
+        : historical.compoundedReturn
+  const scenarioLabel = { prudent: "Prudent", central: "Central", optimiste: "Optimiste" }[inputs.returnScenario]
+  // Taux français sans zéros inutiles : 2,10 → « 2,1 », 7,95 → « 7,95 ».
+  const fmt = (r: number): string =>
+    (r * 100).toFixed(2).replace(".", ",").replace(/0+$/, "").replace(/,$/, "")
+  const xirrRatio = kpis.xirr / 100
+  const realRatio = kpis.realReturn / 100
+  // Inflation IMPLIQUÉE (en %) par les deux valeurs affichées (rapport
+  // XIRR / réel) : la formule de Fisher du sous-titre reste exacte au
+  // centième quelle que soit la configuration, sans dépendre d'un arrondi du
+  // curseur. Travail en POINTS de pourcentage : toFixed(2) sur le ratio
+  // (0,021 → « 0.02 ») affichait une inflation « 2,00 % » et un résultat
+  // « 5,83 % » à côté de la carte « 5,73 % » (attrapé par le test v6.6).
+  const inflationPct =
+    Number.isFinite(realRatio) && realRatio > -1 && Number.isFinite(xirrRatio) && xirrRatio > -1
+      ? Number((((1 + xirrRatio) / (1 + realRatio) - 1) * 100).toFixed(2))
+      : inputs.inflation * 100
+  const eqPct =
+    Number.isFinite(inflationPct) && inflationPct > -100
+      ? Math.round(((1 + xirrRatio) / (1 + inflationPct / 100) - 1) * 10000) / 100
+      : kpis.realReturn
+  // Sous-titres dynamiques des deux cartes « taux » : ils expliquent la chaîne
+  // au lieu de citer une référence historique sans lien avec la projection.
+  const dynamicSubs: Partial<Record<keyof KPIs, { sub: string; subDebutant: string }>> = {
+    xirr: {
+      // La chaîne au-dessus du bloc donne déjà le taux brut appliqué : la carte
+      // ne le répète pas, elle précise ce qu'EST ce nombre (net de frais, avant
+      // impôts et inflation — le XIRR est pré-impôt).
+      sub: `XIRR de VOTRE projection : net de tous vos frais, avant impôts et inflation`,
+      subDebutant: `rendement annuel moyen de votre épargne, après tous vos frais, avant impôts et inflation`,
+    },
+    realReturn: {
+      sub: `net de frais et d'inflation : (1 + ${fmt(xirrRatio)} %) ÷ (1 + ${inflationPct
+        .toFixed(2)
+        .replace(".", ",")} %) − 1 = ${fmt(eqPct / 100)} %`,
+      subDebutant: `votre rendement après frais ET inflation : (1 + ${fmt(xirrRatio)} %) ÷ (1 + ${inflationPct
+        .toFixed(2)
+        .replace(".", ",")} %) − 1 = ${fmt(eqPct / 100)} % — le pouvoir d'achat de votre épargne`,
+    },
+  }
 
   const cards = CARDS.filter(card => !card.visible || card.visible(kpis))
 
@@ -123,6 +185,14 @@ export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
           « page » de l'onglet, « Statistiques clés » ne doit pas lui faire
           concurrence en pleine page (revue adverse). */}
       <SectionHeader title="Statistiques clés" icon={Gauge} level="card" as="h3" />
+      {/* Chaîne de rendement (audit v6.6) : le lien visible entre les trois
+          taux — brut appliqué → net de frais → réel. C'est la réponse en une
+          ligne à « pourquoi 8,22 %/an devient 8,0 % puis 5,7 % ? ». */}
+      <p className="text-[10px] text-text-muted leading-snug mt-1.5 mb-3">
+        Taux appliqué : <strong className="text-text mono">{fmt(scenarioRate)} %/an brut</strong> (scénario{" "}
+        {scenarioLabel}) → <strong className="text-text mono">{fmt(xirrRatio)} % net de frais</strong> →{" "}
+        <strong className="text-text mono">{fmt(realRatio)} % après inflation</strong>
+      </p>
       {/* Grille 2×3 par défaut (6 cartes) : aucune case vide, contrairement à
           l'ancien auto-fit qui laissait un trou de 2 cartes sur les écrans
           larges. Les cartes sont plus hautes → le bloc remplit mieux la
@@ -130,6 +200,7 @@ export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {cards.map(kpi => {
           const val = kpis[kpi.key]
+          const dyn = dynamicSubs[kpi.key]
           const display = kpi.currency
             ? fmtCurrency(val as number)
             : `${(val as number).toFixed(kpi.digits ?? 1).replace(".", ",")}${kpi.suffix}`
@@ -146,7 +217,7 @@ export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
                       le sous-titre devient la source principale. */}
                   {kpi.key === "xirr" && uiMode === "avance" && (
                     <HelpTip
-                      text="XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, avant inflation."
+                      text="XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, après tous vos frais et avant inflation."
                       className="ml-1 align-[-1px]"
                     />
                   )}
@@ -162,9 +233,13 @@ export function KpiGrid({ kpis, uiMode = "debutant" }: KpiGridProps) {
                 {display}
               </div>
               <div className="text-[10px] text-text-muted mt-auto pt-2 leading-snug">
-                {kpi.key === "xirr" && uiMode === "debutant" && "subDebutant" in kpi
-                  ? (kpi as KpiCard & { subDebutant: string }).subDebutant
-                  : kpi.sub}
+                {dyn
+                  ? uiMode === "debutant"
+                    ? dyn.subDebutant
+                    : dyn.sub
+                  : uiMode === "debutant" && "subDebutant" in kpi
+                    ? (kpi as KpiCard & { subDebutant: string }).subDebutant
+                    : kpi.sub}
               </div>
             </div>
           )

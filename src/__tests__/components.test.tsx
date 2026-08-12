@@ -21,9 +21,12 @@ import { FiscalPanel } from "../components/Simulation/FiscalPanel"
 import { SliderInput } from "../components/shared/SliderInput"
 import { SmartInput } from "../components/shared/SmartInput"
 import { SectionHeader } from "../components/shared/SectionHeader"
+import { KpiGrid } from "../components/Simulation/KpiGrid"
+import { AIInsightCard } from "../components/Simulation/AIInsightCard"
 import { Shield } from "lucide-react"
 import {
   DEFAULT_INPUTS,
+  computeKPIs,
   fmtCompact,
   fmtCurrency,
   runSimulation,
@@ -1044,6 +1047,75 @@ describe("v6.1 — comptes : inscription, connexion, déconnexion", () => {
     expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue(
       String(DEFAULT_INPUTS.capitalInitial),
     )
+  })
+})
+
+describe("audit v6.6 — KpiGrid : la chaîne brut → net de frais → réel est explicite", () => {
+  // Normalise les espaces insécables fr-FR (même technique que les autres tests).
+  const textOf = (container: HTMLElement) => (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+
+  it("affiche 2 décimales et la chaîne complète du scénario Central (8,22 → 7,95 → 5,73)", () => {
+    const inputs = { ...DEFAULT_INPUTS, returnScenario: "central" as const }
+    const kpis = computeKPIs(runSimulation(inputs), inputs)
+    const { container } = render(<KpiGrid kpis={kpis} inputs={inputs} />)
+    const text = textOf(container)
+
+    // La chaîne relie les trois taux : brut appliqué → net de frais → réel.
+    expect(text).toContain("Taux appliqué :")
+    expect(text).toContain("8,22 %/an brut")
+    expect(text).toContain("7,95 % net de frais")
+    expect(text).toContain("5,73 % après inflation")
+    // La carte « Rendement net / an » affiche le XIRR net de frais (7,95, pas 8,22).
+    expect(screen.getByText("Rendement net / an")).toBeInTheDocument()
+    // Mode Débutant (défaut du test) : le sous-titre dit « après tous vos frais ».
+    expect(text).toContain("après tous vos frais, avant impôts et inflation")
+    // La carte « Après inflation » montre la formule de Fisher avec les valeurs affichées.
+    expect(text).toContain("(1 + 7,95 %) ÷ (1 + 2,10 %) − 1 = 5,73 %")
+    // Plus de « XIRR brut » ni de référence historique 5,99 mélangée à la projection.
+    expect(text).not.toContain("XIRR brut")
+    expect(text).not.toContain("référence historique réelle")
+  })
+
+  it("la chaîne suit le scénario choisi (Optimiste : 10,07 → 9,79 → 7,53)", () => {
+    const inputs = { ...DEFAULT_INPUTS, returnScenario: "optimiste" as const }
+    const kpis = computeKPIs(runSimulation(inputs), inputs)
+    const { container } = render(<KpiGrid kpis={kpis} inputs={inputs} />)
+    const text = textOf(container)
+    expect(text).toContain("10,07 %/an brut")
+    expect(text).toContain("9,79 % net de frais")
+    expect(text).toContain("7,53 % après inflation")
+  })
+
+  it("sans frais, brut et net de frais coïncident (le scénario est bien le seul levier)", () => {
+    const inputs = { ...DEFAULT_INPUTS, etfFees: 0, managementFees: 0, brokerageFees: 0 }
+    const kpis = computeKPIs(runSimulation(inputs), inputs)
+    const { container } = render(<KpiGrid kpis={kpis} inputs={inputs} />)
+    const text = textOf(container)
+    expect(text).toContain("8,22 %/an brut")
+    expect(text).toContain("8,22 % net de frais")
+  })
+})
+
+describe("audit v6.6 — AIInsightCard : référence = taux brut du scénario, 2 décimales", () => {
+  it("compare le XIRR au taux brut appliqué du scénario, pas à la moyenne arithmétique", () => {
+    const inputs = { ...DEFAULT_INPUTS, returnScenario: "central" as const }
+    const rows = runSimulation(inputs)
+    const kpis = computeKPIs(rows, inputs)
+    render(<AIInsightCard rows={rows} inputs={inputs} kpis={kpis} />)
+    // Avec 0,25 %/an de frais : XIRR 7,95 vs brut appliqué 8,22 → « proche du
+    // taux brut appliqué de 8,22 %/an (scénario Central) », plus de référence
+    // arithmétique 10,07 qui faisait paraître la projection en retard.
+    expect(screen.getByText(/proche du taux brut appliqué de 8,22%\/an \(scénario Central\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/moyenne BRUTE de référence/)).not.toBeInTheDocument()
+  })
+
+  it("mode Avancé : le XIRR est dit « après frais », plus jamais « brut »", () => {
+    const inputs = { ...DEFAULT_INPUTS, returnScenario: "central" as const }
+    const rows = runSimulation(inputs)
+    const kpis = computeKPIs(rows, inputs)
+    render(<AIInsightCard rows={rows} inputs={inputs} kpis={kpis} uiMode="avance" />)
+    expect(screen.getByText(/\(XIRR après frais, avant inflation, versements inclus\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/XIRR brut/)).not.toBeInTheDocument()
   })
 })
 

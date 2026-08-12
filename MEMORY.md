@@ -4,6 +4,33 @@
 
 ---
 
+## SESSION — 2026-08-12 (v6.5.2 : Clarté des taux — la chaîne brut → net de frais → réel devient explicite)
+
+### Résumé
+
+Demande utilisateur : _« pourquoi quand je mets 8,22 %/an, ça me met 8 % et 5,7 % net ??? je crois que les rendements ne sont pas synchronisés, tout est différent partout dans l'app »_. Diagnostic chiffré sur le moteur réel (pas de désynchronisation : la chaîne est mathématiquement saine) puis correctif d'affichage — le « problème majeur » était pédagogique/UI. Version 6.5.1 → **6.5.2**, **358 tests**, gate 100 % vert, déploiement `vercel --prod`.
+
+### Diagnostic (vérifié sur le moteur, aucune erreur trouvée)
+
+- Chaîne du scénario Central : **8,22 %/an brut** (géométrique composé MSCI World, appliqué par la courbe lissée) → **XIRR 7,95 %** = net de 0,25 %/an de frais (sans frais le XIRR = 8,22 % pile, vérifié) → **réel 5,73 %** = (1 + 7,95 %) ÷ (1 + 2,1 %) − 1 (Fisher, backcheck exact). Prudent : 5,99 → 5,73 → 3,55 · Optimiste : 10,07 → 9,79 → 7,53.
+- Les 3 taux affichés étaient COHÉRENTS mais inexpliqués : la carte disait « XIRR brut » (faux : net de frais), 1 décimale (« 8,0 % » pour 7,95), le taux appliqué (8,22) invisible dans les KPIs, collision 5,73/5,73 (réel du Central = net du Prudent), et AIInsightCard comparait au 10,07 % arithmétique (commentaire « c'est elle que la courbe applique » périmé depuis v6.4 — la courbe applique le scénario).
+
+### Décisions
+
+- **`KpiGrid`** : ligne de chaîne sous « Statistiques clés » (brut appliqué → net de frais → après inflation, dérivée du moteur via `getHistoricalDataset` + scénario + kpis), carte « Rendement net / an », sous-titres dynamiques, **formule de Fisher avec l'inflation IMPLIQUÉE par les valeurs affichées** (exacte au centième — le test a attrapé un bug d'arrondi : `toFixed(2)` sur le ratio 0,021 → « 2,00 % → 5,83 % » à côté de « 5,73 % » ; corrigé en travaillant en points de pourcentage). 2 décimales sur les deux cartes de taux.
+- **`AIInsightCard`** : référence = taux brut du SCÉNARIO courant (prudent 5,99 / central 8,22 / optimiste 10,07), 2 décimales, « après frais » au lieu de « brut ».
+- **Zéro changement moteur** : les ancrages dorés (`regression-golden.test.ts`) passent inchangés — le XIRR 7,95 % et le réel 5,73 % étaient déjà les valeurs correctes, seul le vocabulaire et la précision mentaient.
+- Piste laissée : la calculatrice Objectif (synchro OFF) garde un défaut 10,07 % et `migration.ts` un commentaire périmé (« aligné sur l'onglet principal ») — à aligner sur le scénario dans une prochaine session si l'utilisateur le demande.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓ (353 + 5 nouveaux : chaîne Central, Optimiste, frais 0 → brut = net, AIInsight ×2) build ✓ · détecteur impeccable **0 finding**.
+- Navigateur (dev + preview réelle) : les 3 scénarios affichent les chaînes exactes (8,22 → 7,95 → 5,73 / 10,07 → 9,79 → 7,53 / 5,99 → 5,73 → 3,55 avec inflation impliquée 2,10/2,10/2,11), cartes à 2 décimales, formules Fisher cohérentes au centième, 0 erreur console.
+- Version 6.5.1 → 6.5.2 (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.5.2`, titre index.html), CHANGELOG (entrée v6.5.2), MEMORY.md (cette entrée).
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app**.
+
+---
+
 ## SESSION — 2026-08-11 (v6.5.1 : Scénario de rendement dans la sidebar — intégration fluide + déploiement)
 
 ### Résumé

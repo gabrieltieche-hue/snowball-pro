@@ -53,7 +53,9 @@ export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: Si
 
       <AIInsightCard rows={rows} inputs={inputs} kpis={kpis} uiMode={uiMode} />
 
-      <KpiGrid kpis={kpis} uiMode={uiMode} />
+      {/* inputs transmis : la chaîne de rendement (brut → net de frais → réel)
+          des cartes dérive du scénario appliqué (audit v6.6). */}
+      <KpiGrid kpis={kpis} inputs={inputs} uiMode={uiMode} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MilestoneTimeline milestones={milestones} rows={rows} />

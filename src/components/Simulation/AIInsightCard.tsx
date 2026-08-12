@@ -36,31 +36,48 @@ export function AIInsightCard({ rows, inputs, kpis, uiMode = "debutant" }: AIIns
       `${kpis.gainsPct.toFixed(0)}% de votre capital provient de la croissance de la bourse, pas de votre épargne.`,
     )
   }
-  // Le XIRR est un taux NOMINAL : le qualifier de « réel » le confondait avec
-  // la carte « Après inflation » (audit v5.6.2). On compare au brut de
-  // référence (10,07 %/an MSCI World) et on n'alerte que sur un écart qui a du
-  // sens — avant, « 10,1 % dépasse 10,1 % » s'affichait avec les réglages par
-  // défaut.
+  // Le XIRR est un taux NOMINAL NET DE FRAIS : le qualifier de « brut » ou de
+  // « réel » le confondait avec le taux appliqué ou la carte « Après
+  // inflation » (audit v5.6.2 + v6.6). Depuis que la courbe lissée applique le
+  // SCÉNARIO choisi (v6.4), la référence honnête est le taux brut du scénario
+  // courant (prudent 5,99 / central 8,22 / optimiste 10,07) — pas la moyenne
+  // arithmétique 10,07 %, qui donnait « sous la référence » même en scénario
+  // central (l'écart 8,22 → 7,95 vient des frais, pas d'une sous-performance).
   const effectiveReturn = kpis.xirr > 0 ? kpis.xirr : kpis.cagr
-  // Référence BRUTE (moyenne arithmétique) : c'est elle que la courbe lissée
-  // applique, donc c'est elle qu'un XIRR nominal doit égaler. La référence
-  // composée réelle (5,99 %/an après inflation) est une autre échelle — la
-  // comparer au XIRR brut mélangerait les étages (v5.7.1).
-  const datasetAvg = getHistoricalDataset(inputs.historicalIndex).avgReturn * 100
-  const gap = Math.abs(effectiveReturn - datasetAvg)
+  const historical = getHistoricalDataset(inputs.historicalIndex)
+  const scenarioRate =
+    (inputs.returnScenario === "prudent"
+      ? historical.netReturn
+      : inputs.returnScenario === "optimiste"
+        ? historical.avgReturn
+        : historical.compoundedReturn) * 100
+  const scenarioLabel = { prudent: "Prudent", central: "Central", optimiste: "Optimiste" }[inputs.returnScenario]
+  const gap = Math.abs(effectiveReturn - scenarioRate)
+  // Même précision que les cartes « Statistiques clés » (2 décimales, audit
+  // v6.6) : avant, « 7,95 » s'affichait « 8,0 » — un taux différent du visible
+  // pour le même concept.
+  const fmt2 = (r: number): string => r.toFixed(2).replace(".", ",")
   // Le terme « XIRR » est réservé au mode Avancé (audit) ; en Débutant, on
   // dit « rendement annuel (versements inclus) » — même chiffre, sans jargon.
   const returnLabel =
-    uiMode === "avance" ? "(XIRR brut avant inflation, versements inclus)" : "(avant inflation, versements inclus)"
+    uiMode === "avance"
+      ? "(XIRR après frais, avant inflation, versements inclus)"
+      : "(après frais, avant inflation, versements inclus)"
   if (gap > 0.5) {
     insights.push(
-      effectiveReturn > datasetAvg
-        ? `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} dépasse la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`
-        : `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} reste sous la moyenne BRUTE de référence de ${datasetAvg.toFixed(1).replace(".", ",")}%/an.`,
+      effectiveReturn > scenarioRate
+        ? `Votre rendement annuel de ${fmt2(effectiveReturn)}% ${returnLabel} dépasse le taux brut appliqué de ${fmt2(
+            scenarioRate,
+          )}%/an (scénario ${scenarioLabel}).`
+        : `Votre rendement annuel de ${fmt2(effectiveReturn)}% ${returnLabel} reste sous le taux brut appliqué de ${fmt2(
+            scenarioRate,
+          )}%/an (scénario ${scenarioLabel}).`,
     )
   } else if (effectiveReturn > 0) {
     insights.push(
-      `Votre rendement annuel de ${effectiveReturn.toFixed(1).replace(".", ",")}% ${returnLabel} est proche de la moyenne BRUTE de référence du MSCI World (${datasetAvg.toFixed(1).replace(".", ",")}%/an).`,
+      `Votre rendement annuel de ${fmt2(effectiveReturn)}% ${returnLabel} est proche du taux brut appliqué de ${fmt2(
+        scenarioRate,
+      )}%/an (scénario ${scenarioLabel}).`,
     )
   }
   if (insights.length === 0) {
