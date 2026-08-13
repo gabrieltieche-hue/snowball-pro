@@ -4,6 +4,29 @@
 
 ---
 
+## v6.6.0 — Refonte de la landing : démo interactive du héro + méthodologie clarifiée
+
+Demande utilisateur : _« fait une refonte de la landing page »_ puis _« C TOUT INVERSE, IN COMPREND RIEN, C MOCHE »_ sur la section Méthodologie. Refonte complète de la landing : le héro devient une **démo interactive exécutée par le vrai moteur** — bascule Prudent / Central / Optimiste, la courbe se redessine et le « nombre magique » (capital final) se recalcule en direct avec la décomposition épargné / croissance. La section Méthodologie est réordonnée selon le langage canonique de l'app (échelle **Brut → Composé → Réel**, chaque étape retire une seule chose) et le SEO est en place (données structurées, canonical, sitemap, robots, vérification Google, GoatCounter). Bump 6.5.2 → **6.6.0**. Zéro changement moteur (ancrages dorés intacts) — **358 tests**, gate 100 % vert.
+
+### 🌐 Landing (`components/Landing/`)
+
+- **Héro interactif** : sélecteur segmenté Prudent / Central / Optimiste avec les taux réels lus dans `getHistoricalDataset` (5,99 / 8,22 / 10,07 % — jamais en dur). `HeroChart` accepte désormais `rows` / `inputs` / `footer` pour être piloté par le parent (la démo recalcule sans recréer le composant) tout en restant autonome (démo par défaut).
+- **Nombre magique** : capital final animé (compteur), « en € d'aujourd'hui », barre de décomposition **Épargné vs Croissance** — le résultat d'abord, comme promis dans PRODUCT.md.
+- **Nouvelle accroche** : « Le nombre magique de votre épargne, calculé sur 100 ans de vraie histoire boursière ».
+- **Méthodologie clarifiée** (retour utilisateur) : échelle descendante **Brut (10,07 % · Optimiste) → Composé (8,22 % · Central, défaut) → Réel (5,99 % · Prudent)** avec flèches « on retire la volatilité » puis « on retire l'inflation », badge « défaut » sur la ligne composée, titre « Pourquoi 10,07 % → 5,99 % ? ». Même vocabulaire que le panneau « Pourquoi ces chiffres ? » de la sidebar.
+- **Chiffres clés avec icônes**, sections resserrées, contenu factuel intégralement conservé (scénarios, enveloppes, FAQ, profils, mentions).
+
+### 🚀 SEO (`index.html` + `public/`)
+
+- Données structurées `WebApplication` (schema.org), canonical, `sitemap.xml`, `robots.txt`, fichier de vérification Google, GoatCounter configuré (`gabriel322jsj222`).
+
+### ✅ Vérifications
+
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓ (test landing mis à jour : nouveau titre « Pourquoi 10,07 % → 5,99 % ? ») build ✓.
+- Navigateur (dev) : bascule de scénario 518 765 € → 365 411 € → 700 394 €, 0 erreur console ; section Méthodologie réordonnée vérifiée en texte réel.
+- Version 6.5.2 → **6.6.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.6.0`), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.6.0).
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app**.
+
 ## v6.5.2 — Clarté des taux : la chaîne brut → net de frais → réel est enfin visible (8,22 → 7,95 → 5,73)
 
 Demande utilisateur : _« pourquoi quand je mets 8,22 %/an, ça me met 8 % et 5,7 % net ??? je crois que les rendements ne sont pas synchronisés, tout est différent partout »_. Audit moteur + vérification chiffrée : **aucune désynchronisation des calculs** — le XIRR 7,95 % = scénario 8,22 %/an brut − 0,25 %/an de frais (sans frais, le XIRR = 8,22 % pile, prouvé), et le réel 5,73 % = (1 + 7,95 %) ÷ (1 + 2,1 %) − 1. Mais l'**affichage était trompeur** : la carte « Rendement / an » disait « brut » alors que le XIRR est net de frais, les taux étaient arrondis à 1 décimale (« 8,0 % » pour 7,95), le taux appliqué (8,22 %/an brut) n'apparaissait nulle part dans les KPIs, et l'insight comparait au 10,07 % arithmétique (référence périmée depuis v6.4). Bump 6.5.1 → **6.5.2**. Zéro changement moteur (ancrages dorés intacts).

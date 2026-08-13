@@ -927,7 +927,7 @@ describe("v6.1 — landing page", () => {
     expect(screen.getByRole("img")).toBeInTheDocument()
     // Sections fonctionnalités + méthodologie + FAQ
     expect(screen.getByText("Quatre onglets, une question : où va votre argent ?")).toBeInTheDocument()
-    expect(screen.getByText("Pourquoi 10,07 % et pas 5,99 % ?")).toBeInTheDocument()
+    expect(screen.getByText("Pourquoi 10,07 % → 5,99 % ?")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /mes données sont-elles envoyées/i })).toBeInTheDocument()
   })
 

@@ -1,22 +1,38 @@
 import { useMemo } from "react"
 import { motion } from "framer-motion"
 import { fmtCurrency, parseStoredInputs, runSimulation } from "../../engine"
+import type { SimulationInputs, YearRow } from "../../types"
 
 const W = 640
 const H = 250
 const PAD = { top: 14, right: 14, bottom: 26, left: 14 }
 
+interface HeroChartProps {
+  /** Séries déjà calculées par l'appelant (démo interactive du héro). */
+  rows?: YearRow[]
+  /** Réglages correspondants (durée, versement…). Défaut : moteur sur les défauts. */
+  inputs?: SimulationInputs
+  /** Sous-texte « Capital final / Croissance ». Le héro interactif le remplace
+   * par son propre bloc de résultat (nombre magique + décomposition). */
+  footer?: boolean
+}
+
 /**
  * Graphique du héro de la landing — PAS une maquette : il exécute le vrai
  * moteur (`runSimulation` sur les réglages par défaut) et dessine la courbe
- * d'équité en SVG pur (léger, déterministe, fidèle à l'app).
+ * d'équité en SVG pur (léger, déterministe, fidèle à l'app). Quand `rows` et
+ * `inputs` sont fournis, il dessine les données de l'appelant (le héro
+ * interactif change de scénario sans recalculer ici).
  */
-export function HeroChart() {
+export function HeroChart({ rows: providedRows, inputs: providedInputs, footer = true }: HeroChartProps = {}) {
   const { rows, inputs, last } = useMemo(() => {
+    if (providedRows && providedInputs) {
+      return { rows: providedRows, inputs: providedInputs, last: providedRows[providedRows.length - 1] }
+    }
     const inputs = parseStoredInputs(null)
     const rows = runSimulation(inputs)
     return { rows, inputs, last: rows[rows.length - 1] }
-  }, [])
+  }, [providedRows, providedInputs])
 
   if (!last) return null
 
@@ -138,19 +154,21 @@ export function HeroChart() {
       </svg>
 
       {/* Sous-texte : le scénario par défaut, en chiffres réels du moteur. */}
-      <div className="flex items-center justify-between gap-3 flex-wrap mt-3 pt-3 border-t border-border/60">
-        <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
-          <span className="w-2.5 h-[3px] rounded-full bg-primary shrink-0" aria-hidden />
-          Capital final ({endYear}) : <span className="mono font-bold text-text">{fmtCurrency(last.nominal)}</span>
-        </p>
-        <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
-          Croissance : <span className="mono font-bold text-primary">{growthPct.toFixed(0)} %</span>
-        </p>
-        <p className="text-[10.5px] text-text-muted">
-          {inputs.duration} ans · {inputs.monthlyPayment.toLocaleString("fr-FR")} €/mois
-        </p>
-      </div>
+      {footer && (
+        <div className="flex items-center justify-between gap-3 flex-wrap mt-3 pt-3 border-t border-border/60">
+          <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
+            <span className="w-2.5 h-[3px] rounded-full bg-primary shrink-0" aria-hidden />
+            Capital final ({endYear}) : <span className="mono font-bold text-text">{fmtCurrency(last.nominal)}</span>
+          </p>
+          <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
+            Croissance : <span className="mono font-bold text-primary">{growthPct.toFixed(0)} %</span>
+          </p>
+          <p className="text-[10.5px] text-text-muted">
+            {inputs.duration} ans · {inputs.monthlyPayment.toLocaleString("fr-FR")} €/mois
+          </p>
+        </div>
+      )}
     </div>
   )
 }

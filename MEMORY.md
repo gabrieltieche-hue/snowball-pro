@@ -4,6 +4,26 @@
 
 ---
 
+## SESSION — 2026-08-13 (v6.6.0 : Refonte de la landing — démo interactive + méthodologie clarifiée)
+
+### Résumé
+
+Demande utilisateur : _« fait une refonte de la landing page »_, puis retour critique sur la section Méthodologie : _« C TOUT INVERSE, IN COMPREND RIEN, C MOCHE »_. Refonte de la landing : héro **interactif** piloté par le vrai moteur (bascule Prudent / Central / Optimiste → la courbe se redessine et le « nombre magique » se recalcule), décomposition épargné / croissance, et **échelle Brut → Composé → Réel clarifiée** dans Méthodologie (chaque étape retire une seule chose). SEO ajouté (données structurées, sitemap, robots, vérification Google, GoatCounter). Version 6.5.2 → **6.6.0**, **358 tests**, gate 100 % vert, déploiement `vercel --prod`.
+
+### Décisions
+
+- **Héro interactif** (`LandingPage.tsx` + `HeroChart.tsx`) : sélecteur segmenté avec taux réels de `getHistoricalDataset` (jamais en dur), `HeroChart` piloté par props (`rows`/`inputs`/`footer`) mais autonome par défaut (test standalone conservé). « Nombre magique » animé (`useCountUp`) + barre Épargné / Croissance.
+- **Méthodologie réordonnée** : les trois taux sont présentés en descente logique **Brut (10,07 % · Optimiste) → Composé (8,22 % · Central, défaut) → Réel (5,99 % · Prudent)** avec flèches « on retire la volatilité » puis « on retire l'inflation », badge « défaut » sur la ligne composée — même langage que le panneau « Pourquoi ces chiffres ? » de la sidebar. Titre : « Pourquoi 10,07 % → 5,99 % ? » (test mis à jour en conséquence).
+- **Zéro changement moteur** : les ancrages dorés passent inchangés — la refonte est purement présentationnelle + SEO.
+- **SEO** (`index.html` + `public/`) : données structurées `WebApplication` (schema.org), canonical, `sitemap.xml`, `robots.txt`, vérification Google `googleb5425766aa897f9d.html`, GoatCounter `gabriel322jsj222` configuré.
+- **Release v6.6.0** : package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.6.0`, footer landing v6.6.0, CHANGELOG (entrée v6.6.0), MEMORY.md (cette entrée).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓ build ✓.
+- Navigateur (dev) : bascule de scénario 518 765 € → 365 411 € → 700 394 €, 0 erreur console ; section Méthodologie réordonnée vérifiée (texte réel + capture).
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app**.
+
 ## SESSION — 2026-08-12 (v6.5.2 : Clarté des taux — la chaîne brut → net de frais → réel devient explicite)
 
 ### Résumé
