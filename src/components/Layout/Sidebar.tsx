@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react"
 import { HelpTip } from "../shared/HelpTip"
+import { SectionHeader } from "../shared/SectionHeader"
 import { EnvelopeSelector } from "../Forms/EnvelopeSelector"
 import { ExpenseForm } from "../Forms/ExpenseForm"
 import { ScenarioSelector } from "../Simulation/ScenarioSelector"
@@ -120,32 +121,35 @@ export function Sidebar({
       {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
           hauteur d'écran et épinglait ses sections basses sous le pli pendant
           tout le scroll. Elle suit désormais le document. */}
-      {/* La marque vit dans l'en-tête global — ici, un simple repère de
-          section + le badge de scénario en mode comparaison. */}
-      <div className="flex items-center justify-between gap-2 mb-6">
-        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-          <span className="w-1 h-4 rounded-full bg-primary shrink-0" aria-hidden />
-          Réglages
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {scenarioLabel && (
-            <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
-              {scenarioLabel}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            aria-expanded={!collapsed}
-            aria-controls="sidebar-settings"
-            aria-label={collapsed ? "Déplier les réglages" : "Replier les réglages"}
-            title={collapsed ? "Déplier les réglages" : "Replier les réglages"}
-            className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
-          >
-            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
-        </div>
-      </div>
+      {/* La marque vit dans l'en-tête global — ici, un repère de section dans
+          l'anatomie SectionHeader uniforme (v5.6.4) + le badge de scénario en
+          mode comparaison. */}
+      <SectionHeader
+        level="card"
+        icon={Settings2}
+        title="Réglages"
+        className="mb-6 items-center"
+        trailing={
+          <div className="flex items-center gap-2 shrink-0">
+            {scenarioLabel && (
+              <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                {scenarioLabel}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-expanded={!collapsed}
+              aria-controls="sidebar-settings"
+              aria-label={collapsed ? "Déplier les réglages" : "Replier les réglages"}
+              title={collapsed ? "Déplier les réglages" : "Replier les réglages"}
+              className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
+            >
+              {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+          </div>
+        }
+      />
 
       {/* Le contenu bascule par remontage (pas d'AnimatePresence) : robuste
           sous prefers-reduced-motion, où une sortie bloquée laisserait le

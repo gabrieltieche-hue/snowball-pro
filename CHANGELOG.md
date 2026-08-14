@@ -4,6 +4,22 @@
 
 ---
 
+## v6.6.1 — Titres uniformes : « Réglages » et « Votre patrimoine estimé » sur l'anatomie SectionHeader
+
+Demande utilisateur : _« ces 2 titres ne sont pas à la même taille que les autres, ils respectent pas le style »_ — les titres « RÉGLAGES » (en-tête de la sidebar) et « VOTRE PATRIMOINE ESTIMÉ » (héro de l'onglet Projection) échappaient à l'anatomie de titre uniforme (v5.6.4) avec un mini-label 10 px muet. Correction : migration des deux titres sur le composant **`SectionHeader` niveau `card`** — barre dorée `w-1 h-5` + icône lucide 16 px + titre `font-extrabold uppercase tracking-[0.08em]` 13 px (14 px ≥ sm), le même rythme que « PROJECTION DE VOTRE CAPITAL » / « STATISTIQUES CLÉS ». Zéro changement moteur — **358 tests**, gate 100 % vert.
+
+### 🏷 Composants
+
+- **`Sidebar.tsx`** : l'en-tête « Réglages » devient `<SectionHeader level="card" icon={Settings2} title="Réglages">` — le badge de scénario (comparaison A/B) et le bouton replier/déplier sont conservés dans `trailing` (`className="mb-6 items-center"`).
+- **`HeroResult.tsx`** : le libellé « Votre patrimoine estimé » devient `<SectionHeader level="card" as="span" icon={Wallet} title="Votre patrimoine estimé">` — badge « 25 ans · 2050 » en `trailing` ; le `h2` sr-only (hiérarchie de titres) est conservé.
+
+### ✅ Vérifications
+
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓.
+- Navigateur (dev) : styles calculés strictement identiques entre les 3 titres (13 px, poids 800, tracking 1,04 px, barre 20 px, icône 16 px) — clair + sombre, 0 erreur console.
+- Version 6.6.0 → **6.6.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.6.1`, footer landing v6.6.1), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.6.1).
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app**.
+
 ## v6.6.0 — Refonte de la landing : démo interactive du héro + méthodologie clarifiée
 
 Demande utilisateur : _« fait une refonte de la landing page »_ puis _« C TOUT INVERSE, IN COMPREND RIEN, C MOCHE »_ sur la section Méthodologie. Refonte complète de la landing : le héro devient une **démo interactive exécutée par le vrai moteur** — bascule Prudent / Central / Optimiste, la courbe se redessine et le « nombre magique » (capital final) se recalcule en direct avec la décomposition épargné / croissance. La section Méthodologie est réordonnée selon le langage canonique de l'app (échelle **Brut → Composé → Réel**, chaque étape retire une seule chose) et le SEO est en place (données structurées, canonical, sitemap, robots, vérification Google, GoatCounter). Bump 6.5.2 → **6.6.0**. Zéro changement moteur (ancrages dorés intacts) — **358 tests**, gate 100 % vert.

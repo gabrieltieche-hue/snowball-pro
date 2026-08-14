@@ -4,6 +4,25 @@
 
 ---
 
+## SESSION — 2026-08-14 (v6.6.1 : Titres uniformes — « Réglages » et « Votre patrimoine estimé » sur l'anatomie SectionHeader)
+
+### Résumé
+
+Demande utilisateur : _« ces 2 titres ne sont pas à la même taille que les autres, ils respectent pas le style »_ — capture à l'appui : les titres « RÉGLAGES » (sidebar) et « VOTRE PATRIMOINE ESTIMÉ » (héro) ne respectaient pas l'anatomie de titre uniforme. Premier essai raté (mini-label 10 px muet — mauvaise direction), puis correction dans le bon sens : migration des deux titres sur le composant **SectionHeader level="card"** (barre dorée + icône + extrabold majuscule 13 px), comme « PROJECTION DE VOTRE CAPITAL ». Version 6.6.0 → **6.6.1**, **358 tests**, gate 100 % vert, déploiement `vercel --prod`.
+
+### Décisions
+
+- **`Sidebar.tsx`** : l'en-tête « Réglages » passe sur `<SectionHeader level="card" icon={Settings2} title="Réglages">` — badge de scénario + bouton replier conservés dans `trailing`, `className="mb-6 items-center"`.
+- **`HeroResult.tsx`** : « Votre patrimoine estimé » passe sur `<SectionHeader level="card" as="span" icon={Wallet} title="Votre patrimoine estimé">` (badge « 25 ans · 2050 » en `trailing`) — le `h2` sr-only et la hiérarchie de titres sont conservés.
+- **Anatomie uniforme** (v5.6.4) respectée : barre `w-1 h-5` + icône 16 px + `text-[13px] sm:text-sm font-extrabold uppercase tracking-[0.08em] text-text` — vérifié en navigateur : styles calculés identiques entre les 3 titres (13 px, poids 800, tracking 1,04 px, barre 20 px, icône 16 px).
+- **Release v6.6.1** : package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.6.1`, footer landing v6.6.1, CHANGELOG (entrée v6.6.1), MEMORY.md (cette entrée).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **358/358 tests** ✓ build ✓.
+- Navigateur (dev) : titres identiques aux autres cartes (clair + sombre), 0 erreur console.
+- Déploiement : `vercel --prod` → **https://snowball-pro.vercel.app**.
+
 ## SESSION — 2026-08-13 (v6.6.0 : Refonte de la landing — démo interactive + méthodologie clarifiée)
 
 ### Résumé

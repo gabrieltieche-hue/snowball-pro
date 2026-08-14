@@ -1,4 +1,5 @@
-import { Sparkles, TrendingUp } from "lucide-react"
+import { Sparkles, TrendingUp, Wallet } from "lucide-react"
+import { SectionHeader } from "../shared/SectionHeader"
 import { fmtCurrency } from "../../engine"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -68,17 +69,20 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
       />
 
       <div className="relative">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-1 h-5 rounded-full bg-primary shrink-0" aria-hidden />
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-              Votre patrimoine estimé
+        {/* Titre dans l'anatomie SectionHeader uniforme (v5.6.4) : barre dorée
+            + icône + extrabold majuscule — même rythme que les autres cartes. */}
+        <SectionHeader
+          level="card"
+          as="span"
+          icon={Wallet}
+          title="Votre patrimoine estimé"
+          className="mb-0 items-center"
+          trailing={
+            <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+              {inputs.duration} ans · {endYear}
             </span>
-          </div>
-          <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
-            {inputs.duration} ans · {endYear}
-          </span>
-        </div>
+          }
+        />
 
         {/* Le chiffre : grand, tabulaire, sans dégradé — le poids vient de la
             taille et de l'épaisseur, pas d'un habillage. */}
