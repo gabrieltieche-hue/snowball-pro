@@ -329,7 +329,7 @@ describe("DualAmount — les deux échelles toujours affichées (demande utilisa
 })
 
 describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)", () => {
-  it("GoalTab : label « (% brut) » + note taux recommandé 7-12 %/an · défaut 10,07 %", () => {
+  it("GoalTab : label « (% brut) » + note taux recommandé 7-12 %/an · défaut aligné scénario Central 8,22 %", () => {
     const rows = runSimulation(DEFAULT_INPUTS)
     const { container } = render(
       <GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />,
@@ -339,10 +339,12 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
     expect(screen.getByText("Rendement de la bourse (% brut)")).toBeInTheDocument()
     expect(text).toContain("référence")
-    expect(text).toContain("10,07 % brut (moyenne MSCI World)")
+    expect(text).toContain("8,22 % brut (scénario Central)")
     expect(text).toContain("taux recommandé")
-    // Le curseur Objectif démarre sur le défaut 10,07 % (valeur en %)
-    expect(screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" })).toHaveValue("10.07")
+    // Le curseur Objectif démarre sur le défaut du scénario Central (valeur en
+    // %) — 0,0822 × 100 = 8,2199… en virgule flottante : on compare en nombre.
+    const slider = screen.getByRole("slider", { name: "Rendement de la bourse (% brut)" }) as HTMLInputElement
+    expect(parseFloat(slider.value)).toBeCloseTo(8.22, 2)
   })
 
   it("Sidebar (v6) : l'échelle pédagogique des rendements vit dans « Pourquoi ces chiffres ? », repliée par défaut", () => {
@@ -453,6 +455,35 @@ describe("scénario de rendement — déplacé dans les réglages « Votre épar
   )
 })
 
+describe("Sidebar repliée — rail d'icônes style ChatGPT (v6.2)", () => {
+  it(
+    "replier → rail d'icônes ; clic sur une icône → déplie ET ouvre la section ciblée",
+    () => {
+      render(<App />)
+      // Dépliée par défaut : les réglages sont là, le bouton « Replier » aussi.
+      expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toBeInTheDocument()
+
+      // Repli → le panneau devient un rail d'icônes (une par catégorie), le
+      // contenu disparaît, l'état persiste en localStorage.
+      fireEvent.click(screen.getByRole("button", { name: "Replier les réglages" }))
+      expect(screen.getByRole("button", { name: "Votre épargne" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Votre profil" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Sauvegarder un snapshot" })).toBeInTheDocument()
+      expect(screen.queryByRole("slider", { name: "Capital de départ (€)" })).not.toBeInTheDocument()
+      expect(localStorage.getItem("snowball_v62_sidebar_collapsed")).toBe("1")
+
+      // Clic sur l'icône « Votre profil » → la sidebar se déplie ET la section
+      // ciblée est ouverte (son curseur est présent), comme une navigation.
+      fireEvent.click(screen.getByRole("button", { name: "Votre profil" }))
+      expect(screen.getByRole("slider", { name: "Âge actuel" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Replier les réglages" })).toBeInTheDocument()
+      // « Votre épargne » restait ouverte (l'état des sections est préservé).
+      expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toBeInTheDocument()
+    },
+    APP_TIMEOUT,
+  )
+})
+
 describe("P0-2 — libellé PER : pas d'abattement de 10 % inventé (audit v6)", () => {
   it(
     "le suffixe TMI en PER explique la sortie réelle (TMI pleine sans abattement, gains au PFU)",
@@ -499,6 +530,41 @@ describe("menu Export — toutes les fonctionnalités d'export dans un bouton", 
     // Clic hors du menu → fermeture (le composant écoute mousedown natif)
     fireEvent.mouseDown(document.body)
     expect(screen.queryByRole("menuitem", { name: /export csv/i })).not.toBeInTheDocument()
+  })
+})
+
+describe("rapport patrimonial PDF (PISTES V6.1 — idée 2)", () => {
+  it("n'est pas monté tant que l'utilisateur n'a pas cliqué « Rapport PDF »", () => {
+    render(<App />)
+    // Le rapport hors-écran ne pollue ni le DOM ni l'accessibilité avant usage.
+    expect(document.querySelector(".report-print-only")).toBeNull()
+    expect(screen.queryByText("Rapport patrimonial de synthèse")).not.toBeInTheDocument()
+  })
+
+  it("monte le rapport imprimable au clic et appelle window.print", async () => {
+    const printSpy = vi.fn()
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true, writable: true })
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+    fireEvent.click(screen.getByRole("menuitem", { name: /rapport pdf/i }))
+
+    // Le rapport doit être rendu avant d'ouvrir le dialogue d'impression.
+    await waitFor(() => expect(printSpy).toHaveBeenCalled())
+    const report = document.querySelector(".report-print-only")
+    expect(report).not.toBeNull()
+    const text = (report?.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+
+    // Couverture + héro + synthèse + graphique + fiscalité + tableau + méthodo.
+    expect(text).toContain("Rapport patrimonial de synthèse")
+    expect(text).toContain("Paramètres de la simulation")
+    expect(text).toContain("Rendement net / an (XIRR)")
+    expect(text).toContain("Projection de votre capital")
+    expect(text).toContain("Gains après impôts")
+    expect(text).toContain("Détail année par année")
+    expect(text).toContain("Méthodologie")
+
+    // Le shell de l'app porte la classe masquée à l'impression (.app-shell).
+    expect(document.querySelector(".app-shell")).toBeInTheDocument()
   })
 })
 
@@ -792,14 +858,15 @@ describe("audit v5.6.3 — SmartInput : retour visible sur saisie invalide ou ho
 })
 
 describe("audit v5.6.3 — GoalTab : le taux courant du curseur est une ligne du tableau", () => {
-  it("la carte principale et la ligne « 10,07 % » du tableau affichent le MÊME montant", () => {
+  it("la carte principale et la ligne « 8,22 % » du tableau affichent le MÊME montant", () => {
     const rows = runSimulation(DEFAULT_INPUTS)
     const { container } = render(
       <GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />,
     )
     const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
-    // La ligne du taux courant (10,07 %) existe dans le tableau…
-    expect(text).toContain("10,07%")
+    // La ligne du taux courant (8,22 %, scénario Central par défaut) existe
+    // dans le tableau…
+    expect(text).toContain("8,22%")
     // …et son épargne mensuelle est exactement celle de la carte principale.
     const expected = solveGoal(DEFAULT_INPUTS).pmtPerMonth
     const amount = fmtCurrency(expected ?? 0).replace(/[\u202F\u00A0]/g, " ")
@@ -839,14 +906,16 @@ describe("audit v6.5 — GoalTab : synchronisation et lignes dédupliquées", ()
     expect(text).not.toContain("en 15 ans")
   })
 
-  it("une seule ligne « 10,07 % ← » dans la comparaison (plus de doublon Optimiste)", () => {
+  it("une seule ligne « 8,22 % ← » dans la comparaison (plus de doublon Central)", () => {
     const rows = runSimulation(DEFAULT_INPUTS)
     render(<GoalTab inputs={DEFAULT_INPUTS} rows={rows} darkMode={false} updateInput={() => {}} />)
     // Avant le correctif, le taux courant (10,07) et la moyenne arithmétique
     // (10,0655) produisaient DEUX lignes « 10,07 % ← Optimiste » avec des
-    // montants différents. Il n'en reste qu'une.
+    // montants différents. Aujourd'hui le même piège existe entre le taux
+    // courant (8,22, scénario Central par défaut) et le rendement composé
+    // (8,2196) — la déduplication n'en laisse qu'une.
     expect(screen.getAllByText(/←/).length).toBe(1)
-    expect(screen.getAllByText(/10,07% ←/).length).toBe(1)
+    expect(screen.getAllByText(/8,22% ←/).length).toBe(1)
   })
 })
 

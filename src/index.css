@@ -528,6 +528,57 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   }
 }
 
+/* ============ Rapport PDF patrimonial (PISTES V6.1 — idée 2) ============ */
+/* À l'écran : le rapport vit HORS-ÉCRAN avec une largeur fixe (794 px ≈ A4 à
+   96 dpi) — il doit garder une largeur mesurable pour que Recharts dessine
+   correctement le graphe avant l'impression (un display:none donnerait un
+   conteneur de largeur 0 et un graphique vide). */
+.report-print-only {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 794px;
+  pointer-events: none;
+}
+
+@media print {
+  /* Le shell de l'app (en-tête, réglages, onglets) disparaît : seul le
+     rapport s'imprime. */
+  .app-shell {
+    display: none !important;
+  }
+  .report-print-only {
+    position: static;
+    left: auto;
+    top: auto;
+    width: 100%;
+  }
+  /* Le rapport impose SON thème clair (palette figée dans le composant) :
+     aucune variable sombre de l'app ne doit fuir sur le papier. */
+  .report-print-only,
+  .report-print-only * {
+    color-scheme: light;
+  }
+  /* Les fonds de cartes (bg-gray-50, teintes) s'impriment : sans ça, la
+     plupart des navigateurs les ignorent par défaut. */
+  .report-print-only {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* Page de garde = une page pleine, puis chaque grande section suit. */
+  .report-page {
+    break-after: page;
+    min-height: 269mm; /* A4 (297 mm) − marges 14 mm × 2 */
+  }
+  .report-table tr {
+    break-inside: avoid;
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}
+
 /* M4 — WCAG 2.2.2 : couper les animations pour qui les refuse (vestibulaire) */
 @media (prefers-reduced-motion: reduce) {
   *,

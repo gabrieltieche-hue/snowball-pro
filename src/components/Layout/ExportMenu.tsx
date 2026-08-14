@@ -45,7 +45,12 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
   const actions = [
     { label: "Export CSV", desc: "Tableau année par année", icon: Download, onClick: onExportCSV },
     { label: "Export JSON", desc: "Paramètres + résultats bruts", icon: FileJson, onClick: onExportJSON },
-    { label: "Rapport PDF", desc: "Imprimer ou enregistrer en PDF", icon: Printer, onClick: onPrint },
+    {
+      label: "Rapport PDF",
+      desc: "Rapport patrimonial de synthèse — imprimer ou enregistrer en PDF",
+      icon: Printer,
+      onClick: onPrint,
+    },
   ]
 
   return (

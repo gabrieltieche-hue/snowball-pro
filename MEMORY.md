@@ -4,6 +4,68 @@
 
 ---
 
+## SESSION — 2026-08-14 (v6.7.1 : Réglages repliables — rail d'icônes latéral style ChatGPT)
+
+### Résumé
+
+Demande utilisateur : _« je souhaite pouvoir vraiment bien replier le menu des réglages — un vrai repli sur le côté avec des petites icônes pour les catégories, un truc style ChatGPT »_ (+ captures de la sidebar actuelle et des rails ChatGPT replié/déplié). Le repli v6.2 (résumé compact `CollapsedSummary`) devient un **vrai rail latéral de 76 px** : la grille se resserre (380 px → 76 px, `transition-[grid-template-columns]`), le panneau se rétracte en colonne d'icônes sticky, le contenu gagne ~300 px. Zéro changement moteur — **361 tests**, gate 100 % vert, vérifié en navigateur réel (Playwright), **commité puis déployé** `vercel --prod` → https://snowball-pro.vercel.app.
+
+### Décisions
+
+- **L'état de repli monte dans `App.tsx`** (nouveau module `utils/sidebar.ts`, pattern `uiMode.ts`, clé `snowball_v62_sidebar_collapsed` conservée) : c'est App qui resserre la grille — la Sidebar n'est plus que le miroir (`collapsed` / `onToggleCollapsed` en props).
+- **Sections contrôlées par Sidebar** : `openSections` (défauts identiques à avant : « Votre épargne » ouvert, le reste replié) via les nouvelles props optionnelles `open`/`onOpenChange` de `CollapsibleSection` — API additive, les usages Rente/Simulator/MonteCarlo restent non contrôlés. Une constante **`SECTIONS`** est la source unique des icônes/libellés (rail + accordéons).
+- **Rail replié** : marque or en tête (clic = déplier, affordance logo ChatGPT) → 6 icônes de catégories avec **tooltips** (`RailTip`, bulle sombre à droite, `group/rail` Tailwind) → snapshot avec **badge compteur** → chevron de dépliage. `lg:sticky lg:top-24` + `z-30` (peint au-dessus du contenu : l'ordre de peinture a été prouvé par `elementFromPoint` après activation temporaire des pointer-events).
+- **Clic icône = navigation** : déplie + ouvre la section + `scrollIntoView` (`scroll-mt-24`, respecte `prefers-reduced-motion`) + **focus clavier** déplacé sur l'en-tête de section (sinon focus perdu sur `<body>` après remontage).
+- **Icônes** : `SlidersHorizontal` pour « Paramètres avancés » (maquette), `Settings2` réservé à la marque RÉGLAGES.
+- **Pièges attrapés en revue adverse** : (1) `overflow-hidden` sur l'aside aurait clippé les tooltips → retiré sur le rail ; (2) `overflow-x-auto` du conteneur faisait apparaître une **scrollbar horizontale parasite au survol** (les tooltips absolus allongent le scrollWidth) → `lg:overflow-visible` ; (3) `elementFromPoint` ignore `pointer-events:none` (faux négatif de peinture) → vérifié en activant temporairement le pointer-events.
+- **Mobile** : rail horizontal compact (icônes 36 px, `flex-row`), aucun débordement à 390 px (scrollWidth == clientWidth), marque masquée (`hidden lg:flex`).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓ (dist ~1,1 Mo / 319 ko gzip).
+- Nouveau test composant : repli → rail (aria-labels, contenu masqué, localStorage `"1"`) → clic « Votre profil » → déplié + section ouverte + « Votre épargne » préservée.
+- Playwright 1440 px : aside 76×507, `grid-template-columns: 76px 1292px`, colonne empilée (x constant), sticky maintenu à top:96 après scroll 700 px, tooltip peint au-dessus du contenu, badge « 1 » après sauvegarde. 390 px : rail horizontal 358×62, overflowX auto, 0 débordement.
+- Détecteur impeccable (`detect.mjs`) : 0 finding. Version 6.7.0 → **6.7.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.1`, footer landing v6.7.1), CHANGELOG (entrée v6.7.1), MEMORY.md (cette entrée).
+
+### Notes
+
+- **Commit + déploiement finalisés** à la demande de l'utilisateur (« commit, publie sur vercel, met tout à jour ») : tout le worktree a été commité (v6.7.0 rapport PDF + v6.7.1 rail en un commit de release) puis `vercel --prod`. La note « pas de commit / laisser la main » de la session v6.7.0 est donc caduque.
+
+---
+
+## SESSION — 2026-08-14 (v6.7.0 : Objectif aligné sur le scénario Central + Rapport PDF patrimonial de synthèse)
+
+### Résumé
+
+Demande utilisateur : _« FIX ÇA : Alignement de la calculatrice Objectif… Export PDF = vrai rapport patrimonial »_ (workflow /apex -axv). Deux livrables : (1) la calculatrice « Combien investir ? » gardait un défaut **10,07 %/an** (synchro OFF) alors que l'app applique par défaut le scénario **Central 8,22 %/an** — aligné (piste laissée v6.5.2, MEMORY) ; (2) l'export PDF, jusque-là `window.print()` brut, devient un **rapport patrimonial de synthèse** (PISTES V6.1 — idée 2 validée). Version 6.6.1 → **6.7.0**, **361 tests** (360 à la base + 2 rapport, un autre agent a ajouté 1 test en parallèle), gate 100 % vert, vérifié en navigateur réel (preview + Playwright format A4).
+
+### Fix — calculatrice Objectif alignée sur le scénario Central
+
+- **`migration.ts`** : `DEFAULT_INPUTS.goalAnnualReturn` **0.1007 → 0.0822** (rendement géométrique composé du MSCI World ≈ 8,22 %/an brut, scénario Central) + commentaire « aligné sur l'onglet principal » corrigé (il datait de l'avant-scénarios). États STOCKÉS conservés (choix utilisateur).
+- **`GoalTab.tsx`** : référence « 8,22 % brut (scénario Central) », infobulle mise à jour.
+- **Tests** : moteur (défaut < 10,07 %), composants (curseur 8,22 — assert `toBeCloseTo` à cause de 0,0822×100 = 8,2199… en virgule flottante ; ligne « 8,22 % ← » unique : le doublon 8,22/8,2196 remplace l'ancien 10,07/10,0655).
+
+### Rapport PDF patrimonial (`src/components/Report/PatrimonialReport.tsx`, nouveau)
+
+- **Montage à la demande** : `reportOpen` dans App, `handlePrint` (setState → double rAF → `window.print()`, repli `setTimeout` si pas de rAF — jsdom). Rendu hors-écran `left:-10000px; width:794px` pour que Recharts mesure (un `display:none` donnerait un graphe vide). `aria-hidden` (contenu d'impression, pas de lecture d'écran).
+- **Thème clair figé** : palette Tailwind/hex directe, aucune dépendance aux variables du thème → identique sur papier quel que soit le mode sombre/clair. Helpers canoniques réutilisés : `computeKPIs`, `computeTaxBreakdown` (mêmes arguments que FiscalPanel), `deflationFactor`, `buildEquitySeries`, `fmtDecimal` (virgule française), `fmtCompact`, `fmtCurrency`, `ENVELOPE_CONFIGS`, `getHistoricalDataset`.
+- **Contenu** : page de garde (marque, date, héro 2 échelles, barre épargné/croissance, insight ×N, paramètres clés) → synthèse (4 cartes alignées sur SummaryStats : échelle du toggle en grand + l'autre en sous-titre — décision de revue adverse, avant elles mélangeaient nominal/réel) + XIRR/réel/multiple + graphique ComposedChart (empilé investi+gains € courants + courbe pouvoir d'achat pointillés) + fiscalité (mêmes lignes que le panneau) + tableau annuel complet + méthodologie + mentions.
+- **Print CSS** (`index.css`) : `.app-shell{display:none}` à l'impression, `.report-print-only` static + `color-scheme:light` + `print-color-adjust:exact`, `@page A4` marges 14 mm, page de garde pleine (`break-after:page`), `.report-table tr{break-inside:avoid}`.
+- **Bug attrapé en revue adverse** : `max-h-72 overflow-hidden` sur le conteneur de table clippait le détail annuel à l'impression → supprimé. `useMemo` placé avant l'early-return (règle des hooks, attrapé par ESLint).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓ (dist 1 106 ko / 319 ko gzip).
+- Navigateur : preview réelle (rapport monté au clic, cartes 308 551 / 241 548 / 67 003 / 95 165 € identiques à SummaryStats, gains +213 386 €, 0 erreur console) + **Playwright 794 px** : 2 sections h2, 26 lignes de tableau, graphique rendu, **0 débordement** au format A4 (le seul scrollWidth>clientWidth est un artefact interne Recharts cw=0).
+- Version 6.6.1 → **6.7.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.0`, footer landing v6.7.0), CHANGELOG (entrée v6.7.0), MEMORY.md (cette entrée).
+
+### Notes
+
+- ⚠️ Un **agent parallèle** travaillait en même temps (v6.6.1 « titres uniformes » commité à 16:01, puis refactor Sidebar en cours) : ses fichiers (Sidebar, HeroResult, CollapsibleSection, utils/sidebar.ts) n'ont pas été touchés ; la release est partie de 6.6.1. Un typecheck intermédiaire a échoué pendant son refactor (état mi-migration) puis est repassé vert — rien à faire de mon côté.
+- **Pas de commit** : worktree non commité (mes fichiers + les siens). **Pas de déploiement Vercel** — laisser la main à l'utilisateur.
+
+---
+
 ## SESSION — 2026-08-14 (v6.6.1 : Titres uniformes — « Réglages » et « Votre patrimoine estimé » sur l'anatomie SectionHeader)
 
 ### Résumé
@@ -95,7 +157,7 @@ Suite de la demande « mets le Scénario de rendement dans les réglages, il gâ
 
 ### Résumé
 
-Deux demandes utilisateur fusionnées dans la release **v5.6.0** (workflow APEX + fable-mode + oneshot + ultrathink) : (1) *« un truc linéaire, pas une courbe aléatoire »* — le Simulateur rejouait les zigzags historiques, l'utilisateur veut une courbe lisse ; (2) *« et si le départ à la retraite tombait en pleine crise ? »* — pouvoir choisir le moment et l'intensité du krach au lieu des seules fenêtres historiques fixes. **208 tests**, gate 100 % vert (typecheck ✓ lint ✓ test ✓ build ✓), déploiement Vercel.
+Deux demandes utilisateur fusionnées dans la release **v5.6.0** (workflow APEX + fable-mode + oneshot + ultrathink) : (1) _« un truc linéaire, pas une courbe aléatoire »_ — le Simulateur rejouait les zigzags historiques, l'utilisateur veut une courbe lisse ; (2) _« et si le départ à la retraite tombait en pleine crise ? »_ — pouvoir choisir le moment et l'intensité du krach au lieu des seules fenêtres historiques fixes. **208 tests**, gate 100 % vert (typecheck ✓ lint ✓ test ✓ build ✓), déploiement Vercel.
 
 ### Courbe lissée (Simulateur uniquement)
 
@@ -150,7 +212,7 @@ Demande utilisateur : obtenir une URL Vercel personnalisée au lieu de l'URL aut
 
 ### Résumé
 
-Suite directe de la question utilisateur *« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ (4× d'écart) ? Est-ce fiable ? Comment augmenter drastiquement la fiabilité ? »*. Première réponse vérifiée par recalcul indépendant (la dispersion 4× est mathématiquement correcte : volatilité réelle 19,3 % × √durée + bootstrap par blocs). Puis demande « IMPLÉMENTE TOUT » : les 6 améliorations proposées ont été implémentées en deux volets — **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Workflow APEX -a -x -v + fable-mode + oneshot + ultrathink + webapp-testing. **201 tests**, gate 100 % vert (vérifié navigateur en cours).
+Suite directe de la question utilisateur _« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ (4× d'écart) ? Est-ce fiable ? Comment augmenter drastiquement la fiabilité ? »_. Première réponse vérifiée par recalcul indépendant (la dispersion 4× est mathématiquement correcte : volatilité réelle 19,3 % × √durée + bootstrap par blocs). Puis demande « IMPLÉMENTE TOUT » : les 6 améliorations proposées ont été implémentées en deux volets — **honnêteté du modèle** (fiabilité) et **robustesse du plan** (sûreté). Workflow APEX -a -x -v + fable-mode + oneshot + ultrathink + webapp-testing. **201 tests**, gate 100 % vert (vérifié navigateur en cours).
 
 ### Fiabilité (moteur dit la vérité)
 
@@ -203,7 +265,7 @@ Deux chantiers se sont croisés dans le worktree : (1) la demande utilisateur «
 
 - **`migration.ts`** : `DEFAULT_INPUTS.showReal = true` (avant `false`) + fallback v4 `showReal: s.showReal !== false` (un choix v4 explicitement « false » reste respecté ; sinon défaut vrai).
 - **Invariant moteur documenté** : le moteur calcule TOUJOURS `real = capital / inflationIndex` (`simulation.ts`) — l'infobulle « ne saisissez jamais un taux déjà net d'inflation » est vraie que le toggle soit coché ou non (l'option ne change que l'échelle mise en avant).
-- **Infobulle clarifiée** (`GoalTab.tsx`) : *« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »*
+- **Infobulle clarifiée** (`GoalTab.tsx`) : _« L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation. »_
 - **Tests** : défaut `showReal = true` (moteur), migration v4 undefined→vrai / false→false / true→true, toggle coché au rendu d'App (composant).
 
 ### Vérifications
@@ -705,7 +767,7 @@ Points d'ancrage existants : `engine/decumulation.ts` (rente, garde-fous Guyton�
 
 ### Résumé
 
-Demande utilisateur : *« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »* Workflow APEX -a -x -v + fable-mode + impeccable + webapp-testing. **308 tests** (+71), gate 100 % vert, vérifié en navigateur réel. **Aucun déploiement Vercel — validation utilisateur requise.** Commit local demandé (« quand t'as fini commit ») — PAS de push (aucun remote).
+Demande utilisateur : _« Je veux créer une landing page de présentation de l'app, un système de création de compte et de login, et tout le tralala. »_ Workflow APEX -a -x -v + fable-mode + impeccable + webapp-testing. **308 tests** (+71), gate 100 % vert, vérifié en navigateur réel. **Aucun déploiement Vercel — validation utilisateur requise.** Commit local demandé (« quand t'as fini commit ») — PAS de push (aucun remote).
 
 ### Landing page (`src/components/Landing/`)
 
@@ -748,7 +810,7 @@ Demande utilisateur : *« Je veux créer une landing page de présentation de l'
 
 ### Résumé
 
-Demande utilisateur : *« Discutons de ces issues et décidons… »* puis *« lance P0 et P1 ensemble, commit et sauvegarde la version actuelle au cas ou, puis implémente, teste, vérifie, improve, go deeper »*. Chantier d'organisation de l'information (zéro changement moteur) : fin du « tout au même poids ». **308 tests**, gate 100 % vert, vérifié navigateur réel (desktop 1440 + mobile 375, clair + sombre, clavier). **Déployé en production** (validation utilisateur obtenue dans la foulée).
+Demande utilisateur : _« Discutons de ces issues et décidons… »_ puis _« lance P0 et P1 ensemble, commit et sauvegarde la version actuelle au cas ou, puis implémente, teste, vérifie, improve, go deeper »_. Chantier d'organisation de l'information (zéro changement moteur) : fin du « tout au même poids ». **308 tests**, gate 100 % vert, vérifié navigateur réel (desktop 1440 + mobile 375, clair + sombre, clavier). **Déployé en production** (validation utilisateur obtenue dans la foulée).
 
 ### Sauvegarde préalable
 
@@ -782,7 +844,7 @@ Demande utilisateur : *« Discutons de ces issues et décidons… »* puis *« l
 
 ### Résumé
 
-Demande utilisateur : *« j'ai des problèmes à te signaler et je veux qu'on en discute »* + un audit externe de 50 détections (« à prendre avec des pincettes »). Deux phases décidées ensemble : **B — vérification visuelle** (Playwright desktop 1440 + mobile 390) puis **A — harmonisation** du noyau de détections confirmées. **Zéro changement moteur** : uniquement la couche d'affichage. **308 tests**, gate 100 % vert, **déployé en production** (commit + `vercel --prod`).
+Demande utilisateur : _« j'ai des problèmes à te signaler et je veux qu'on en discute »_ + un audit externe de 50 détections (« à prendre avec des pincettes »). Deux phases décidées ensemble : **B — vérification visuelle** (Playwright desktop 1440 + mobile 390) puis **A — harmonisation** du noyau de détections confirmées. **Zéro changement moteur** : uniquement la couche d'affichage. **308 tests**, gate 100 % vert, **déployé en production** (commit + `vercel --prod`).
 
 ### Phase B — verdict sur l'audit (mesuré, pas supposé)
 
@@ -816,7 +878,7 @@ Demande utilisateur : *« j'ai des problèmes à te signaler et je veux qu'on en
 
 ### Résumé
 
-Checklist produit de l'utilisateur (« corrections prioritaires », version ultra-courte : *corrige impôts latents, projection trop optimiste, frais à 0, Monte Carlo brut, rente non fiscalisée ; ajoute frais réalistes, fiscalité réelle, scénarios prudent/central/optimiste, euros réels, comparateur, tests, validation*) passée au crible du moteur — ~40 % était déjà fait (MC net de frais et fiscalité, taxRules par année, XIRR, garde-fous, validation) — puis implémentée en **3 paquets**. **Changement de paradigme** : la projection par défaut passe de la moyenne arithmétique (10,07 %) au **rendement géométrique composé (8,22 %, scénario central)** — le chiffre honnête (733 k€ → 519 k€ sur le défaut). **327 tests** (18 nouveaux), gate 100 % vert, vérifié Playwright desktop + mobile, 0 erreur console. **Non commité au fil de l'eau — release v6.4.0 complète (bump, sw.js, titre, CHANGELOG, MEMORY) puis Vercel.**
+Checklist produit de l'utilisateur (« corrections prioritaires », version ultra-courte : _corrige impôts latents, projection trop optimiste, frais à 0, Monte Carlo brut, rente non fiscalisée ; ajoute frais réalistes, fiscalité réelle, scénarios prudent/central/optimiste, euros réels, comparateur, tests, validation_) passée au crible du moteur — ~40 % était déjà fait (MC net de frais et fiscalité, taxRules par année, XIRR, garde-fous, validation) — puis implémentée en **3 paquets**. **Changement de paradigme** : la projection par défaut passe de la moyenne arithmétique (10,07 %) au **rendement géométrique composé (8,22 %, scénario central)** — le chiffre honnête (733 k€ → 519 k€ sur le défaut). **327 tests** (18 nouveaux), gate 100 % vert, vérifié Playwright desktop + mobile, 0 erreur console. **Non commité au fil de l'eau — release v6.4.0 complète (bump, sw.js, titre, CHANGELOG, MEMORY) puis Vercel.**
 
 ### Paquet 1 — Honnêteté des hypothèses
 

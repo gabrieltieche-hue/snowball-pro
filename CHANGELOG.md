@@ -4,6 +4,66 @@
 
 ---
 
+## v6.7.1 — Réglages repliables : rail d'icônes latéral style ChatGPT
+
+Demande utilisateur : _« je souhaite pouvoir vraiment bien replier le menu des réglages — un vrai repli sur le côté avec des petites icônes pour les catégories, un truc style ChatGPT »_. Le repli v6.2 (résumé compact) devient un **vrai rail latéral de 76 px** : la grille se resserre (380 px → 76 px, transition `grid-template-columns` animée), le panneau se rétracte en une colonne d'icônes sticky et le contenu gagne ~300 px. Zéro changement moteur — **361 tests**, gate 100 % vert, vérifié en navigateur réel (Playwright : layout, peinture des tooltips, sticky, mobile).
+
+### 🚀 Rail replié (`Sidebar.tsx` — refonte de la vue repliée)
+
+- **Marque dorée** en tête de rail (clic = déplier, même affordance que le logo ChatGPT), séparateur, puis **une icône par catégorie** (Votre épargne, Pourquoi ces chiffres ?, Paramètres avancés, Compte d'investissement, Frais, Votre profil) — `SlidersHorizontal` pour « Paramètres avancés » (l'icône sliders de la maquette, distincte du `Settings2` de la marque).
+- **Tooltips au survol** (desktop) calqués sur ChatGPT : bulle sombre à droite de l'icône (`group/rail` + `role="tooltip"`), `title` natif en relais sur mobile (rail horizontal).
+- **Navigation par clic** : cliquer une icône déplie la sidebar, ouvre la section ciblée, la fait défiler dans la vue (`scroll-mt-24` sous l'en-tête sticky) et y place le focus clavier.
+- **Section active surlignée** : l'icône de la section ouverte porte la pastille or (`bg-primary/15` + `ring-primary/40` + `shadow-gold`), état piloté par Sidebar (sections désormais contrôlées via `open`/`onOpenChange` sur `CollapsibleSection` — API additive, les autres usages Rente/Simulator/MonteCarlo inchangés).
+- **Utilitaires en bas** : bouton snapshot avec **badge compteur** (le nombre de snapshots sauvés reste visible replié) + chevron de dépliage.
+- **Sticky desktop** (`lg:sticky lg:top-24`, `z-30`) : le rail reste accessible pendant le scroll ; la vue dépliée garde le comportement v6.1 (non sticky — la sidebar de 2 200 px ne doit pas épingler ses sections basses).
+- **Mobile** : rail horizontal compact (icônes 36 px, `overflow-x-auto` en filet de sécurité), aucun débordement vérifié à 390 px.
+- **Persistance** : clé `snowball_v62_sidebar_collapsed` conservée, l'état remonte dans `App.tsx` (nouveau module `utils/sidebar.ts`, pattern `uiMode.ts`) car c'est App qui resserre la grille.
+
+### 🏗 Décisions d'architecture
+
+- **Une source de vérité `SECTIONS`** : les icônes/libellés du rail et les titres des accordéons dépliés ne peuvent plus diverger.
+- **Rail sans `overflow-hidden`** (les tooltips débordent à droite) + `lg:overflow-visible` sur le conteneur (un `overflow-x-auto` faisait apparaître une scrollbar parasite au survol — trouvé et corrigé en revue adverse, vérifié par `elementFromPoint`).
+- **Focus managé** : après la navigation rail → section, le focus suit (sinon il retombe sur `<body>` après le remontage).
+
+### 🧪 Tests & gate
+
+- **+1 test composant** (361 au total) : repli → rail d'icônes (aria-labels des catégories, contenu masqué, persistance localStorage `"1"`) → clic « Votre profil » → déplié + section ouverte + sections précédentes préservées.
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓ (dist ~1,1 Mo / 319 ko gzip).
+- Vérification navigateur (Playwright 1440 px + 390 px) : aside 76 px, `grid-template-columns` 76px/1292px, colonne empilée, sticky maintenu à `top:96` après scroll 700 px, tooltip peint au-dessus du contenu (ordre de peinture prouvé), badge compteur après sauvegarde, rail mobile sans débordement.
+- Version 6.7.0 → **6.7.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.1`, footer landing v6.7.1), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.7.1).
+
+---
+
+## v6.7.0 — Objectif aligné sur le scénario Central + Rapport PDF patrimonial de synthèse
+
+Deux idées de la feuille de route : (1) la calculatrice « Combien investir ? » gardait un défaut **10,07 %/an** (synchro OFF) alors que l'app applique par défaut le scénario **Central 8,22 %/an** — le « fix cohérence » promis dans MEMORY (piste laissée v6.5.2) ; (2) l'export PDF, jusque-là `window.print()` brut, devient un **vrai rapport patrimonial de synthèse** (PISTES V6.1 — idée 2 validée). **361 tests**, gate 100 % vert, vérifié en navigateur réel (preview + Playwright au format A4).
+
+### 🎯 Fix — la calculatrice Objectif parle le langage du scénario principal
+
+- **`migration.ts`** : `DEFAULT_INPUTS.goalAnnualReturn` passe de **0.1007 (10,07 %/an — moyenne arithmétique)** à **0.0822 (8,22 %/an — rendement géométrique composé du scénario Central)** + commentaire périmé (« aligné sur l'onglet principal ») corrigé. Les états STOCKÉS gardent leur valeur saisie (choix utilisateur respecté).
+- **`GoalTab.tsx`** : note de référence « 8,22 % brut (scénario Central) » (au lieu de « 10,07 % brut (moyenne MSCI World) »), infobulle du curseur mise à jour, commentaires audit alignés.
+- **Tests** : référence moteur (défaut < 10,07 %), curseur à 8,22, ligne « 8,22 % ← » unique dans la comparaison (déduplication taux courant 8,22 vs composé 8,2196), carte principale = ligne du tableau.
+
+### 📄 Rapport PDF patrimonial (`components/Report/PatrimonialReport.tsx`, nouveau)
+
+- **Vue imprimable dédiée** : montée à la demande au clic « Rapport PDF » (menu Exporter), rendue hors-écran à 794 px (≈ A4 96 dpi — Recharts mesure correctement son conteneur), puis `window.print()` après paint (double rAF, repli setTimeout). Une fois monté, il suit l'état courant (`rows`/`inputs`).
+- **Page de garde** : marque, date de génération, « le nombre magique » (échelle du toggle, l'autre échelle en dessous), barre épargné/croissance, insight « multiplié par ~N », paramètres clés (capital, épargne, durée, enveloppe, scénario + taux, inflation).
+- **Synthèse** : les 4 cartes du rapport alignées sur `SummaryStats` (échelle mise en avant + l'autre en sous-titre — une seule doctrine), rendement net XIRR / réel / multiple, **graphique de projection** (Recharts, échelle euros courants + courbe pouvoir d'achat en pointillés).
+- **Fiscalité** : mêmes lignes que le `FiscalPanel` (`computeTaxBreakdown`, mêmes arguments) + taux effectif + note « estimation, liquidation théorique ».
+- **Détail année par année** : tableau complet (année, versé, intérêts, capital, pouvoir d'achat) — imprimé intégralement (un `max-height` aurait clippé le détail : trouvé et corrigé en revue adverse).
+- **Méthodologie + mentions** : 100 ans d'historique, scénario appliqué, fiscalité française, inflation (Fisher), Monte Carlo, disclaimer « non contractuel, 100 % local ».
+- **Print CSS** (`index.css`) : `.app-shell` masqué, `.report-print-only` seul imprimé (position static, light forcé, `print-color-adjust: exact`), `@page A4` marges 14 mm, page de garde = page pleine (`break-after: page`), lignes de tableau insécables.
+- **ExportMenu** : description « Rapport patrimonial de synthèse — imprimer ou enregistrer en PDF ».
+
+### 🧪 Tests & gate
+
+- **+2 tests composants** (361 au total) : rapport absent avant clic, monté au clic « Rapport PDF » avec `window.print` appelé (couverture, héro, XIRR, fiscalité, tableau, méthodologie).
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓ (dist ~1,1 Mo / 319 ko gzip).
+- Vérification navigateur : preview réelle (montage, cartes alignées sur l'app, console 0 erreur) + **Playwright à 794 px** (2 sections, 26 lignes de tableau, graphique rendu, **0 débordement** au format A4).
+- Version 6.6.1 → **6.7.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.0`, footer landing v6.7.0), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.7.0).
+
+---
+
 ## v6.6.1 — Titres uniformes : « Réglages » et « Votre patrimoine estimé » sur l'anatomie SectionHeader
 
 Demande utilisateur : _« ces 2 titres ne sont pas à la même taille que les autres, ils respectent pas le style »_ — les titres « RÉGLAGES » (en-tête de la sidebar) et « VOTRE PATRIMOINE ESTIMÉ » (héro de l'onglet Projection) échappaient à l'anatomie de titre uniforme (v5.6.4) avec un mini-label 10 px muet. Correction : migration des deux titres sur le composant **`SectionHeader` niveau `card`** — barre dorée `w-1 h-5` + icône lucide 16 px + titre `font-extrabold uppercase tracking-[0.08em]` 13 px (14 px ≥ sm), le même rythme que « PROJECTION DE VOTRE CAPITAL » / « STATISTIQUES CLÉS ». Zéro changement moteur — **358 tests**, gate 100 % vert.

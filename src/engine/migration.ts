@@ -69,9 +69,13 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   goalDuration: 15,
   goalCapital: 10000,
   goalPayment: 500,
-  // Défaut aligné sur le rendement de l'onglet principal : 10,07 %/an BRUT
-  // (moyenne MSCI World) — jamais un taux net d'inflation (demande utilisateur).
-  goalAnnualReturn: 0.1007,
+  // Défaut aligné sur le scénario CENTRAL de l'onglet principal (paquet 1) :
+  // le rendement GÉOMÉTRIQUE composé du MSCI World (≈ 8,22 %/an brut, krachs
+  // inclus) — PAS la moyenne arithmétique 10,07 % qui ne correspond plus au
+  // scénario par défaut de l'app. Jamais un taux net d'inflation (demande
+  // utilisateur). Les états stockés gardent leur valeur saisie (choix
+  // utilisateur respecté).
+  goalAnnualReturn: 0.0822,
   // Projection principale : scénario CENTRAL par défaut (paquet 1) — le
   // Simulateur applique le rendement GÉOMÉTRIQUE composé de l'historique
   // (≈ 8,22 %/an) au lieu de la moyenne arithmétique (10,07 %) : c'est la

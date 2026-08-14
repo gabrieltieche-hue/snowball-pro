@@ -375,7 +375,7 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
-    version: "v6.6.1",
+    version: "v6.7.1",
     title: "Landing interactive",
     text: "Démo réelle basculable (Prudent / Central / Optimiste) avec nombre magique, et section Méthodologie clarifiée (Brut → Composé → Réel).",
   },
@@ -1110,7 +1110,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.6.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.7.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

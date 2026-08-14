@@ -26,6 +26,7 @@ import { useSession } from "./auth/store"
 import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
 import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
+import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
 import { AccountMenu } from "./components/Auth/AccountMenu"
@@ -35,6 +36,7 @@ import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
+import { PatrimonialReport } from "./components/Report/PatrimonialReport"
 import { ComparisonTab } from "./components/Tabs/ComparisonTab"
 import { GoalTab } from "./components/Tabs/GoalTab"
 import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
@@ -101,6 +103,18 @@ function AppShell({ scope }: { scope: string | null }) {
   // Préférence locale persistée — hors de SimulationInputs pour ne pas
   // polluer les liens partagés ni la persistance des scénarios.
   const [uiMode, setUiMode] = useState<UiMode>(loadUiMode)
+  // Repli de la sidebar (v6.2) : l'état vit ICI car la grille de la page doit
+  // rétrécir (380 px → rail 72 px) quand on replie — c'est App qui rend la
+  // largeur au contenu, la Sidebar n'est que le miroir. Persisté en
+  // localStorage (préférence d'affichage, comme le thème).
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadSidebarCollapsed)
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed(prev => {
+      const next = !prev
+      saveSidebarCollapsed(next)
+      return next
+    })
+  }, [])
   const toggleUiMode = useCallback(() => {
     setUiMode(prev => {
       const next = prev === "debutant" ? "avance" : "debutant"
@@ -120,6 +134,10 @@ function AppShell({ scope }: { scope: string | null }) {
   const decumRunningRef = useRef(false)
   const decumMountedRef = useRef(true)
   const [snapshots, setSnapshots] = useState<SavedSnapshot[]>(() => loadSnapshotsFromStorage(scope))
+  // Rapport PDF (PISTES V6.1 — idée 2) : monté à la DEMANDE au premier clic
+  // « Rapport PDF » (un rapport Recharts toujours monté coûterait un render
+  // complet de graphe à chaque changement de réglage), puis conservé.
+  const [reportOpen, setReportOpen] = useState(false)
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
   const [linkCopied, setLinkCopied] = useState(false)
   const history = useHistory()
@@ -365,6 +383,23 @@ function AppShell({ scope }: { scope: string | null }) {
     setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
+  // « Rapport PDF » = le VRAI rapport patrimonial (page de garde, héro,
+  // graphique, fiscalité, tableau annuel, méthodologie) rendu hors-écran puis
+  // imprimé via le dialogue du navigateur. Le rapport doit être rendu (Recharts
+  // mesure son conteneur) avant d'ouvrir le dialogue : on attend la fin du
+  // paint (double requestAnimationFrame, repli setTimeout si absent — jsdom).
+  const handlePrint = useCallback(() => {
+    setReportOpen(true)
+    const fire = () => {
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()))
+      } else {
+        setTimeout(() => window.print(), 50)
+      }
+    }
+    fire()
+  }, [])
+
   const exportJSON = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -464,165 +499,181 @@ function AppShell({ scope }: { scope: string | null }) {
   }, [activeInputs, lastRow, decumParamsHash])
 
   return (
-    <div className="min-h-screen bg-surface text-text">
-      {/* I6 — hiérarchie de titres : h1 de page (visuellement masqué), les
+    <>
+      {/* Le shell de l'app est masqué à l'impression (.app-shell) — seul le
+          rapport patrimonial (render hors-écran, .report-print-only) s'imprime. */}
+      <div className="app-shell min-h-screen bg-surface text-text">
+        {/* I6 — hiérarchie de titres : h1 de page (visuellement masqué), les
           sections s'enchaînent ensuite en h2/h3 dans les onglets. */}
-      <h1 className="sr-only">Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)</h1>
+        <h1 className="sr-only">Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)</h1>
 
-      {/* En-tête global : la marque et les actions (annuler, partager, thème,
+        {/* En-tête global : la marque et les actions (annuler, partager, thème,
           export…) restent accessibles pendant tout le scroll. */}
-      <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
-              <Wallet size={18} className="btn-gold-text" aria-hidden />
-              <span className="absolute -inset-px rounded-xl ring-1 ring-primary/50" aria-hidden />
+        <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
+                <Wallet size={18} className="btn-gold-text" aria-hidden />
+                <span className="absolute -inset-px rounded-xl ring-1 ring-primary/50" aria-hidden />
+              </div>
+              <div className="min-w-0 leading-tight">
+                <div className="font-display text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
+                  SNOWBALL <span className="text-primary">PRO</span>
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
+                  Simulateur patrimonial
+                </div>
+              </div>
             </div>
-            <div className="min-w-0 leading-tight">
-              <div className="font-display text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
-                SNOWBALL <span className="text-primary">PRO</span>
-              </div>
-              <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
-                Simulateur patrimonial
-              </div>
+            <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
+              <AccountMenu />
+              <ActionBar
+                onExportCSV={exportCSV}
+                onExportJSON={exportJSON}
+                onPrint={handlePrint}
+                darkMode={darkMode}
+                onToggleDarkMode={() => setDarkMode(d => !d)}
+                comparing={comparing}
+                onToggleCompare={toggleComparing}
+                canUndo={history.canUndo}
+                canRedo={history.canRedo}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                validationErrors={validationErrors}
+                onCopyLink={handleCopyLink}
+                linkCopied={linkCopied}
+                uiMode={uiMode}
+                onToggleUiMode={toggleUiMode}
+                onReset={handleResetSettings}
+              />
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
-            <AccountMenu />
-            <ActionBar
-              onExportCSV={exportCSV}
-              onExportJSON={exportJSON}
-              onPrint={() => window.print()}
-              darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode(d => !d)}
-              comparing={comparing}
-              onToggleCompare={toggleComparing}
-              canUndo={history.canUndo}
-              canRedo={history.canRedo}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-              validationErrors={validationErrors}
-              onCopyLink={handleCopyLink}
-              linkCopied={linkCopied}
-              uiMode={uiMode}
-              onToggleUiMode={toggleUiMode}
-              onReset={handleResetSettings}
-            />
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-          <ErrorBoundary label="les réglages">
-            <Sidebar
-              inputs={activeInputs}
-              rows={rows}
-              updateInput={updateInput}
-              scenarioLabel={comparing ? "Scénario B" : undefined}
-              snapshots={snapshots}
-              onSaveSnapshot={handleSaveSnapshot}
-              onLoadSnapshot={handleLoadSnapshot}
-              onRemoveSnapshot={handleRemoveSnapshot}
-              uiMode={uiMode}
-            />
-          </ErrorBoundary>
+        <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
+          {/* La colonne réglages s'anime entre 380 px (déplié) et 72 px (rail
+              d'icônes replié, style ChatGPT) — grid-template-columns est
+              interpolable par le navigateur (Chrome/FF/Safari 16+). */}
+          <div
+            className={`grid grid-cols-1 gap-6 items-start transition-[grid-template-columns] duration-300 ease-out ${
+              sidebarCollapsed ? "lg:grid-cols-[76px_1fr]" : "lg:grid-cols-[380px_1fr]"
+            }`}
+          >
+            <ErrorBoundary label="les réglages">
+              <Sidebar
+                inputs={activeInputs}
+                rows={rows}
+                updateInput={updateInput}
+                scenarioLabel={comparing ? "Scénario B" : undefined}
+                snapshots={snapshots}
+                onSaveSnapshot={handleSaveSnapshot}
+                onLoadSnapshot={handleLoadSnapshot}
+                onRemoveSnapshot={handleRemoveSnapshot}
+                uiMode={uiMode}
+                collapsed={sidebarCollapsed}
+                onToggleCollapsed={toggleSidebarCollapsed}
+              />
+            </ErrorBoundary>
 
-          <main className="space-y-5 min-w-0">
-            {sharedLinkLoaded && (
-              <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">
-                  <Link2 size={12} className="text-primary shrink-0" />
-                  <span>
-                    Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
-                    sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setSharedLinkLoaded(false)}
-                  aria-label="Fermer le bandeau lien partagé"
-                  className="text-text-muted hover:text-text transition-colors shrink-0"
+            <main className="space-y-5 min-w-0">
+              {sharedLinkLoaded && (
+                <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">
+                    <Link2 size={12} className="text-primary shrink-0" />
+                    <span>
+                      Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
+                      sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSharedLinkLoaded(false)}
+                    aria-label="Fermer le bandeau lien partagé"
+                    className="text-text-muted hover:text-text transition-colors shrink-0"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+              {validationErrors.filter(e => e.severity === "error").length > 0 && (
+                <div
+                  role="alert"
+                  className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger flex items-center gap-2"
                 >
-                  <X size={13} />
-                </button>
-              </div>
-            )}
-            {validationErrors.filter(e => e.severity === "error").length > 0 && (
-              <div
-                role="alert"
-                className="rounded-2xl px-4 py-3 text-[11px] font-semibold border border-danger/40 bg-danger/10 text-danger flex items-center gap-2"
-              >
-                <AlertTriangle size={13} className="shrink-0" />
-                <span>
-                  Des valeurs saisies sortent des bornes acceptées (
-                  {validationErrors.filter(e => e.severity === "error").length} erreur
-                  {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
-                  simulation fiable.
-                </span>
-              </div>
-            )}
-            {comparing && <ComparisonBar onExit={toggleComparing} />}
-            <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
+                  <AlertTriangle size={13} className="shrink-0" />
+                  <span>
+                    Des valeurs saisies sortent des bornes acceptées (
+                    {validationErrors.filter(e => e.severity === "error").length} erreur
+                    {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
+                    simulation fiable.
+                  </span>
+                </div>
+              )}
+              {comparing && <ComparisonBar onExit={toggleComparing} />}
+              <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-            <div
-              role="tabpanel"
-              id={`panel-${activeTab}`}
-              aria-labelledby={`tab-${activeTab}`}
-              className="focus:outline-none"
-            >
-              {/* Garde-fou par onglet : un graphe Recharts qui explose ne fait
+              <div
+                role="tabpanel"
+                id={`panel-${activeTab}`}
+                aria-labelledby={`tab-${activeTab}`}
+                className="focus:outline-none"
+              >
+                {/* Garde-fou par onglet : un graphe Recharts qui explose ne fait
                   jamais tomber toute l'application (clé = onglet → re-render
                   propre après un crash dans un autre onglet). */}
-              <ErrorBoundary
-                key={activeTab}
-                label={`l'onglet ${TABS.find(t => t.id === activeTab)?.label ?? activeTab}`}
-              >
-                {activeTab === "simulator" &&
-                  (comparing && comparison && rowsA ? (
-                    <ComparisonTab
-                      rowsA={rowsA}
-                      rowsB={rows}
+                <ErrorBoundary
+                  key={activeTab}
+                  label={`l'onglet ${TABS.find(t => t.id === activeTab)?.label ?? activeTab}`}
+                >
+                  {activeTab === "simulator" &&
+                    (comparing && comparison && rowsA ? (
+                      <ComparisonTab
+                        rowsA={rowsA}
+                        rowsB={rows}
+                        inputs={activeInputs}
+                        darkMode={darkMode}
+                        comparison={comparison}
+                      />
+                    ) : (
+                      <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} uiMode={uiMode} />
+                    ))}
+                  {activeTab === "montecarlo" && (
+                    <MonteCarloPanel
                       inputs={activeInputs}
                       darkMode={darkMode}
-                      comparison={comparison}
+                      updateInput={updateInput}
+                      uiMode={uiMode}
                     />
-                  ) : (
-                    <SimulatorTab rows={rows} inputs={activeInputs} darkMode={darkMode} uiMode={uiMode} />
-                  ))}
-                {activeTab === "montecarlo" && (
-                  <MonteCarloPanel
-                    inputs={activeInputs}
-                    darkMode={darkMode}
-                    updateInput={updateInput}
-                    uiMode={uiMode}
-                  />
-                )}
-                {activeTab === "rente" && (
-                  <RenteRetraiteTab
-                    inputs={activeInputs}
-                    decumResult={decumResult}
-                    lastRow={lastRow}
-                    darkMode={darkMode}
-                    updateInput={updateInput}
-                    updateInputs={updateInputs}
-                    runDecum={runDecum}
-                    isStale={decumStale}
-                    running={decumRunning}
-                    progress={decumProgress}
-                    uiMode={uiMode}
-                  />
-                )}
-                {activeTab === "goal" && (
-                  <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
-                )}
-              </ErrorBoundary>
-            </div>
-          </main>
-        </div>
+                  )}
+                  {activeTab === "rente" && (
+                    <RenteRetraiteTab
+                      inputs={activeInputs}
+                      decumResult={decumResult}
+                      lastRow={lastRow}
+                      darkMode={darkMode}
+                      updateInput={updateInput}
+                      updateInputs={updateInputs}
+                      runDecum={runDecum}
+                      isStale={decumStale}
+                      running={decumRunning}
+                      progress={decumProgress}
+                      uiMode={uiMode}
+                    />
+                  )}
+                  {activeTab === "goal" && (
+                    <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
+                  )}
+                </ErrorBoundary>
+              </div>
+            </main>
+          </div>
 
-        <DisclaimerBar />
+          <DisclaimerBar />
+        </div>
       </div>
-    </div>
+      {/* Rapport patrimonial imprimable — monté au premier clic « Rapport
+          PDF », hors-écran à l'écran, seul visible à l'impression. */}
+      {reportOpen && <PatrimonialReport rows={rows} inputs={activeInputs} />}
+    </>
   )
 }

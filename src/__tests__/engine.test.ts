@@ -279,11 +279,13 @@ describe("défauts — inflation 2,1 %, référence MSCI World 10,07 % et Monte 
     expect("crisisEnabled" in DEFAULT_INPUTS).toBe(false)
   })
 
-  it("la référence de rendement reste 10,07 % brut via l'onglet Objectif (goalAnnualReturn)", () => {
+  it("la référence de rendement de l'onglet Objectif est alignée sur le scénario Central (8,22 % composé)", () => {
     // Seul l'onglet Objectif a un rendement (pour calculer l'épargne mensuelle
-    // nécessaire) : sa référence est alignée sur la moyenne MSCI World.
-    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeCloseTo(0.1007, 4)
-    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeGreaterThan(0.0822)
+    // nécessaire) : sa référence est alignée sur le scénario CENTRAL de l'app
+    // (rendement GÉOMÉTRIQUE composé du MSCI World ≈ 8,22 %/an brut) — plus la
+    // moyenne arithmétique 10,07 % qui ne correspond pas au scénario par défaut.
+    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeCloseTo(0.0822, 4)
+    expect(DEFAULT_INPUTS.goalAnnualReturn).toBeLessThan(0.1007)
   })
 
   it("le défaut Monte Carlo est 10 000 simulations", () => {
