@@ -1,6 +1,8 @@
 import { useState } from "react"
+import type { ReactNode } from "react"
 import { motion } from "framer-motion"
 import {
+  Camera,
   ChevronLeft,
   ChevronRight,
   Coins,
@@ -9,6 +11,7 @@ import {
   Lightbulb,
   Percent,
   Settings2,
+  SlidersHorizontal,
   TrendingUp,
   UserRound,
 } from "lucide-react"
@@ -22,8 +25,8 @@ import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
+import { cn } from "../../utils/cn"
 import {
-  ENVELOPE_CONFIGS,
   fmtCurrency,
   fmtTaxPercent,
   getHistoricalDataset,
@@ -44,17 +47,30 @@ const RISK_TOLERANCE_DEFAULTS: Record<SimulationInputs["riskTolerance"], number>
   audacieux: 0.5,
 }
 
-// Préférence UI (v6.2) : l'état replié/déplié de la sidebar persiste d'une
-// visite à l'autre — comme le thème, c'est une préférence d'affichage, pas
-// une donnée de scénario (donc clé globale, non scopée par compte).
-const SIDEBAR_COLLAPSED_KEY = "snowball_v62_sidebar_collapsed"
+// Sections de réglages : UNE source de vérité pour le rail replié (icônes +
+// libellés) et les titres des accordéons dépliés — impossible qu'ils
+// divergent.
+const SECTIONS = [
+  { id: "epargne", label: "Votre épargne", icon: Coins },
+  { id: "pourquoi", label: "Pourquoi ces chiffres ?", icon: HelpCircle },
+  { id: "avance", label: "Paramètres avancés", icon: SlidersHorizontal },
+  { id: "compte", label: "Compte d'investissement", icon: Landmark },
+  { id: "frais", label: "Frais", icon: Percent },
+  { id: "profil", label: "Votre profil", icon: UserRound },
+] as const
+type SectionId = (typeof SECTIONS)[number]["id"]
 
-function loadCollapsed(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1"
-  } catch {
-    return false
-  }
+// Ouverture par défaut : « Votre épargne » ouvert, le reste replié (mêmes
+// défauts qu'avant). L'état vit dans Sidebar (et non dans chaque
+// CollapsibleSection) pour que le rail puisse ouvrir une section « à
+// distance » quand on clique son icône.
+const DEFAULT_OPEN: Record<SectionId, boolean> = {
+  epargne: true,
+  pourquoi: false,
+  avance: false,
+  compte: false,
+  frais: false,
+  profil: false,
 }
 
 interface SidebarProps {
@@ -68,6 +84,12 @@ interface SidebarProps {
   updateInput: <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => void
   /** Mode Débutant / Avancé (audit) : masque PFU, TMI et la formule de Fisher. */
   uiMode?: UiMode
+  /**
+   * Repli du panneau (v6.2) : l'état vit dans App — c'est App qui resserre la
+   * grille (380 px → rail 76 px) pour rendre la largeur au contenu.
+   */
+  collapsed: boolean
+  onToggleCollapsed: () => void
 }
 
 export function Sidebar({
@@ -80,6 +102,8 @@ export function Sidebar({
   onRemoveSnapshot,
   updateInput,
   uiMode = "debutant",
+  collapsed,
+  onToggleCollapsed,
 }: SidebarProps) {
   const lastRow = rows[rows.length - 1]
   // Les deux échelles sont TOUJOURS affichées côte à côte : le montant qui
@@ -99,69 +123,144 @@ export function Sidebar({
   const fieldWarning = (field: keyof SimulationInputs): ValidationError | undefined =>
     validationErrors.find(e => e.field === field && e.severity === "warning")
 
-  // Repliable (v6.2) : un clic sur le chevron plie/déplie TOUTE la sidebar.
-  // L'état persiste en localStorage — sur les onglets où l'on ne touche pas
-  // aux réglages, le panneau se réduit à un résumé compact + un bouton de
-  // réouverture, et rend la largeur au contenu.
-  const [collapsed, setCollapsed] = useState(loadCollapsed)
-  const toggleCollapsed = () =>
-    setCollapsed(prev => {
-      const next = !prev
-      try {
-        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0")
-      } catch {
-        /* localStorage indisponible */
-      }
-      return next
+  // Ouverture des sections, pilotée par Sidebar (cf. DEFAULT_OPEN).
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(DEFAULT_OPEN)
+  const toggleSection = (id: SectionId) => setOpenSections(s => ({ ...s, [id]: !s[id] }))
+
+  // Rail replié : cliquer l'icône d'une catégorie déplie la sidebar ET ouvre
+  // la section, puis l'amène dans la vue (même geste qu'une navigation
+  // ChatGPT : clic dans le rail → le contenu ciblé apparaît).
+  const revealSection = (id: SectionId) => {
+    setOpenSections(s => ({ ...s, [id]: true }))
+    if (collapsed) onToggleCollapsed()
+    // double rAF : laisser le fondu d'entrée démarrer avant de mesurer la
+    // position ; try/catch : jsdom n'implémente pas scrollIntoView.
+    const raf: (cb: () => void) => void =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (cb: () => void) => window.setTimeout(cb, 16)
+    raf(() => {
+      raf(() => {
+        const el = document.getElementById(`sidebar-section-${id}`)
+        if (el) {
+          if (typeof el.scrollIntoView === "function") {
+            try {
+              const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+              el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" })
+            } catch {
+              /* jsdom : scrollIntoView non implémenté */
+            }
+          }
+          // Clavier : le focus suit la navigation (sinon il tombe sur <body>
+          // après le remontage du rail) — preventScroll, le scroll est déjà fait.
+          el.querySelector<HTMLElement>("button")?.focus({ preventScroll: true })
+        }
+      })
     })
-  const envelopeLabel = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.shortLabel ?? "BRUT"
+  }
 
   return (
-    <aside className="glass rounded-3xl p-5 sm:p-6 shadow-premium overflow-hidden">
-      {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
-          hauteur d'écran et épinglait ses sections basses sous le pli pendant
-          tout le scroll. Elle suit désormais le document. */}
-      {/* La marque vit dans l'en-tête global — ici, un repère de section dans
-          l'anatomie SectionHeader uniforme (v5.6.4) + le badge de scénario en
-          mode comparaison. */}
-      <SectionHeader
-        level="card"
-        icon={Settings2}
-        title="Réglages"
-        className="mb-6 items-center"
-        trailing={
-          <div className="flex items-center gap-2 shrink-0">
-            {scenarioLabel && (
-              <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
-                {scenarioLabel}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-expanded={!collapsed}
-              aria-controls="sidebar-settings"
-              aria-label={collapsed ? "Déplier les réglages" : "Replier les réglages"}
-              title={collapsed ? "Déplier les réglages" : "Replier les réglages"}
-              className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
-            >
-              {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button>
-          </div>
-        }
-      />
-
+    <aside
+      className={cn(
+        "glass rounded-3xl shadow-premium",
+        // Rail replié : pas de overflow-hidden (les tooltips débordent à
+        // droite) ni de fond à rogner ; sticky sur desktop pour que le rail
+        // reste visible pendant le scroll (comme ChatGPT), z-30 pour
+        // passer au-dessus du contenu principal.
+        collapsed
+          ? "p-3 z-30 lg:sticky lg:top-24"
+          : // Déplié : overflow-hidden rogne le contenu sur les coins arrondis.
+            "p-5 sm:p-6 overflow-hidden",
+      )}
+    >
       {/* Le contenu bascule par remontage (pas d'AnimatePresence) : robuste
           sous prefers-reduced-motion, où une sortie bloquée laisserait le
-          panneau vide. Un simple fondu d'entrée suffit. */}
+          panneau vide. Le rail glisse depuis la gauche, le panneau déplié
+          s'ouvre en fondu. */}
       {collapsed ? (
         <motion.div
           key="collapsed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="flex lg:flex-col items-center gap-1 lg:gap-2 overflow-x-auto lg:overflow-visible"
         >
-          <CollapsedSummary inputs={inputs} envelopeLabel={envelopeLabel} onExpand={toggleCollapsed} />
+          {/* Marque — clic = déplier (même affordance que le logo ChatGPT). */}
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Déplier les réglages"
+            className="group/rail hidden lg:flex relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-light via-primary to-primary-dark items-center justify-center shadow-gold shrink-0 hover:brightness-110 transition-[filter] mb-1"
+          >
+            <Settings2 size={18} className="btn-gold-text" aria-hidden />
+            <RailTip>Déplier les réglages</RailTip>
+          </button>
+
+          {/* Séparateur après la marque (desktop uniquement). */}
+          <div className="hidden lg:block w-9 h-px bg-border/70" aria-hidden />
+
+          <nav aria-label="Sections de réglages" className="flex lg:flex-col items-center gap-1 lg:gap-2">
+            {SECTIONS.map(({ id, label, icon: Icon }) => {
+              const active = openSections[id]
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => revealSection(id)}
+                  aria-label={label}
+                  title={label}
+                  className={cn(
+                    "group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 transition-all duration-200",
+                    active
+                      ? "bg-primary/15 text-primary shadow-gold ring-1 ring-primary/40"
+                      : "text-text-dim hover:text-text hover:bg-glass-hover",
+                  )}
+                >
+                  <Icon size={17} className="lg:hidden" aria-hidden />
+                  <Icon size={18} className="hidden lg:block" aria-hidden />
+                  <RailTip>{label}</RailTip>
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="flex-1" aria-hidden />
+
+          {/* Séparateur vertical (mobile uniquement) avant les utilitaires. */}
+          <div className="lg:hidden w-px h-7 bg-border/70" aria-hidden />
+
+          {/* Snapshot — action utile même repliée, compteur en badge. */}
+          <button
+            type="button"
+            onClick={onSaveSnapshot}
+            aria-label="Sauvegarder un snapshot"
+            title="Sauvegarder un snapshot"
+            className="group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 text-text-dim hover:text-primary hover:bg-primary/10 transition-all duration-200"
+          >
+            <Camera size={17} className="lg:hidden" aria-hidden />
+            <Camera size={18} className="hidden lg:block" aria-hidden />
+            {snapshots.length > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary btn-gold-text text-[9px] font-bold flex items-center justify-center border border-surface"
+                aria-hidden
+              >
+                {snapshots.length}
+              </span>
+            )}
+            <RailTip>Snapshot</RailTip>
+          </button>
+
+          {/* Déplier (chevron) — contrôles utilitaires en bas, comme ChatGPT. */}
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Déplier les réglages"
+            className="group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 border border-border text-text-dim hover:text-text hover:border-primary/40 transition-all duration-200"
+          >
+            <ChevronRight size={17} className="lg:hidden" aria-hidden />
+            <ChevronRight size={18} className="hidden lg:block" aria-hidden />
+            <RailTip>Déplier les réglages</RailTip>
+          </button>
         </motion.div>
       ) : (
         <motion.div
@@ -171,8 +270,47 @@ export function Sidebar({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         >
+          {/* I1 — plus de lg:sticky : la sidebar (2 200 px dépliée) dépassait la
+              hauteur d'écran et épinglait ses sections basses sous le pli pendant
+              tout le scroll. Elle suit désormais le document. */}
+          {/* La marque vit dans l'en-tête global — ici, un repère de section dans
+              l'anatomie SectionHeader uniforme (v5.6.4) + le badge de scénario en
+              mode comparaison. */}
+          <SectionHeader
+            level="card"
+            icon={Settings2}
+            title="Réglages"
+            className="mb-6 items-center"
+            trailing={
+              <div className="flex items-center gap-2 shrink-0">
+                {scenarioLabel && (
+                  <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                    {scenarioLabel}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={onToggleCollapsed}
+                  aria-expanded={!collapsed}
+                  aria-controls="sidebar-settings"
+                  aria-label={collapsed ? "Déplier les réglages" : "Replier les réglages"}
+                  title={collapsed ? "Déplier les réglages" : "Replier les réglages"}
+                  className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
+                >
+                  {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                </button>
+              </div>
+            }
+          />
+
           {/* Bases */}
-          <CollapsibleSection title="Votre épargne" icon={<Coins size={12} />}>
+          <RailSection
+            id="epargne"
+            title="Votre épargne"
+            icon={<Coins size={12} />}
+            open={openSections.epargne}
+            onOpenChange={() => toggleSection("epargne")}
+          >
             <SliderInput
               label="Capital de départ (€)"
               id="capital-initial"
@@ -221,12 +359,18 @@ export function Sidebar({
             dans les réglages, et le résultat s'affiche directement à
             l'ouverture. Même updateInput : la courbe lissée suit le choix. */}
             <ScenarioSelector inputs={inputs} updateInput={updateInput} />
-          </CollapsibleSection>
+          </RailSection>
 
           {/* Pourquoi ces chiffres ? — le contenu pédagogique (rendements,
           volatilité, Fisher) vit ici, replié par défaut (v6). Contenu intégral
           conservé depuis la carte « Rendement de la bourse » de la v5.7. */}
-          <CollapsibleSection title="Pourquoi ces chiffres ?" icon={<HelpCircle size={12} />} defaultOpen={false}>
+          <RailSection
+            id="pourquoi"
+            title="Pourquoi ces chiffres ?"
+            icon={<HelpCircle size={12} />}
+            open={openSections.pourquoi}
+            onOpenChange={() => toggleSection("pourquoi")}
+          >
             <div className="rounded-xl border border-primary/25 bg-primary/8 px-3.5 py-3 relative overflow-hidden">
               <div
                 className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_0%,rgba(212,175,55,0.14),transparent_60%)] pointer-events-none"
@@ -275,11 +419,17 @@ export function Sidebar({
                 </p>
               )}
             </div>
-          </CollapsibleSection>
+          </RailSection>
 
           {/* Paramètres avancés — replié par défaut (audit) : seuls les réglages
               essentiels s'imposent à la lecture. */}
-          <CollapsibleSection title="Paramètres avancés" icon={<Settings2 size={12} />} defaultOpen={false}>
+          <RailSection
+            id="avance"
+            title="Paramètres avancés"
+            icon={<Settings2 size={12} />}
+            open={openSections.avance}
+            onOpenChange={() => toggleSection("avance")}
+          >
             <SliderInput
               label="Augmentation de votre épargne (%/an)"
               id="indexation"
@@ -332,11 +482,17 @@ export function Sidebar({
               label="Euros d'aujourd'hui"
               sub="Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout"
             />
-          </CollapsibleSection>
+          </RailSection>
 
           {/* Enveloppe fiscale — repliée par défaut (audit) : le compte reste
               visible dans le résumé replié et « Votre épargne ». */}
-          <CollapsibleSection title="Compte d'investissement" icon={<Landmark size={12} />} defaultOpen={false}>
+          <RailSection
+            id="compte"
+            title="Compte d'investissement"
+            icon={<Landmark size={12} />}
+            open={openSections.compte}
+            onOpenChange={() => toggleSection("compte")}
+          >
             <EnvelopeSelector value={inputs.envelope} onChange={v => updateInput("envelope", v)} />
             {inputs.envelope === "pea" && (
               <div className="mt-3 animate-fade-in">
@@ -457,21 +613,33 @@ export function Sidebar({
                 />
               </div>
             )}
-          </CollapsibleSection>
+          </RailSection>
 
           {/* La crise synthétique a été supprimée (Option A) : les krachs réels
           (2000, 2008, 2022…) sont déjà dans les rendements rejoués par toutes
           les simulations — en simuler un les compterait deux fois. */}
 
           {/* Frais — repliés par défaut (audit). */}
-          <CollapsibleSection title="Frais" icon={<Percent size={12} />} defaultOpen={false}>
+          <RailSection
+            id="frais"
+            title="Frais"
+            icon={<Percent size={12} />}
+            open={openSections.frais}
+            onOpenChange={() => toggleSection("frais")}
+          >
             <ExpenseForm inputs={inputs} updateInput={updateInput} />
-          </CollapsibleSection>
+          </RailSection>
 
           {/* Profil (paquet 3) — le contexte de retraite et de risque : nourrit
               la couverture des dépenses et l'alerte « plan trop risqué » de
               l'onglet Rente. Replié par défaut (réglages secondaires). */}
-          <CollapsibleSection title="Votre profil" icon={<UserRound size={12} />} defaultOpen={false}>
+          <RailSection
+            id="profil"
+            title="Votre profil"
+            icon={<UserRound size={12} />}
+            open={openSections.profil}
+            onOpenChange={() => toggleSection("profil")}
+          >
             <SliderInput
               label="Âge actuel"
               id="age-now"
@@ -566,7 +734,7 @@ export function Sidebar({
                 départ en retraite.
               </p>
             )}
-          </CollapsibleSection>
+          </RailSection>
 
           {/* Insight */}
           <div className="mb-5 glass-gold rounded-2xl p-4">
@@ -599,54 +767,47 @@ export function Sidebar({
 }
 
 /**
- * Vue repliée : un résumé compact des paramètres clés + la réouverture.
- * Sans elle, replier la sidebar laisserait un trou mort de 380 px — avec,
- * le panneau reste utile (et cliquable) sur les onglets où l'on ne règle
- * rien.
+ * Section pliable pilotée par Sidebar (rail) : enveloppe la section d'un
+ * ancrage de scroll (`sidebar-section-<id>`) — quand on déplie depuis le
+ * rail, revealSection amène la section dans la vue (scroll-mt : sous
+ * l'en-tête sticky).
  */
-function CollapsedSummary({
-  inputs,
-  envelopeLabel,
-  onExpand,
+function RailSection({
+  id,
+  title,
+  icon,
+  open,
+  onOpenChange,
+  children,
 }: {
-  inputs: SimulationInputs
-  envelopeLabel: string
-  onExpand: () => void
+  id: SectionId
+  title: ReactNode
+  icon?: ReactNode
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  children: ReactNode
 }) {
   return (
-    <div className="space-y-3">
-      <div className="rounded-xl bg-surface-50/60 border border-border px-3.5 py-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Coins size={12} className="text-primary shrink-0" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">Vos paramètres</span>
-        </div>
-        <dl className="space-y-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-[10px] text-text-dim">Capital</dt>
-            <dd className="mono text-[11px] font-bold text-text">{fmtCurrency(inputs.capitalInitial)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-[10px] text-text-dim">Épargne / mois</dt>
-            <dd className="mono text-[11px] font-bold text-text">{fmtCurrency(inputs.monthlyPayment)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-[10px] text-text-dim">Durée</dt>
-            <dd className="mono text-[11px] font-bold text-text">{inputs.duration} ans</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-[10px] text-text-dim">Compte</dt>
-            <dd className="text-[11px] font-bold text-text">{envelopeLabel}</dd>
-          </div>
-        </dl>
-      </div>
-      <button
-        type="button"
-        onClick={onExpand}
-        className="w-full rounded-xl py-2.5 text-[11px] font-bold flex items-center justify-center gap-1.5 border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
-      >
-        <ChevronRight size={13} />
-        Rouvrir les réglages
-      </button>
+    <div id={`sidebar-section-${id}`} className="scroll-mt-24">
+      <CollapsibleSection title={title} icon={icon} open={open} onOpenChange={onOpenChange}>
+        {children}
+      </CollapsibleSection>
     </div>
+  )
+}
+
+/**
+ * Infobulle du rail replié (desktop uniquement) : le rail est vertical sur
+ * lg, la bulle s'ouvre à droite de l'icône — comme ChatGPT. Masquée sur
+ * mobile (rail horizontal) où le `title` natif du bouton prend le relais.
+ */
+function RailTip({ children }: { children: ReactNode }) {
+  return (
+    <span
+      className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden lg:block whitespace-nowrap rounded-lg bg-[#211f1b]/95 text-[#f5f0e8] text-[11px] font-semibold px-2.5 py-1.5 border border-white/10 opacity-0 translate-x-1 group-hover/rail:opacity-100 group-hover/rail:translate-x-0 transition-all duration-150 z-50 shadow-lg"
+      role="tooltip"
+    >
+      {children}
+    </span>
   )
 }

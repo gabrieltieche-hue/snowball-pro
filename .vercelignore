@@ -1,0 +1,10 @@
+# Dossiers locaux lourds / non déployables — l'upload Vercel doit rester léger
+# (le build s'exécute côté Vercel : node_modules et dist y sont générés).
+node_modules/
+dist/
+.freebuff/
+.agents/
+.github/
+.git/
+*.log
+.DS_Store
