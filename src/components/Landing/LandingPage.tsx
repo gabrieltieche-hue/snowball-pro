@@ -383,6 +383,11 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.8.2",
+    title: "Rythme uniformisé",
+    text: "Espacements verticaux harmonisés sur une seule échelle — moins d'air entre les sections, héro et colonnes alignés en haut, même respiration sur tous les écrans.",
+  },
+  {
     version: "v6.8.0",
     title: "Commencez ici",
     text: "Trois profils de départ prêts à l'emploi à l'ouverture de l'app (capital calculé par le moteur, appliqué en un clic) et CTA mobile permanent sur la landing.",
@@ -397,16 +402,11 @@ const UPDATES = [
     title: "Clarté des taux",
     text: "La chaîne brut → net de frais → réel (8,22 → 7,95 → 5,73 %) est affichée partout, avec la formule exacte.",
   },
-  {
-    version: "v6.5.1",
-    title: "Scénario de rendement",
-    text: "Prudent / Central / Optimiste intégré naturellement dans la sidebar, sans rupture.",
-  },
 ]
 
 export function LandingPage() {
   const [darkMode, setDarkMode] = useState<boolean>(loadInitialDarkMode)
-  const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
   // Scénario actif de la démo interactive : le héro devient un vrai simulateur.
   const [heroScenario, setHeroScenario] = useState<ReturnScenario>("central")
   // CRO v6.8 — CTA sticky mobile : apparu après un scroll de 480 px (rendu en
@@ -562,7 +562,7 @@ export function LandingPage() {
               "radial-gradient(90% 60% at 50% -10%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 65%)",
           }}
         />
-        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-16 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-14 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -707,7 +707,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Fonctionnalités ─────────────────────────────────────────────── */}
-      <section id="fonctionnalites" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-16 sm:py-24 scroll-mt-20">
+      <section id="fonctionnalites" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Fonctionnalités"
@@ -759,7 +759,7 @@ export function LandingPage() {
 
       {/* ── Scénarios (moteur réel) ─────────────────────────────────────── */}
       <section id="scenarios" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
           <Reveal>
             <SectionTitle
               eyebrow="Scénarios"
@@ -806,7 +806,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Enveloppes ──────────────────────────────────────────────────── */}
-      <section id="enveloppes" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-16 sm:py-24 scroll-mt-20">
+      <section id="enveloppes" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Fiscalité"
@@ -848,7 +848,7 @@ export function LandingPage() {
 
       {/* ── Méthodologie ────────────────────────────────────────────────── */}
       <section id="methode" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
           <Reveal>
             <SectionTitle
               eyebrow="Méthodologie"
@@ -964,7 +964,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Pour qui (moteur réel) ──────────────────────────────────────── */}
-      <section id="pourqui" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-16 sm:py-24 scroll-mt-20">
+      <section id="pourqui" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Exemples"
@@ -989,7 +989,7 @@ export function LandingPage() {
 
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
           <Reveal>
             <SectionTitle eyebrow="FAQ" title="Questions fréquentes" />
           </Reveal>
@@ -1074,7 +1074,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Dernières éditions (CHANGELOG réel) ──────────────────────────── */}
-      <section aria-label="Dernières évolutions" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <section aria-label="Dernières évolutions" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
         <Reveal>
           <div className="flex items-center gap-2 justify-center mb-6">
             <History size={13} className="text-primary" aria-hidden />
@@ -1106,7 +1106,7 @@ export function LandingPage() {
               "radial-gradient(70% 90% at 50% 110%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 65%)",
           }}
         />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
           <Reveal>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight">
               Voyez où va votre épargne, <span className="text-primary">avant de l'y mettre</span>
@@ -1178,7 +1178,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.8.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.8.2 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

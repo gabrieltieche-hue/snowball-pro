@@ -4,6 +4,18 @@
 
 ---
 
+## v6.8.2 — Landing : un seul rythme vertical (le « trou » en moins, partout)
+
+Suite directe du retour _« supprime un peu ce trou au-dessus »_ : après la suppression de la bande vide sous l'en-tête (héro `pt-20` → `pt-14`, colonnes alignées en haut au lieu du centrage vertical qui poussait la colonne la plus courte vers le bas), uniformisation de **toute** la landing sur une seule échelle verticale. **369 tests**, gate 100 % vert, vérifié en navigateur réel (mesures DOM Playwright, desktop + mobile).
+
+### 🔄 Changements
+
+- **`LandingPage.tsx`** : les six sections (Fonctionnalités, Scénarios, Enveloppes, Méthodologie, Pour qui, FAQ), « Dernières évolutions » et l'appel final passent de paddings disparates (`py-16 sm:py-24`, `py-10 sm:py-14`, `py-20 sm:py-28`) à **un seul rythme `py-14 sm:py-20`** (56/80 px) — même respiration partout, 16 à 32 px de moins d'air entre chaque bloc ; héro `pb-16 sm:pb-20` → `pb-14 sm:pb-20` pour s'aligner sur les sections ; bande « Chiffres clés » conservée compacte (`py-10`, c'est un bandeau, pas une section). « Dernières éditions » : entrée **v6.8.2** en tête (v6.5.1 sortie pour garder 4 cartes), footer → v6.8.2.
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ build ✓ (dist 1 113 ko / 321 ko gzip).
+- Version 6.8.1 → **6.8.2** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.2`, footer landing v6.8.2), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.8.2).
+
+---
+
 ## v6.8.1 — Héro : la question du lecteur, avec les mots du lecteur
 
 Deux retours utilisateur successifs : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais c toujours moyen, pas très clair, ça sonne mal »_. Diagnostic en profondeur (audit `clarify`) : ① « Combien votre épargne peut-elle **devenir** ? » — « devenir » prend « que/quoi », pas « combien » : une quantité se dit avec **valoir** ; ② « vraiment » = bouche-trou qui s'ajoute à « vraie histoire boursière » et « Des chiffres réels » (trois affirmations de vérité dans le même bloc, ton défensif) ; ③ le registre « mystère magique » contredit la promesse de la marque (« des chiffres réels, pas des promesses ») ; ④ la question sans horizon ne dit pas *quand* — alors que la démo affiche exactement « 25 ans ». Le héro demande désormais « Combien peut valoir votre épargne dans 25 ans ? » (la démo à droite répond à cette question précise) et le sous-titre définit le terme de marque en une apposition : « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. » **369 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).

@@ -4,6 +4,30 @@
 
 ---
 
+## SESSION — 2026-08-14 (v6.8.2 : landing — un seul rythme vertical)
+
+### Résumé
+
+Retour utilisateur : _« sur la landing page supprime un peu ce trou au-dessus ! »_ — captures d'écran à l'appui (bande vide de ~96 px sous l'en-tête en desktop, jusqu'à ~175 px au-dessus de la carte à ~1024 px). Diagnostic : ① padding haut du héro `pt-14 sm:pt-20` (56/80 px) ; ② `items-center` sur la grille qui poussait la colonne la plus courte vers le bas (+75 px de vide au-dessus de la carte à 1024 px, +33 px au-dessus du badge quand la carte est plus haute) ; ③ des paddings hétérogènes entre sections (`py-16 sm:py-24` / `py-10 sm:py-14` / `py-20 sm:py-28`). **369 tests**, gate 100 % vert, vérifié en navigateur réel (mesures DOM Playwright 320 → 1440 px).
+
+### Décisions
+
+- **`LandingPage.tsx`** (v6.8.1, déjà commité) : héro `pt-14 sm:pt-20` → `pt-10 sm:pt-14` et `items-center` → `items-start` — le badge ET la carte démarrent à la même hauteur, le trou passe de ~96-175 px à **~56-76 px** selon la largeur.
+- **`LandingPage.tsx`** (v6.8.2, cette session) : toutes les sections passent à **un seul rythme `py-14 sm:py-20`** (56/80 px) — Fonctionnalités, Scénarios, Enveloppes, Méthodologie, Pour qui, FAQ, « Dernières évolutions » (avant `py-10 sm:py-14`) et appel final (avant `py-20 sm:py-28`) ; héro `pb-16 sm:pb-20` → `pb-14 sm:pb-20`. Bande « Chiffres clés » conservée compacte (`py-10`) : c'est un bandeau bordé, pas une section. « Dernières éditions » : entrée v6.8.2 en tête (v6.5.1 retirée, 4 cartes), footer → v6.8.2.
+- Zéro changement moteur. Aucun test à modifier (changements de classes uniquement).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ build ✓ (dist 1 113 ko / 321 ko gzip).
+- Navigateur (dev) : sections contiguës (gap 0, rythme interne uniforme), aucune bande vide résiduelle sous l'en-tête, grille « Dernières éditions » intacte (4 cartes), mobile et desktop identiques en structure.
+- Version 6.8.1 → **6.8.2** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.2`, footer landing v6.8.2), CHANGELOG (entrée v6.8.2), MEMORY.md (cette entrée).
+
+### Notes
+
+- Commit + déploiement à la demande de l'utilisateur (« commit, publie sur vercel, met tout à jour ») : release v6.8.2 commitée puis `vercel --prod` → https://snowball-pro.vercel.app.
+
+---
+
 ## SESSION — 2026-08-14 (v6.8.1 : héro — la question du lecteur, avec les mots du lecteur)
 
 ### Résumé
