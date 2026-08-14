@@ -298,10 +298,7 @@ function DecompositionBar({ invested, growth }: { invested: number; growth: numb
   const growthPct = (growth / total) * 100
   return (
     <div className="mt-3">
-      <div
-        aria-hidden
-        className="flex h-2.5 rounded-full overflow-hidden bg-surface-100/60 border border-border/50"
-      >
+      <div aria-hidden className="flex h-2.5 rounded-full overflow-hidden bg-surface-100/60 border border-border/50">
         <div className="bg-text-muted/45" style={{ width: `${investedPct}%` }} />
         <div className="bg-gradient-to-r from-primary-light to-primary" style={{ width: `${growthPct}%` }} />
       </div>
@@ -356,13 +353,13 @@ function ScenarioSwitch({
             onClick={() => onChange(id)}
             className={cn(
               "rounded-xl px-2 py-2 text-center transition-all duration-200",
-              active
-                ? "bg-primary btn-gold-text shadow-gold"
-                : "text-text-muted hover:text-text hover:bg-glass-hover",
+              active ? "bg-primary btn-gold-text shadow-gold" : "text-text-muted hover:text-text hover:bg-glass-hover",
             )}
           >
             <span className="block text-[10px] font-extrabold leading-tight">{SCENARIO_META[id].label}</span>
-            <span className={cn("block text-[8.5px] mt-0.5 leading-none mono", active ? "opacity-80" : "text-text-dim")}>
+            <span
+              className={cn("block text-[8.5px] mt-0.5 leading-none mono", active ? "opacity-80" : "text-text-dim")}
+            >
               {(rates[id] * 100).toFixed(2).replace(".", ",")} %
             </span>
           </button>
@@ -456,9 +453,10 @@ export function LandingPage() {
   // Séries complètes pour la démo interactive (la courbe change de forme).
   const heroRows = useMemo(
     () =>
-      Object.fromEntries(
-        SCENARIO_ORDER.map(s => [s, runSimulation({ ...base, returnScenario: s })]),
-      ) as Record<ReturnScenario, YearRow[]>,
+      Object.fromEntries(SCENARIO_ORDER.map(s => [s, runSimulation({ ...base, returnScenario: s })])) as Record<
+        ReturnScenario,
+        YearRow[]
+      >,
     [base],
   )
 
@@ -564,7 +562,7 @@ export function LandingPage() {
               "radial-gradient(90% 60% at 50% -10%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 65%)",
           }}
         />
-        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-16 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-16 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -573,13 +571,18 @@ export function LandingPage() {
             <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-6">
               <Sparkles size={11} aria-hidden /> Fiscalité française 2026 · 100 ans d'historique réel
             </p>
-            <h2 className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold tracking-tight leading-[1.06]">
-              Le nombre magique de votre épargne, calculé sur{" "}
-              <span className="text-primary">100 ans de vraie histoire boursière</span>
+            <h2
+              aria-label="Combien peut valoir votre épargne dans 25 ans ?"
+              className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold tracking-tight leading-[1.06]"
+            >
+              <span className="block">Combien peut valoir votre épargne</span>
+              <span className="block">
+                <span className="text-primary whitespace-nowrap">dans 25 ans</span> ?
+              </span>
             </h2>
             <p className="text-sm sm:text-[15px] text-text-muted mt-5 leading-relaxed max-w-xl">
-              Découvrez combien votre épargne peut vraiment devenir, krachs inclus — en 30 secondes, sans inscription,
-              sur votre appareil.
+              Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire
+              boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil.
             </p>
             <div className="flex items-center gap-3 mt-7 flex-wrap">
               <button
@@ -1175,7 +1178,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.8.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.8.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

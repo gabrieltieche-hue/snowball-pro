@@ -994,7 +994,9 @@ describe("v6.1 — landing page", () => {
     // CTA secondaire du héro : « Voir la méthode » (ancre vers la section Méthodologie)
     expect(screen.getByRole("link", { name: /voir la méthode/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /se connecter/i })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: /100 ans de vraie histoire boursière/i })).toBeInTheDocument()
+    // Coupe typographique en 2 lignes (spans block) : le nom accessible vient de l'aria-label.
+    expect(screen.getByRole("heading", { name: /combien peut valoir votre épargne dans 25 ans/i })).toBeInTheDocument()
+    expect(screen.getByText(/votre nombre magique, c'est le capital final/i)).toBeInTheDocument()
     // La démo du héro exécute le vrai moteur (aria-label du graphique SVG)
     expect(screen.getByRole("img")).toBeInTheDocument()
     // Sections fonctionnalités + méthodologie + FAQ

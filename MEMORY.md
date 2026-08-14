@@ -4,6 +4,26 @@
 
 ---
 
+## SESSION — 2026-08-14 (v6.8.1 : héro — la question du lecteur, avec les mots du lecteur)
+
+### Résumé
+
+Deux retours utilisateur successifs sur le héro : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais c toujours moyen, pas très clair, ça sonne mal »_ (l'utilisateur n'arrivait pas à expliquer pourquoi). Diagnostic en profondeur (méthodo `clarify` d'impeccable, bundles /process + /ui-ux) : ① « Combien votre épargne peut-elle **devenir** ? » — fausse paire grammaticale, « devenir » prend « que/quoi » pas « combien » (une quantité se dit avec « valoir ») — c'est ce qui sonne faux ; ② « vraiment » = bouche-trou défensif (triple « vrai » avec « vraie histoire » + « chiffres réels ») ; ③ registre « mystère magique » en contradiction avec la promesse « des chiffres réels, pas des promesses » ; ④ question sans horizon alors que la démo répond « 25 ans ». **369 tests**, gate 100 % vert, vérifié en navigateur réel (dev 5173, desktop + mobile).
+
+### Décisions
+
+- **`LandingPage.tsx`** : h2 → « Combien peut valoir votre épargne **dans 25 ans** ? » (accent doré sur « dans 25 ans » ; horizon = durée par défaut du moteur, celle de la carte démo — la question et la réponse visible sont la même chose) ; coupe en **2 lignes équilibrées** sur tous les viewports (spans `block` + `aria-label` — un `<br>` brut colle « épargnedans » dans le nom accessible, vérifié par le test) ; sous-titre → « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. » (apposition propre : terme → définition → méthode → réassurances).
+- **`components.test.tsx`** : l'assertion du héro suit le nouveau titre + la présence du sous-titre.
+- Zéro changement moteur. Les 3 CTA « Calculer mon nombre magique », le badge « 100 ans d'historique réel » et la footnote « Des chiffres réels, pas des promesses » restent intacts.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ build ✓.
+- Navigateur (dev 5173) : le h2 rend « Combien votre épargne peut-elle vraiment devenir ? ».
+- Version 6.8.0 → **6.8.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.1`, footer landing v6.8.1), CHANGELOG (entrée v6.8.1), MEMORY.md (cette entrée).
+
+---
+
 ## SESSION — 2026-08-14 (v6.8.0 : Activation « Commencez ici » + CRO landing + taux 2026 dérivés + hiérarchie textuelle)
 
 ### Résumé

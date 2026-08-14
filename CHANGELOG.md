@@ -4,6 +4,19 @@
 
 ---
 
+## v6.8.1 — Héro : la question du lecteur, avec les mots du lecteur
+
+Deux retours utilisateur successifs : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais c toujours moyen, pas très clair, ça sonne mal »_. Diagnostic en profondeur (audit `clarify`) : ① « Combien votre épargne peut-elle **devenir** ? » — « devenir » prend « que/quoi », pas « combien » : une quantité se dit avec **valoir** ; ② « vraiment » = bouche-trou qui s'ajoute à « vraie histoire boursière » et « Des chiffres réels » (trois affirmations de vérité dans le même bloc, ton défensif) ; ③ le registre « mystère magique » contredit la promesse de la marque (« des chiffres réels, pas des promesses ») ; ④ la question sans horizon ne dit pas *quand* — alors que la démo affiche exactement « 25 ans ». Le héro demande désormais « Combien peut valoir votre épargne dans 25 ans ? » (la démo à droite répond à cette question précise) et le sous-titre définit le terme de marque en une apposition : « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. » **369 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).
+
+### 🔄 Changements
+
+- **`LandingPage.tsx`** : h2 du héro → « Combien peut valoir votre épargne **dans 25 ans** ? » (accent doré sur « dans 25 ans », horizon = durée par défaut du moteur, celle de la carte démo) ; coupe typographique en **2 lignes équilibrées** sur tous les viewports (spans `block` + `aria-label` — un `<br>` brut aurait collé « épargnedans » dans le nom accessible) ; sous-titre → « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. »
+- **`components.test.tsx`** : assertion du héro mise à jour (nouveau titre + sous-titre contenant « nombre magique »).
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ build ✓.
+- Version 6.8.0 → **6.8.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.1`, footer landing v6.8.1), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.8.1).
+
+---
+
 ## v6.8.0 — Activation « Commencez ici » + CRO landing + hiérarchie textuelle
 
 Passage `/full` (bundles business + research + ui-ux + process) : recherche marché réelle, audit CRO de la landing, revue du design system, implémentation TDD + revue adverse. Quatre livrables, zéro changement moteur — **369 tests**, gate 100 % vert, vérifié en navigateur réel.
