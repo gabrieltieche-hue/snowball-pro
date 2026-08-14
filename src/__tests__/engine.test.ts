@@ -292,18 +292,20 @@ describe("défauts — inflation 2,1 %, référence MSCI World 10,07 % et Monte 
     expect(DEFAULT_INPUTS.mcRuns).toBe(10000)
   })
 
-  it("l'affichage par défaut est en euros d'aujourd'hui (vraies valeurs nettes d'inflation)", () => {
-    // Demande utilisateur : l'option « Euros d'aujourd'hui » est cochée par
-    // défaut pour montrer d'emblée les VRAIES valeurs (pouvoir d'achat réel).
-    // Le moteur calcule TOUJOURS les deux échelles (nominal + real) — le
-    // toggle ne change que laquelle est mise en avant.
-    expect(DEFAULT_INPUTS.showReal).toBe(true)
+  it("l'affichage par défaut est en euros courants (toggle « Euros d'aujourd'hui » décoché)", () => {
+    // Demande utilisateur : l'option « Euros d'aujourd'hui » n'est PAS cochée
+    // par défaut — le chiffre principal est la valeur sur le compte. Le moteur
+    // calcule TOUJOURS les deux échelles (nominal + real) et le pouvoir
+    // d'achat reste affiché partout (double échelle) : le toggle ne change
+    // que laquelle est mise en avant.
+    expect(DEFAULT_INPUTS.showReal).toBe(false)
   })
 
-  it("la migration v4 retombe sur euros d'aujourd'hui quand l'ancien état ne précisait rien", () => {
-    // v4 sans showReal stocké → défaut aligné (vrai), comme pour un nouvel
-    // utilisateur. Un choix v4 explicitement « false » reste respecté.
-    expect(v4SettingsToInputs({}).showReal).toBe(true)
+  it("la migration v4 retombe sur euros courants quand l'ancien état ne précisait rien", () => {
+    // v4 sans showReal stocké → défaut aligné (faux), comme pour un nouvel
+    // utilisateur. Un choix v4 explicitement stocké (« true » ou « false »)
+    // reste respecté.
+    expect(v4SettingsToInputs({}).showReal).toBe(false)
     expect(v4SettingsToInputs({ showReal: false }).showReal).toBe(false)
     expect(v4SettingsToInputs({ showReal: true }).showReal).toBe(true)
   })

@@ -4,6 +4,54 @@
 
 ---
 
+## SESSION — 2026-08-14 (v6.8.0 : Activation « Commencez ici » + CRO landing + taux 2026 dérivés + hiérarchie textuelle)
+
+### Résumé
+
+Passage `/full` (bundles business + research + ui-ux + process, mode continu automatique) à la demande de l'utilisateur. Le produit étant très mûr (v6.7.2, 361 tests, multiples audits), le passage a livré 4 changements ciblés à fort impact, zéro changement moteur : **activation** (bandeau « Commencez ici »), **CRO landing** (CTA sticky mobile, nav « Pour qui »), **confiance fiscale** (la landing citait les taux 2025 — désormais dérivés du moteur), **design tokens** (`text-dim` sombre réparé). **369 tests**, gate 100 % vert, vérifié en navigateur réel, **commité puis déployé** `vercel --prod` → https://snowball-pro.vercel.app.
+
+### Décisions
+
+- **`utils/quickStart.ts` (nouveau)** : source unique des 3 profils (Premiers pas 25 ans · Carrière 35 ans · Retraite 55 ans) partagée entre l'app et la landing (section « Pour qui ») — mêmes situations, aucune dérive. Clé `snowball_v5_quickstart_dismissed`. `loadQuickStartVisible(scope)` : masqué si déjà fermé OU si des réglages existent (visiteur connu) ; un compte vierge le voit.
+- **`components/Layout/QuickStart.tsx` (nouveau)** : bandeau `glass-gold` (même langage que « lien partagé »), 3 cartes avec capital final CALCULÉ par `runSimulation` (jamais en dur) en double échelle (compte + € d'aujourd'hui), bouton « Utiliser ce profil » (historique → annulable).
+- **`App.tsx`** : état `showQuickStart` + ref, `hideQuickStart` (persisté), auto-hide dans `updateInput`/`updateInputs` (premier réglage modifié = bandeau fermé), `handleApplyProfile` ; rendu au-dessus de la grille.
+- **`LandingPage.tsx`** : CTA sticky mobile (apparu > 480 px de scroll, `md:hidden`, `invisible` hors tab-order quand caché, dégradé de lisibilité) ; lien « Pour qui » dans NAV (header + footer) ; **taux fiscaux dérivés de `taxRules.ts`** (`getTaxRules`/`pfuRate`/`fmtTaxPercent`) — « PFU 30 % »/« 17,2 % » (taux 2025 périmés) → « 31,4 % »/« 18,6 % » ; « Dernières éditions » + footer → v6.8.0.
+- **`index.css`** : `--color-text-dim` sombre `#a39a8c` → `#8d8578` (avant quasi identique à muted → hiérarchie plate ; 5,3:1 AA ✓). Mode clair inchangé (déjà correct).
+- **Recherche vérifiée** : fiscalité 2026 confirmée par 5+ sources indépendantes (LFSS 2026 : CSG 10,6 %, PFU 31,4 %, PEA 18,6 %, AV exclue à 17,2 %) → **le moteur était déjà correct** (`CURRENT_TAX_YEAR = 2026`), seuls les libellés landing mentaient. Ancrages MSCI World 8-9 %/an annualisé EUR plausibles (arbolyo, ramify).
+- **Pricing/offres (recommandation, non implémentée)** : rester gratuit/sans compte (différenciateur réel) ; monétisation naturelle = « boîte de sortie » courtiers/CGP (lead-gen des concurrents gratuits) à faire avec du contenu de confiance, jamais un paywall.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ (361 + 8 nouveaux) build ✓ (dist 1 112 ko / 321 ko gzip).
+- Navigateur (dev 5173) : landing (31,4 %/18,6 % affichés, nav « Pour qui » header + footer, CTA sticky `translate-y-0` après scroll à 800 px, `text-dim` sombre `#8d8578` / clair `#6f6a5f`) + app (bandeau visible pour nouveau visiteur / masqué pour visiteur connu — vérifié sans détruire les données locales, restituées à l'identique depuis le hash partagé ; console 0 erreur).
+- ⚠️ Incident maîtrisé en vérification : la suppression temporaire de la clé `snowball_v5_settings` pour tester le « nouveau visiteur » a été perdue au reload (backup en mémoire de page) — récupérée intégralement via le hash `#s=` (inputs identiques), restitution vérifiée (`version 1`, capital 10 000, scénario prudent).
+- Version 6.7.2 → **6.8.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.0`, footer landing v6.8.0), CHANGELOG (entrée v6.8.0), MEMORY.md (cette entrée).
+
+### Notes
+
+- **Commit + déploiement finalisés à la demande de l'utilisateur** (« commit, publie sur vercel, met tout à jour ») : release v6.8.0 commitée puis `vercel --prod`. Le commit de release inclut le travail v6.7.2 resté non commité dans le worktree (showReal par défaut — migration.ts + tests) : il fait partie de l'arbre déployé et le gate 369 tests le couvre.
+
+---
+
+## SESSION — 2026-08-14 (v6.7.2 : « Euros d'aujourd'hui » décoché par défaut)
+
+### Résumé
+
+Demande utilisateur : _« je veux que cette option NE SOIT PAS COCHÉE PAR DÉFAUT ! Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout »_. Inversion du défaut posé en v5.5.0 : `DEFAULT_INPUTS.showReal` repasse à **false** — l'app démarre sur les euros COURANTS, le chiffre principal étant la valeur réelle sur le compte. Le pouvoir d'achat reste mis en avant partout via la double échelle (`DualAmount`, cartes, graphiques, rapport) : le toggle ne choisit que l'échelle en tête, il ne cache jamais rien (comportement v5.5.0 conservé). **361 tests**, gate 100 % vert.
+
+### Décisions
+
+- **`migration.ts`** : `DEFAULT_INPUTS.showReal = false` (avant `true`). Fallback v4 `showReal: s.showReal === true` — un choix v4 explicitement « true » reste respecté ; sinon défaut (faux), aligné sur le nouvel utilisateur.
+- **Seul le défaut change** : aucun composant modifié — la double échelle affiche déjà les deux montants partout (libellé du toggle inchangé : « Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout »).
+- **Tests** : défaut moteur `showReal = false`, migration v4 (undefined → faux / false → faux / true → vrai), toggle **décoché** au rendu d'App (composant).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓.
+- Version 6.7.1 → **6.7.2** (package.json, package-lock.json via `npm version --no-git-tag-version`, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.2`, footer landing v6.7.2), CHANGELOG (entrée v6.7.2), MEMORY.md (cette entrée). Pas de commit ni de déploiement (non demandé).
+
+---
+
 ## SESSION — 2026-08-14 (v6.7.1 : Réglages repliables — rail d'icônes latéral style ChatGPT)
 
 ### Résumé

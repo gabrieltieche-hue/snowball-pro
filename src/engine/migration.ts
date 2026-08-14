@@ -54,12 +54,14 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   brokerageFees: 0,
   insuranceFees: 0.0075,
   managementFees: 0,
-  // Affichage par défaut = EUROS D'AUJOURD'HUI (les vraies valeurs nettes
-  // d'inflation). Le moteur calcule TOUJOURS les deux échelles (nominal + real,
-  // cf. simulation.ts) : le toggle ne fait que choisir laquelle est mise en
-  // avant. Coche par défaut → l'utilisateur voit d'emblée le pouvoir d'achat
-  // réel, le montant sur le compte restant affiché partout (demande utilisateur).
-  showReal: true,
+  // Affichage par défaut = euros COURANTS (la valeur réelle sur le compte). Le
+  // moteur calcule TOUJOURS les deux échelles (nominal + real, cf.
+  // simulation.ts) : le toggle « Euros d'aujourd'hui » ne fait que choisir
+  // laquelle est mise en avant, il ne cache jamais la valeur du compte.
+  // DÉCOCHÉ par défaut — le pouvoir d'achat reste mis en avant partout (les
+  // deux montants sont toujours affichés), mais le chiffre principal est bien
+  // ce qui sera sur le compte (demande utilisateur).
+  showReal: false,
   withdrawalModel: "custom",
   withdrawalRate: 0.04,
   withdrawalFixed: 2000,
@@ -133,10 +135,12 @@ export function v4SettingsToInputs(s: Partial<V4Settings>): SimulationInputs {
     envelope,
     // Le rendement v4 (r) et la crise (krasch*) sont ignorés : l'app rejoue
     // toujours l'historique réel (Option A), un taux saisi n'a plus de sens.
-    // Migration v4 → v5 : le défaut d'affichage est désormais « euros
-    // d'aujourd'hui ». On respecte un choix v4 explicitement stocké, mais on
-    // retombe sur le défaut (vrai) quand l'ancien état ne précisait rien.
-    showReal: s.showReal !== false,
+    // Migration v4 → v5 : le défaut d'affichage est les euros COURANTS (la
+    // valeur sur le compte). On respecte un choix v4 explicitement stocké
+    // (« true » reste vrai), mais on retombe sur le défaut (faux) quand
+    // l'ancien état ne précisait rien — le pouvoir d'achat reste visible
+    // partout via la double échelle, il n'est juste plus le chiffre principal.
+    showReal: s.showReal === true,
   }
 }
 

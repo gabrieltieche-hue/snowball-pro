@@ -4,6 +4,56 @@
 
 ---
 
+## v6.8.0 — Activation « Commencez ici » + CRO landing + hiérarchie textuelle
+
+Passage `/full` (bundles business + research + ui-ux + process) : recherche marché réelle, audit CRO de la landing, revue du design system, implémentation TDD + revue adverse. Quatre livrables, zéro changement moteur — **369 tests**, gate 100 % vert, vérifié en navigateur réel.
+
+### 🚀 Activation — bandeau « Commencez ici » (`utils/quickStart.ts` + `components/Layout/QuickStart.tsx`)
+
+- Le blocage d'activation n°1 (retrouvé dans les sessions utilisateur et confirmé par les concurrents, qui convertissent tous via des profils concrets nommés) : à l'ouverture, rien ne dit quoi saisir. Un bandeau **une seule fois** propose 3 profils prêts à l'emploi — Premiers pas (25 ans), Carrière (35 ans), Retraite (55 ans).
+- **Résultat d'abord** : chaque carte affiche le capital final **calculé par le vrai moteur** (`runSimulation`, jamais un chiffre en dur) en double échelle (sur le compte + € d'aujourd'hui, philosophie app).
+- **Un clic** applique le profil (réglages + enveloppe + fiscalité, enregistré dans l'historique → annulable). Le bandeau disparaît au premier réglage modifié ou au X, et ne revient jamais (clé `snowball_v5_quickstart_dismissed`). Il ne s'affiche pas pour un visiteur qui a déjà des réglages sauvegardés.
+- **Source unique** : la landing (« Pour qui ») et l'app partagent `QUICKSTART_PROFILES` — mêmes situations, mêmes chiffres, aucune dérive.
+
+### 🎯 CRO landing (`LandingPage.tsx`)
+
+- **CTA orienté bénéfice** : les 3 CTA « Lancer la simulation » / « Lancer l'app » (header, héro, appel final) → **« Calculer mon nombre magique »** (un seul langage de bénéfice qui promet le résultat) ; CTA secondaire du héro « Créer un compte » (contradictoire avec « Sans inscription ») → **« Voir la méthode »** (ancre `#methode`), l'inscription restant dans le header.
+- **Sous-titre du héro orienté bénéfice** : « Découvrez combien votre épargne peut vraiment devenir, krachs inclus — en 30 secondes, sans inscription, sur votre appareil » (les détails techniques — MSCI World, 10 000 scénarios, enveloppes — descendent dans les sections).
+- **Preuve sociale factuelle** sous les CTA du héro : « Des chiffres réels, pas des promesses » — chaque nombre est calculé en direct par le moteur (aucun témoignage ni compteur inventé, conforme à PRODUCT.md).
+- **CTA sticky mobile** : bandeau en bas d'écran après 480 px de scroll (masqué ≥ sm où le header suffit), hors de l'ordre de tabulation quand invisible, fond dégradé pour la lisibilité.
+- **Nav** : lien « Pour qui » ajouté (header + footer) — la section existait sans être référencée.
+
+### 💡 Confiance fiscale — taux 2026 dérivés du moteur
+
+- La landing citait les taux **2025** (« PFU 30 % », « 17,2 % ») — contradictoires avec le moteur qui applique les règles 2026 (PFU 31,4 %, PEA 18,6 %, AV exclue à 17,2 %). Vérifiés contre 5+ sources indépendantes (LFSS 2026) : **le moteur était correct** ; seuls les libellés de la landing mentaient.
+- Fix : les taux de la landing sont désormais **dérivés de `taxRules.ts`** (`getTaxRules`/`pfuRate`/`fmtTaxPercent`) — plus aucun taux en dur qui se périme.
+
+### 🎨 Design tokens (`index.css`)
+
+- `--color-text-dim` sombre `#a39a8c` → `#8d8578` : avant, quasi identique à `--color-text-muted` (#a09888) — la hiérarchie textuelle s'effondrait à un seul niveau. 5,3:1 sur la surface sombre (AA ✓) ; le mode clair était déjà correct, inchangé.
+
+### 🧪 Tests & gate
+
+- **+8 tests composants** (361 → 369) : rendu 3 profils avec capital moteur + double échelle, application au clic (réglages + fermeture + persistance), fermeture au X, disparition au premier réglage modifié, masqué pour visiteur connu ; nav « Pour qui », CTA sticky caché → visible après scroll, taux 2026 affichés / 2025 absents.
+- Gate : typecheck ✓ lint ✓ **369/369 tests** ✓ build ✓ (dist 1,11 Mo / 321 ko gzip) · navigateur réel (landing + app, données locales restituées à l'identique) · console 0 erreur.
+- Version 6.7.2 → **6.8.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.8.0`, footer landing v6.8.0, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.8.0).
+
+---
+
+## v6.7.2 — « Euros d'aujourd'hui » décoché par défaut (la valeur du compte d'abord)
+
+Demande utilisateur : _« je veux que cette option NE SOIT PAS COCHÉE PAR DÉFAUT ! Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout »_. L'affichage démarre à nouveau sur les **euros courants** : le chiffre principal est ce qui sera réellement sur le compte. Le moteur calcule TOUJOURS les deux échelles — le toggle « Euros d'aujourd'hui » reste là pour mettre le pouvoir d'achat en avant, et la double échelle (`DualAmount`) continue d'afficher les deux montants partout. **361 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`migration.ts`** : `DEFAULT_INPUTS.showReal = false` (avant `true`). Commentaires mis à jour. Migration v4 : fallback `showReal: s.showReal === true` — un choix v4 explicitement « true » reste respecté, sinon défaut (faux) comme pour un nouvel utilisateur.
+- **Aucun autre changement** : `DualAmount`, `Sidebar`, cartes, graphiques et rapport affichent déjà les deux échelles simultanément (le libellé du toggle — « Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout » — décrit exactement le comportement conservé).
+- **Tests** : défaut moteur `showReal = false`, migration v4 (undefined → faux, false → faux, true → vrai), toggle **décoché** au rendu d'App.
+- Gate : typecheck ✓ lint ✓ **361/361 tests** ✓ build ✓.
+- Version 6.7.1 → **6.7.2** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.7.2`, footer landing v6.7.2), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.7.2).
+
+---
+
 ## v6.7.1 — Réglages repliables : rail d'icônes latéral style ChatGPT
 
 Demande utilisateur : _« je souhaite pouvoir vraiment bien replier le menu des réglages — un vrai repli sur le côté avec des petites icônes pour les catégories, un truc style ChatGPT »_. Le repli v6.2 (résumé compact) devient un **vrai rail latéral de 76 px** : la grille se resserre (380 px → 76 px, transition `grid-template-columns` animée), le panneau se rétracte en une colonne d'icônes sticky et le contenu gagne ~300 px. Zéro changement moteur — **361 tests**, gate 100 % vert, vérifié en navigateur réel (Playwright : layout, peinture des tooltips, sticky, mobile).

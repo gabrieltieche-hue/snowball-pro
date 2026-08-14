@@ -13,6 +13,7 @@ import {
   Lock,
   Moon,
   Share2,
+  ShieldCheck,
   Sparkles,
   Sun,
   Target,
@@ -21,8 +22,17 @@ import {
 import { cn } from "../../utils/cn"
 import { navigateTo } from "../../router"
 import { loadInitialDarkMode, persistThemeClass } from "../../utils/theme"
-import { fmtCurrency, getHistoricalDataset, parseStoredInputs, runSimulation } from "../../engine"
-import type { ReturnScenario, SimulationInputs, YearRow } from "../../types"
+import {
+  fmtCurrency,
+  fmtTaxPercent,
+  getHistoricalDataset,
+  getTaxRules,
+  parseStoredInputs,
+  pfuRate,
+  runSimulation,
+} from "../../engine"
+import type { EnvelopeType, ReturnScenario, YearRow } from "../../types"
+import { QUICKSTART_PROFILES } from "../../utils/quickStart"
 import { Brand } from "./Brand"
 import { HeroChart } from "./HeroChart"
 
@@ -367,6 +377,7 @@ function ScenarioSwitch({
 const NAV = [
   { href: "#fonctionnalites", label: "Fonctionnalités" },
   { href: "#scenarios", label: "Scénarios" },
+  { href: "#pourqui", label: "Pour qui" },
   { href: "#enveloppes", label: "Enveloppes" },
   { href: "#methode", label: "Méthodologie" },
   { href: "#faq", label: "FAQ" },
@@ -374,6 +385,11 @@ const NAV = [
 
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.8.0",
+    title: "Commencez ici",
+    text: "Trois profils de départ prêts à l'emploi à l'ouverture de l'app (capital calculé par le moteur, appliqué en un clic) et CTA mobile permanent sur la landing.",
+  },
   {
     version: "v6.7.1",
     title: "Landing interactive",
@@ -396,11 +412,23 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   // Scénario actif de la démo interactive : le héro devient un vrai simulateur.
   const [heroScenario, setHeroScenario] = useState<ReturnScenario>("central")
+  // CRO v6.8 — CTA sticky mobile : apparu après un scroll de 480 px (rendu en
+  // bas de page). Le masquage ≥ sm est purement CSS (md:hidden) : jsdom n'a
+  // pas de matchMedia, la logique ici ne dépend que du scroll.
+  const [stickyCtaVisible, setStickyCtaVisible] = useState(false)
 
   // Le thème est une préférence d'appareil partagée avec l'app (même clé).
   useEffect(() => {
     persistThemeClass(darkMode)
   }, [darkMode])
+
+  // CTA sticky mobile : état recalculé à chaque scroll (et au montage).
+  useEffect(() => {
+    const onScroll = () => setStickyCtaVisible((window.scrollY ?? 0) > 480)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   // Chiffres des sections : TOUS calculés par le vrai moteur (le héro a son
   // propre HeroChart, lui aussi exécuté par runSimulation).
@@ -415,6 +443,15 @@ export function LandingPage() {
       optimiste: historical.avgReturn,
     }
   }, [base])
+
+  // Taux fiscaux 2026 dérivés du moteur (taxRules.ts) — la landing ne cite
+  // jamais un taux en dur : elle suit automatiquement les règles appliquées
+  // par l'app (v6.8 : « 17,2 % » et « PFU 30 % » cités avant étaient les taux
+  // 2025, contradictoires avec le moteur qui applique 18,6 % / 31,4 %).
+  const tax = useMemo(() => {
+    const rules = getTaxRules()
+    return { pfu: fmtTaxPercent(pfuRate(rules)), pea: fmtTaxPercent(rules.socialRate) }
+  }, [])
 
   // Séries complètes pour la démo interactive (la courbe change de forme).
   const heroRows = useMemo(
@@ -434,32 +471,33 @@ export function LandingPage() {
     [heroRows],
   )
 
-  const profiles = useMemo(() => {
-    const mk = (patch: Partial<SimulationInputs>) => {
-      const rows = runSimulation({ ...base, ...patch })
-      return rows[rows.length - 1]
+  // Les trois profils de la landing ET du bandeau « Commencez ici » de l'app
+  // partagent la même source (utils/quickStart.ts) : mêmes situations, mêmes
+  // chiffres, aucune dérive possible. Le capital final est calculé par le
+  // moteur (résultat d'abord, comme partout).
+  const profiles = useMemo(
+    () =>
+      QUICKSTART_PROFILES.map(p => {
+        const rows = runSimulation({ ...base, ...p.patch })
+        return { ...p, last: rows[rows.length - 1] }
+      }),
+    [base],
+  )
+
+  // Notes fiscales des profils : dérivées des règles 2026 du moteur
+  // (taxRules.ts) — plus de taux en dur qui se périment.
+  const noteForProfile = (envelope: EnvelopeType | undefined): string => {
+    switch (envelope) {
+      case "pea":
+        return `PEA : ${tax.pea} de cotisations sociales après 5 ans de détention, plafond 150 000 €.`
+      case "av":
+        return "AV : abattement annuel de 4 600 € (9 200 € en couple) après 8 ans de détention."
+      case "per":
+        return "PER : versements déduits à votre TMI à l'entrée, sortie imposée selon la nature des fonds."
+      default:
+        return `CTO : impôt unique de ${tax.pfu} sur les gains, ou barème progressif à votre TMI.`
     }
-    return [
-      {
-        name: "Premiers pas — à 25 ans",
-        meta: "10 k€ · 250 €/mois · 40 ans · PEA",
-        last: mk({ capitalInitial: 10_000, monthlyPayment: 250, duration: 40, envelope: "pea" }),
-        note: "PEA : 17,2 % après 5 ans de détention, plafond 150 000 €.",
-      },
-      {
-        name: "Carrière — à 35 ans",
-        meta: "30 k€ · 800 €/mois · 25 ans · CTO",
-        last: mk({ capitalInitial: 30_000, monthlyPayment: 800, duration: 25, envelope: "cto" }),
-        note: "CTO : PFU 30 % ou barème progressif à votre TMI.",
-      },
-      {
-        name: "Horizon retraite — à 55 ans",
-        meta: "100 k€ · 1 500 €/mois · 10 ans · AV",
-        last: mk({ capitalInitial: 100_000, monthlyPayment: 1_500, duration: 10, envelope: "av" }),
-        note: "AV : abattement annuel de 4 600 € après 8 ans.",
-      },
-    ]
-  }, [base])
+  }
 
   const launch = () => navigateTo("app")
 
@@ -510,7 +548,7 @@ export function LandingPage() {
               onClick={launch}
               className="btn-shine inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
             >
-              Lancer l'app <ArrowRight size={12} aria-hidden />
+              Calculer mon nombre magique <ArrowRight size={12} aria-hidden />
             </button>
           </div>
         </div>
@@ -540,9 +578,8 @@ export function LandingPage() {
               <span className="text-primary">100 ans de vraie histoire boursière</span>
             </h2>
             <p className="text-sm sm:text-[15px] text-text-muted mt-5 leading-relaxed max-w-xl">
-              Snowball Pro projette votre épargne avec les rendements réels du MSCI World — krachs et bulles compris —
-              applique la fiscalité française (CTO, PEA, AV, PER) et mesure la robustesse de votre plan sur 10 000
-              scénarios Monte Carlo. Le résultat d'abord, les réglages ensuite.
+              Découvrez combien votre épargne peut vraiment devenir, krachs inclus — en 30 secondes, sans inscription,
+              sur votre appareil.
             </p>
             <div className="flex items-center gap-3 mt-7 flex-wrap">
               <button
@@ -550,15 +587,14 @@ export function LandingPage() {
                 onClick={launch}
                 className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
               >
-                Lancer la simulation <ArrowRight size={15} aria-hidden />
+                Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
               </button>
-              <button
-                type="button"
-                onClick={() => navigateTo("register")}
+              <a
+                href="#methode"
                 className="inline-flex items-center gap-2 rounded-2xl glass px-6 py-3.5 text-sm font-bold text-text hover:bg-glass-hover transition-colors"
               >
-                Créer un compte
-              </button>
+                Voir la méthode <ArrowDown size={14} aria-hidden />
+              </a>
             </div>
             <ul className="flex items-center gap-4 mt-6 flex-wrap text-[10.5px] text-text-dim">
               {["Gratuit", "Sans inscription", "Vos données restent sur cet appareil"].map(item => (
@@ -567,6 +603,11 @@ export function LandingPage() {
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-[10.5px] text-text-muted leading-relaxed flex items-start gap-1.5 max-w-xl">
+              <ShieldCheck size={11} className="text-primary shrink-0 mt-0.5" aria-hidden />
+              Des chiffres réels, pas des promesses : chaque nombre de cette page est calculé en direct par le moteur,
+              sur les vrais rendements MSCI World 1970-2025 — krachs inclus, fiscalité française 2026.
+            </p>
           </motion.div>
 
           {/* Démo réelle interactive : basculez de scénario, le moteur recalcule. */}
@@ -775,12 +816,12 @@ export function LandingPage() {
             {
               badge: "Compte-titres",
               title: "CTO",
-              text: "PFU 30 % sur les gains, ou barème progressif à votre TMI — à vous de choisir le plus avantageux.",
+              text: `Impôt unique de ${tax.pfu} sur les gains, ou barème progressif à votre TMI — à vous de choisir le plus avantageux.`,
             },
             {
               badge: "PEA",
               title: "Plan d'épargne en actions",
-              text: "17,2 % après 5 ans de détention, plafond 150 000 € (300 000 € en couple). Le curseur de détention change vraiment les chiffres.",
+              text: `${tax.pea} de cotisations sociales après 5 ans de détention, plafond 150 000 € (300 000 € en couple). Le curseur de détention change vraiment les chiffres.`,
             },
             {
               badge: "Assurance-vie",
@@ -930,8 +971,8 @@ export function LandingPage() {
         </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {profiles.map((p, i) => (
-            <Reveal key={p.name} delay={i * 0.08}>
-              <ProfileCard name={p.name} meta={p.meta} last={p.last} note={p.note} />
+            <Reveal key={p.id} delay={i * 0.08}>
+              <ProfileCard name={p.name} meta={p.meta} last={p.last} note={noteForProfile(p.patch.envelope)} />
             </Reveal>
           ))}
         </div>
@@ -1075,7 +1116,7 @@ export function LandingPage() {
               onClick={launch}
               className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-8 py-4 mt-8 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
             >
-              Lancer la simulation <ArrowRight size={15} aria-hidden />
+              Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
             </button>
             <p className="text-[10.5px] text-text-dim mt-4 flex items-center justify-center gap-1.5">
               <Lock size={10} aria-hidden /> Aucune inscription requise — vos données ne quittent pas cet appareil.
@@ -1083,6 +1124,30 @@ export function LandingPage() {
           </Reveal>
         </div>
       </section>
+
+      {/* CTA sticky mobile (v6.8, CRO) — le CTA du header défile ; sur mobile
+          un bandeau en bas d'écran rappelle l'action après un scroll de 480 px.
+          Masqué ≥ sm (le header suffit), et hors de l'ordre de tabulation tant
+          qu'il est invisible (visibility:hidden + translate hors-écran). */}
+      <div
+        data-testid="cta-sticky-mobile"
+        className={cn(
+          "fixed bottom-0 inset-x-0 z-50 md:hidden transition-transform duration-300 ease-out",
+          // Fond dégradé : le bouton reste lisible même posé sur du contenu.
+          "bg-gradient-to-t from-surface via-surface/85 to-transparent pt-8",
+          stickyCtaVisible ? "translate-y-0" : "translate-y-full invisible",
+        )}
+      >
+        <div className="mx-auto max-w-lg px-4 pb-4">
+          <button
+            type="button"
+            onClick={launch}
+            className="btn-shine w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+          >
+            Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
+          </button>
+        </div>
+      </div>
 
       {/* ── Pied de page ────────────────────────────────────────────────── */}
       <footer className="border-t border-border/70">
@@ -1110,7 +1175,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.7.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.8.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

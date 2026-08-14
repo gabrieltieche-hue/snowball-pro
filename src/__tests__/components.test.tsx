@@ -35,6 +35,7 @@ import {
   solveGoal,
 } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
+import { QUICKSTART_PROFILES } from "../utils/quickStart"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
  * nécessitent des mesures de conteneur (ResizeObserver) absentes de jsdom.
@@ -392,14 +393,15 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     expect(screen.queryByText(/double déduction|serait déduite|trop pessimiste/i)).not.toBeInTheDocument()
   })
 
-  it("App : le toggle « Euros d'aujourd'hui » est COCHÉ par défaut (vraies valeurs)", () => {
+  it("App : le toggle « Euros d'aujourd'hui » est DÉCOCHÉ par défaut (valeur sur le compte en avant)", () => {
     render(<App />)
-    // Demande utilisateur : l'affichage par défaut montre les vraies valeurs
-    // nettes d'inflation — le montant sur le compte reste affiché partout.
-    // Le toggle vit dans « Paramètres avancés », replié par défaut (audit).
+    // Demande utilisateur : l'option « Euros d'aujourd'hui » n'est pas cochée
+    // par défaut — le chiffre principal est ce qui sera sur le compte. Le
+    // pouvoir d'achat reste affiché partout via la double échelle. Le toggle
+    // vit dans « Paramètres avancés », replié par défaut (audit).
     fireEvent.click(screen.getByRole("button", { name: /paramètres avancés/i }))
     const toggle = screen.getByRole("switch", { name: /euros d'aujourd'hui/i })
-    expect(toggle).toBeChecked()
+    expect(toggle).not.toBeChecked()
   })
 
   it("SliderInput : l'infobulle « ? » explique la règle du rendement BRUT", () => {
@@ -987,9 +989,10 @@ describe("v5.6.4 — FiscalPanel : titre proportionné à « Statistiques clés 
 describe("v6.1 — landing page", () => {
   it("rend le héro (CTA, démo réelle du moteur) et les sections", () => {
     render(<LandingPage />)
-    // CTA principal (héro + appel final → getAllByRole)
-    expect(screen.getAllByRole("button", { name: /lancer la simulation/i }).length).toBeGreaterThan(0)
-    expect(screen.getByRole("button", { name: /créer un compte/i })).toBeInTheDocument()
+    // CTA principal orienté bénéfice (header + héro + appel final → getAllByRole)
+    expect(screen.getAllByRole("button", { name: /calculer mon nombre magique/i }).length).toBeGreaterThan(0)
+    // CTA secondaire du héro : « Voir la méthode » (ancre vers la section Méthodologie)
+    expect(screen.getByRole("link", { name: /voir la méthode/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /se connecter/i })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: /100 ans de vraie histoire boursière/i })).toBeInTheDocument()
     // La démo du héro exécute le vrai moteur (aria-label du graphique SVG)
@@ -1201,5 +1204,94 @@ describe("régression — stderr propre pendant les tests (audit v5.4.0)", () =>
 
     expect(errorSpy).not.toHaveBeenCalled()
     expect(warnSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe("v6.8 — QuickStart « Commencez ici » (activation)", () => {
+  it("propose les 3 profils à un nouveau visiteur, capital calculé par le moteur", () => {
+    render(<App />)
+    expect(screen.getByRole("region", { name: /commencez ici/i })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: /utiliser ce profil/i }).length).toBe(3)
+
+    // Résultat d'abord : le capital affiché est celui calculé par runSimulation
+    // (jamais codé en dur) — on le recalcule dans le test.
+    const last = runSimulation({ ...DEFAULT_INPUTS, ...QUICKSTART_PROFILES[0].patch }).at(-1)
+    const expected = fmtCurrency(last?.nominal ?? 0).replace(/[\u202F\u00A0]/g, " ")
+    const body = (document.body.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    expect(body).toContain(expected)
+    // Double échelle (philosophie app) : le pouvoir d'achat est aussi affiché.
+    const real = fmtCurrency(last?.real ?? 0).replace(/[\u202F\u00A0]/g, " ")
+    expect(body).toContain("€ d'aujourd'hui")
+    expect(body).toContain(real)
+  })
+
+  it("applique le profil au clic : réglages mis à jour, bandeau fermé et persisté", () => {
+    render(<App />)
+    fireEvent.click(screen.getAllByRole("button", { name: /utiliser ce profil/i })[0])
+
+    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("10000")
+    expect(screen.getByRole("slider", { name: "Épargne mensuelle (€)" })).toHaveValue("250")
+    expect(screen.getByRole("slider", { name: "Durée (années)" })).toHaveValue("40")
+    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
+    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
+  })
+
+  it("se ferme au clic sur X et persiste la fermeture", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: "Fermer les profils de départ" }))
+    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
+    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
+  })
+
+  it("disparaît dès la première modification d'un réglage", () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole("slider", { name: "Capital de départ (€)" }), { target: { value: "15000" } })
+    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
+    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
+  })
+
+  it("ne réapparaît pas pour un visiteur qui a déjà des réglages sauvegardés", () => {
+    // Un visiteur connu (réglages persistés) n'a pas besoin du bandeau.
+    localStorage.setItem("snowball_v5_settings", JSON.stringify({ ...DEFAULT_INPUTS, capitalInitial: 42000 }))
+    render(<App />)
+    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
+    // …et ses réglages sont bien chargés.
+    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("42000")
+  })
+})
+
+describe("v6.8 — CRO landing : nav « Pour qui », CTA sticky mobile, taux 2026", () => {
+  it("la navigation propose désormais « Pour qui »", () => {
+    render(<LandingPage />)
+    // NAV est rendue deux fois (header + footer) : les deux doivent proposer
+    // l'ancre vers la section « Pour qui ».
+    expect(screen.getAllByRole("link", { name: "Pour qui" }).length).toBeGreaterThan(0)
+  })
+
+  it("le CTA sticky mobile est caché au chargement puis apparaît après scroll", () => {
+    render(<LandingPage />)
+    const bar = screen.getByTestId("cta-sticky-mobile")
+    // Invisible tant que la page n'a pas défilé (hors de l'ordre de tabulation)
+    expect(bar.className).toContain("translate-y-full")
+    expect(bar.className).toContain("invisible")
+
+    // jsdom ne simule pas le scroll : on fixe scrollY puis on dispatche.
+    Object.defineProperty(window, "scrollY", { value: 600, configurable: true, writable: true })
+    fireEvent.scroll(window)
+    expect(bar.className).toContain("translate-y-0")
+    expect(bar.className).not.toContain("invisible")
+    // Le CTA reste masqué sur desktop (md:hidden) : le header suffit à l'écran.
+    expect(bar.className).toContain("md:hidden")
+  })
+
+  it("les taux fiscaux cités sont ceux de 2026, dérivés du moteur (plus de 17,2 % / PFU 30 %)", () => {
+    const { container } = render(<LandingPage />)
+    const text = (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    // Règles 2026 appliquées par l'app : PFU 31,4 % (12,8 + 18,6), PEA 18,6 %.
+    expect(text).toContain("31,4 %")
+    expect(text).toContain("18,6 %")
+    // Les taux 2025 périmés ont disparu de la landing.
+    expect(text).not.toContain("PFU 30 %")
+    expect(text).not.toContain("17,2 % après 5 ans")
   })
 })

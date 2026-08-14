@@ -24,7 +24,12 @@
   --color-border-light: rgba(212, 175, 55, 0.18);
   --color-text: #f5f0e8;
   --color-text-muted: #a09888;
-  --color-text-dim: #a39a8c;
+  /* v6.8 — hiérarchie textuelle : dim (notes 9-11 px) doit être PLUS discret
+     que muted. Avant, les deux valeurs étaient quasi identiques (#a39a8c vs
+     #a09888) : la hiérarchie s'effondrait à un seul niveau. #8d8578 reste
+     AA 4,5:1 sur la surface sombre (~5,3:1). En mode clair l'ordre était déjà
+     correct (muted plus sombre que dim) — seul le sombre était inversé. */
+  --color-text-dim: #8d8578;
   --color-glass: rgba(245, 240, 232, 0.03);
   --color-glass-hover: rgba(245, 240, 232, 0.06);
   --color-ivory: #f4f1ea;

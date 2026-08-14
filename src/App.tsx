@@ -27,12 +27,14 @@ import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
 import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
+import { loadQuickStartVisible, saveQuickStartDismissed } from "./utils/quickStart"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
 import { AccountMenu } from "./components/Auth/AccountMenu"
 import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
+import { QuickStart } from "./components/Layout/QuickStart"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
@@ -122,6 +124,11 @@ function AppShell({ scope }: { scope: string | null }) {
       return next
     })
   }, [])
+  // Fermeture définitive du bandeau d'activation (clic X ou premier réglage).
+  const hideQuickStart = useCallback(() => {
+    setShowQuickStart(false)
+    saveQuickStartDismissed()
+  }, [])
   const [inputs, setInputs] = useState<SimulationInputs>(() => loadInitialInputs(scope))
   const [inputsB, setInputsB] = useState<SimulationInputs | null>(() => loadInitialInputsB(scope))
   const [comparing, setComparing] = useState(false)
@@ -140,14 +147,20 @@ function AppShell({ scope }: { scope: string | null }) {
   const [reportOpen, setReportOpen] = useState(false)
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
   const [linkCopied, setLinkCopied] = useState(false)
+  // Activation (v6.8) : bandeau « Commencez ici » proposé une seule fois aux
+  // nouveaux visiteurs (voir utils/quickStart.ts) — disparaît au premier
+  // réglage modifié ou au clic sur X, et ne revient jamais (clé persistée).
+  const [showQuickStart, setShowQuickStart] = useState<boolean>(() => loadQuickStartVisible(scope))
   const history = useHistory()
 
   const inputsRef = useRef(inputs)
   const inputsBRef = useRef(inputsB)
   const comparingRef = useRef(comparing)
+  const showQuickStartRef = useRef(showQuickStart)
   inputsRef.current = inputs
   inputsBRef.current = inputsB
   comparingRef.current = comparing
+  showQuickStartRef.current = showQuickStart
 
   const activeInputs = comparing && inputsB ? inputsB : inputs
   const rows = useMemo(() => runSimulation(activeInputs), [activeInputs])
@@ -182,15 +195,30 @@ function AppShell({ scope }: { scope: string | null }) {
   const updateInput = useCallback(
     <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => {
       applyPatch({ [key]: value } as Partial<SimulationInputs>)
+      // La première interaction avec un réglage montre que le bandeau a fait
+      // son travail : on le ferme définitivement (comme un clic sur X).
+      if (showQuickStartRef.current) hideQuickStart()
     },
-    [applyPatch],
+    [applyPatch, hideQuickStart],
   )
 
   const updateInputs = useCallback(
     (partial: Partial<SimulationInputs>) => {
       applyPatch(partial)
+      if (showQuickStartRef.current) hideQuickStart()
     },
-    [applyPatch],
+    [applyPatch, hideQuickStart],
+  )
+
+  // Applique un profil du bandeau « Commencez ici » : les réglages, la
+  // fiscalité et la courbe se mettent à jour d'un coup (annulable, l'historique
+  // enregistre le patch comme n'importe quelle modification).
+  const handleApplyProfile = useCallback(
+    (patch: Partial<SimulationInputs>) => {
+      updateInputs(patch)
+      hideQuickStart()
+    },
+    [updateInputs, hideQuickStart],
   )
 
   const handleUndo = useCallback(() => {
@@ -551,6 +579,14 @@ function AppShell({ scope }: { scope: string | null }) {
         </header>
 
         <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
+          {/* Activation v6.8 — « Commencez ici » : bandeau pleine largeur,
+              proposé une seule fois aux nouveaux visiteurs, fermé au clic X ou
+              au premier réglage modifié (voir utils/quickStart.ts). */}
+          {showQuickStart && (
+            <div className="mb-6">
+              <QuickStart onApply={handleApplyProfile} onDismiss={hideQuickStart} />
+            </div>
+          )}
           {/* La colonne réglages s'anime entre 380 px (déplié) et 72 px (rail
               d'icônes replié, style ChatGPT) — grid-template-columns est
               interpolable par le navigateur (Chrome/FF/Safari 16+). */}
