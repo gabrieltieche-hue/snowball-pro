@@ -16,7 +16,7 @@ Suite de v6.9.0 — **release cumulée** : le panneau « Votre capital en détai
 - **Axes & infobulles harmonisés** : `tickMargin` 8 et axes sans filets partout (Drawdown compris — grille verticale retirée) ; en-tête d'infobulle séparé par un filet (`border-b`) dans CustomTooltip, Equity, Comparison et Monte Carlo ; grille claire plus affirmée (0.06 → 0.08) ; `animate-scale-in` sur les cartes de graphique.
 - **Tests** : assertions `chartTheme` mises à jour (grille 0.08, or #996f09, gainsAlt, invested) — toujours **372/372**.
 - Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
-- Version 6.9.0 → **6.10.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.10.0`, footer landing v6.10.0, « Dernières éditions » v6.10.0 en tête), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.10.0).
+- Version 6.8.2 → **6.10.0** (release cumulée 6.9.0 + 6.10.0 ; package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.10.0`, footer landing v6.10.0, « Dernières éditions » v6.10.0 en tête), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.10.0).
 
 ---
 
@@ -33,7 +33,7 @@ Retour utilisateur : _« ça ne s'intègre pas très bien au reste du truc — c
 - **`PatrimonialReport.tsx`** : la ligne gains de la carte « Total épargné » passe en or (même doctrine que l'app).
 - **Tests** : 2 tests `DualAmount` (hideSecondaryLabel, prefix) + 1 test panneau `SummaryStats`.
 - Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
-- Version 6.8.2 → **6.9.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.9.0`, footer landing v6.9.0, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.9.0).
+- Version : **livrée dans v6.10.0** (release cumulée — le bump 6.9.0 n'a pas été publié seul ; package.json, lock, `sw.js` `CACHE_VERSION`, footer landing et « Dernières éditions » portent v6.10.0).
 
 ---
 
