@@ -134,9 +134,7 @@ export function getAccount(storage: AuthStorage, userId: string): UserAccount | 
 
 // ─── Cycle de vie ────────────────────────────────────────────────────────────
 
-export type AuthResult =
-  | { ok: true; account: UserAccount; session: AuthSession }
-  | { ok: false; error: string }
+export type AuthResult = { ok: true; account: UserAccount; session: AuthSession } | { ok: false; error: string }
 
 interface CredentialsInput {
   name?: string

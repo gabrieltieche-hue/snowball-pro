@@ -156,7 +156,14 @@ const SCENARIOS: {
   { envelope: "cto", yearsHeld: 1, couple: false, base: 0, gains: 10_000, opts: {} },
   { envelope: "cto", yearsHeld: 1, couple: false, base: 0, gains: 0, opts: {} },
   { envelope: "cto", yearsHeld: 1, couple: false, base: 0, gains: 12345.67, opts: { tmi: 0.41 } },
-  { envelope: "cto", yearsHeld: 10, couple: true, base: 100_000, gains: 250_000.5, opts: { ctoTaxMode: "bareme", tmi: 0.3 } },
+  {
+    envelope: "cto",
+    yearsHeld: 10,
+    couple: true,
+    base: 100_000,
+    gains: 250_000.5,
+    opts: { ctoTaxMode: "bareme", tmi: 0.3 },
+  },
   { envelope: "cto", yearsHeld: 8, couple: true, base: 0, gains: 87_654.32, opts: { ctoTaxMode: "bareme", tmi: 0.11 } },
   // PEA — avant/après 5 ans, couple
   { envelope: "pea", yearsHeld: 2, couple: false, base: 10_000, gains: 25_000, opts: {} },
@@ -218,16 +225,11 @@ describe("P0-1 — équivalence ancien moteur (v5.7.2) ↔ nouveau à taxYear 20
       const rows = runSimulation(inputs)
       const last = rows[rows.length - 1]
       // Recalcul « à l'ancienne » des mêmes arguments que la simulation
-      const yearsHeld =
-        envelope === "pea" ? inputs.peaYearsHeld : envelope === "av" ? inputs.avYearsHeld + 15 : 15
-      const legacyTax = legacyTaxBreakdown(
-        last.interestsNom,
-        envelope,
-        yearsHeld,
-        inputs.taxCouple,
-        last.investedNom,
-        { tmi: inputs.tmi, ctoTaxMode: inputs.ctoTaxMode },
-      )
+      const yearsHeld = envelope === "pea" ? inputs.peaYearsHeld : envelope === "av" ? inputs.avYearsHeld + 15 : 15
+      const legacyTax = legacyTaxBreakdown(last.interestsNom, envelope, yearsHeld, inputs.taxCouple, last.investedNom, {
+        tmi: inputs.tmi,
+        ctoTaxMode: inputs.ctoTaxMode,
+      })
       expect(last.taxNet).toBeCloseTo(roundCent(Math.max(0, last.nominal - legacyTax.totalTax)), 1)
       // Nominal inchangé (pré-taxe) : les maths hors fiscalité n'ont pas bougé
       expect(last.tax).toBeCloseTo(legacyTax.totalTax, 1)
