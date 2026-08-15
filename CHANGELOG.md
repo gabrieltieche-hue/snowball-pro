@@ -4,6 +4,20 @@
 
 ---
 
+## v6.11.1 — Favicon : une vraie icône .ico pour Google
+
+L'app n'avait qu'une icône PNG haute résolution : Google exige un `favicon.ico` (16/32/48 px) pour afficher une icône dans les résultats de recherche. Ajout de `public/favicon.ico` (3 tailles embarquées) et de son lien dans `index.html` (PNG 192 px conservé pour les écrans haute densité). **373 tests**, gate 100 % vert, déployé.
+
+### 🔄 Changements
+
+- **`public/favicon.ico`** (nouveau) : icône 16/32/48 px (PNG RGBA embarqués), requise par Google pour l'icône dans les résultats de recherche.
+- **`index.html`** : `<link rel="icon" href="/favicon.ico" sizes="32x32" />` ajouté en tête ; le PNG 192 px est conservé avec `sizes="192x192"`.
+- **`LandingPage.tsx`** : « Dernières éditions » v6.11.1 en tête + footer v6.11.1.
+- Gate : typecheck ✓ lint ✓ **373/373 tests** ✓ build ✓.
+- Version 6.11.0 → **6.11.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.11.1`, footer landing, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.11.1).
+
+---
+
 ## v6.11.0 — Inflation : l'hypothèse 2,1 % (cible BCE) explicitée, médiane 2,1 %
 
 Retour utilisateur sur la véracité des trois taux (10,07 → 8,22 → 5,99) : audit complet — math interne vérifiée au centième (moyenne arithmétique 10,0655 %, composé 8,2196 %, réel Fisher 5,9938 %), série MSCI World Net EUR 1970-2025 recoupée année par année contre les rendements officiels USD convertis au change EUR/USD. Constat : le 5,99 % utilisait une hypothèse d'inflation forfaitaire 2,1 %, inférieure à la moyenne réelle 1970-2025 (4,05 %, INSEE). Analyse médiane : **la médiane de la période est exactement 2,10 %** — 2,1 % est donc l'hypothèse la plus naturelle (et prudente vs 1,87 % de moyenne depuis 1986) : **on la garde**, et on l'explique dans l'UI. **373 tests**, gate 100 % vert, vérifié en navigateur réel.

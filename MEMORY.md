@@ -4,6 +4,25 @@
 
 ---
 
+## SESSION — 2026-08-15 (v6.11.1 : favicon — une icône .ico pour Google)
+
+### Résumé
+
+Un autre thread avait ajouté `public/favicon.ico` + le lien dans `index.html` (commentaire : « requis par Google pour l'icône dans les résultats de recherche ») pendant la session v6.11.0 ; le déploiement Vercel (build depuis l'arbre de travail) l'avait déjà emporté en prod, mais le repo restait désynchronisé. À la demande _« commit ca stp et met a jour »_ : commit du favicon + documentation v6.11.1 (bump patch : package.json, lock, sw.js CACHE_VERSION, footer + « Dernières éditions » landing, CHANGELOG, MEMORY), gate 100 % vert, commit + redéploiement Vercel — repo et prod resynchronisés en v6.11.1.
+
+### Décisions
+
+- **Version 6.11.1** (patch) : l'icône est un correctif d'affichage/SEO, pas une feature — entrée CHANGELOG dédiée quand même (convention).
+- **`index.html`** : favicon.ico (16/32/48) en tête + PNG 192 conservé pour les écrans haute densité.
+- **`public/favicon.ico`** : 3 tailles embarquées (16/32/48 px, PNG RGBA), 4 627 o.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **373/373 tests** ✓ build ✓.
+- Prod : https://snowball-pro.vercel.app — footer v6.11.1, favicon.ico HTTP 200.
+
+---
+
 ## SESSION — 2026-08-15 (v6.11.0 : inflation — l'hypothèse 2,1 % explicitée, médiane 2,1 %)
 
 ### Résumé

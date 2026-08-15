@@ -383,6 +383,11 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.11.1",
+    title: "Icône Google",
+    text: "Une vraie favicon .ico (16/32/48 px) : l'application affiche son icône dans les résultats de recherche Google, les favoris et les onglets.",
+  },
+  {
     version: "v6.11.0",
     title: "L'inflation, sans détour",
     text: "L'hypothèse d'inflation 2,1 %/an (cible BCE) est explicitée face à la moyenne réelle 1970-2025 (4,0 %) — et la médiane de la période tombe justement sur 2,1 %. Nouvelle entrée FAQ : pourquoi 2,1 % et pas la moyenne ?",
@@ -1201,7 +1206,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.11.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.11.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>
