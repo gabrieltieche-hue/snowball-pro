@@ -4,6 +4,39 @@
 
 ---
 
+## v6.10.0 — Graphiques : la valeur finale lisible sans hover, palette unifiée, légendes en chips
+
+Suite de v6.9.0 — **release cumulée** : le panneau « Votre capital en détail » et ce lot partent ensemble (v6.9.0 n'ayant pas encore été livré). La courbe « Projection de votre capital » ne livrait sa conclusion qu'au survol : la valeur finale de chaque série (épargné, gains, impôts) s'affiche désormais **en bout de tracé**, sans hover, avec un point or sur « Gains ». Au passage, unification du vocabulaire visuel des graphiques : une seule palette partagée avec le camembert, légendes en chips, axes et infobulles harmonisés sur tous les onglets. **372 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`EquityChart.tsx`** : **labels de fin de courbe** (`label` custom sur chaque Area/Line) — la valeur finale de chaque série est lisible sans hover ; point or sur « Gains » avec la variante texte profonde `gainsAlt` (#7a5807, WCAG AA 4.5:1 sur ivoire) ; marge droite élargie (`right: 64`) pour loger les labels hors du tracé sans rogner ; dégradés légèrement allégés.
+- **Palette unifiée** (`chartTheme` + `CapitalAllocation.tsx`) : le camembert abandonne sa `PALETTE` locale pour les couleurs des courbes — mêmes concepts (épargné/gains), mêmes couleurs. Or de marque `gains` (#996f09 clair / #E3B341 sombre), `gainsAlt` (#7a5807 / #B8960F) ajouté pour le texte et l'échelle « euros d'aujourd'hui », gris acier `invested` standardisé (#5f6b7a / #9aa3af).
+- **`LegendChip.tsx`** (nouveau composant partagé) : les légendes de graphique adoptent le vocabulaire badge de l'app (chip `bg-glass rounded-full`), swatch point plein (aires) ou trait pointillé (ligne impôts). Appliqué à EquityChart + ComparisonChart.
+- **Axes & infobulles harmonisés** : `tickMargin` 8 et axes sans filets partout (Drawdown compris — grille verticale retirée) ; en-tête d'infobulle séparé par un filet (`border-b`) dans CustomTooltip, Equity, Comparison et Monte Carlo ; grille claire plus affirmée (0.06 → 0.08) ; `animate-scale-in` sur les cartes de graphique.
+- **Tests** : assertions `chartTheme` mises à jour (grille 0.08, or #996f09, gainsAlt, invested) — toujours **372/372**.
+- Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
+- Version 6.9.0 → **6.10.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.10.0`, footer landing v6.10.0, « Dernières éditions » v6.10.0 en tête), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.10.0).
+
+---
+
+## v6.9.0 — Synthèse : un panneau « Votre capital en détail » à la place des 4 cartes flottantes
+
+Retour utilisateur : _« ça ne s'intègre pas très bien au reste du truc — c'est entre le patrimoine estimé et le graphique »_ (bundles /process + /ui-ux, diagnostic impeccable + APEX -axv). Les 4 cartes de `SummaryStats` étaient le **seul bloc de l'onglet sans titre ni conteneur** — posé entre deux grandes cartes glass titrées (héro et graphique), il se lisait comme un corps étranger. **372 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).
+
+### 🔄 Changements
+
+- **`SummaryStats.tsx`** : le bloc devient **un panneau glass titré** (`SectionHeader` h2, icône PieChart) **« Votre capital en détail »** — l'anatomie de toutes les sections de l'onglet. Les 4 mesures (Valeur brute, Net fiscal, Impôt théorique, Total épargné) en **colonnes séparées par des filets verticaux** (`lg:divide-x`), fini les 4 boîtes flottantes : le rythme devient héro → panneau de détail → graphique.
+- **Gains de la bourse** : la ligne grise en légende de la carte « Total épargné » devient une **vraie statistique en or** (`--color-value-gold`), avec « + » et **les deux échelles** (nominal + réel — plus d'ambiguïté silencieuse au toggle).
+- **Répétition d'échelle supprimée** : « en euros d'aujourd'hui » ×4 → **légende partagée** dans l'en-tête du panneau (pastilles « sur le compte en 2045 » / « en euros d'aujourd'hui », échelle active mise en avant). `DualAmount` gagne `hideSecondaryLabel` + `prefix` (aria-label toujours complet).
+- **`HeroResult.tsx`** : légende de la barre « Croissance » → « **Gains de la bourse** » avec « + » — un seul vocabulaire pour le même chiffre (héro, panneau, rapport).
+- **`PatrimonialReport.tsx`** : la ligne gains de la carte « Total épargné » passe en or (même doctrine que l'app).
+- **Tests** : 2 tests `DualAmount` (hideSecondaryLabel, prefix) + 1 test panneau `SummaryStats`.
+- Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
+- Version 6.8.2 → **6.9.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.9.0`, footer landing v6.9.0, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.9.0).
+
+---
+
 ## v6.8.2 — Landing : un seul rythme vertical (le « trou » en moins, partout)
 
 Suite directe du retour _« supprime un peu ce trou au-dessus »_ : après la suppression de la bande vide sous l'en-tête (héro `pt-20` → `pt-14`, colonnes alignées en haut au lieu du centrage vertical qui poussait la colonne la plus courte vers le bas), uniformisation de **toute** la landing sur une seule échelle verticale. **369 tests**, gate 100 % vert, vérifié en navigateur réel (mesures DOM Playwright, desktop + mobile).

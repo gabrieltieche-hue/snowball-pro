@@ -90,12 +90,14 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
               minTickGap={28}
               axisLine={false}
               tickLine={false}
+              tickMargin={8}
             />
             <YAxis
               tick={{ fill: theme.tick, fontSize: 11 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}
+              tickMargin={8}
             />
             <Tooltip
               trigger={coarse ? "click" : "hover"}
@@ -103,7 +105,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
                 if (!active || !payload?.length) return null
                 return (
                   <div className="glass-strong rounded-xl p-3 shadow-premium min-w-[200px]">
-                    <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">
+                    <div className="text-[10px] text-text-dim uppercase tracking-wider border-b border-border/70 pb-1.5 mb-1.5">
                       {label === "Aujourd'hui" ? "Aujourd'hui" : `${label} ans`}
                     </div>
                     {payload

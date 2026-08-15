@@ -848,7 +848,9 @@ describe("sanitizeInputs", () => {
 describe("chartTheme", () => {
   it("returns light colors when darkMode is false", () => {
     const theme = chartTheme(false)
-    expect(theme.grid).toBe("rgba(0,0,0,0.06)")
+    // Grille légèrement plus affirmée en clair (v6.10) : 0.06 était
+    // quasi invisible sur ivoire.
+    expect(theme.grid).toBe("rgba(0,0,0,0.08)")
     expect(theme.tick).toBe("#6B7280")
   })
 
@@ -860,11 +862,16 @@ describe("chartTheme", () => {
   })
 
   it("returns theme-safe series colors", () => {
+    // v6.10 — palette unifiée avec CapitalAllocation : or de marque pour
+    // les gains, gris acier pour l'épargné, dans les deux thèmes.
     const light = chartTheme(false)
-    expect(light.gains).toBe("#8A6A00")
+    expect(light.gains).toBe("#996f09")
+    expect(light.gainsAlt).toBe("#7a5807")
+    expect(light.invested).toBe("#5f6b7a")
     expect(light.tax).toBe("#B04545")
     const dark = chartTheme(true)
-    expect(dark.gains).toBe("#E6C35C")
+    expect(dark.gains).toBe("#E3B341")
+    expect(dark.invested).toBe("#9aa3af")
     expect(dark.tax).toBe("#E08A8A")
   })
 })

@@ -1,7 +1,8 @@
-import { Landmark, PiggyBank, Receipt, TrendingUp } from "lucide-react"
+import { Landmark, PieChart, PiggyBank, Receipt, TrendingUp } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { deflationFactor, ENVELOPE_CONFIGS } from "../../engine"
 import { DualAmount } from "../shared/DualAmount"
+import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface SummaryStatsProps {
@@ -9,19 +10,35 @@ interface SummaryStatsProps {
   inputs: SimulationInputs
 }
 
-const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`
-
-interface StatCard {
+interface StatColumn {
   label: string
   /** Montant en euros courants (ce qui sera sur le compte). */
   nominal: number
   /** Équivalent en euros d'aujourd'hui (pouvoir d'achat). */
   real: number
   color: string
+  /** Légende descriptive sous le montant (ex. « avant impôts »). */
   sub?: string
   icon: LucideIcon
+  /** Décomposition propre à la colonne (ex. gains de la bourse dans
+   *  « Total épargné ») — les DEUX échelles, comme le reste du panneau. */
+  gains?: { nominal: number; real: number }
 }
 
+/**
+ * Panneau « Votre capital en détail » — la synthèse brut → net → impôts →
+ * épargné (+ gains de la bourse).
+ *
+ * Avant v6.9.0 : 4 cartes flottantes, le SEUL bloc de l'onglet sans titre ni
+ * conteneur — posé entre le héro et le graphique, il se lisait comme un corps
+ * étranger (revue utilisateur : « ça ne s'intègre pas très bien au reste »).
+ * Il reprend désormais l'anatomie de la page (glass + SectionHeader) et
+ * expose les 4 mesures en colonnes séparées par des filets, avec une légende
+ * d'échelle PARTAGÉE dans l'en-tête (fini « en euros d'aujourd'hui » ×4).
+ *
+ * Composant 100 % présentation : tout vient de `rows` (déjà calculé par le
+ * moteur), aucune logique de calcul ici.
+ */
 export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
@@ -29,7 +46,7 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const { showReal, envelope } = inputs
   const endYear = lastRow.date.split(" ")[1]?.replace(".", "")
 
-  // MÊME facteur de déflation pour toutes les cartes (helper partagé avec le
+  // MÊME facteur de déflation pour toutes les colonnes (helper partagé avec le
   // panneau fiscal et les graphiques — une seule source de vérité). Avant
   // l'audit v5.1.4, « Valeur brute » suivait showReal mais « Net fiscal »
   // restait en euros courants → net affiché PLUS ÉLEVÉ que le brut
@@ -37,12 +54,19 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const factor = deflationFactor(lastRow)
   const netAfterTax = lastRow.taxNet
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
+  // Gains de la bourse sur les DEUX échelles : la décomposition épargné +
+  // croissance est la raison d'être de l'app — les deux montants sont affichés
+  // (plus d'ambiguïté silencieuse au toggle, cf. DualAmount).
+  const gainsNominal = Math.max(0, lastRow.nominal - lastRow.investedNom)
+  const gainsReal = Math.max(0, lastRow.real - lastRow.investedReal)
 
-  // Chaque carte expose le montant sur les DEUX échelles : l'échelle mise en
+  const accountLabel = `sur le compte${endYear ? ` en ${endYear}` : ""}`
+
+  // Chaque colonne expose le montant sur les DEUX échelles : l'échelle mise en
   // avant (grand chiffre) suit le toggle « Euros d'aujourd'hui », l'autre
-  // reste toujours visible en dessous (DualAmount). L'utilisateur voit ainsi
-  // à la fois « ce qui sera sur le compte » ET « ce que ça vaut aujourd'hui ».
-  const cards: StatCard[] = [
+  // reste toujours visible en dessous. Les libellés d'échelle vivent dans la
+  // légende partagée de l'en-tête (DualAmount avec hideSecondaryLabel).
+  const columns: StatColumn[] = [
     {
       // Libellé adapté à l'échelle mise en avant (audit v5.1.4 : jamais de
       // montant net d'inflation sous un libellé « brut »). Les DEUX échelles
@@ -75,53 +99,97 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
       nominal: lastRow.investedNom,
       real: lastRow.investedReal,
       color: "var(--color-text-muted)",
-      sub: `Gains de la bourse : +${fmt(Math.max(0, (showReal ? lastRow.real : lastRow.nominal) - (showReal ? lastRow.investedReal : lastRow.investedNom)))}`,
       icon: PiggyBank,
+      gains: { nominal: gainsNominal, real: gainsReal },
     },
   ]
 
+  // Légende d'échelle PARTAGÉE (v6.9.0) : les grands chiffres suivent le
+  // toggle, la seconde échelle est en dessous. L'échelle active est mise en
+  // avant ; l'aria-label garde l'explicitation pour les lecteurs d'écran.
+  const scaleLegend = (
+    <div
+      className="flex items-center gap-3 text-[10px] text-text-dim flex-wrap"
+      aria-label={`Grands chiffres : ${showReal ? "en euros d'aujourd'hui" : accountLabel} — petits chiffres : ${showReal ? accountLabel : "en euros d'aujourd'hui"}`}
+    >
+      <span className={`flex items-center gap-1.5 ${!showReal ? "text-text font-semibold" : "opacity-70"}`}>
+        <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
+        {accountLabel}
+      </span>
+      <span className={`flex items-center gap-1.5 ${showReal ? "text-text font-semibold" : "opacity-70"}`}>
+        <span className="w-2 h-2 rounded-full bg-warning shrink-0" aria-hidden />
+        en euros d'aujourd'hui
+      </span>
+    </div>
+  )
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map(card => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.label}
-            className="card-subtle rounded-2xl p-4 card-interactive min-w-0 relative overflow-hidden"
-          >
-            {/* Liseré d'accent en haut de carte : signale la teinte de la
-                valeur (texte neutre / or / rouge) sans alourdir. */}
-            <span
-              aria-hidden
-              className="absolute inset-x-0 top-0 h-[2px] opacity-70"
-              style={{ background: card.color }}
-            />
-            <div className="flex items-center gap-1.5 mb-2 min-w-0">
-              <span
-                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: `color-mix(in srgb, ${card.color} 14%, transparent)`, color: card.color }}
-              >
-                <Icon size={12} aria-hidden />
-              </span>
-              <div className="text-[10px] text-text-dim uppercase tracking-wider truncate" title={card.label}>
-                {card.label}
+    <div className="glass rounded-3xl p-5 sm:p-6">
+      <SectionHeader
+        as="h2"
+        level="card"
+        icon={PieChart}
+        title="Votre capital en détail"
+        trailing={scaleLegend}
+      />
+      {/* Colonnes séparées par des filets verticaux (≥ lg, une seule ligne) ;
+          en 2×2 sur mobile, les filets disparaissent au profit de l'espace. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 lg:gap-x-0 lg:divide-x lg:divide-[color:var(--color-border)]">
+        {columns.map(col => {
+          const Icon = col.icon
+          return (
+            <div key={col.label} className="min-w-0 lg:px-4 lg:first:pl-0">
+              <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                <span
+                  className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `color-mix(in srgb, ${col.color} 14%, transparent)`, color: col.color }}
+                >
+                  <Icon size={12} aria-hidden />
+                </span>
+                <div className="text-[10px] text-text-dim uppercase tracking-wider truncate" title={col.label}>
+                  {col.label}
+                </div>
               </div>
+              <DualAmount
+                nominal={col.nominal}
+                real={col.real}
+                showReal={showReal}
+                color={col.color}
+                endYear={endYear}
+                hideSecondaryLabel
+              />
+              {col.sub && (
+                <div className="text-[10px] text-text-dim mt-1 truncate" title={col.sub}>
+                  {col.sub}
+                </div>
+              )}
+              {col.gains && (
+                <div className="mt-3 pt-2.5 border-t" style={{ borderColor: "var(--color-border)" }}>
+                  {/* Sans tracking-wider : sur mobile (2 colonnes), le libellé
+                      dépasse de 2 px et se tronquait — la statistique vedette
+                      mérite son nom complet (vérifié à 320 px). */}
+                  <div className="text-[10px] text-text-dim uppercase truncate" title="Gains de la bourse">
+                    Gains de la bourse
+                  </div>
+                  {/* Gains en or (même teinte que la carte « Net fiscal ») :
+                      la statistique la plus motivante du panneau n'est plus une
+                      légende grise — c'est un chiffre, sur les deux échelles. */}
+                  <DualAmount
+                    nominal={col.gains.nominal}
+                    real={col.gains.real}
+                    showReal={showReal}
+                    color="var(--color-value-gold)"
+                    endYear={endYear}
+                    hideSecondaryLabel
+                    prefix="+"
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
-            <DualAmount
-              nominal={card.nominal}
-              real={card.real}
-              showReal={showReal}
-              color={card.color}
-              endYear={endYear}
-            />
-            {card.sub && (
-              <div className="text-[10px] text-text-dim mt-1 truncate" title={card.sub}>
-                {card.sub}
-              </div>
-            )}
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

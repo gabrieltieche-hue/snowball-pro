@@ -122,9 +122,12 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
                 Épargné : <span className="mono font-semibold text-text">{fmtCurrency(invested)}</span>
               </span>
               {growth > 0 && (
+                /* Vocabulaire unifié (v6.9.0) : « Gains de la bourse » comme le
+                   panneau « Votre capital en détail » et le rapport PDF — avant,
+                   trois noms pour le même chiffre dans le même viewport. */
                 <span className="text-[10px] text-primary flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary shrink-0" aria-hidden />
-                  Croissance : <span className="mono font-semibold">{fmtCurrency(growth)}</span>
+                  Gains de la bourse : <span className="mono font-semibold">+{fmtCurrency(growth)}</span>
                 </span>
               )}
             </div>

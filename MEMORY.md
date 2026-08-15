@@ -4,6 +4,59 @@
 
 ---
 
+## SESSION — 2026-08-15 (v6.10.0 : graphiques — valeur finale sans hover, palette unifiée, légendes en chips)
+
+### Résumé
+
+**Release cumulée** : le lot v6.9.0 (panneau « Votre capital en détail ») était resté non commité (convention utilisateur : commit + `vercel --prod` sur demande explicite) ; un second lot « graphiques » (v6.10, commenté « v6.10 » dans le code) s'est greffé dessus — labels de fin de courbe, palette unifiée, LegendChip, polish axes/infobulles. À la demande _« ok commit, publie sur vercel et met tout à jour »_ (bundles /process + /apex -axv) : documentation finalisée en **v6.10.0** (entrée CHANGELOG dédiée, entrée v6.9.0 conservée), gate 100 % vert, commit + déploiement Vercel. Au passage : **réparation node_modules** — `lucide-react` 1.25.0 avait un `.d.ts` manquant (install corrompue, 45 erreurs TS), résolu par `rm -rf node_modules/lucide-react && npm install`.
+
+### Décisions
+
+- **Version 6.10.0** (et non 6.9.0) : le lot graphiques est séparé et commenté « v6.10 » dans le code ; l'entrée CHANGELOG v6.9.0 décrit déjà le lot précédent (livré dans la même release).
+- **`EquityChart.tsx`** : labels de fin de courbe via `label={{ content: endLabel(...) }}` sur chaque Area/Line — valeur finale lisible sans hover ; point or sur « Gains » ; texte en `gainsAlt` (#7a5807 clair, AA 4.5:1 sur ivoire) ; marge droite 64 pour loger les labels hors du tracé.
+- **Palette unifiée** : `CapitalAllocation` utilise désormais `chartTheme(darkMode)` (PALETTE locale supprimée) ; `chartTheme` gagne `gainsAlt` et standardise `gains`/`invested` (#996f09/#E3B341, #5f6b7a/#9aa3af).
+- **`LegendChip.tsx`** (nouveau) : chip de légende partagée — swatch point plein (aires) ou trait pointillé (ligne impôts) — appliqué à EquityChart + ComparisonChart.
+- **Polish** : tickMargin 8 + axes sans filets (Drawdown : grille verticale retirée), en-tête d'infobulle fileté (`border-b` : CustomTooltip + Equity + Comparison + Monte Carlo), grille claire 0.06 → 0.08, `animate-scale-in` sur les cartes de graphique.
+- Zéro changement moteur. Tests `chartTheme` mis à jour, aucun cas ajouté (372/372).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
+- Version 6.9.0 → **6.10.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.10.0`, footer landing v6.10.0, « Dernières éditions » v6.10.0 en tête), CHANGELOG (entrée v6.10.0), MEMORY.md (cette entrée).
+
+### Notes
+
+- Le `.d.ts` manquant de lucide-react était un problème local (node_modules) : les sources n'ont jamais été en cause, typecheck de HEAD identique.
+
+---
+
+## SESSION — 2026-08-14 (v6.9.0 : synthèse — panneau « Votre capital en détail »)
+
+### Résumé
+
+Retour utilisateur : _« ça ne s'intègre pas très bien au reste du truc — c'est entre le patrimoine estimé et le graphique »_ — d'abord lu comme la seule ligne « Gains de la bourse », corrigé par l'utilisateur : c'est **le bloc des 4 cartes** (SummaryStats). Diagnostic (bundles /process + /ui-ux, critique impeccable) : ① **anatomie orpheline** — seul bloc de l'onglet sans titre ni conteneur, entre deux cartes glass titrées ; ② rupture d'échelle (48 px → 16 px) sans accroche ; ③ redondance avec le héro (carte 1 = même chiffre, gains = « Croissance » du héro) ; ④ « en euros d'aujourd'hui » ×4 ; ⑤ carte 4 boiteuse (gains en légende grise, seule exception double échelle) ; ⑥ trois noms pour le même chiffre (Croissance / Gains de la bourse / Gains (bourse)). Choix utilisateur : **Option A** (panneau titré 4 colonnes), titre **« Votre capital en détail »**, échelle = laissé à mon jugement → **légende partagée** + libellés courts. **372 tests**, gate 100 % vert, vérifié en navigateur réel.
+
+### Décisions
+
+- **`SummaryStats.tsx`** : 4 cartes flottantes → **panneau `glass rounded-3xl` + `SectionHeader` h2 « Votre capital en détail »** (icône PieChart) ; grille `grid-cols-2 lg:grid-cols-4` avec **filets verticaux** `lg:divide-x lg:divide-[color:var(--color-border)]` (2×2 mobile sans filets, gap-y-5) ; colonne 4 « Total épargné » : gains en **or** (`--color-value-gold`), « + », **deux échelles** ; captions conservées (avant/après impôts, à la liquidation).
+- **`DualAmount.tsx`** : + `hideSecondaryLabel` (valeur seule, libellé porté par la légende du panneau ; aria-label toujours complet) + `prefix` (« + ») — rétro-compatible (FiscalPanel, MonteCarloPanel inchangés).
+- **Légende d'échelle partagée** dans le `trailing` du SectionHeader : pastilles « sur le compte en 2045 » / « en euros d'aujourd'hui » (dots `bg-text-muted` / `bg-warning`), échelle active en `text-text font-semibold`, l'autre `opacity-70`.
+- **`HeroResult.tsx`** : « Croissance : 504 648 € » → « Gains de la bourse : +504 648 € » (vocabulaire unifié héro/panneau/rapport).
+- **`PatrimonialReport.tsx`** : sub « Gains de la bourse » en or (flag `subStrong`), grille de cartes imprimables conservée pour l'A4.
+- Légende du graphique (« Gains (bourse) ») **conservée telle quelle** : surface séparée, légende compacte de chart.
+- Zéro changement moteur. 3 tests ajoutés (2 DualAmount + 1 SummaryStats).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **372/372 tests** ✓ build ✓ (dist 1 117 ko / 322 ko gzip).
+- Version 6.8.2 → **6.9.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.9.0`, footer landing v6.9.0, « Dernières éditions »), CHANGELOG (entrée v6.9.0), MEMORY.md (cette entrée).
+
+### Notes
+
+- Non commité / non déployé : à la demande de l'utilisateur (convention : commit + `vercel --prod` sur demande explicite).
+
+---
+
 ## SESSION — 2026-08-14 (v6.8.2 : landing — un seul rythme vertical)
 
 ### Résumé

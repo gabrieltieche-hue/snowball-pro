@@ -31,7 +31,7 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
   const maxDrawdown = data.reduce((m, p) => Math.max(m, Math.abs(p.drawdown)), 0)
 
   return (
-    <div className="glass rounded-3xl p-6">
+    <div className="glass rounded-3xl p-6 animate-scale-in">
       <SectionHeader
         as="h2"
         level="card"
@@ -61,12 +61,23 @@ export function DrawdownChart({ rows, darkMode }: DrawdownChartProps) {
                   <stop offset="95%" stopColor={ddColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} />
-              <XAxis dataKey="year" tick={{ fill: theme.tick, fontSize: 11 }} interval="preserveEnd" minTickGap={28} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+              <XAxis
+                dataKey="year"
+                tick={{ fill: theme.tick, fontSize: 11 }}
+                interval="preserveEnd"
+                minTickGap={28}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
+              />
               <YAxis
                 tick={{ fill: theme.tick, fontSize: 11 }}
                 tickFormatter={(v: number) => `${v.toFixed(0)}%`}
                 domain={["auto", 0]}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
               />
               <Tooltip trigger={coarse ? "click" : "hover"} content={<CustomTooltip isCurrency={false} />} />
               <Area

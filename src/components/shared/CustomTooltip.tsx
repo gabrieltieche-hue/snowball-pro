@@ -23,7 +23,7 @@ export function CustomTooltip({ active, payload, label, isCurrency = true }: Cus
       animate={{ opacity: 1, scale: 1 }}
       className="glass-strong rounded-xl p-4 shadow-premium min-w-[200px]"
     >
-      <p className="text-[11px] text-text-dim mb-2 font-medium">{label}</p>
+      <p className="text-[11px] text-text-dim mb-2 pb-1.5 border-b border-border/70 font-medium">{label}</p>
       {payload.map((entry, i) => (
         <div key={i} className="flex items-center justify-between gap-4 py-0.5">
           <span className="text-xs flex items-center gap-2">

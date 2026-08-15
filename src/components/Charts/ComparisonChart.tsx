@@ -5,6 +5,7 @@ import { fmtCompact, fmtCurrency, mergeComparisonSeries } from "../../engine"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
+import { LegendChip } from "../shared/LegendChip"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -27,20 +28,16 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
   const colorB = theme.gains
 
   return (
-    <div className="glass rounded-3xl p-5 sm:p-6">
+    <div className="glass rounded-3xl p-5 sm:p-6 animate-scale-in">
       <SectionHeader
         as="h2"
         level="card"
         icon={BarChart3}
         title="Projection comparée A vs B"
         trailing={
-          <div className="flex items-center gap-3 text-[10px] text-text-dim flex-wrap">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: colorA }} /> Scénario A
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: colorB }} /> Scénario B
-            </span>
+          <div className="flex items-center gap-1.5 text-[10px] text-text-dim flex-wrap">
+            <LegendChip color={colorA} label="Scénario A" />
+            <LegendChip color={colorB} label="Scénario B" />
             {inputs.showReal && (
               <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Euros d'aujourd'hui
@@ -61,12 +58,14 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
               minTickGap={28}
               axisLine={false}
               tickLine={false}
+              tickMargin={8}
             />
             <YAxis
               tick={{ fill: theme.tick, fontSize: 11 }}
               tickFormatter={(v: number) => fmtCompact(v)}
               axisLine={false}
               tickLine={false}
+              tickMargin={8}
             />
             <Tooltip
               trigger={coarse ? "click" : "hover"}
@@ -74,7 +73,9 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
                 if (!active || !payload?.length) return null
                 return (
                   <div className="glass-strong rounded-xl p-3 shadow-premium min-w-[200px]">
-                    <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">{label}</div>
+                    <div className="text-[10px] text-text-dim uppercase tracking-wider border-b border-border/70 pb-1.5 mb-1.5">
+                      {label}
+                    </div>
                     {payload.map((entry, i) => (
                       <div key={i} className="flex items-center justify-between gap-3 py-0.5">
                         <span className="text-[11px] flex items-center gap-1.5">

@@ -118,14 +118,14 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
     { label: "Inflation", value: `${fmtRate(inputs.inflation)}` },
   ]
 
-  // MÊMES cartes que SummaryStats (une seule doctrine) : l'échelle mise en
-  // avant suit le toggle « Euros d'aujourd'hui » (grand chiffre), l'autre
-  // échelle reste en sous-titre — le rapport et l'app racontent la même
-  // histoire. Le facteur de déflation est le helper partagé du moteur.
+  // MÊMES DONNÉES que SummaryStats (une seule doctrine) : l'app les montre en
+  // panneau titré « Votre capital en détail », le rapport en grille de cartes
+  // imprimables — même échelle mise en avant (grand chiffre), l'autre en
+  // sous-titre. Le facteur de déflation est le helper partagé du moteur.
   const factor = deflationFactor(lastRow)
   const netAfterTax = lastRow.taxNet
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
-  const kpiCards: { label: string; value: string; sub: string; tone: string }[] = [
+  const kpiCards: { label: string; value: string; sub: string; tone: string; subStrong?: boolean }[] = [
     {
       label: showReal ? "Valeur réelle finale" : "Valeur brute finale",
       value: fmtCurrency(showReal ? lastRow.real : lastRow.nominal),
@@ -147,8 +147,11 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
     {
       label: "Total épargné",
       value: fmtCurrency(showReal ? lastRow.investedReal : lastRow.investedNom),
+      // Gains en or (même traitement que le panneau de l'app v6.9.0) : la
+      // statistique la plus motivante n'est plus une légende grise.
       sub: `Gains de la bourse : +${fmtCurrency(Math.max(0, (showReal ? lastRow.real : lastRow.nominal) - (showReal ? lastRow.investedReal : lastRow.investedNom)))}`,
       tone: GRAY,
+      subStrong: true,
     },
   ]
 
@@ -257,7 +260,12 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
               <p className="font-mono text-lg font-extrabold mt-1.5" style={{ color: card.tone }}>
                 {card.value}
               </p>
-              <p className="text-[9px] text-gray-400 mt-1">{card.sub}</p>
+              <p
+                className={`text-[9px] mt-1 ${card.subStrong ? "font-semibold" : "text-gray-400"}`}
+                style={card.subStrong ? { color: GOLD } : undefined}
+              >
+                {card.sub}
+              </p>
             </div>
           ))}
         </div>

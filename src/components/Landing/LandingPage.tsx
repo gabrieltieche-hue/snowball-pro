@@ -383,6 +383,16 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.10.0",
+    title: "Graphiques lus d'un coup d'œil",
+    text: "La valeur finale de chaque courbe s'affiche en bout de tracé, sans survol — avec un point or sur les gains. Palette unifiée entre camembert et courbes, légendes en chips, axes et infobulles harmonisés.",
+  },
+  {
+    version: "v6.9.0",
+    title: "Capital en détail",
+    text: "Les 4 cartes de synthèse deviennent un panneau titré « Votre capital en détail » : colonnes séparées, gains de la bourse en or, une seule légende d'échelle — le bloc s'intègre enfin entre le héro et le graphique.",
+  },
+  {
     version: "v6.8.2",
     title: "Rythme uniformisé",
     text: "Espacements verticaux harmonisés sur une seule échelle — moins d'air entre les sections, héro et colonnes alignés en haut, même respiration sur tous les écrans.",
@@ -391,16 +401,6 @@ const UPDATES = [
     version: "v6.8.0",
     title: "Commencez ici",
     text: "Trois profils de départ prêts à l'emploi à l'ouverture de l'app (capital calculé par le moteur, appliqué en un clic) et CTA mobile permanent sur la landing.",
-  },
-  {
-    version: "v6.7.1",
-    title: "Landing interactive",
-    text: "Démo réelle basculable (Prudent / Central / Optimiste) avec nombre magique, et section Méthodologie clarifiée (Brut → Composé → Réel).",
-  },
-  {
-    version: "v6.5.2",
-    title: "Clarté des taux",
-    text: "La chaîne brut → net de frais → réel (8,22 → 7,95 → 5,73 %) est affichée partout, avec la formule exacte.",
   },
 ]
 
@@ -1178,7 +1178,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.8.2 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.10.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

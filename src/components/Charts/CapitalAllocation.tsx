@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
 import { computeTaxBreakdown, deflationFactor, fmtCurrency, fmtDecimal } from "../../engine"
+import { chartTheme } from "../../utils/chartTheme"
 import { pie3dGeometry } from "../../utils/pie3d"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
@@ -12,19 +13,6 @@ interface CapitalAllocationProps {
   darkMode: boolean
   /** Affichage en euros d'aujourd'hui : la légende déflate comme les cartes. */
   showReal?: boolean
-}
-
-const PALETTE = {
-  light: {
-    invested: "#5f6b7a",
-    gains: "#a67c00",
-    losses: "#b23a3a",
-  },
-  dark: {
-    invested: "#9aa3af",
-    gains: "#e3b341",
-    losses: "#c0504d",
-  },
 }
 
 function shade(hex: string, factor: number): string {
@@ -44,7 +32,9 @@ const DEPTH = 24
 export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: CapitalAllocationProps) {
   const lastRow = rows[rows.length - 1]
   const [active, setActive] = useState<number | null>(null)
-  const palette = darkMode ? PALETTE.dark : PALETTE.light
+  // v6.10 — palette unique des graphiques : le camembert utilise les mêmes
+  // couleurs que les courbes (chartTheme) au lieu d'une palette locale.
+  const theme = chartTheme(darkMode)
 
   const items = useMemo(() => {
     if (!lastRow) return []
@@ -76,11 +66,11 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
     const gains = Math.max(0, lastRow.grossGains - tax.socialCharges - tax.incomeTax) * factor
     const remainder = Math.max(0, total - invested - gains)
     return [
-      { label: "Versements après fiscalité", value: invested, color: palette.invested },
-      { label: "Gains après impôts", value: gains, color: palette.gains },
-      { label: "Autres écarts arrondis", value: remainder, color: palette.losses },
+      { label: "Versements après fiscalité", value: invested, color: theme.invested },
+      { label: "Gains après impôts", value: gains, color: theme.gains },
+      { label: "Autres écarts arrondis", value: remainder, color: theme.tax },
     ]
-  }, [lastRow, inputs, palette, showReal])
+  }, [lastRow, inputs, theme, showReal])
 
   const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
 

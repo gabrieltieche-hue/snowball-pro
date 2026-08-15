@@ -18,6 +18,7 @@ import { RenteRetraiteTab } from "../components/Tabs/RenteRetraiteTab"
 import { TerminalHistogram } from "../components/Simulation/TerminalHistogram"
 import { CashflowCalendar } from "../components/Simulation/CashflowCalendar"
 import { FiscalPanel } from "../components/Simulation/FiscalPanel"
+import { SummaryStats } from "../components/Simulation/SummaryStats"
 import { SliderInput } from "../components/shared/SliderInput"
 import { SmartInput } from "../components/shared/SmartInput"
 import { SectionHeader } from "../components/shared/SectionHeader"
@@ -326,6 +327,48 @@ describe("DualAmount — les deux échelles toujours affichées (demande utilisa
   it("sans fin de projection, le libellé secondaire reste générique", () => {
     const { container } = render(<DualAmount nominal={1000} real={800} showReal={true} />)
     expect(text(container)).toContain("sur le compte")
+  })
+
+  it("peut masquer le libellé de la seconde échelle (panneau à légende partagée v6.9.0)", () => {
+    const { container } = render(<DualAmount nominal={46610} real={30700} showReal={false} hideSecondaryLabel />)
+    const t = text(container)
+    // Les DEUX valeurs restent affichées…
+    expect(t).toContain("46 610 €")
+    expect(t).toContain("30 700 €")
+    // …mais le libellé d'échelle vit désormais dans la légende du panneau.
+    expect(t).not.toContain("en euros d'aujourd'hui")
+  })
+
+  it("applique un préfixe (signe « + ») aux deux échelles", () => {
+    const { container } = render(
+      <DualAmount nominal={504648} real={333022} showReal={false} hideSecondaryLabel prefix="+" />,
+    )
+    const t = text(container)
+    expect(t).toContain("+504 648 €")
+    expect(t).toContain("+333 022 €")
+  })
+})
+
+describe("SummaryStats — panneau « Votre capital en détail » (v6.9.0)", () => {
+  const text = (container: HTMLElement) => (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+
+  it("intègre le bloc de synthèse : titre, gains en or, légende d'échelle partagée", () => {
+    const rows = runSimulation(DEFAULT_INPUTS)
+    const { container } = render(<SummaryStats rows={rows} inputs={DEFAULT_INPUTS} />)
+    const t = text(container)
+    // Le bloc porte l'anatomie de la page (titre SectionHeader)…
+    expect(screen.getByText("Votre capital en détail")).toBeInTheDocument()
+    // …la statistique « Gains de la bourse » reste présente (demande explicite)…
+    expect(t).toContain("Gains de la bourse")
+    expect(t).toContain("+")
+    // …et la légende d'échelle partagée remplace la répétition ×4 des libellés.
+    expect(t).toContain("sur le compte")
+    expect(t).toContain("en euros d'aujourd'hui")
+    // Les 4 mesures de la synthèse sont toutes là.
+    expect(t).toContain("Valeur brute")
+    expect(t).toContain("Net fiscal")
+    expect(t).toContain("Impôt théorique")
+    expect(t).toContain("Total épargné")
   })
 })
 
