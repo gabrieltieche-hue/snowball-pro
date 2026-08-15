@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, BarChart3, Dices, Play, ShieldCheck } from "lucide-react"
-import { fmtCurrency, fmtDecimal, getHistoricalDataset, runMonteCarloAsync } from "../../engine"
+import { getHistoricalDataset, runMonteCarloAsync } from "../../engine"
+import { useLang } from "../../i18n"
 import { MonteCarloChart } from "../Charts/MonteCarloChart"
 import { TerminalHistogram } from "../Simulation/TerminalHistogram"
 import { DualAmount } from "../shared/DualAmount"
@@ -21,6 +22,7 @@ interface MonteCarloPanelProps {
 }
 
 export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debutant" }: MonteCarloPanelProps) {
+  const { tr, locale, fmtCurrency, fmtDecimal } = useLang()
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -117,28 +119,34 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
   const scenarioCards = mcResult
     ? [
         {
-          label: "Mauvaise période de bourse (P10)",
+          label: tr("Mauvaise période de bourse (P10)"),
           nominal: mcResult.p10[mcResult.p10.length - 1] ?? 0,
           real: mcResult.p10r[mcResult.p10r.length - 1] ?? 0,
           tone: "var(--color-danger)",
-          sub: "1 cas sur 10 fait encore moins bien",
-          help: "P10 = percentile 10 : seuls 10 % des scénarios finissent avec MOINS que ce montant. C'est le cas défavorable — 9 fois sur 10, vous ferez mieux.",
+          sub: tr("1 cas sur 10 fait encore moins bien"),
+          help: tr(
+            "P10 = percentile 10 : seuls 10 % des scénarios finissent avec MOINS que ce montant. C'est le cas défavorable — 9 fois sur 10, vous ferez mieux.",
+          ),
         },
         {
-          label: "Scénario moyen (P50)",
+          label: tr("Scénario moyen (P50)"),
           nominal: mcResult.p50[mcResult.p50.length - 1] ?? 0,
           real: mcResult.p50r[mcResult.p50r.length - 1] ?? 0,
           tone: "var(--color-primary)",
-          sub: "le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien",
-          help: "P50 = la médiane : dans la moitié des scénarios le capital final est supérieur, dans l'autre moitié il est inférieur. Planifiez sur ce chiffre.",
+          sub: tr("le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien"),
+          help: tr(
+            "P50 = la médiane : dans la moitié des scénarios le capital final est supérieur, dans l'autre moitié il est inférieur. Planifiez sur ce chiffre.",
+          ),
         },
         {
-          label: "Bonne période de bourse (P90)",
+          label: tr("Bonne période de bourse (P90)"),
           nominal: mcResult.p90[mcResult.p90.length - 1] ?? 0,
           real: mcResult.p90r[mcResult.p90r.length - 1] ?? 0,
           tone: "var(--color-success)",
-          sub: "1 cas sur 10 fait encore mieux",
-          help: "P90 = percentile 90 : 90 % des scénarios finissent avec MOINS que ce montant. C'est le cas favorable — ne le planifiez pas comme certitude.",
+          sub: tr("1 cas sur 10 fait encore mieux"),
+          help: tr(
+            "P90 = percentile 90 : 90 % des scénarios finissent avec MOINS que ce montant. C'est le cas favorable — ne le planifiez pas comme certitude.",
+          ),
         },
       ]
     : []
@@ -148,15 +156,19 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
       <div className="glass rounded-3xl p-5 sm:p-6 space-y-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-[260px]">
-            <SectionHeader as="h2" level="page" icon={Dices} title="Simulation de Monte Carlo" className="mb-2" />
+            <SectionHeader as="h2" level="page" icon={Dices} title={tr("Simulation de Monte Carlo")} className="mb-2" />
             <p className="text-xs text-text-muted leading-relaxed max-w-xl">
-              L'avenir de la bourse est imprévisible : nous testons donc votre plan{" "}
-              <strong className="text-text">{inputs.mcRuns.toLocaleString("fr-FR")} fois</strong>, en rééchantillonnant
-              les <strong className="text-text">rendements réels passés</strong> de l'indice{" "}
-              <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong> (les krachs et
-              les bull markets réels sont rejoués). Vous verrez le résultat de votre capital dans une{" "}
-              <strong className="text-text">mauvaise</strong>, une <strong className="text-text">moyenne</strong> et une{" "}
-              <strong className="text-text">bonne</strong> période de bourse.
+              {tr("L'avenir de la bourse est imprévisible : nous testons donc votre plan")}{" "}
+              <strong className="text-text">{tr("{n} fois", { n: inputs.mcRuns.toLocaleString(locale) })}</strong>
+              {tr(", en rééchantillonnant les")} <strong className="text-text">{tr("rendements réels passés")}</strong>{" "}
+              {tr("de l'indice")}{" "}
+              <strong className="text-text">{getHistoricalDataset(inputs.historicalIndex).name}</strong>{" "}
+              {tr(
+                "(les krachs et les bull markets réels sont rejoués). Vous verrez le résultat de votre capital dans une",
+              )}{" "}
+              <strong className="text-text">{tr("mauvaise")}</strong>, {tr("une")}{" "}
+              <strong className="text-text">{tr("moyenne")}</strong> {tr("et une")}{" "}
+              <strong className="text-text">{tr("bonne")}</strong> {tr("période de bourse.")}
             </p>
           </div>
           <button
@@ -171,7 +183,9 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
             )}
           >
             <Play size={13} fill="currentColor" />{" "}
-            {running ? `Calcul... ${progress}%` : `Lancer ${inputs.mcRuns} simulations`}
+            {running
+              ? tr("Calcul... {progress}%", { progress })
+              : tr("Lancer {n} simulations", { n: inputs.mcRuns.toLocaleString(locale) })}
           </button>
         </div>
 
@@ -185,7 +199,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
               />
             </div>
             <p className="text-[10px] text-text-dim text-right mono">
-              {progress}% — interface fluide pendant le calcul
+              {tr("{progress}% — interface fluide pendant le calcul", { progress })}
             </p>
           </div>
         )}
@@ -197,7 +211,7 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
             au mode Avancé (audit) : Pástor–Stambaugh est une notion technique. */}
         {uiMode === "avance" && (
           <CollapsibleSection
-            title="Fiabilité du modèle"
+            title={tr("Fiabilité du modèle")}
             icon={<ShieldCheck size={12} className="text-primary" />}
             defaultOpen={false}
           >
@@ -205,14 +219,18 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
               <Toggle
                 checked={inputs.parameterUncertainty}
                 onChange={v => updateInput("parameterUncertainty", v)}
-                label="Incertitude des paramètres"
-                sub="La moyenne 10,07 % et la volatilité ne sont PAS des vérités connues : chaque scénario tire les siennes autour des estimations historiques (Pástor–Stambaugh). Élargit honnêtement P10 et P90."
+                label={tr("Incertitude des paramètres")}
+                sub={tr(
+                  "La moyenne 10,07 % et la volatilité ne sont PAS des vérités connues : chaque scénario tire les siennes autour des estimations historiques (Pástor–Stambaugh). Élargit honnêtement P10 et P90.",
+                )}
               />
               <Toggle
                 checked={inputs.extendedHistory}
                 onChange={v => updateInput("extendedHistory", v)}
-                label="Historique étendu (100 ans)"
-                sub="Rejoue 100 ans de rendements réels (S&P 500 1926-1969 + MSCI World 1970-2025) au lieu de 56 : les krachs de 1929, 1931, 1933 sont rejoués."
+                label={tr("Historique étendu (100 ans)")}
+                sub={tr(
+                  "Rejoue 100 ans de rendements réels (S&P 500 1926-1969 + MSCI World 1970-2025) au lieu de 56 : les krachs de 1929, 1931, 1933 sont rejoués.",
+                )}
               />
             </div>
           </CollapsibleSection>
@@ -225,14 +243,17 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
           <div className="min-h-80 flex items-center justify-center flex-col gap-3 text-text-muted rounded-2xl border border-dashed border-border">
             <Dices size={44} className="text-primary/50" aria-hidden />
             <p className="text-xs font-semibold">
-              Testez votre plan dans {inputs.mcRuns.toLocaleString("fr-FR")} situations de bourse différentes
+              {tr("Testez votre plan dans {n} situations de bourse différentes", {
+                n: inputs.mcRuns.toLocaleString(locale),
+              })}
             </p>
             <button
               type="button"
               onClick={handleRun}
               className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary"
             >
-              <Play size={13} fill="currentColor" /> Lancer {inputs.mcRuns.toLocaleString("fr-FR")} simulations
+              <Play size={13} fill="currentColor" />{" "}
+              {tr("Lancer {n} simulations", { n: inputs.mcRuns.toLocaleString(locale) })}
             </button>
           </div>
         )}
@@ -269,13 +290,16 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
                 que l'estimation repose réellement sur, en une ligne. */}
             <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
               <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
-              Basé sur <strong className="text-text">{mcResult.runs.toLocaleString("fr-FR")} scénarios</strong> ·{" "}
-              {inputs.extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité française incluse
+              {tr("Basé sur")}{" "}
+              <strong className="text-text">{tr("{n} scénarios", { n: mcResult.runs.toLocaleString(locale) })}</strong>{" "}
+              · {tr("{years} d'historique réel", { years: inputs.extendedHistory ? tr("100 ans") : "56 ans" })} ·{" "}
+              {tr("fiscalité française incluse")}
             </p>
             <p className="text-[10px] text-text-dim italic">
-              Montants <strong className="text-text not-italic">nets d'impôts</strong> (liquidation théorique) — les
-              cartes ci-dessous suivent le toggle « Euros d'aujourd'hui » (la valeur du compte reste affichée en
-              dessous), comme les cartes de l'onglet Projection.
+              {tr("Montants")} <strong className="text-text not-italic">{tr("nets d'impôts")}</strong>{" "}
+              {tr(
+                "(liquidation théorique) — les cartes ci-dessous suivent le toggle « Euros d'aujourd'hui » (la valeur du compte reste affichée en dessous), comme les cartes de l'onglet Projection.",
+              )}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {scenarioCards.map(card => (
@@ -299,24 +323,25 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
               ))}
               <div className="card-subtle rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2 text-[var(--color-success)]">
-                  Chances d'atteindre votre objectif
+                  {tr("Chances d'atteindre votre objectif")}
                 </p>
                 <div className="flex items-baseline gap-2">
                   <p className="mono text-lg font-bold text-text">{mcResult.successRate.toFixed(0)}%</p>
                   <p className="mono text-[11px] font-semibold text-text-dim">
-                    dont {mcResult.successRateReal.toFixed(0)} % en pouvoir d'achat réel
+                    {tr("dont {pct} % en pouvoir d'achat réel", { pct: mcResult.successRateReal.toFixed(0) })}
                   </p>
                 </div>
                 <p className="text-[10px] text-text-dim mt-1.5">
-                  sur {mcResult.runs.toLocaleString("fr-FR")} cas, le capital final atteint au moins{" "}
-                  {fmtCurrency(mcResult.goalTarget)} en euros courants — et dans {mcResult.successRateReal.toFixed(0)} %
-                  des cas, ce même objectif en <strong className="text-text">euros d'aujourd'hui</strong> (après
-                  inflation).
+                  {tr("sur {n} cas, le capital final atteint au moins", { n: mcResult.runs.toLocaleString(locale) })}{" "}
+                  {fmtCurrency(mcResult.goalTarget)} {tr("en euros courants — et dans")}{" "}
+                  {mcResult.successRateReal.toFixed(0)} % {tr("des cas, ce même objectif en")}{" "}
+                  <strong className="text-text">{tr("euros d'aujourd'hui")}</strong> {tr("(après inflation).")}
                 </p>
                 <p className="text-[9px] text-text-dim mt-1 border-t border-border/60 pt-1.5">
-                  Précision : {fmtDecimal(mcResult.successRate, 1)} % ±{" "}
-                  {fmtDecimal((mcResult.successRateCI.high - mcResult.successRateCI.low) / 2, 1)} pt (intervalle de
-                  confiance à 95 %)
+                  {tr("Précision : {a} % ± {b} pt (intervalle de confiance à 95 %)", {
+                    a: fmtDecimal(mcResult.successRate, 1),
+                    b: fmtDecimal((mcResult.successRateCI.high - mcResult.successRateCI.low) / 2, 1),
+                  })}
                 </p>
               </div>
             </div>
@@ -326,11 +351,11 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
                 as="h3"
                 level="card"
                 icon={BarChart3}
-                title="Distribution des capitaux finaux"
+                title={tr("Distribution des capitaux finaux")}
                 className="mb-3 px-1"
                 trailing={
                   <span className="text-[10px] text-text-dim">
-                    <span className="mono font-bold text-text">{mcResult.runs.toLocaleString("fr-FR")}</span> cas
+                    <span className="mono font-bold text-text">{mcResult.runs.toLocaleString(locale)}</span> {tr("cas")}
                   </span>
                 }
               />
@@ -342,14 +367,18 @@ export function MonteCarloPanel({ inputs, darkMode, updateInput, uiMode = "debut
                 leftNote="0 €"
               />
               <p className="text-[10px] text-text-dim mt-2 px-1 leading-relaxed">
-                L'écart entre la <strong className="text-[var(--color-success)]">médiane</strong> (cas le plus courant)
-                et la <strong className="text-[var(--color-accent)]">moyenne</strong> montre la « queue de chance » :
-                quelques cas très heureux tirent la moyenne vers le haut. Planifiez sur la médiane, pas sur la moyenne.
+                {tr("L'écart entre la")} <strong className="text-[var(--color-success)]">{tr("médiane")}</strong>{" "}
+                {tr("(cas le plus courant) et la")}{" "}
+                <strong className="text-[var(--color-accent)]">{tr("moyenne")}</strong>{" "}
+                {tr(
+                  "montre la « queue de chance » : quelques cas très heureux tirent la moyenne vers le haut. Planifiez sur la médiane, pas sur la moyenne.",
+                )}
               </p>
             </div>
             {isStale && (
               <p className="text-[10px] text-warning flex items-center gap-1">
-                <AlertTriangle size={11} /> Paramètres modifiés depuis le lancement — relancez pour mettre à jour.
+                <AlertTriangle size={11} />{" "}
+                {tr("Paramètres modifiés depuis le lancement — relancez pour mettre à jour.")}
               </p>
             )}
           </div>

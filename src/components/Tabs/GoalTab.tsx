@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, BarChart3, Dices, PiggyBank, RefreshCw, Target, TrendingUp } from "lucide-react"
 import {
   DEFAULT_INPUTS,
-  fmtCurrency,
   getHistoricalDataset,
   RECOMMENDED_RETURN_MAX,
   RECOMMENDED_RETURN_MIN,
   solveGoal,
   solveGoalMonteCarloAsync,
 } from "../../engine"
+import { useLang } from "../../i18n"
 import { GoalProgress } from "../Simulation/GoalProgress"
 import { SectionHeader } from "../shared/SectionHeader"
 import { SliderInput } from "../shared/SliderInput"
@@ -35,18 +35,23 @@ const COMPARISON_RATES = [3, 5, 7, 10, 12]
 const SCENARIO_LABELS = { prudent: "Prudent", central: "Central", optimiste: "Optimiste" } as const
 
 /**
- * Libellé de taux français sans zéros inutiles : 10 → « 10% », 10.07 →
- * « 10,07% », 12.5 → « 12,5% ». Audit v5.6.3 : avant, le tableau arrondissait
- * les taux à l'entier (« 10 % ») pendant que le calcul principal utilisait
- * 10,07 % — deux chiffres différents pour la même étiquette. La ligne du taux
- * COURANT affiche désormais sa valeur exacte.
+ * Libellé de taux sans zéros inutiles : 10 → « 10% », 10.07 → « 10,07% »,
+ * 12.5 → « 12,5% » (virgule en français, point en anglais). Audit v5.6.3 :
+ * avant, le tableau arrondissait les taux à l'entier (« 10 % ») pendant que
+ * le calcul principal utilisait 10,07 % — deux chiffres différents pour la
+ * même étiquette. La ligne du taux COURANT affiche sa valeur exacte.
  */
-const fmtRate = (r: number): string => {
-  const s = r.toFixed(2).replace(".", ",").replace(/0+$/, "").replace(/,$/, "")
-  return `${s}%`
-}
+const makeFmtRate =
+  (lang: "fr" | "en") =>
+  (r: number): string => {
+    const s = r.toFixed(2)
+    const local = lang === "en" ? s : s.replace(".", ",")
+    return `${local.replace(/0+$/, "").replace(/[.,]$/, "")}%`
+  }
 
 export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
+  const { tr, lang, fmtCurrency, fmtDecimal } = useLang()
+  const fmtRate = makeFmtRate(lang)
   const historical = getHistoricalDataset(inputs.historicalIndex)
   // Scénario du Simulateur : prudent (réel composé) / central (géométrique) /
   // optimiste (arithmétique) — repris quand « Utiliser mon scénario principal »
@@ -132,10 +137,11 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
     <div className="space-y-5 animate-fade-in">
       <div className="glass rounded-3xl p-5 sm:p-6 space-y-6">
         <div>
-          <SectionHeader as="h2" level="page" icon={Target} title="Objectif d'épargne" className="mb-2" />
+          <SectionHeader as="h2" level="page" icon={Target} title={tr("Objectif d'épargne")} className="mb-2" />
           <p className="text-xs text-text-muted leading-relaxed max-w-xl">
-            Vous savez combien vous voulez avoir plus tard : l'app calcule combien épargner chaque mois (et quel
-            rendement de la bourse viser) pour y arriver.
+            {tr(
+              "Vous savez combien vous voulez avoir plus tard : l'app calcule combien épargner chaque mois (et quel rendement de la bourse viser) pour y arriver.",
+            )}
           </p>
         </div>
 
@@ -145,13 +151,15 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
         <Toggle
           checked={inputs.goalSync}
           onChange={v => updateInput("goalSync", v)}
-          label="Utiliser mon scénario principal"
-          sub="Reprend le capital, la durée, l'épargne et le rendement (scénario courant) de l'onglet Simulateur — l'objectif n'est plus une calculatrice séparée."
+          label={tr("Utiliser mon scénario principal")}
+          sub={tr(
+            "Reprend le capital, la durée, l'épargne et le rendement (scénario courant) de l'onglet Simulateur — l'objectif n'est plus une calculatrice séparée.",
+          )}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
           <SliderInput
-            label="Objectif (€)"
+            label={tr("Objectif (€)")}
             id="goal-target"
             value={inputs.goalTarget}
             min={10000}
@@ -166,18 +174,18 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             <div className="rounded-xl bg-primary/8 border border-primary/20 p-3.5 text-[10px] leading-relaxed text-text-dim self-end">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <RefreshCw size={11} className="text-primary shrink-0" />
-                <span className="font-bold text-text">Synchronisé avec le Simulateur</span>
+                <span className="font-bold text-text">{tr("Synchronisé avec le Simulateur")}</span>
               </div>
-              Capital : <strong className="mono text-text">{fmtCurrency(inputs.capitalInitial)}</strong> · Durée :{" "}
-              <strong className="mono text-text">{inputs.duration} ans</strong> · Épargne :{" "}
-              <strong className="mono text-text">{fmtCurrency(inputs.monthlyPayment)}/mois</strong> · Rendement :{" "}
-              <strong className="mono text-text">{fmtRate(scenarioRate * 100)}/an</strong> (scénario{" "}
-              {SCENARIO_LABELS[inputs.returnScenario]})
+              {tr("Capital :")} <strong className="mono text-text">{fmtCurrency(inputs.capitalInitial)}</strong> ·{" "}
+              {tr("Durée :")} <strong className="mono text-text">{tr("{n} ans", { n: inputs.duration })}</strong> ·{" "}
+              {tr("Épargne :")} <strong className="mono text-text">{fmtCurrency(inputs.monthlyPayment)}/mois</strong> ·{" "}
+              {tr("Rendement :")} <strong className="mono text-text">{fmtRate(scenarioRate * 100)}/an</strong>{" "}
+              {tr("(scénario")} {tr(SCENARIO_LABELS[inputs.returnScenario])})
             </div>
           ) : (
             <>
               <SliderInput
-                label="Capital de départ (€)"
+                label={tr("Capital de départ (€)")}
                 id="goal-capital"
                 value={inputs.goalCapital}
                 min={0}
@@ -187,7 +195,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 onChange={v => updateInput("goalCapital", v)}
               />
               <SliderInput
-                label="Durée (années)"
+                label={tr("Durée (années)")}
                 id="goal-duration"
                 value={inputs.goalDuration}
                 min={1}
@@ -197,7 +205,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 onChange={v => updateInput("goalDuration", v)}
               />
               <SliderInput
-                label="Rendement de la bourse (% brut)"
+                label={tr("Rendement de la bourse (% brut)")}
                 id="goal-rate"
                 value={inputs.goalAnnualReturn * 100}
                 min={0.1}
@@ -207,19 +215,21 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 hardMin={-95}
                 hardMax={1000}
                 allowNegative
-                help="Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 8,22 %/an brut — scénario Central par défaut). L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation."
-                suffix={`Épargne de référence : ${fmtCurrency(inputs.goalPayment)}/mois`}
+                help={tr(
+                  "Rendement BRUT = rendement réel du marché avant inflation (ex. MSCI World : 8,22 %/an brut — scénario Central par défaut). L'inflation est déduite automatiquement par le simulateur, QUE l'affichage soit en euros courants ou en euros d'aujourd'hui — ne saisissez jamais un taux déjà net d'inflation.",
+                )}
+                suffix={tr("Épargne de référence : {x}/mois", { x: fmtCurrency(inputs.goalPayment) })}
                 onChange={v => updateInput("goalAnnualReturn", v / 100)}
               />
               <SliderInput
-                label="Épargne mensuelle de référence (€)"
+                label={tr("Épargne mensuelle de référence (€)")}
                 id="goal-payment"
                 value={inputs.goalPayment}
                 min={0}
                 max={10000}
                 step={50}
                 color="var(--color-primary)"
-                suffix="utilisée pour calculer le rendement nécessaire"
+                suffix={tr("utilisée pour calculer le rendement nécessaire")}
                 onChange={v => updateInput("goalPayment", v)}
               />
             </>
@@ -231,19 +241,24 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             recommandée 7-12 %/an. Ce curseur ne sert QU'à cet onglet (le
             Simulateur/MC/Rente rejouent l'historique réel, Option A). */}
         <p className="text-[10px] text-text-dim leading-snug -mt-4">
-          Rendement <strong className="text-text">brut</strong> (avant inflation) — référence :{" "}
+          {tr("Rendement")} <strong className="text-text">{tr("brut")}</strong> {tr("(avant inflation) — référence :")}{" "}
           <strong className="text-text">
-            {(DEFAULT_INPUTS.goalAnnualReturn * 100).toFixed(2).replace(".", ",")} % brut (scénario Central)
+            {tr("{rate} % brut (scénario Central)", {
+              rate: fmtDecimal(DEFAULT_INPUTS.goalAnnualReturn * 100, 2),
+            })}
           </strong>{" "}
-          · taux recommandé : {(RECOMMENDED_RETURN_MIN * 100).toFixed(0)} à {(RECOMMENDED_RETURN_MAX * 100).toFixed(0)}{" "}
-          %/an
+          {tr(" · taux recommandé :")}{" "}
+          {tr("{min} à {max} %/an", {
+            min: (RECOMMENDED_RETURN_MIN * 100).toFixed(0),
+            max: (RECOMMENDED_RETURN_MAX * 100).toFixed(0),
+          })}
         </p>
 
         {/* Résultats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-2xl p-5 border-2 border-primary/40 bg-primary/10">
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
-              <PiggyBank size={12} aria-hidden /> Épargne mensuelle nécessaire
+              <PiggyBank size={12} aria-hidden /> {tr("Épargne mensuelle nécessaire")}
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
               {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0
@@ -251,41 +266,42 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 : "—"}
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
-              Pour atteindre <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
-              <strong className="text-text">{effDuration} ans</strong> avec un rendement de{" "}
+              {tr("Pour atteindre")} <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> {tr("en")}{" "}
+              <strong className="text-text">{tr("{n} ans", { n: effDuration })}</strong> {tr("avec un rendement de")}{" "}
               <strong className="text-text">{fmtRate(effRate * 100)}</strong>/an
-              {effCapital > 0 && ` et un capital de départ de ${fmtCurrency(effCapital)}`}
-              {inputs.goalSync && " (hypothèses du scénario principal)"}.
+              {effCapital > 0 && ` ${tr("et un capital de départ de")} ${fmtCurrency(effCapital)}`}
+              {inputs.goalSync && ` ${tr("(hypothèses du scénario principal)")}`}.
             </p>
             {goalResult.pmtPerMonth !== null && goalResult.pmtPerMonth > 0 && (
               <div
                 className={`mt-3 p-2.5 rounded-lg text-[11px] text-text-muted ${darkMode ? "bg-white/5" : "bg-black/5"}`}
               >
-                Total épargné : <strong className="text-text">{fmtCurrency(goalResult.totalInvested ?? 0)}</strong> —
-                Gains de la bourse : <strong className="text-primary">{fmtCurrency(goalResult.totalGains ?? 0)}</strong>
+                {tr("Total épargné :")}{" "}
+                <strong className="text-text">{fmtCurrency(goalResult.totalInvested ?? 0)}</strong> —{" "}
+                {tr("Gains de la bourse :")}{" "}
+                <strong className="text-primary">{fmtCurrency(goalResult.totalGains ?? 0)}</strong>
               </div>
             )}
           </div>
 
           <div className="card-subtle rounded-2xl p-5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
-              <TrendingUp size={12} aria-hidden /> Rendement nécessaire ({fmtCurrency(effPayment)}/mois d'épargne)
+              <TrendingUp size={12} aria-hidden />{" "}
+              {tr("Rendement nécessaire ({x}/mois d'épargne)", { x: fmtCurrency(effPayment) })}
             </p>
             <p className="mono text-3xl font-extrabold text-text mb-2">
-              {goalResult.requiredRate !== null
-                ? `${goalResult.requiredRate.toFixed(2).replace(".", ",")}%`
-                : "Impossible"}
+              {goalResult.requiredRate !== null ? `${fmtDecimal(goalResult.requiredRate, 2)}%` : tr("Impossible")}
             </p>
             <p className="text-[11px] text-text-muted leading-relaxed">
-              Rendement de la bourse nécessaire chaque année pour obtenir{" "}
-              <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> en{" "}
-              <strong className="text-text">{effDuration} ans</strong> en épargnant{" "}
+              {tr("Rendement de la bourse nécessaire chaque année pour obtenir")}{" "}
+              <strong className="text-text">{fmtCurrency(inputs.goalTarget)}</strong> {tr("en")}{" "}
+              <strong className="text-text">{tr("{n} ans", { n: effDuration })}</strong> {tr("en épargnant")}{" "}
               <strong className="text-text">{fmtCurrency(effPayment)}/mois</strong>
-              {effCapital > 0 && ` avec un capital initial de ${fmtCurrency(effCapital)}`}.
+              {effCapital > 0 && ` ${tr("avec un capital initial de")} ${fmtCurrency(effCapital)}`}.
             </p>
             <div className={`mt-3 flex items-center gap-2 p-2.5 rounded-lg ${darkMode ? "bg-white/5" : "bg-black/5"}`}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: difficulty.tone }} />
-              <span className="text-[11px] text-text-muted">{difficulty.label}</span>
+              <span className="text-[11px] text-text-muted">{tr(difficulty.label)}</span>
             </div>
           </div>
         </div>
@@ -299,19 +315,19 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             as="h3"
             level="card"
             icon={BarChart3}
-            title="Comparaison des scénarios"
-            sub={`objectif : ${fmtCurrency(inputs.goalTarget)}`}
+            title={tr("Comparaison des scénarios")}
+            sub={tr("objectif : {goal}", { goal: fmtCurrency(inputs.goalTarget) })}
           />
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border">
                   {[
-                    { label: "Rendement/an", align: "right" },
-                    { label: "Épargne /mois", align: "right" },
-                    { label: "Total épargné", align: "right" },
-                    { label: "Gains de la bourse", align: "right" },
-                    { label: "Part de l'objectif épargnée", align: "left" },
+                    { label: tr("Rendement/an"), align: "right" },
+                    { label: tr("Épargne /mois"), align: "right" },
+                    { label: tr("Total épargné"), align: "right" },
+                    { label: tr("Gains de la bourse"), align: "right" },
+                    { label: tr("Part de l'objectif épargnée"), align: "left" },
                   ].map(h => (
                     <th
                       key={h.label}
@@ -388,7 +404,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                                 : "bg-glass text-text-dim",
                             )}
                           >
-                            {SCENARIO_LABELS[scenarioId]}
+                            {tr(SCENARIO_LABELS[scenarioId])}
                           </span>
                         )}
                       </td>
@@ -406,8 +422,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                         {fmtCurrency(gains)}
                       </td>
                       <td className="py-2.5 px-3 text-text-dim">
-                        {inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0}% de l'objectif
-                        provient de votre épargne
+                        {tr("{pct}% de l'objectif provient de votre épargne", {
+                          pct: inputs.goalTarget > 0 ? Math.round((totalPaid / inputs.goalTarget) * 100) : 0,
+                        })}
                       </td>
                     </tr>
                   )
@@ -425,14 +442,22 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             as="h3"
             level="card"
             icon={Dices}
-            title="Versement nécessaire selon la bourse (Monte Carlo)"
-            sub={`objectif : ${fmtCurrency(inputs.goalTarget)} — ${inputs.duration} ans, capital ${fmtCurrency(inputs.capitalInitial)}`}
+            title={tr("Versement nécessaire selon la bourse (Monte Carlo)")}
+            sub={tr("objectif : {goal} — {n} ans, capital {capital}", {
+              goal: fmtCurrency(inputs.goalTarget),
+              n: inputs.duration,
+              capital: fmtCurrency(inputs.capitalInitial),
+            })}
           />
           <p className="text-[10px] text-text-dim leading-relaxed max-w-2xl">
-            Combien faut-il épargner chaque mois pour atteindre l'objectif selon la période de bourse ? Le calcul rejoue{" "}
-            {600} scénarios rééchantillonnés à chaque itération, avec <strong className="text-text">vos</strong> frais,{" "}
-            <strong className="text-text">votre</strong> fiscalité et <strong className="text-text">votre</strong>{" "}
-            capital de départ ({fmtCurrency(inputs.capitalInitial)}).
+            {tr(
+              "Combien faut-il épargner chaque mois pour atteindre l'objectif selon la période de bourse ? Le calcul rejoue",
+            )}{" "}
+            {600} {tr("scénarios rééchantillonnés à chaque itération, avec")}{" "}
+            <strong className="text-text">{tr("vos")}</strong> {tr("frais,")}{" "}
+            <strong className="text-text">{tr("votre")}</strong> {tr("fiscalité et")}{" "}
+            <strong className="text-text">{tr("votre")}</strong> {tr("capital de départ")} (
+            {fmtCurrency(inputs.capitalInitial)}).
           </p>
           {!mcInv && (
             <button
@@ -447,7 +472,9 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               )}
             >
               <Dices size={13} />{" "}
-              {invRunning ? `Calcul... ${invProgress}%` : "Calculer le versement pour P10 / P50 / P90"}
+              {invRunning
+                ? tr("Calcul... {progress}%", { progress: invProgress })
+                : tr("Calculer le versement pour P10 / P50 / P90")}
             </button>
           )}
           {invRunning && (
@@ -459,7 +486,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                 />
               </div>
               <p className="text-[10px] text-text-dim mono">
-                {invProgress}% — 3 percentiles × 14 itérations (P90 → P50 → P10)
+                {tr("{progress}% — 3 percentiles × 14 itérations (P90 → P50 → P10)", { progress: invProgress })}
               </p>
             </div>
           )}
@@ -468,24 +495,24 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               {[
                 {
                   key: "p90" as const,
-                  label: "Bonne période (P90)",
+                  label: tr("Bonne période (P90)"),
                   value: mcInv.p90,
                   tone: "var(--color-success)",
-                  desc: "1 cas sur 10 fait encore mieux — le minimum si la bourse vous sourit",
+                  desc: tr("1 cas sur 10 fait encore mieux — le minimum si la bourse vous sourit"),
                 },
                 {
                   key: "p50" as const,
-                  label: "Cas médian (P50)",
+                  label: tr("Cas médian (P50)"),
                   value: mcInv.p50,
                   tone: "var(--color-primary)",
-                  desc: "1 fois sur 2 mieux, 1 fois sur 2 moins bien — le versement honnête",
+                  desc: tr("1 fois sur 2 mieux, 1 fois sur 2 moins bien — le versement honnête"),
                 },
                 {
                   key: "p10" as const,
-                  label: "Période difficile (P10)",
+                  label: tr("Période difficile (P10)"),
                   value: mcInv.p10,
                   tone: "var(--color-danger)",
-                  desc: "1 cas sur 10 fait encore moins bien — pour réussir même dans les pires cas",
+                  desc: tr("1 cas sur 10 fait encore moins bien — pour réussir même dans les pires cas"),
                 },
               ].map(card => (
                 <div
@@ -496,13 +523,15 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: card.tone }}>
                     {card.label}
                   </p>
-                  <p className="mono text-lg font-bold text-text mt-1.5">{fmtCurrency(card.value)} /mois</p>
+                  <p className="mono text-lg font-bold text-text mt-1.5">
+                    {fmtCurrency(card.value)} {tr("/mois")}
+                  </p>
                   <p className="text-[10px] text-text-dim mt-1.5 leading-snug">{card.desc}</p>
                   {/* Audit : « P90 à 0 € » n'est pas une erreur — le capital de
                       départ suffit déjà dans ce scénario favorable. */}
                   {card.value === 0 && (
                     <p className="text-[9px] text-success mt-1.5 leading-snug">
-                      ✓ Votre capital de départ suffit déjà dans ce scénario — aucun versement nécessaire.
+                      ✓ {tr("Votre capital de départ suffit déjà dans ce scénario — aucun versement nécessaire.")}
                     </p>
                   )}
                 </div>
@@ -510,10 +539,14 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
               <div className="sm:col-span-3 rounded-xl bg-primary/8 border border-primary/20 px-3.5 py-2.5 flex items-start gap-2">
                 <AlertTriangle size={12} className="text-primary shrink-0 mt-0.5" />
                 <p className="text-[10px] text-text-dim leading-relaxed">
-                  Le versement <strong className="text-text">P50</strong> est votre meilleure cible : dans la moitié des
-                  scénarios il suffit, dans l'autre moitié il manque un peu. Le versement{" "}
-                  <strong className="text-text">P10</strong> garantit l'objectif même dans les pires périodes — c'est le
-                  « budget sécurité ». Recalculez après avoir changé vos paramètres.
+                  {tr("Le versement")} <strong className="text-text">P50</strong>{" "}
+                  {tr(
+                    "est votre meilleure cible : dans la moitié des scénarios il suffit, dans l'autre moitié il manque un peu. Le versement",
+                  )}{" "}
+                  <strong className="text-text">P10</strong>{" "}
+                  {tr(
+                    "garantit l'objectif même dans les pires périodes — c'est le « budget sécurité ». Recalculez après avoir changé vos paramètres.",
+                  )}
                 </p>
               </div>
             </div>

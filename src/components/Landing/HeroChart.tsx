@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { motion } from "framer-motion"
-import { fmtCurrency, parseStoredInputs, runSimulation } from "../../engine"
+import { parseStoredInputs, runSimulation } from "../../engine"
+import { useLang } from "../../i18n"
 import type { SimulationInputs, YearRow } from "../../types"
 
 const W = 640
@@ -25,6 +26,7 @@ interface HeroChartProps {
  * interactif change de scénario sans recalculer ici).
  */
 export function HeroChart({ rows: providedRows, inputs: providedInputs, footer = true }: HeroChartProps = {}) {
+  const { tr, fmtCurrency, locale } = useLang()
   const { rows, inputs, last } = useMemo(() => {
     if (providedRows && providedInputs) {
       return { rows: providedRows, inputs: providedInputs, last: providedRows[providedRows.length - 1] }
@@ -62,7 +64,9 @@ export function HeroChart({ rows: providedRows, inputs: providedInputs, footer =
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label="Projection du capital sur la durée par défaut : la courbe nominale monte de 0 à un capital final, la courbe en euros d'aujourd'hui suit en dessous."
+        aria-label={tr(
+          "Projection du capital sur la durée par défaut : la courbe nominale monte de 0 à un capital final, la courbe en euros d'aujourd'hui suit en dessous.",
+        )}
         className="w-full h-auto"
       >
         <defs>
@@ -158,14 +162,15 @@ export function HeroChart({ rows: providedRows, inputs: providedInputs, footer =
         <div className="flex items-center justify-between gap-3 flex-wrap mt-3 pt-3 border-t border-border/60">
           <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
             <span className="w-2.5 h-[3px] rounded-full bg-primary shrink-0" aria-hidden />
-            Capital final ({endYear}) : <span className="mono font-bold text-text">{fmtCurrency(last.nominal)}</span>
+            {tr("Capital final ({year}) :", { year: endYear })}{" "}
+            <span className="mono font-bold text-text">{fmtCurrency(last.nominal)}</span>
           </p>
           <p className="text-[10.5px] text-text-muted flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
-            Croissance : <span className="mono font-bold text-primary">{growthPct.toFixed(0)} %</span>
+            {tr("Croissance :")} <span className="mono font-bold text-primary">{growthPct.toFixed(0)} %</span>
           </p>
           <p className="text-[10.5px] text-text-muted">
-            {inputs.duration} ans · {inputs.monthlyPayment.toLocaleString("fr-FR")} €/mois
+            {inputs.duration} {tr("ans")} · {inputs.monthlyPayment.toLocaleString(locale)} €/{tr("mois")}
           </p>
         </div>
       )}

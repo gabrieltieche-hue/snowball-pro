@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { fmtCurrency, fmtPercent } from "../../engine"
+import { useLang } from "../../i18n"
 
 interface TooltipPayload {
   color: string
@@ -15,6 +15,7 @@ interface CustomTooltipProps {
 }
 
 export function CustomTooltip({ active, payload, label, isCurrency = true }: CustomTooltipProps) {
+  const { fmtCurrency, fmtPercent } = useLang()
   if (!active || !payload?.length) return null
 
   return (

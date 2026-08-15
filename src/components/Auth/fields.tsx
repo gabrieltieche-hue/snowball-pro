@@ -1,6 +1,7 @@
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 
 interface TextFieldProps {
@@ -37,6 +38,7 @@ export function TextField({
   autoFocus,
   maxLength,
 }: TextFieldProps) {
+  const { tr } = useLang()
   const [revealed, setRevealed] = useState(false)
   const isPassword = type === "password"
   const inputType = isPassword && revealed ? "text" : type
@@ -69,7 +71,7 @@ export function TextField({
           <button
             type="button"
             onClick={() => setRevealed(r => !r)}
-            aria-label={revealed ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-label={tr(revealed ? "Masquer le mot de passe" : "Afficher le mot de passe")}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-dim hover:text-text transition-colors p-1"
           >
             {revealed ? <EyeOff size={15} aria-hidden /> : <Eye size={15} aria-hidden />}

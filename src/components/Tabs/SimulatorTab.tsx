@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { Activity, ChevronDown, ChevronUp, Landmark, Table } from "lucide-react"
 import { computeKPIs, computeMilestones } from "../../engine"
+import { useLang } from "../../i18n"
 import { SectionHeader } from "../shared/SectionHeader"
 import { CollapsibleSection } from "../shared/CollapsibleSection"
 import { HeroResult } from "../Simulation/HeroResult"
@@ -28,6 +29,7 @@ interface SimulatorTabProps {
 }
 
 export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: SimulatorTabProps) {
+  const { tr } = useLang()
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const milestones = useMemo(() => computeMilestones(rows), [rows])
   const [tableOpen, setTableOpen] = useState(false)
@@ -64,14 +66,14 @@ export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: Si
 
       {/* Graphiques secondaires repliés : ils racontent des histoires utiles,
           mais n'appartiennent plus au chemin de lecture principal. */}
-      <CollapsibleSection title="Graphiques détaillés" icon={<Activity size={12} />} defaultOpen={false}>
+      <CollapsibleSection title={tr("Graphiques détaillés")} icon={<Activity size={12} />} defaultOpen={false}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DrawdownChart rows={rows} darkMode={darkMode} />
           <CapitalAllocation rows={rows} inputs={inputs} darkMode={darkMode} showReal={inputs.showReal} />
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Fiscalité détaillée" icon={<Landmark size={12} />} defaultOpen={false}>
+      <CollapsibleSection title={tr("Fiscalité détaillée")} icon={<Landmark size={12} />} defaultOpen={false}>
         <FiscalPanel rows={rows} inputs={inputs} />
       </CollapsibleSection>
 
@@ -87,15 +89,21 @@ export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: Si
           aria-controls="annual-detail-table"
           className="w-full flex items-center justify-between gap-3 px-5 sm:px-6 py-4 hover:bg-glass-hover transition-colors"
         >
-          <SectionHeader bare level="card" icon={Table} title="Détail année par année" className="flex-1 min-w-0" />
+          <SectionHeader
+            bare
+            level="card"
+            icon={Table}
+            title={tr("Détail année par année")}
+            className="flex-1 min-w-0"
+          />
           <span className="text-[10px] text-text-dim flex items-center gap-1 shrink-0">
             {tableOpen ? (
               <>
-                Réduire <ChevronUp size={12} />
+                {tr("Réduire")} <ChevronUp size={12} />
               </>
             ) : (
               <>
-                Voir le détail annuel <ChevronDown size={12} />
+                {tr("Voir le détail annuel")} <ChevronDown size={12} />
               </>
             )}
           </span>

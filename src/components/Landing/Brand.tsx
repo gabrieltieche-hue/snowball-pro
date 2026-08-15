@@ -1,7 +1,9 @@
 import { Wallet } from "lucide-react"
+import { useLang } from "../../i18n"
 
 /** Marque SNOWBALL PRO — même emblème or que l'en-tête de l'app. */
 export function Brand() {
+  const { tr } = useLang()
   return (
     <div className="flex items-center gap-3">
       <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
@@ -13,7 +15,7 @@ export function Brand() {
           SNOWBALL <span className="text-primary">PRO</span>
         </div>
         <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em]">
-          Simulateur patrimonial
+          {tr("Simulateur patrimonial")}
         </div>
       </div>
     </div>

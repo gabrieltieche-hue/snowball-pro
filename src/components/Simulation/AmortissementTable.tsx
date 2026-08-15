@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { fmtCompact } from "../../engine"
+import { useLang } from "../../i18n"
 import type { YearRow } from "../../types"
 
 interface AmortissementTableProps {
@@ -7,19 +7,20 @@ interface AmortissementTableProps {
 }
 
 export function AmortissementTable({ rows }: AmortissementTableProps) {
+  const { tr, lang, fmtCompact } = useLang()
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="border-b border-border">
             {[
-              { label: "Année", align: "left" },
-              { label: "Épargné", align: "right" },
-              { label: "Gains bourse", align: "right" },
-              { label: "Capital", align: "right" },
-              { label: "En € d'aujourd'hui", align: "right" },
-              { label: "Frais", align: "right" },
-              { label: "Après impôt théorique", align: "right" },
+              { label: tr("Année"), align: "left" },
+              { label: tr("Épargné"), align: "right" },
+              { label: tr("Gains bourse"), align: "right" },
+              { label: tr("Capital"), align: "right" },
+              { label: tr("En € d'aujourd'hui"), align: "right" },
+              { label: tr("Frais"), align: "right" },
+              { label: tr("Après impôt théorique"), align: "right" },
             ].map(h => (
               <th
                 key={h.label}
@@ -41,7 +42,9 @@ export function AmortissementTable({ rows }: AmortissementTableProps) {
               transition={{ delay: i * 0.005 }}
               className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
             >
-              <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
+              <td className="py-2 px-3 text-text-dim whitespace-nowrap">
+                {lang === "en" ? `Year ${row.year}` : `Année ${row.year}`}
+              </td>
               <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.investedNom)}</td>
               <td className="py-2 px-3 mono text-primary font-semibold text-right">{fmtCompact(row.interestsNom)}</td>
               <td className="py-2 px-3 mono text-text font-semibold text-right">{fmtCompact(row.nominal)}</td>

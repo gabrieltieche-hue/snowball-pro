@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useLang } from "../../i18n"
 import { cn } from "@/utils/cn"
 import type { TerminalBin } from "../../types"
 
@@ -28,6 +29,7 @@ export function TerminalHistogram({
   highlightRuin = false,
   leftNote,
 }: TerminalHistogramProps) {
+  const { tr } = useLang()
   const [hovered, setHovered] = useState<number | null>(null)
   if (bins.length === 0) return null
 
@@ -39,7 +41,19 @@ export function TerminalHistogram({
   // alignées avec les barres sur une distribution à queue droite.
   const posOf = (v: number) => Math.min(100, Math.max(0, Math.sqrt(v / xMax) * 100))
   const modalBin = bins.reduce((a, b) => (b.count > (a?.count ?? 0) ? b : a), bins[0])
-  const ariaSummary = `Histogramme des issues : ${total} cas répartis en ${bins.length} classes de capital final entre ${format(bins[0]?.low ?? 0)} et ${format(xMax)}. La classe la plus fréquente contient ${modalBin?.count ?? 0} cas autour de ${format(modalBin?.value ?? 0)}. La médiane est à ${format(median)}, la moyenne à ${format(mean)} (l'écart entre les deux reflète les cas très chanceux).`
+  const ariaSummary = tr(
+    "Histogramme des issues : {total} cas répartis en {nb} classes de capital final entre {low} et {high}. La classe la plus fréquente contient {count} cas autour de {value}. La médiane est à {med}, la moyenne à {mean} (l'écart entre les deux reflète les cas très chanceux).",
+    {
+      total,
+      nb: bins.length,
+      low: format(bins[0]?.low ?? 0),
+      high: format(xMax),
+      count: modalBin?.count ?? 0,
+      value: format(modalBin?.value ?? 0),
+      med: format(median),
+      mean: format(mean),
+    },
+  )
 
   return (
     <div className="space-y-2">
@@ -92,7 +106,11 @@ export function TerminalHistogram({
                     <span className="font-bold text-text">≈ {format(bin.value)}</span>
                     <span className="text-text-dim">
                       {" "}
-                      · {bin.count} cas ({((bin.count / total) * 100).toFixed(1).replace(".", ",")} %)
+                      ·{" "}
+                      {tr("{n} cas ({pct} %)", {
+                        n: bin.count,
+                        pct: ((bin.count / total) * 100).toFixed(1).replace(".", ","),
+                      })}
                     </span>
                   </div>
                 )}
@@ -105,14 +123,14 @@ export function TerminalHistogram({
         <div className="absolute inset-y-0 pointer-events-none" style={{ left: `${posOf(median)}%` }} aria-hidden>
           <div className="h-full w-px bg-[var(--color-success)]/80" />
           <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[var(--color-success)] drop-shadow">
-            méd.
+            {tr("méd.")}
           </div>
         </div>
         {/* Repère moyenne */}
         <div className="absolute inset-y-0 pointer-events-none" style={{ left: `${posOf(mean)}%` }} aria-hidden>
           <div className="h-full w-px bg-[var(--color-accent)]/80 border-l border-dashed border-[var(--color-accent)]/50" />
           <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-[var(--color-accent)] drop-shadow">
-            moy.
+            {tr("moy.")}
           </div>
         </div>
       </div>
@@ -124,14 +142,16 @@ export function TerminalHistogram({
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[9px] text-text-dim">
         <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-0.5 bg-[var(--color-success)] inline-block" /> Médiane : {format(median)} — 1 cas sur 2
-          fait mieux
+          <span className="w-2 h-0.5 bg-[var(--color-success)] inline-block" />{" "}
+          {tr("Médiane : {m} — 1 cas sur 2 fait mieux", { m: format(median) })}
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-0.5 bg-[var(--color-accent)] inline-block" /> Moyenne : {format(mean)} — tirée par la
-          queue droite
+          <span className="w-2 h-0.5 bg-[var(--color-accent)] inline-block" />{" "}
+          {tr("Moyenne : {m} — tirée par la queue droite", { m: format(mean) })}
         </span>
-        <span>· La dernière barre regroupe aussi les cas au-delà de {format(xMax)} (queue droite).</span>
+        <span>
+          {tr("· La dernière barre regroupe aussi les cas au-delà de {max} (queue droite).", { max: format(xMax) })}
+        </span>
       </div>
     </div>
   )

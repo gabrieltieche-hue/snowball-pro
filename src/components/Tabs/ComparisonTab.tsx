@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { motion } from "framer-motion"
 import { Table } from "lucide-react"
-import { fmtCompact } from "../../engine"
+import { useLang } from "../../i18n"
 import { ComparisonChart } from "../Charts/ComparisonChart"
 import { ComparisonSummary } from "../Simulation/ComparisonSummary"
 import { SectionHeader } from "../shared/SectionHeader"
@@ -16,6 +16,7 @@ interface ComparisonTabProps {
 }
 
 export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: ComparisonTabProps) {
+  const { tr, lang, fmtCompact } = useLang()
   const maxYears = Math.max(rowsA.length, rowsB.length)
   const tableRows = useMemo(
     () =>
@@ -47,17 +48,17 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
 
       <div className="glass rounded-3xl overflow-hidden">
         <div className="px-5 sm:px-6 py-4 border-b border-border/30">
-          <SectionHeader as="h3" level="card" icon={Table} title="Tableau comparatif annuel" className="mb-0" />
+          <SectionHeader as="h3" level="card" icon={Table} title={tr("Tableau comparatif annuel")} className="mb-0" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border">
                 {[
-                  { label: "Année", align: "left" },
-                  { label: "Scénario A", align: "right" },
-                  { label: "Scénario B", align: "right" },
-                  { label: "Écart (B − A)", align: "right" },
+                  { label: tr("Année"), align: "left" },
+                  { label: tr("Scénario A"), align: "right" },
+                  { label: tr("Scénario B"), align: "right" },
+                  { label: tr("Écart (B − A)"), align: "right" },
                 ].map(h => (
                   <th
                     key={h.label}
@@ -79,7 +80,9 @@ export function ComparisonTab({ rowsA, rowsB, inputs, darkMode, comparison }: Co
                   transition={{ delay: i * 0.005 }}
                   className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
                 >
-                  <td className="py-2 px-3 text-text-dim whitespace-nowrap">Année {row.year}</td>
+                  <td className="py-2 px-3 text-text-dim whitespace-nowrap">
+                    {lang === "en" ? `Year ${row.year}` : `Année ${row.year}`}
+                  </td>
                   <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.A)}</td>
                   <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.B)}</td>
                   <td

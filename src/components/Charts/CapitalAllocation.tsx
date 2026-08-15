@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import { PieChart } from "lucide-react"
-import { computeTaxBreakdown, deflationFactor, fmtCurrency, fmtDecimal } from "../../engine"
+import { computeTaxBreakdown, deflationFactor } from "../../engine"
+import { useLang } from "../../i18n"
 import { chartTheme } from "../../utils/chartTheme"
 import { pie3dGeometry } from "../../utils/pie3d"
 import { SectionHeader } from "../shared/SectionHeader"
@@ -30,6 +31,7 @@ const RY = 54
 const DEPTH = 24
 
 export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: CapitalAllocationProps) {
+  const { tr, fmtCurrency, fmtDecimal } = useLang()
   const lastRow = rows[rows.length - 1]
   const [active, setActive] = useState<number | null>(null)
   // v6.10 — palette unique des graphiques : le camembert utilise les mêmes
@@ -66,11 +68,12 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
     const gains = Math.max(0, lastRow.grossGains - tax.socialCharges - tax.incomeTax) * factor
     const remainder = Math.max(0, total - invested - gains)
     return [
-      { label: "Versements après fiscalité", value: invested, color: theme.invested },
-      { label: "Gains après impôts", value: gains, color: theme.gains },
-      { label: "Autres écarts arrondis", value: remainder, color: theme.tax },
+      { label: tr("Versements après fiscalité"), value: invested, color: theme.invested },
+      { label: tr("Gains après impôts"), value: gains, color: theme.gains },
+      { label: tr("Autres écarts arrondis"), value: remainder, color: theme.tax },
     ]
-  }, [lastRow, inputs, theme, showReal])
+    // tr est stable par langue ; la langue change → on reconstruit les libellés.
+  }, [lastRow, inputs, theme, showReal, tr])
 
   const total = useMemo(() => items.reduce((acc, i) => acc + i.value, 0), [items])
 
@@ -104,10 +107,10 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
   return (
     <div className="glass rounded-3xl p-6 animate-scale-in">
       <SectionHeader
-        title="D'où vient votre argent ?"
+        title={tr("D'où vient votre argent ?")}
         icon={PieChart}
         level="card"
-        sub="net après liquidation théorique"
+        sub={tr("net après liquidation théorique")}
       />
 
       <svg viewBox={`0 0 260 190`} className="w-full max-w-[270px] mx-auto block h-auto">
@@ -179,7 +182,7 @@ export function CapitalAllocation({ rows, inputs, darkMode, showReal = false }: 
       </div>
 
       <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-        <span className="text-[10px] text-text-dim">Capital total</span>
+        <span className="text-[10px] text-text-dim">{tr("Capital total")}</span>
         <span className="mono text-xs font-bold" style={{ color: "var(--color-text)" }}>
           {fmtCurrency(total)}
         </span>

@@ -120,11 +120,13 @@ export function pfuRate(rules: TaxYearRules): number {
 }
 
 /**
- * Formate un taux en français (0.186 → « 18,6 % » ; 0.3 → « 30 % »).
- * Utilisé par les libellés UI DÉRIVÉS de cette table — jamais de taux codé en
- * dur dans les composants.
+ * Formate un taux en français (0.186 → « 18,6 % » ; 0.3 → « 30 % ») ou en
+ * anglais (0.186 → « 18.6% » ; 0.3 → « 30% »). Utilisé par les libellés UI
+ * DÉRIVÉS de cette table — jamais de taux codé en dur dans les composants.
+ * Le param `lang` est optionnel (défaut fr, rétrocompatible).
  */
-export function fmtTaxPercent(rate: number): string {
-  const s = `${(rate * 100).toFixed(1).replace(".", ",")}`
-  return `${s.replace(/,0$/, "")} %`
+export function fmtTaxPercent(rate: number, lang: "fr" | "en" = "fr"): string {
+  const s = `${(rate * 100).toFixed(1)}`
+  const trimmed = s.replace(/\.0$/, "").replace(/,0$/, "")
+  return lang === "en" ? `${trimmed}%` : `${trimmed.replace(".", ",")} %`
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { ArrowLeft, Wallet } from "lucide-react"
+import { useLang } from "../../i18n"
 import { navigateTo } from "../../router"
 
 interface AuthLayoutProps {
@@ -13,6 +14,7 @@ interface AuthLayoutProps {
  * (même emblème or que l'app), carte glass centrée, note de confidentialité.
  */
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
+  const { tr } = useLang()
   return (
     <div className="min-h-screen bg-surface text-text flex flex-col">
       <h1 className="sr-only">{title}</h1>
@@ -28,7 +30,9 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
               <div className="font-display text-lg font-extrabold tracking-tight">
                 SNOWBALL <span className="text-primary">PRO</span>
               </div>
-              <div className="text-[10px] text-text-dim uppercase tracking-[0.22em]">Simulateur patrimonial</div>
+              <div className="text-[10px] text-text-dim uppercase tracking-[0.22em]">
+                {tr("Simulateur patrimonial")}
+              </div>
             </div>
           </div>
           <button
@@ -36,7 +40,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             onClick={() => navigateTo("landing")}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
           >
-            <ArrowLeft size={12} aria-hidden /> Retour à l'accueil
+            <ArrowLeft size={12} aria-hidden /> {tr("Retour à l'accueil")}
           </button>
         </div>
       </header>
@@ -59,8 +63,9 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             </div>
           </div>
           <p className="text-[10.5px] text-text-dim text-center mt-4 leading-relaxed px-2">
-            Vos identifiants et vos simulations restent <strong className="text-text-muted">sur cet appareil</strong> —
-            aucune donnée n'est envoyée sur un serveur.
+            {tr("Vos identifiants et vos simulations restent")}{" "}
+            <strong className="text-text-muted">{tr("sur cet appareil")}</strong> —{" "}
+            {tr("aucune donnée n'est envoyée sur un serveur.")}
           </p>
         </div>
       </main>

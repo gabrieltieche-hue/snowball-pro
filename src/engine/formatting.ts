@@ -1,7 +1,21 @@
-export function fmtCurrency(value: number): string {
+import type { Lang } from "./i18n"
+
+/**
+ * Formate un montant en euros. Français : « 1 234 567,89 € » (espace fine,
+ * virgule décimale, M€/Md€). Anglais : « €1,234,567.89 » (Intl en-US, M/B).
+ * Le param `lang` est optionnel (défaut fr) : toute l'app pré-i18n et les
+ * tests moteur restent identiques.
+ */
+export function fmtCurrency(value: number, lang: Lang = "fr"): string {
   const n = Math.abs(value) < 0.005 ? 0 : value
   const abs = Math.abs(n)
   const sign = n < 0 ? "-" : ""
+  if (lang === "en") {
+    if (abs >= 1_000_000_000) return `${sign}€${(abs / 1_000_000_000).toFixed(2)}B`
+    if (abs >= 1_000_000) return `${sign}€${(abs / 1_000_000).toFixed(2)}M`
+    if (abs >= 10_000) return `${sign}€${Math.round(abs).toLocaleString("en-US")}`
+    return `${sign}€${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
   // Séparateur décimal français (virgule) partout, y compris M€/Md€ : avant
   // l'audit v5.6.2, « 1.00 M€ » (point) côtoyait « 1 000 000 € » et « 10,1 % »
   // à virgule — incohérent dans une app en français.
@@ -11,17 +25,26 @@ export function fmtCurrency(value: number): string {
   return `${sign}${abs.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
 }
 
-export function fmtCompact(value: number): string {
+/** Idem fmtCurrency, en compact (« 1,2M » en fr, « 1.2M » en en). */
+export function fmtCompact(value: number, lang: Lang = "fr"): string {
   const abs = Math.abs(value)
   const sign = value < 0 ? "-" : ""
+  if (lang === "en") {
+    if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(1)}B`
+    if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`
+    if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}K`
+    return `${sign}${Math.round(abs)}`
+  }
   if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(1).replace(".", ",")}Md`
   if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1).replace(".", ",")}M`
   if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`
   return `${sign}${Math.round(abs)}`
 }
 
-export function fmtPercent(value: number, digits = 1): string {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(digits).replace(".", ",")}%`
+export function fmtPercent(value: number, digits = 1, lang: Lang = "fr"): string {
+  const d = value.toFixed(digits)
+  const formatted = lang === "en" ? d : d.replace(".", ",")
+  return `${value >= 0 ? "+" : ""}${formatted}%`
 }
 
 /**
@@ -30,8 +53,9 @@ export function fmtPercent(value: number, digits = 1): string {
  * (« 43.3 % », « 0.00%/an », « TAUX 2.5 % ») — helper unique pour ne plus
  * jamais laisser un point décimal anglais dans l'interface.
  */
-export function fmtDecimal(value: number, digits = 1): string {
-  return value.toFixed(digits).replace(".", ",")
+export function fmtDecimal(value: number, digits = 1, lang: Lang = "fr"): string {
+  const d = value.toFixed(digits)
+  return lang === "en" ? d : d.replace(".", ",")
 }
 
 /**

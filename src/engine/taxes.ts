@@ -71,6 +71,12 @@ export function computeTaxBreakdown(
   // taux périmé) — toute la fiscalité découle de taxRules.ts (v6).
   const rules = getTaxRules(opts.taxYear)
   const pfu = pfuRate(rules)
+  // Langue des libellés explicatifs (v6.12) — défaut français.
+  const isEn = opts.lang === "en"
+  // Taux « TMI 30 % » (fr) / « 30% » (en) — espace avant % propre au français.
+  const tmiPct = (v: number) => `${(v * 100).toFixed(0)}${isEn ? "%" : " %"}`
+  // Montant compact « 150 k€ » (fr) / « €150k » (en).
+  const kAmount = (v: number) => (isEn ? `€${(v / 1000).toFixed(0)}k` : `${(v / 1000).toFixed(0)} k€`)
   const notes: string[] = []
   // Boucle chaude (décaissement) : les notes ne sont jamais lues → on ne les
   // construit pas (perf : 10 k runs × 60 ans × 12 mois = 7,2 M d'appels).
@@ -96,7 +102,14 @@ export function computeTaxBreakdown(
       netGains: grossGains,
       totalTax: 0,
       effectiveRate: 0,
-      notes: envelope === "none" ? ["Simulation sans impôts (aucun compte d'investissement choisi)."] : notes,
+      notes:
+        envelope === "none"
+          ? [
+              isEn
+                ? "Simulation without taxes (no investment account chosen)."
+                : "Simulation sans impôts (aucun compte d'investissement choisi).",
+            ]
+          : notes,
     }
   }
 
@@ -106,19 +119,26 @@ export function computeTaxBreakdown(
       taxableGains = grossGains
       incomeTax = taxableGains * tmi
       note(
-        `CTO en barème progressif : ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + impôt sur le revenu à votre TMI de ${(
-          tmi * 100
-        ).toFixed(0)} %.`,
+        isEn
+          ? `CTO on progressive scale: ${fmtTaxPercent(rules.socialRate, "en")} social contributions + income tax at your marginal rate of ${tmiPct(tmi)}.`
+          : `CTO en barème progressif : ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + impôt sur le revenu à votre TMI de ${(
+              tmi * 100
+            ).toFixed(0)} %.`,
       )
     } else {
       incomeTax = grossGains * rules.pfuIncomeRate
       flatTax = grossGains * pfu
       note(
-        `CTO (compte-titres ordinaire) : impôt unique de ${fmtTaxPercent(
-          pfu,
-        )} = ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + ${fmtTaxPercent(
-          rules.pfuIncomeRate,
-        )} d'impôt sur le revenu.`,
+        isEn
+          ? `CTO (ordinary securities account): single flat tax of ${fmtTaxPercent(pfu, "en")} = ${fmtTaxPercent(
+              rules.socialRate,
+              "en",
+            )} social contributions + ${fmtTaxPercent(rules.pfuIncomeRate, "en")} income tax.`
+          : `CTO (compte-titres ordinaire) : impôt unique de ${fmtTaxPercent(
+              pfu,
+            )} = ${fmtTaxPercent(rules.socialRate)} de cotisations sociales + ${fmtTaxPercent(
+              rules.pfuIncomeRate,
+            )} d'impôt sur le revenu.`,
       )
     }
   }
@@ -129,19 +149,32 @@ export function computeTaxBreakdown(
       incomeTax = 0
       flatTax = 0
       note(
-        `PEA détenu plus de 5 ans : pas d'impôt sur le revenu, uniquement ${fmtTaxPercent(
-          rules.socialRate,
-        )} de cotisations sociales sur les gains.`,
+        isEn
+          ? `PEA held for more than 5 years: no income tax, only ${fmtTaxPercent(
+              rules.socialRate,
+              "en",
+            )} social contributions on gains.`
+          : `PEA détenu plus de 5 ans : pas d'impôt sur le revenu, uniquement ${fmtTaxPercent(
+              rules.socialRate,
+            )} de cotisations sociales sur les gains.`,
       )
     } else {
       socialCharges = grossGains * rules.socialRate
       incomeTax = grossGains * rules.pfuIncomeRate
       flatTax = grossGains * pfu
-      note(`PEA détenu moins de 5 ans : impôt unique de ${fmtTaxPercent(pfu)} sur les gains.`)
+      note(
+        isEn
+          ? `PEA held for less than 5 years: single flat tax of ${fmtTaxPercent(pfu, "en")} on gains.`
+          : `PEA détenu moins de 5 ans : impôt unique de ${fmtTaxPercent(pfu)} sur les gains.`,
+      )
     }
     const cap = couple ? rules.peaCapCouple : rules.peaCapSingle
     if (contributionBase > cap)
-      note(`Plafond PEA dépassé : ce compte est plafonné à ${(cap / 1000).toFixed(0)} k€ de versements au total.`)
+      note(
+        isEn
+          ? `PEA cap exceeded: this account is capped at ${kAmount(cap)} of total contributions.`
+          : `Plafond PEA dépassé : ce compte est plafonné à ${(cap / 1000).toFixed(0)} k€ de versements au total.`,
+      )
   }
 
   if (envelope === "av") {
@@ -158,16 +191,29 @@ export function computeTaxBreakdown(
         taxableGains * withinFraction * rules.avReducedIRRate +
         taxableGains * (1 - withinFraction) * rules.avExcessIRRate
       note(
-        `Assurance-vie détenue plus de 8 ans : cotisations sociales sur tous les gains + abattement de ${(
-          allowance / 1000
-        ).toFixed(0)} k€/an. Les gains sur les primes jusqu'à ${(cap / 1000).toFixed(
-          0,
-        )} k€ sont taxés à ${fmtTaxPercent(rules.avReducedIRRate)}, au-delà à ${fmtTaxPercent(rules.avExcessIRRate)}.`,
+        isEn
+          ? `Life insurance held for more than 8 years: social contributions on all gains + allowance of ${kAmount(
+              allowance,
+            )}/year. Gains on premiums up to ${kAmount(cap)} are taxed at ${fmtTaxPercent(
+              rules.avReducedIRRate,
+              "en",
+            )}, beyond at ${fmtTaxPercent(rules.avExcessIRRate, "en")}.`
+          : `Assurance-vie détenue plus de 8 ans : cotisations sociales sur tous les gains + abattement de ${(
+              allowance / 1000
+            ).toFixed(0)} k€/an. Les gains sur les primes jusqu'à ${(cap / 1000).toFixed(
+              0,
+            )} k€ sont taxés à ${fmtTaxPercent(rules.avReducedIRRate)}, au-delà à ${fmtTaxPercent(
+              rules.avExcessIRRate,
+            )}.`,
       )
     } else {
       incomeTax = grossGains * rules.pfuIncomeRate
       flatTax = grossGains * pfu
-      note(`Assurance-vie détenue moins de 8 ans : impôt unique de ${fmtTaxPercent(pfu)}.`)
+      note(
+        isEn
+          ? `Life insurance held for less than 8 years: single flat tax of ${fmtTaxPercent(pfu, "en")}.`
+          : `Assurance-vie détenue moins de 8 ans : impôt unique de ${fmtTaxPercent(pfu)}.`,
+      )
     }
   }
 
@@ -183,11 +229,18 @@ export function computeTaxBreakdown(
     incomeTax = grossGains * rules.pfuIncomeRate
     flatTax = grossGains * (rules.perSocialRate + rules.pfuIncomeRate)
     note(
-      `PER : les versements déduits à l'entrée (${(tmi * 100).toFixed(
-        0,
-      )} % de TMI) sont imposés à la sortie sur 100 % du capital correspondant, sans abattement de 10 %. Les gains sont modélisés au PFU (${fmtTaxPercent(
-        rules.pfuIncomeRate,
-      )} + ${fmtTaxPercent(rules.perSocialRate)}).`,
+      isEn
+        ? `PER: contributions deducted on entry (${tmiPct(
+            tmi,
+          )} marginal rate) are taxed at exit on 100% of the corresponding capital, with no 10% allowance. Gains are modeled at the flat tax (${fmtTaxPercent(
+            rules.pfuIncomeRate,
+            "en",
+          )} + ${fmtTaxPercent(rules.perSocialRate, "en")}).`
+        : `PER : les versements déduits à l'entrée (${(tmi * 100).toFixed(
+            0,
+          )} % de TMI) sont imposés à la sortie sur 100 % du capital correspondant, sans abattement de 10 %. Les gains sont modélisés au PFU (${fmtTaxPercent(
+            rules.pfuIncomeRate,
+          )} + ${fmtTaxPercent(rules.perSocialRate)}).`,
     )
   }
 

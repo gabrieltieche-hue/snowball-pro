@@ -1,6 +1,7 @@
 import { Activity, Gauge, Layers, Receipt, Shield, Timer, TrendingDown, TrendingUp, Wallet } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { fmtCurrency, getHistoricalDataset } from "../../engine"
+import { getHistoricalDataset } from "../../engine"
+import { useLang } from "../../i18n"
 import { HelpTip } from "../shared/HelpTip"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { KPIs, SimulationInputs } from "../../types"
@@ -123,6 +124,7 @@ const CARDS: KpiCard[] = [
 ]
 
 export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
+  const { tr, lang, fmtCurrency, fmtDecimal } = useLang()
   if (!kpis) return null
 
   // Chaîne de rendement de la projection (audit v6.6) : le taux BRUT appliqué
@@ -138,9 +140,13 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
         ? historical.avgReturn
         : historical.compoundedReturn
   const scenarioLabel = { prudent: "Prudent", central: "Central", optimiste: "Optimiste" }[inputs.returnScenario]
-  // Taux français sans zéros inutiles : 2,10 → « 2,1 », 7,95 → « 7,95 ».
-  const fmt = (r: number): string =>
-    (r * 100).toFixed(2).replace(".", ",").replace(/0+$/, "").replace(/,$/, "")
+  // Taux sans zéros inutiles : 2,10 → « 2,1 », 7,95 → « 7,95 » (virgule en
+  // français, point en anglais).
+  const fmt = (r: number): string => {
+    const s = (r * 100).toFixed(2)
+    const local = lang === "en" ? s : s.replace(".", ",")
+    return local.replace(/0+$/, "").replace(/[.,]$/, "")
+  }
   const xirrRatio = kpis.xirr / 100
   const realRatio = kpis.realReturn / 100
   // Inflation IMPLIQUÉE (en %) par les deux valeurs affichées (rapport
@@ -159,21 +165,25 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
       : kpis.realReturn
   // Sous-titres dynamiques des deux cartes « taux » : ils expliquent la chaîne
   // au lieu de citer une référence historique sans lien avec la projection.
+  const inflationStr = fmtDecimal(inflationPct, 2)
   const dynamicSubs: Partial<Record<keyof KPIs, { sub: string; subDebutant: string }>> = {
     xirr: {
       // La chaîne au-dessus du bloc donne déjà le taux brut appliqué : la carte
       // ne le répète pas, elle précise ce qu'EST ce nombre (net de frais, avant
       // impôts et inflation — le XIRR est pré-impôt).
-      sub: `XIRR de VOTRE projection : net de tous vos frais, avant impôts et inflation`,
-      subDebutant: `rendement annuel moyen de votre épargne, après tous vos frais, avant impôts et inflation`,
+      sub: tr("XIRR de VOTRE projection : net de tous vos frais, avant impôts et inflation"),
+      subDebutant: tr("rendement annuel moyen de votre épargne, après tous vos frais, avant impôts et inflation"),
     },
     realReturn: {
-      sub: `net de frais et d'inflation : (1 + ${fmt(xirrRatio)} %) ÷ (1 + ${inflationPct
-        .toFixed(2)
-        .replace(".", ",")} %) − 1 = ${fmt(eqPct / 100)} %`,
-      subDebutant: `votre rendement après frais ET inflation : (1 + ${fmt(xirrRatio)} %) ÷ (1 + ${inflationPct
-        .toFixed(2)
-        .replace(".", ",")} %) − 1 = ${fmt(eqPct / 100)} % — le pouvoir d'achat de votre épargne`,
+      sub: tr("net de frais et d'inflation : (1 + {a} %) ÷ (1 + {b} %) − 1 = {c} %", {
+        a: fmt(xirrRatio),
+        b: inflationStr,
+        c: fmt(eqPct / 100),
+      }),
+      subDebutant: tr(
+        "votre rendement après frais ET inflation : (1 + {a} %) ÷ (1 + {b} %) − 1 = {c} % — le pouvoir d'achat de votre épargne",
+        { a: fmt(xirrRatio), b: inflationStr, c: fmt(eqPct / 100) },
+      ),
     },
   }
 
@@ -184,14 +194,26 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
       {/* v6 : rétrogradé au niveau « card » — le héro est désormais LE niveau
           « page » de l'onglet, « Statistiques clés » ne doit pas lui faire
           concurrence en pleine page (revue adverse). */}
-      <SectionHeader title="Statistiques clés" icon={Gauge} level="card" as="h3" />
+      <SectionHeader title={tr("Statistiques clés")} icon={Gauge} level="card" as="h3" />
       {/* Chaîne de rendement (audit v6.6) : le lien visible entre les trois
           taux — brut appliqué → net de frais → réel. C'est la réponse en une
           ligne à « pourquoi 8,22 %/an devient 8,0 % puis 5,7 % ? ». */}
       <p className="text-[10px] text-text-muted leading-snug mt-1.5 mb-3">
-        Taux appliqué : <strong className="text-text mono">{fmt(scenarioRate)} %/an brut</strong> (scénario{" "}
-        {scenarioLabel}) → <strong className="text-text mono">{fmt(xirrRatio)} % net de frais</strong> →{" "}
-        <strong className="text-text mono">{fmt(realRatio)} % après inflation</strong>
+        {tr("Taux appliqué :")}{" "}
+        <strong className="text-text mono">
+          {fmt(scenarioRate)}
+          {tr(" %/an brut")}
+        </strong>{" "}
+        {tr("(scénario")} {tr(scenarioLabel)}) →{" "}
+        <strong className="text-text mono">
+          {fmt(xirrRatio)}
+          {tr(" % net de frais")}
+        </strong>{" "}
+        →{" "}
+        <strong className="text-text mono">
+          {fmt(realRatio)}
+          {tr(" % après inflation")}
+        </strong>
       </p>
       {/* Grille 2×3 par défaut (6 cartes) : aucune case vide, contrairement à
           l'ancien auto-fit qui laissait un trou de 2 cartes sur les écrans
@@ -203,7 +225,7 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
           const dyn = dynamicSubs[kpi.key]
           const display = kpi.currency
             ? fmtCurrency(val as number)
-            : `${(val as number).toFixed(kpi.digits ?? 1).replace(".", ",")}${kpi.suffix}`
+            : `${fmtDecimal(val as number, kpi.digits ?? 1)}${tr(kpi.suffix)}`
           const Icon = kpi.icon
           return (
             <div
@@ -212,12 +234,14 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">
-                  {kpi.label}
+                  {tr(kpi.label)}
                   {/* XIRR : terme technique masqué en mode Débutant (audit) ;
                       le sous-titre devient la source principale. */}
                   {kpi.key === "xirr" && uiMode === "avance" && (
                     <HelpTip
-                      text="XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, après tous vos frais et avant inflation."
+                      text={tr(
+                        "XIRR : le rendement annuel réellement obtenu par VOTRE projection, versements étalés dans le temps inclus, après tous vos frais et avant inflation.",
+                      )}
                       className="ml-1 align-[-1px]"
                     />
                   )}
@@ -238,8 +262,8 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
                     ? dyn.subDebutant
                     : dyn.sub
                   : uiMode === "debutant" && "subDebutant" in kpi
-                    ? (kpi as KpiCard & { subDebutant: string }).subDebutant
-                    : kpi.sub}
+                    ? tr((kpi as KpiCard & { subDebutant: string }).subDebutant)
+                    : tr(kpi.sub)}
               </div>
             </div>
           )

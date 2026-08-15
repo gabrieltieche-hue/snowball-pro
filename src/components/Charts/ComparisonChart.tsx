@@ -1,7 +1,8 @@
 import { useMemo } from "react"
 import { BarChart3 } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { fmtCompact, fmtCurrency, mergeComparisonSeries } from "../../engine"
+import { mergeComparisonSeries } from "../../engine"
+import { useLang } from "../../i18n"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
@@ -17,8 +18,9 @@ interface ComparisonChartProps {
 }
 
 export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonChartProps) {
+  const { tr, fmtCurrency, fmtCompact } = useLang()
   const theme = chartTheme(darkMode)
-  const chartRef = useChartA11y("Projection comparée des scénarios A et B")
+  const chartRef = useChartA11y(tr("Projection comparée des scénarios A et B"))
   const coarse = useIsCoarsePointer()
   const data = useMemo(
     () => mergeComparisonSeries(rowsA, rowsB, inputs.showReal, true),
@@ -33,14 +35,14 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
         as="h2"
         level="card"
         icon={BarChart3}
-        title="Projection comparée A vs B"
+        title={tr("Projection comparée A vs B")}
         trailing={
           <div className="flex items-center gap-1.5 text-[10px] text-text-dim flex-wrap">
-            <LegendChip color={colorA} label="Scénario A" />
-            <LegendChip color={colorB} label="Scénario B" />
+            <LegendChip color={colorA} label={tr("Scénario A")} />
+            <LegendChip color={colorB} label={tr("Scénario B")} />
             {inputs.showReal && (
               <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Euros d'aujourd'hui
+                {tr("Euros d'aujourd'hui")}
               </span>
             )}
           </div>
@@ -91,8 +93,8 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
                 )
               }}
             />
-            <Line type="monotone" dataKey="A" name="Scénario A" stroke={colorA} strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="B" name="Scénario B" stroke={colorB} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="A" name={tr("Scénario A")} stroke={colorA} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="B" name={tr("Scénario B")} stroke={colorB} strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>

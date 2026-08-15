@@ -1,7 +1,9 @@
 import { useMemo } from "react"
 import { TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { deflationFactor, fmtCurrency, fmtCompact } from "../../engine"
+import { deflationFactor } from "../../engine"
+import type { Lang } from "../../engine"
+import { useLang } from "../../i18n"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
@@ -31,25 +33,30 @@ interface EndLabelProps {
  * affichait 303 k€ d'impôts (euros courants) à côté d'une carte « Impôts » à
  * 176 k€ (euros d'aujourd'hui) : échelles mélangées sur un même graphe.
  */
-export function buildEquitySeries(rows: YearRow[], showReal: boolean, envelope: EnvelopeType) {
+export function buildEquitySeries(rows: YearRow[], showReal: boolean, envelope: EnvelopeType, lang: Lang = "fr") {
+  const yearLabel = lang === "en" ? "Year" : "Année"
   return rows.map(r => {
     const invested = showReal ? r.investedReal : r.investedNom
     const total = showReal ? r.real : r.nominal
     const gains = Math.max(0, total - invested)
     const taxesNom = envelope === "none" ? 0 : Math.max(0, r.nominal - r.taxNet)
     const taxes = showReal ? taxesNom * deflationFactor(r) : taxesNom
-    return { year: `Année ${r.year}`, investi: invested, gains, impôts: taxes }
+    return { year: `${yearLabel} ${r.year}`, investi: invested, gains, impôts: taxes }
   })
 }
 
 export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
+  const { tr, lang, fmtCurrency, fmtCompact } = useLang()
   const showReal = inputs.showReal
   const theme = chartTheme(darkMode)
-  const chartRef = useChartA11y("Projection de votre capital — montants par année")
+  const chartRef = useChartA11y(tr("Projection de votre capital — montants par année"))
   const coarse = useIsCoarsePointer()
   const lastRow = rows[rows.length - 1]
 
-  const data = useMemo(() => buildEquitySeries(rows, showReal, inputs.envelope), [rows, showReal, inputs.envelope])
+  const data = useMemo(
+    () => buildEquitySeries(rows, showReal, inputs.envelope, lang),
+    [rows, showReal, inputs.envelope, lang],
+  )
 
   const gainsColor = showReal ? theme.gainsAlt : theme.gains
   const investedColor = theme.invested
@@ -59,7 +66,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
   // avec un point or sur « Gains ». Couleurs texte alignées WCAG AA 4.5:1
   // sur la carte : l'or vif #996f09 ne passe pas en texte clair (4.1:1), on
   // utilise la variante profonde gainsAlt (#7a5807, 5.9:1).
-  const fmtEnd = (v: number) => `${fmtCompact(v)} €`
+  const fmtEnd = (v: number) => (lang === "en" ? `€${fmtCompact(v)}` : `${fmtCompact(v)} €`)
   const endLabel =
     (seriesColor: string, textColor: string, dot: boolean) =>
     ({ x, y, index, value }: EndLabelProps) => {
@@ -91,18 +98,18 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
         as="h2"
         level="card"
         icon={TrendingUp}
-        title="Projection de votre capital"
+        title={tr("Projection de votre capital")}
         trailing={
           <div className="flex items-center gap-1.5 text-[10px] text-text-dim flex-wrap">
             {showReal && (
               <span className="text-[10px] mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Euros d'aujourd'hui
+                {tr("Euros d'aujourd'hui")}
               </span>
             )}
-            <LegendChip color={gainsColor} label="Gains (bourse)" />
-            <LegendChip color={investedColor} label="Argent épargné" />
+            <LegendChip color={gainsColor} label={tr("Gains (bourse)")} />
+            <LegendChip color={investedColor} label={tr("Argent épargné")} />
             {inputs.envelope !== "none" && (
-              <LegendChip color={taxColor} label="Impôts théoriques (liquidation)" dashed />
+              <LegendChip color={taxColor} label={tr("Impôts théoriques (liquidation)")} dashed />
             )}
           </div>
         }
@@ -113,7 +120,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
           de vue le montant nominal (demande utilisateur). */}
       {showReal && lastRow && (
         <p className="text-[10px] text-text-dim italic leading-snug -mt-2 mb-4">
-          Courbes en euros d'aujourd'hui — sur le compte, le capital final serait de{" "}
+          {tr("Courbes en euros d'aujourd'hui — sur le compte, le capital final serait de")}{" "}
           <strong className="text-text not-italic">{fmtCurrency(lastRow.nominal)}</strong>
         </p>
       )}
@@ -177,7 +184,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
             <Area
               type="monotone"
               dataKey="investi"
-              name="Argent épargné"
+              name={tr("Argent épargné")}
               stackId="1"
               stroke={investedColor}
               strokeWidth={2}
@@ -188,7 +195,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
             <Area
               type="monotone"
               dataKey="gains"
-              name="Gains (bourse)"
+              name={tr("Gains (bourse)")}
               stackId="1"
               stroke={gainsColor}
               strokeWidth={2}
@@ -200,7 +207,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               <Line
                 type="monotone"
                 dataKey="impôts"
-                name="Impôts théoriques (liquidation)"
+                name={tr("Impôts théoriques (liquidation)")}
                 stroke={taxColor}
                 strokeWidth={2}
                 strokeDasharray="6 3"

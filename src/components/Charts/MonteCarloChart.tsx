@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts"
 import { TrendingUp } from "lucide-react"
-import { fmtCurrency, fmtCompact } from "../../engine"
+import { useLang } from "../../i18n"
 import { chartTheme } from "../../utils/chartTheme"
 import { useChartA11y } from "../../hooks/useChartA11y"
 import { useIsCoarsePointer } from "../../hooks/useIsCoarsePointer"
@@ -27,8 +27,9 @@ interface MonteCarloChartProps {
 }
 
 export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloChartProps) {
+  const { tr, locale, fmtCurrency, fmtCompact } = useLang()
   const theme = chartTheme(darkMode)
-  const chartRef = useChartA11y("Votre capital année après année — P10, P50 et P90")
+  const chartRef = useChartA11y(tr("Votre capital année après année — P10, P50 et P90"))
   const coarse = useIsCoarsePointer()
   const data = useMemo(
     () =>
@@ -40,14 +41,15 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
         const p50 = real ? (result.p50r[i] ?? 0) : (result.p50[i] ?? 0)
         const p90 = real ? (result.p90r[i] ?? 0) : (result.p90[i] ?? 0)
         return {
-          year: y === 0 ? "Aujourd'hui" : `+${y}`,
+          year: y === 0 ? tr("Aujourd'hui") : `+${y}`,
           p10,
           p50,
           p90,
           bande: [p10, p90],
         }
       }),
-    [result, real],
+    // tr change d'identité quand la langue change → on reconstruit les libellés.
+    [result, real, tr],
   )
 
   return (
@@ -56,21 +58,24 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
         as="h3"
         level="card"
         icon={TrendingUp}
-        title="Votre capital, année après année"
+        title={tr("Votre capital, année après année")}
         className="mb-2 px-1"
         trailing={
           <span className="text-[10px] text-text-dim">
-            Objectif visé : <span className="mono">{fmtCompact(result.goalTarget)}</span>
+            {tr("Objectif visé :")} <span className="mono">{fmtCompact(result.goalTarget)}</span>
           </span>
         }
       />
       <p className="text-[10px] text-text-dim mb-2 px-1">
-        {result.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un cas
-        possible ·{" "}
+        {tr("{n} évolutions de bourse différentes testées · chaque ligne est un cas possible ·", {
+          n: result.runs.toLocaleString(locale),
+        })}{" "}
         {real ? (
-          <strong className="text-text not-italic">en euros d'aujourd'hui (nets d'impôts et d'inflation)</strong>
+          <strong className="text-text not-italic">
+            {tr("en euros d'aujourd'hui (nets d'impôts et d'inflation)")}
+          </strong>
         ) : (
-          <strong className="text-text not-italic">en euros courants (nets d'impôts)</strong>
+          <strong className="text-text not-italic">{tr("en euros courants (nets d'impôts)")}</strong>
         )}
       </p>
       <div ref={chartRef} className="h-72 sm:h-80">
@@ -106,10 +111,10 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
                 return (
                   <div className="glass-strong rounded-xl p-3 shadow-premium min-w-[200px]">
                     <div className="text-[10px] text-text-dim uppercase tracking-wider border-b border-border/70 pb-1.5 mb-1.5">
-                      {label === "Aujourd'hui" ? "Aujourd'hui" : `${label} ans`}
+                      {label === tr("Aujourd'hui") ? tr("Aujourd'hui") : tr("{n} ans", { n: label ?? "" })}
                     </div>
                     {payload
-                      .filter(entry => entry.name !== "Fourchette (pire – meilleur cas)")
+                      .filter(entry => entry.name !== tr("Fourchette (pire – meilleur cas)"))
                       .map((entry, i) => (
                         <div key={i} className="flex items-center justify-between gap-3 py-0.5">
                           <span className="text-[11px] flex items-center gap-1.5">
@@ -128,7 +133,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
             <Area
               type="monotone"
               dataKey="bande"
-              name="Fourchette (pire – meilleur cas)"
+              name={tr("Fourchette (pire – meilleur cas)")}
               stroke="none"
               fill="url(#bandGradientMC)"
               isAnimationActive={false}
@@ -136,7 +141,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
             <Line
               type="monotone"
               dataKey="p90"
-              name="Bonne période de bourse (P90)"
+              name={tr("Bonne période de bourse (P90)")}
               stroke="var(--color-success)"
               strokeWidth={1.5}
               strokeDasharray="4 3"
@@ -145,7 +150,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
             <Line
               type="monotone"
               dataKey="p50"
-              name="Scénario moyen (P50)"
+              name={tr("Scénario moyen (P50)")}
               stroke="var(--color-primary)"
               strokeWidth={2.5}
               dot={false}
@@ -153,7 +158,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
             <Line
               type="monotone"
               dataKey="p10"
-              name="Période difficile (P10)"
+              name={tr("Période difficile (P10)")}
               stroke="var(--color-danger)"
               strokeWidth={1.5}
               strokeDasharray="4 3"
@@ -166,7 +171,7 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
               stroke="var(--color-warning)"
               strokeWidth={1}
               strokeDasharray="2 2"
-              label={{ value: "Objectif", position: "right", fill: theme.tick, fontSize: 10 }}
+              label={{ value: tr("Objectif"), position: "right", fill: theme.tick, fontSize: 10 }}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -176,22 +181,26 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
         <div className="flex items-start gap-2 px-1">
           <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[var(--color-success)]" />
           <div>
-            <div className="font-bold text-text">Bonne période de bourse (P90)</div>
-            <div className="text-text-dim">La bourse vous sourit — seul 1 cas sur 10 fait encore mieux</div>
+            <div className="font-bold text-text">{tr("Bonne période de bourse (P90)")}</div>
+            <div className="text-text-dim">{tr("La bourse vous sourit — seul 1 cas sur 10 fait encore mieux")}</div>
           </div>
         </div>
         <div className="flex items-start gap-2 px-1">
           <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-primary" />
           <div>
-            <div className="font-bold text-text">Scénario moyen (P50)</div>
-            <div className="text-text-dim">Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien</div>
+            <div className="font-bold text-text">{tr("Scénario moyen (P50)")}</div>
+            <div className="text-text-dim">
+              {tr("Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien")}
+            </div>
           </div>
         </div>
         <div className="flex items-start gap-2 px-1">
           <span className="w-2 h-2 rounded-full mt-1 shrink-0 bg-[var(--color-danger)]" />
           <div>
-            <div className="font-bold text-text">Période difficile (P10)</div>
-            <div className="text-text-dim">La bourse est décevante — seul 1 cas sur 10 fait encore moins bien</div>
+            <div className="font-bold text-text">{tr("Période difficile (P10)")}</div>
+            <div className="text-text-dim">
+              {tr("La bourse est décevante — seul 1 cas sur 10 fait encore moins bien")}
+            </div>
           </div>
         </div>
       </div>

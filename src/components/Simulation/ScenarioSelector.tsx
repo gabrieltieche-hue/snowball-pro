@@ -2,6 +2,7 @@ import { useRef } from "react"
 import type { KeyboardEvent } from "react"
 import { CheckCircle2 } from "lucide-react"
 import { getHistoricalDataset } from "../../engine"
+import { useLang } from "../../i18n"
 import { HelpTip } from "../shared/HelpTip"
 import { cn } from "../../utils/cn"
 import type { ReturnScenario, SimulationInputs } from "../../types"
@@ -49,13 +50,14 @@ const SCENARIOS: ScenarioDef[] = [
  * historique, pas la meilleure moyenne.
  */
 export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps) {
+  const { tr, fmtDecimal } = useLang()
   const historical = getHistoricalDataset(inputs.historicalIndex)
   const rates: Record<ReturnScenario, number> = {
     prudent: historical.netReturn,
     central: historical.compoundedReturn,
     optimiste: historical.avgReturn,
   }
-  const fmtRate = (r: number): string => `${(r * 100).toFixed(2).replace(".", ",")} %`
+  const fmtRate = (r: number): string => `${fmtDecimal(r * 100, 2)} %`
   const groupRef = useRef<HTMLDivElement>(null)
 
   // Roving tabindex + ←/→/Home/End (pattern radiogroup ARIA, identique au
@@ -82,16 +84,20 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">Scénario de rendement</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+          {tr("Scénario de rendement")}
+        </span>
         <HelpTip
-          text="Le Simulateur applique chaque année le même taux de référence, choisi parmi trois scénarios. Monte Carlo et la Rente, eux, rejouent toujours l'historique réel année par année — leur médiane se calcule toute seule."
+          text={tr(
+            "Le Simulateur applique chaque année le même taux de référence, choisi parmi trois scénarios. Monte Carlo et la Rente, eux, rejouent toujours l'historique réel année par année — leur médiane se calcule toute seule.",
+          )}
           className="ml-0.5"
         />
       </div>
       <div
         ref={groupRef}
         role="radiogroup"
-        aria-label="Scénario de rendement"
+        aria-label={tr("Scénario de rendement")}
         onKeyDown={handleKeyDown}
         className="grid gap-1.5"
       >
@@ -116,16 +122,16 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
                 <span
                   className={cn("block text-[11px] font-bold leading-tight", isActive ? "text-primary" : "text-text")}
                 >
-                  {sc.label}
+                  {tr(sc.label)}
                   {isActive && (
                     <CheckCircle2 size={12} className="inline-block text-primary ml-1 -mt-0.5" aria-hidden />
                   )}
                 </span>
-                <span className="block text-[9px] text-text-dim leading-snug mt-0.5">{sc.desc}</span>
+                <span className="block text-[9px] text-text-dim leading-snug mt-0.5">{tr(sc.desc)}</span>
               </span>
               <span className="mono text-sm font-extrabold text-text leading-none whitespace-nowrap shrink-0">
                 {fmtRate(rates[sc.id])}
-                <span className="text-[9px] font-medium text-text-dim ml-0.5">/an</span>
+                <span className="text-[9px] font-medium text-text-dim ml-0.5">{tr("/an")}</span>
               </span>
             </button>
           )
@@ -135,9 +141,9 @@ export function ScenarioSelector({ inputs, updateInput }: ScenarioSelectorProps)
         <p className="text-[10px] text-text-muted mt-2 leading-relaxed flex items-start gap-1.5 bg-primary/8 border border-primary/20 rounded-xl px-3 py-2">
           <CheckCircle2 size={11} className="text-primary shrink-0 mt-0.5" aria-hidden />
           <span>
-            Projection centrale basée sur la <strong className="text-text">médiane historique</strong> (rendement
-            composé {fmtRate(rates.central)}/an, krachs inclus) —{" "}
-            <strong className="text-text">pas sur la meilleure moyenne</strong>.
+            {tr("Projection centrale basée sur la")} <strong className="text-text">{tr("médiane historique")}</strong>{" "}
+            {tr("(rendement composé {rate}/an, krachs inclus) —", { rate: fmtRate(rates.central) })}{" "}
+            <strong className="text-text">{tr("pas sur la meilleure moyenne")}</strong>.
           </span>
         </p>
       )}

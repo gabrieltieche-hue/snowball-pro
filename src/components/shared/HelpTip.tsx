@@ -1,4 +1,5 @@
 import { useId, useState } from "react"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 
 interface HelpTipProps {
@@ -14,6 +15,7 @@ interface HelpTipProps {
  * libellé du curseur.
  */
 export function HelpTip({ text, className }: HelpTipProps) {
+  const { tr } = useLang()
   const [open, setOpen] = useState(false)
   const tooltipId = useId()
 
@@ -30,7 +32,7 @@ export function HelpTip({ text, className }: HelpTipProps) {
           TOUJOURS, la fermeture se fait au blur / au survol sortant. */}
       <button
         type="button"
-        aria-label="Aide"
+        aria-label={tr("Aide")}
         aria-expanded={open}
         aria-describedby={open ? tooltipId : undefined}
         onClick={() => setOpen(true)}

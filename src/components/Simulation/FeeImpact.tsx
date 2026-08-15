@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { Percent } from "lucide-react"
-import { runSimulation as reRunSim, deflationFactor, fmtCurrency } from "../../engine"
+import { runSimulation as reRunSim, deflationFactor } from "../../engine"
+import { useLang } from "../../i18n"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -10,6 +11,7 @@ interface FeeImpactProps {
 }
 
 export function FeeImpact({ rows, inputs }: FeeImpactProps) {
+  const { tr, fmtCurrency } = useLang()
   // Hook appelé inconditionnellement (les règles de React l'exigent) : le
   // retour anticipé sans rows vient après.
   const noFeeFinal = useMemo(
@@ -27,15 +29,15 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
 
   return (
     <div className="card-subtle rounded-2xl p-5 space-y-2">
-      <SectionHeader title="Ce que les frais vous coûtent" icon={Percent} level="card" />
+      <SectionHeader title={tr("Ce que les frais vous coûtent")} icon={Percent} level="card" />
       <div className="space-y-1.5">
         {/* M17 — zéro en neutre, pas en rouge : des frais nuls ne sont pas un
             problème. Le rouge (token danger, plus de hex hardcodés qui
             s'effaçaient sur fond sombre) ne sert que quand il y a un vrai
             coût. */}
         {[
-          { label: "Frais débités au total", value: lastRow.feesLost * factor },
-          { label: "Capital perdu à cause des frais", value: feeImpact },
+          { label: tr("Frais débités au total"), value: lastRow.feesLost * factor },
+          { label: tr("Capital perdu à cause des frais"), value: feeImpact },
         ].map(item => (
           <div key={item.label} className="flex items-center justify-between py-1">
             <span className="text-[11px] text-text-dim">{item.label}</span>
@@ -51,8 +53,8 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
       <div className="h-px bg-border my-2" />
       {feeImpact > 0 ? (
         <div className="text-[10px] text-text-dim">
-          Sans frais, votre capital final serait de{" "}
-          <span className="font-bold text-danger">{fmtCurrency(noFeeFinal * factor)}</span> (au lieu de{" "}
+          {tr("Sans frais, votre capital final serait de")}{" "}
+          <span className="font-bold text-danger">{fmtCurrency(noFeeFinal * factor)}</span> {tr("(au lieu de")}{" "}
           {fmtCurrency(lastRow.nominal * factor)}).
         </div>
       ) : (
@@ -60,9 +62,10 @@ export function FeeImpact({ rows, inputs }: FeeImpactProps) {
             un bon point. On le dit clairement, et on invite à des frais
             réalistes (les défauts de l'app sont 0,25 % ETF / 0,75 % AV). */
         <div className="text-[10px] text-text-dim">
-          🎉 <strong className="text-text">Aucun frais : votre croissance n'est pas rognée.</strong> Les défauts
-          réalistes sont 0,25 %/an d'ETF et 0,75 %/an d'assurance-vie — réglez-les dans les paramètres pour voir leur
-          coût réel.
+          🎉 <strong className="text-text">{tr("Aucun frais : votre croissance n'est pas rognée.")}</strong>{" "}
+          {tr(
+            "Les défauts réalistes sont 0,25 %/an d'ETF et 0,75 %/an d'assurance-vie — réglez-les dans les paramètres pour voir leur coût réel.",
+          )}
         </div>
       )}
     </div>

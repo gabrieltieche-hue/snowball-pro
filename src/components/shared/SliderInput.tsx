@@ -1,4 +1,5 @@
 import { AlertTriangle } from "lucide-react"
+import { useLang } from "../../i18n"
 import { SmartInput } from "./SmartInput"
 import { HelpTip } from "./HelpTip"
 
@@ -42,6 +43,7 @@ export function SliderInput({
   hardMax,
   allowNegative,
 }: SliderInputProps) {
+  const { tr } = useLang()
   // Rail « rempli » : la partie déjà parcourue est teintée (or, ou la couleur
   // de l'option quand elle en a une) — le curseur donne un retour immédiat.
   const span = max - min || 1
@@ -77,7 +79,7 @@ export function SliderInput({
             min={hardMin}
             max={hardMax}
             allowNegative={allowNegative}
-            aria-label={`${label} (saisie directe)`}
+            aria-label={tr("{label} (saisie directe)", { label })}
           />
         </div>
       </div>

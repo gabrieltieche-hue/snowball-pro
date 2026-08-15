@@ -83,9 +83,7 @@ export function SectionHeader({
         <span className="min-w-0">
           <span className="flex items-center gap-2">
             <span className="w-1 h-5 rounded-full bg-primary shrink-0" aria-hidden />
-            {Icon && (
-              <Icon size={iconSize} className={cn("shrink-0", iconClassName ?? "text-primary")} aria-hidden />
-            )}
+            {Icon && <Icon size={iconSize} className={cn("shrink-0", iconClassName ?? "text-primary")} aria-hidden />}
             <span
               className={cn(
                 "font-extrabold uppercase tracking-[0.08em] text-text leading-none",

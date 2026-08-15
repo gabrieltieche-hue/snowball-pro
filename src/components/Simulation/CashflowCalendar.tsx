@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { CalendarRange, ChevronDown } from "lucide-react"
-import { deflationFactor, fmtCompact } from "../../engine"
+import { deflationFactor } from "../../engine"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { YearRow } from "../../types"
@@ -22,6 +23,7 @@ interface FlowLine {
 }
 
 export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarProps) {
+  const { tr, lang, fmtCompact } = useLang()
   const [open, setOpen] = useState(false)
   // Le capital initial est un flux de départ que les lignes annuelles
   // n'incluent pas : sans lui, le total « Versements » du calendrier différait
@@ -33,7 +35,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
     rows.length > 0 ? Math.max(0, (rows[0]?.investedNom ?? 0) - (rows[0]?.annualContribution ?? 0)) : 0
   const flows: FlowLine[] = [
     ...(initialCapital > 0
-      ? [{ year: 0, date: "Aujourd'hui", versements: initialCapital, frais: 0, impots: 0, net: initialCapital }]
+      ? [{ year: 0, date: tr("Aujourd'hui"), versements: initialCapital, frais: 0, impots: 0, net: initialCapital }]
       : []),
     ...rows
       .filter(r => r.year > 0)
@@ -73,7 +75,13 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
         aria-controls="cashflow-calendar-content"
         className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-glass-hover transition-colors"
       >
-        <SectionHeader bare level="card" icon={CalendarRange} title="Calendrier des flux" className="flex-1 min-w-0" />
+        <SectionHeader
+          bare
+          level="card"
+          icon={CalendarRange}
+          title={tr("Calendrier des flux")}
+          className="flex-1 min-w-0"
+        />
         <ChevronDown size={14} className={cn("text-text-dim transition-transform shrink-0", open && "rotate-180")} />
       </button>
       {open && (
@@ -83,12 +91,12 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
               <thead>
                 <tr className="border-b border-border">
                   {[
-                    { label: "Année", align: "left" },
-                    { label: "Date", align: "left" },
-                    { label: "Versements", align: "right" },
-                    { label: "Frais", align: "right" },
-                    { label: "Impôt théorique", align: "right" },
-                    { label: "Capital net", align: "right" },
+                    { label: tr("Année"), align: "left" },
+                    { label: tr("Date"), align: "left" },
+                    { label: tr("Versements"), align: "right" },
+                    { label: tr("Frais"), align: "right" },
+                    { label: tr("Impôt théorique"), align: "right" },
+                    { label: tr("Capital net"), align: "right" },
                   ].map(h => (
                     <th
                       key={h.label}
@@ -111,7 +119,11 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                     className="border-b border-border/30 hover:bg-glass transition-colors odd:bg-glass/40"
                   >
                     <td className="py-2 px-3 text-text-dim whitespace-nowrap">
-                      {row.year === 0 ? "Capital initial" : `Année ${row.year}`}
+                      {row.year === 0
+                        ? tr("Capital initial")
+                        : lang === "en"
+                          ? `Year ${row.year}`
+                          : `Année ${row.year}`}
                     </td>
                     <td className="py-2 px-3 text-text-dim whitespace-nowrap">{row.date}</td>
                     <td className="py-2 px-3 mono text-text text-right">{fmtCompact(row.versements)}</td>
@@ -128,7 +140,7 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
               <tfoot>
                 <tr className="border-t-2 border-border bg-surface-100/40">
                   <td className="py-2 px-3 text-[10px] font-bold text-text" colSpan={2}>
-                    Totaux
+                    {tr("Totaux")}
                   </td>
                   <td className="py-2 px-3 mono text-[11px] font-bold text-text text-right">
                     {fmtCompact(totals.versements)}
@@ -142,7 +154,9 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
                       n'a pas de sens (non cumulable, audit) : on affiche « — »
                       au lieu d'un total trompeur. */}
                   <td
-                    title="Impôts non cumulables : somme théorique si liquidation chaque année — pas un impôt réel"
+                    title={tr(
+                      "Impôts non cumulables : somme théorique si liquidation chaque année — pas un impôt réel",
+                    )}
                     className="py-2 px-3 mono text-[11px] font-bold text-text-dim text-right"
                   >
                     —
@@ -153,10 +167,9 @@ export function CashflowCalendar({ rows, showReal = false }: CashflowCalendarPro
             </table>
           </div>
           <p className="text-[10px] text-text-dim italic mt-2">
-            « Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à l'impôt
-            théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés réellement
-            payés et ne deviennent dus qu'à la revente — leur total n'est donc pas affiché (non cumulable). Seuls les
-            versements et les frais se cumulent.
+            {tr(
+              "« Versements » = capital initial (ligne « Départ ») + épargne mensuelle. Les impôts correspondent à l'impôt théorique si le portefeuille était liquidé à chaque date ; ils ne sont pas des impôts cumulés réellement payés et ne deviennent dus qu'à la revente — leur total n'est donc pas affiché (non cumulable). Seuls les versements et les frais se cumulent.",
+            )}
           </p>
         </div>
       )}

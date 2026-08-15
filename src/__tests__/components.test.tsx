@@ -37,6 +37,8 @@ import {
 } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
 import { QUICKSTART_PROFILES } from "../utils/quickStart"
+import { LangProvider, useLang } from "../i18n"
+import { LanguageToggle } from "../components/shared/LanguageToggle"
 
 /* Les graphes Recharts sont volontairement remplacés par des stubs : ils
  * nécessitent des mesures de conteneur (ResizeObserver) absentes de jsdom.
@@ -339,6 +341,16 @@ describe("DualAmount — les deux échelles toujours affichées (demande utilisa
     expect(t).not.toContain("en euros d'aujourd'hui")
   })
 
+  it("peut afficher le libellé du grand chiffre en ligne (échelles libellées)", () => {
+    const { container } = render(
+      <DualAmount nominal={46610} real={30700} showReal={false} endYear="2046" primaryLabelInline size="lg" />,
+    )
+    const t = text(container)
+    // Chaque valeur porte SON libellé d'échelle, sans légende partagée :
+    expect(t).toContain("46 610 € sur le compte en 2046")
+    expect(t).toContain("30 700 € en euros d'aujourd'hui")
+  })
+
   it("applique un préfixe (signe « + ») aux deux échelles", () => {
     const { container } = render(
       <DualAmount nominal={504648} real={333022} showReal={false} hideSecondaryLabel prefix="+" />,
@@ -349,10 +361,10 @@ describe("DualAmount — les deux échelles toujours affichées (demande utilisa
   })
 })
 
-describe("SummaryStats — panneau « Votre capital en détail » (v6.9.0)", () => {
+describe("SummaryStats — panneau « Votre capital en détail » (v6.9.0, échelles libellées)", () => {
   const text = (container: HTMLElement) => (container.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
 
-  it("intègre le bloc de synthèse : titre, gains en or, légende d'échelle partagée", () => {
+  it("intègre le bloc de synthèse : titre, gains en or, échelles libellées sur chaque valeur", () => {
     const rows = runSimulation(DEFAULT_INPUTS)
     const { container } = render(<SummaryStats rows={rows} inputs={DEFAULT_INPUTS} />)
     const t = text(container)
@@ -361,9 +373,13 @@ describe("SummaryStats — panneau « Votre capital en détail » (v6.9.0)", () 
     // …la statistique « Gains de la bourse » reste présente (demande explicite)…
     expect(t).toContain("Gains de la bourse")
     expect(t).toContain("+")
-    // …et la légende d'échelle partagée remplace la répétition ×4 des libellés.
-    expect(t).toContain("sur le compte")
-    expect(t).toContain("en euros d'aujourd'hui")
+    // Retour utilisateur : la légende d'en-tête n'était « pas
+    // appliquée » — chaque valeur porte désormais SON libellé d'échelle
+    // (≥ 1 par colonne, pas une légende partagée unique).
+    const accountLabels = t.match(/sur le compte en \d{4}/g) ?? []
+    const todayLabels = t.match(/en euros d'aujourd'hui/g) ?? []
+    expect(accountLabels.length).toBeGreaterThanOrEqual(4)
+    expect(todayLabels.length).toBeGreaterThanOrEqual(4)
     // Les 4 mesures de la synthèse sont toutes là.
     expect(t).toContain("Valeur brute")
     expect(t).toContain("Net fiscal")
@@ -1355,5 +1371,64 @@ describe("v6.8 — CRO landing : nav « Pour qui », CTA sticky mobile, taux 202
     // Les taux 2025 périmés ont disparu de la landing.
     expect(text).not.toContain("PFU 30 %")
     expect(text).not.toContain("17,2 % après 5 ans")
+  })
+})
+
+// ─── i18n (v6.12.0) : bascule de langue FR ⇄ EN ─────────────────────────────
+
+describe("i18n — bascule de langue", () => {
+  // jsdom signale souvent navigator.language = "en-US" : on force la langue
+  // initiale en français avant chaque test (loadInitialLang la lit au mount).
+  beforeEach(() => {
+    localStorage.setItem("snowball_v5_lang", "fr")
+  })
+  afterEach(() => {
+    localStorage.removeItem("snowball_v5_lang")
+    cleanup()
+  })
+
+  function Harness() {
+    const { tr, fmtCurrency } = useLang()
+    return (
+      <div>
+        <LanguageToggle />
+        <p data-testid="greeting">{tr("Durée")}</p>
+        <p data-testid="amount">{fmtCurrency(1234.5)}</p>
+      </div>
+    )
+  }
+
+  it("passe du français à l'anglais et inverse les formatters au clic", () => {
+    render(
+      <LangProvider>
+        <Harness />
+      </LangProvider>,
+    )
+    // Défaut : français (préférence forcée dans beforeEach)
+    expect(screen.getByTestId("greeting")).toHaveTextContent("Durée")
+    expect(screen.getByTestId("amount")).toHaveTextContent("1 234,50 €")
+
+    // Clic → anglais : la traduction ET le formatage basculent
+    fireEvent.click(screen.getByRole("button", { name: "Passer en anglais" }))
+    expect(screen.getByTestId("greeting")).toHaveTextContent("Duration")
+    expect(screen.getByTestId("amount")).toHaveTextContent("€1,234.50")
+
+    // Clic retour → français
+    fireEvent.click(screen.getByRole("button", { name: "Switch to French" }))
+    expect(screen.getByTestId("greeting")).toHaveTextContent("Durée")
+  })
+
+  it("le formulaire d'inscription traduit ses libellés selon la langue", () => {
+    render(
+      <LangProvider>
+        <LanguageToggle />
+        <AuthScreen mode="register" />
+      </LangProvider>,
+    )
+    // Le titre apparaît deux fois (h1 sr-only + h2 visible de AuthLayout).
+    expect(screen.getAllByText("Créez votre compte").length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole("button", { name: "Passer en anglais" }))
+    expect(screen.getAllByText("Create your account").length).toBeGreaterThan(0)
+    expect(screen.getByLabelText("Email address")).toBeTruthy()
   })
 })

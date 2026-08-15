@@ -1,11 +1,13 @@
 import { motion } from "framer-motion"
 import { GitCompareArrows, X } from "lucide-react"
+import { useLang } from "../../i18n"
 
 interface ComparisonBarProps {
   onExit: () => void
 }
 
 export function ComparisonBar({ onExit }: ComparisonBarProps) {
+  const { tr } = useLang()
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -20,9 +22,9 @@ export function ComparisonBar({ onExit }: ComparisonBarProps) {
             <GitCompareArrows size={14} aria-hidden />
           </span>
           <span className="min-w-0">
-            <span className="block text-xs font-semibold text-text">Mode Comparaison actif</span>
+            <span className="block text-xs font-semibold text-text">{tr("Mode Comparaison actif")}</span>
             <span className="block text-[10px] text-text-dim truncate">
-              Le panneau édite le Scénario B — A est figé tel qu'au lancement
+              {tr("Le panneau édite le Scénario B — A est figé tel qu'au lancement")}
             </span>
           </span>
         </div>
@@ -31,7 +33,7 @@ export function ComparisonBar({ onExit }: ComparisonBarProps) {
           onClick={onExit}
           className="inline-flex items-center gap-1 text-[10px] font-semibold text-text-muted hover:text-danger transition-colors shrink-0 px-2 py-1 rounded-lg hover:bg-danger/10"
         >
-          <X size={12} /> Quitter la comparaison
+          <X size={12} /> {tr("Quitter la comparaison")}
         </button>
       </div>
     </motion.div>

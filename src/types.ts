@@ -21,6 +21,8 @@ export interface TaxBreakdownOptions {
    * boucles chaudes (fiscalité mensuelle du décaissement) où les notes ne
    * sont jamais lues — évite 7,2 M d'allocations de chaînes à 10 k runs. */
   noNotes?: boolean
+  /** Langue des libellés explicatifs (notes) — défaut français (v6.12). */
+  lang?: "fr" | "en"
 }
 
 export interface YearRow {

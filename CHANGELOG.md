@@ -4,6 +4,41 @@
 
 ---
 
+## v6.12.0 — L'application en anglais : un bouton FR/EN traduit toute l'app 🇬🇧
+
+Demande utilisateur : _« je veux ajouter un bouton sur le site pour traduire dans plusieurs langues et rendre accessible à plus de gens. On met juste l'anglais. »_ Un bouton FR/EN (en-tête de l'app **et** de la landing) bascule l'intégralité de l'interface en anglais : simulateur, Monte Carlo, rente & retraite, objectif, comparaison, sidebar, graphiques, rapport PDF, landing et écrans de compte. Le formatage des montants suit la langue (€1,234.56 / 1,234,567.89 € au lieu de 1 234,56 € / 1 234 567,89 €), la préférence est persistée (`snowball_v5_lang`), et la langue du navigateur sert de défaut au premier passage. Le français reste la langue par défaut et l'architecture est prête pour d'autres langues. **385 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`src/engine/i18n.ts`** (nouveau) : moteur de traduction pur — `tr(lang, texteFR, params?)` indexé par le texte français exact (fallback FR si la traduction manque), `Lang`, `LANG_LOCALE`, `interpolate`, `langCode` ; dictionnaire anglais de ~900 clés couvrant toute l'app.
+- **`src/engine/formatting.ts`** : `fmtCurrency`/`fmtCompact`/`fmtPercent`/`fmtDecimal` acceptent un `lang` optionnel (défaut `fr` → rétrocompatible, les 373 tests existants intacts).
+- **`src/engine/taxRules.ts`** : `fmtTaxPercent(rate, lang)` ; **`src/engine/taxes.ts`** : notes fiscales de `computeTaxBreakdown` localisées (`TaxNote.label` + `lang`).
+- **`src/i18n.tsx`** (nouveau) : `LangProvider` + `useLang()` (retourne `tr`, `locale` et les formatters liés) ; sans provider, tout retombe en français — les tests qui montent un composant isolé restent verts. Injecté dans `Root.tsx` ; le `<html lang>` et le titre du document suivent la langue.
+- **`src/components/shared/LanguageToggle.tsx`** (nouveau) : bouton FR/EN, placé dans l'ActionBar de l'app et l'en-tête de la landing.
+- **~60 fichiers traduits** : App, Layout (Sidebar, TabBar, ActionBar, QuickStart, SnapshotPanel…), Forms, Simulation, Charts, les 5 onglets (Simulateur, Monte Carlo, Rente & Retraite, Objectif, Comparaison), le rapport PDF `PatrimonialReport`, la landing + HeroChart + Brand, et les écrans Auth (connexion/inscription/menu de compte). Les messages moteur (validation, auth) sont traduits à l'affichage pour ne pas casser les tests.
+- **`src/__tests__/`** : nouveaux tests — i18n moteur (tr/interpolate/formatters FR-EN) et bascule de langue en composant (toggle + formatters + inscription localisée).
+- **`scripts/i18n-check.mjs`** (nouveau) : vérifie que chaque clé utilisée existe dans le dictionnaire (couverture 100 %).
+- **`LandingPage.tsx`** + `i18n.ts` : carte « Dernières éditions » v6.12.0 et footer v6.12.0 (FR + EN).
+- Gate : typecheck ✓ lint ✓ **385/385 tests** ✓ build ✓.
+- Version 6.11.2 → **6.12.0** (package.json, package-lock.json local, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.12.0`, footer landing FR/EN, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session).
+
+---
+
+## v6.11.2 — Panneau « Votre capital en détail » : échelles libellées sur chaque valeur + panneau resserré
+
+Retour utilisateur : _« c'est trop étendu vers le bas, on comprend pas, c'est pas appliqué, je comprends pas ! sur le compte en 2045 / en euros d'aujourd'hui »_. La légende d'échelle partagée de l'en-tête (v6.9.0) ne rattachait pas les pastilles aux chiffres — elle est **supprimée** : chaque valeur porte désormais SON libellé (« 1,31 M€ sur le compte en 2045 » / « 864 713 € en euros d'aujourd'hui »), qui passe à la ligne (flex-wrap) en colonne étroite au lieu de tronquer. Le panneau est resserré verticalement (padding p-4/p-5, header mb-3, marges internes réduites) et les grands chiffres passent en text-lg/xl (taille augmentée, comme suggéré). **385 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`SummaryStats.tsx`** : légende d'en-tête supprimée ; chaque `DualAmount` porte son échelle (`primaryLabelInline` + `size="lg"`) ; espacements resserrés (p-4/p-5, mb-3, icône mb-1.5, sous-texte mt-0.5, gains mt-2/pt-2, grille gap-y-4).
+- **`DualAmount.tsx`** : nouvelles props optionnelles `primaryLabelInline` (libellé du grand chiffre en ligne, flex-wrap) et `size` ("md"/"lg") — rendu par défaut inchangé pour les autres usages (Hero, Sidebar, FiscalPanel) ; ligne secondaire en flex-wrap (le libellé ne tronque plus sur mobile).
+- **`components.test.tsx`** : tests SummaryStats/DualAmount mis à jour (chaque échelle apparaît ≥ 1 fois par colonne) + test `primaryLabelInline`.
+- **`LandingPage.tsx`** + `i18n.ts` : carte « Dernières éditions » v6.11.2 et footer v6.11.2 (FR + EN).
+- Gate : typecheck ✓ lint ✓ **385/385 tests** ✓ build ✓.
+- Version 6.11.1 → **6.11.2** (package.json, package-lock.json local, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.11.2`, footer landing FR/EN, « Dernières éditions »), CHANGELOG (cette entrée), MEMORY.md (entrée session).
+
+---
+
 ## v6.11.1 — Favicon : une vraie icône .ico pour Google
 
 L'app n'avait qu'une icône PNG haute résolution : Google exige un `favicon.ico` (16/32/48 px) pour afficher une icône dans les résultats de recherche. Ajout de `public/favicon.ico` (3 tailles embarquées) et de son lien dans `index.html` (PNG 192 px conservé pour les écrans haute densité). **373 tests**, gate 100 % vert, déployé.
@@ -79,7 +114,7 @@ Suite directe du retour _« supprime un peu ce trou au-dessus »_ : après la su
 
 ## v6.8.1 — Héro : la question du lecteur, avec les mots du lecteur
 
-Deux retours utilisateur successifs : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais c toujours moyen, pas très clair, ça sonne mal »_. Diagnostic en profondeur (audit `clarify`) : ① « Combien votre épargne peut-elle **devenir** ? » — « devenir » prend « que/quoi », pas « combien » : une quantité se dit avec **valoir** ; ② « vraiment » = bouche-trou qui s'ajoute à « vraie histoire boursière » et « Des chiffres réels » (trois affirmations de vérité dans le même bloc, ton défensif) ; ③ le registre « mystère magique » contredit la promesse de la marque (« des chiffres réels, pas des promesses ») ; ④ la question sans horizon ne dit pas *quand* — alors que la démo affiche exactement « 25 ans ». Le héro demande désormais « Combien peut valoir votre épargne dans 25 ans ? » (la démo à droite répond à cette question précise) et le sous-titre définit le terme de marque en une apposition : « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. » **369 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).
+Deux retours utilisateur successifs : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais c toujours moyen, pas très clair, ça sonne mal »_. Diagnostic en profondeur (audit `clarify`) : ① « Combien votre épargne peut-elle **devenir** ? » — « devenir » prend « que/quoi », pas « combien » : une quantité se dit avec **valoir** ; ② « vraiment » = bouche-trou qui s'ajoute à « vraie histoire boursière » et « Des chiffres réels » (trois affirmations de vérité dans le même bloc, ton défensif) ; ③ le registre « mystère magique » contredit la promesse de la marque (« des chiffres réels, pas des promesses ») ; ④ la question sans horizon ne dit pas _quand_ — alors que la démo affiche exactement « 25 ans ». Le héro demande désormais « Combien peut valoir votre épargne dans 25 ans ? » (la démo à droite répond à cette question précise) et le sous-titre définit le terme de marque en une apposition : « Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil. » **369 tests**, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).
 
 ### 🔄 Changements
 

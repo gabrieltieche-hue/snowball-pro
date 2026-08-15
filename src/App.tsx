@@ -22,6 +22,7 @@ import {
 import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
 import { useHistory } from "./hooks/useHistory"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { useLang } from "./i18n"
 import { useSession } from "./auth/store"
 import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
@@ -47,7 +48,8 @@ import { SimulatorTab } from "./components/Tabs/SimulatorTab"
 
 // Libellés v6 orientés BESOIN utilisateur (avis 1 & 2) : on nomme ce que
 // l'onglet apporte, pas sa technique interne. Les ids restent inchangés
-// (persistance, tests, partage).
+// (persistance, tests, partage). Les libellés français servent de clés i18n
+// (v6.12) — traduits au rendu via useLang().tr.
 const TABS: TabDef[] = [
   { id: "simulator", label: "Projection", icon: LineChart },
   { id: "montecarlo", label: "Robustesse de votre plan", icon: Dices },
@@ -95,6 +97,7 @@ export default function App() {
 }
 
 function AppShell({ scope }: { scope: string | null }) {
+  const { tr, locale } = useLang()
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const initial = loadInitialDarkMode()
     applyThemeClass(initial)
@@ -371,18 +374,20 @@ function AppShell({ scope }: { scope: string | null }) {
   }, [darkMode])
 
   const fmtExportNumber = (v: number) =>
-    new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
+    new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
 
   const exportCSV = () => {
+    // En-têtes ASCII (sans accents) : compatibles avec tous les tableurs
+    // (Excel/LibreOffice) — clés i18n pour la version anglaise (v6.12).
     const header = [
-      "Annee",
-      "Date",
-      "Total Verse",
-      "Interets",
-      "Valeur Nominale",
-      "Valeur Reelle",
-      "Frais",
-      "Net Fiscal",
+      tr("Annee"),
+      tr("Date"),
+      tr("Total Verse"),
+      tr("Interets"),
+      tr("Valeur Nominale"),
+      tr("Valeur Reelle"),
+      tr("Frais"),
+      tr("Net Fiscal"),
     ]
     // Échappement anti-injection de formule (OWASP CSV Injection)
     const esc = escapeCsvCell
@@ -533,7 +538,7 @@ function AppShell({ scope }: { scope: string | null }) {
       <div className="app-shell min-h-screen bg-surface text-text">
         {/* I6 — hiérarchie de titres : h1 de page (visuellement masqué), les
           sections s'enchaînent ensuite en h2/h3 dans les onglets. */}
-        <h1 className="sr-only">Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)</h1>
+        <h1 className="sr-only">{tr("Snowball Pro — Simulateur patrimonial (épargne, fiscalité, retraite)")}</h1>
 
         {/* En-tête global : la marque et les actions (annuler, partager, thème,
           export…) restent accessibles pendant tout le scroll. */}
@@ -549,7 +554,7 @@ function AppShell({ scope }: { scope: string | null }) {
                   SNOWBALL <span className="text-primary">PRO</span>
                 </div>
                 <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
-                  Simulateur patrimonial
+                  {tr("Simulateur patrimonial")}
                 </div>
               </div>
             </div>
@@ -595,7 +600,7 @@ function AppShell({ scope }: { scope: string | null }) {
               sidebarCollapsed ? "lg:grid-cols-[76px_1fr]" : "lg:grid-cols-[380px_1fr]"
             }`}
           >
-            <ErrorBoundary label="les réglages">
+            <ErrorBoundary label={tr("les réglages")}>
               <Sidebar
                 inputs={activeInputs}
                 rows={rows}
@@ -617,14 +622,16 @@ function AppShell({ scope }: { scope: string | null }) {
                   <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">
                     <Link2 size={12} className="text-primary shrink-0" />
                     <span>
-                      Scénario chargé depuis un <strong className="text-text">lien partagé</strong>. Il est aussi
-                      sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.
+                      {tr("Scénario chargé depuis un")} <strong className="text-text">{tr("lien partagé")}</strong>.{" "}
+                      {tr(
+                        "Il est aussi sauvegardé sur cet appareil — partagez à nouveau le lien pour propager vos modifications.",
+                      )}
                     </span>
                   </p>
                   <button
                     type="button"
                     onClick={() => setSharedLinkLoaded(false)}
-                    aria-label="Fermer le bandeau lien partagé"
+                    aria-label={tr("Fermer le bandeau lien partagé")}
                     className="text-text-muted hover:text-text transition-colors shrink-0"
                   >
                     <X size={13} />
@@ -638,15 +645,17 @@ function AppShell({ scope }: { scope: string | null }) {
                 >
                   <AlertTriangle size={13} className="shrink-0" />
                   <span>
-                    Des valeurs saisies sortent des bornes acceptées (
-                    {validationErrors.filter(e => e.severity === "error").length} erreur
-                    {validationErrors.filter(e => e.severity === "error").length > 1 ? "s" : ""}). Corrigez-les pour une
-                    simulation fiable.
+                    {tr("Des valeurs saisies sortent des bornes acceptées (")}
+                    {tr(
+                      validationErrors.filter(e => e.severity === "error").length > 1 ? "{n} erreurs" : "{n} erreur",
+                      { n: validationErrors.filter(e => e.severity === "error").length },
+                    )}
+                    {tr("). Corrigez-les pour une simulation fiable.")}
                   </span>
                 </div>
               )}
               {comparing && <ComparisonBar onExit={toggleComparing} />}
-              <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
+              <TabBar tabs={TABS.map(t => ({ ...t, label: tr(t.label) }))} active={activeTab} onChange={setActiveTab} />
 
               <div
                 role="tabpanel"
@@ -659,7 +668,7 @@ function AppShell({ scope }: { scope: string | null }) {
                   propre après un crash dans un autre onglet). */}
                 <ErrorBoundary
                   key={activeTab}
-                  label={`l'onglet ${TABS.find(t => t.id === activeTab)?.label ?? activeTab}`}
+                  label={`${tr("l'onglet")} ${tr(TABS.find(t => t.id === activeTab)?.label ?? activeTab)}`}
                 >
                   {activeTab === "simulator" &&
                     (comparing && comparison && rowsA ? (

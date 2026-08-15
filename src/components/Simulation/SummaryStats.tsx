@@ -1,6 +1,7 @@
 import { Landmark, PieChart, PiggyBank, Receipt, TrendingUp } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { deflationFactor, ENVELOPE_CONFIGS } from "../../engine"
+import { useLang } from "../../i18n"
 import { DualAmount } from "../shared/DualAmount"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { SimulationInputs, YearRow } from "../../types"
@@ -33,13 +34,20 @@ interface StatColumn {
  * conteneur — posé entre le héro et le graphique, il se lisait comme un corps
  * étranger (revue utilisateur : « ça ne s'intègre pas très bien au reste »).
  * Il reprend désormais l'anatomie de la page (glass + SectionHeader) et
- * expose les 4 mesures en colonnes séparées par des filets, avec une légende
- * d'échelle PARTAGÉE dans l'en-tête (fini « en euros d'aujourd'hui » ×4).
+ * expose les 4 mesures en colonnes séparées par des filets.
+ *
+ * Retour utilisateur : la légende d'échelle PARTAGÉE de l'en-tête
+ * n'était « pas appliquée » — l'utilisateur ne rattachait pas les pastilles
+ * aux chiffres. Elle est supprimée : chaque valeur porte désormais SON
+ * libellé (« 1,31 M€ sur le compte en 2045 » / « 864 713 € en euros
+ * d'aujourd'hui »), le panneau est resserré verticalement (moins de padding,
+ * de marges et de filets) et les grands chiffres passent en text-lg/xl.
  *
  * Composant 100 % présentation : tout vient de `rows` (déjà calculé par le
  * moteur), aucune logique de calcul ici.
  */
 export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
+  const { tr } = useLang()
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
@@ -60,42 +68,42 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   const gainsNominal = Math.max(0, lastRow.nominal - lastRow.investedNom)
   const gainsReal = Math.max(0, lastRow.real - lastRow.investedReal)
 
-  const accountLabel = `sur le compte${endYear ? ` en ${endYear}` : ""}`
-
   // Chaque colonne expose le montant sur les DEUX échelles : l'échelle mise en
   // avant (grand chiffre) suit le toggle « Euros d'aujourd'hui », l'autre
-  // reste toujours visible en dessous. Les libellés d'échelle vivent dans la
-  // légende partagée de l'en-tête (DualAmount avec hideSecondaryLabel).
+  // reste toujours visible en dessous. Chaque valeur porte SON libellé
+  // d'échelle (primaryLabelInline) — plus de légende d'en-tête à décoder.
   const columns: StatColumn[] = [
     {
       // Libellé adapté à l'échelle mise en avant (audit v5.1.4 : jamais de
       // montant net d'inflation sous un libellé « brut »). Les DEUX échelles
       // restent affichées par DualAmount quel que soit le toggle.
-      label: showReal ? "Valeur réelle" : "Valeur brute",
+      label: showReal ? tr("Valeur réelle") : tr("Valeur brute"),
       nominal: lastRow.nominal,
       real: lastRow.real,
       color: "var(--color-text)",
-      sub: "avant impôts",
+      sub: tr("avant impôts"),
       icon: TrendingUp,
     },
     {
-      label: `Net fiscal (${ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT"})`,
+      label: tr("Net fiscal ({env})", {
+        env: ENVELOPE_CONFIGS.find(e => e.id === envelope)?.shortLabel ?? "BRUT",
+      }),
       nominal: netAfterTax,
       real: netAfterTax * factor,
       color: "var(--color-value-gold)",
-      sub: envelope !== "none" ? "après impôts" : "Aucun impôt à payer",
+      sub: envelope !== "none" ? tr("après impôts") : tr("Aucun impôt à payer"),
       icon: Landmark,
     },
     {
-      label: "Impôt théorique",
+      label: tr("Impôt théorique"),
       nominal: taxAmount,
       real: taxAmount * factor,
       color: "var(--color-value-red)",
-      sub: envelope === "per" ? "impôt théorique sur gains + versements" : "impôt théorique à la liquidation",
+      sub: envelope === "per" ? tr("impôt théorique sur gains + versements") : tr("impôt théorique à la liquidation"),
       icon: Receipt,
     },
     {
-      label: "Total épargné",
+      label: tr("Total épargné"),
       nominal: lastRow.investedNom,
       real: lastRow.investedReal,
       color: "var(--color-text-muted)",
@@ -104,42 +112,17 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
     },
   ]
 
-  // Légende d'échelle PARTAGÉE (v6.9.0) : les grands chiffres suivent le
-  // toggle, la seconde échelle est en dessous. L'échelle active est mise en
-  // avant ; l'aria-label garde l'explicitation pour les lecteurs d'écran.
-  const scaleLegend = (
-    <div
-      className="flex items-center gap-3 text-[10px] text-text-dim flex-wrap"
-      aria-label={`Grands chiffres : ${showReal ? "en euros d'aujourd'hui" : accountLabel} — petits chiffres : ${showReal ? accountLabel : "en euros d'aujourd'hui"}`}
-    >
-      <span className={`flex items-center gap-1.5 ${!showReal ? "text-text font-semibold" : "opacity-70"}`}>
-        <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
-        {accountLabel}
-      </span>
-      <span className={`flex items-center gap-1.5 ${showReal ? "text-text font-semibold" : "opacity-70"}`}>
-        <span className="w-2 h-2 rounded-full bg-warning shrink-0" aria-hidden />
-        en euros d'aujourd'hui
-      </span>
-    </div>
-  )
-
   return (
-    <div className="glass rounded-3xl p-5 sm:p-6">
-      <SectionHeader
-        as="h2"
-        level="card"
-        icon={PieChart}
-        title="Votre capital en détail"
-        trailing={scaleLegend}
-      />
+    <div className="glass rounded-3xl p-4 sm:p-5">
+      <SectionHeader as="h2" level="card" icon={PieChart} title={tr("Votre capital en détail")} className="mb-3" />
       {/* Colonnes séparées par des filets verticaux (≥ lg, une seule ligne) ;
           en 2×2 sur mobile, les filets disparaissent au profit de l'espace. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 lg:gap-x-0 lg:divide-x lg:divide-[color:var(--color-border)]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 lg:gap-x-0 lg:divide-x lg:divide-[color:var(--color-border)]">
         {columns.map(col => {
           const Icon = col.icon
           return (
             <div key={col.label} className="min-w-0 lg:px-4 lg:first:pl-0">
-              <div className="flex items-center gap-1.5 mb-2 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
                 <span
                   className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `color-mix(in srgb, ${col.color} 14%, transparent)`, color: col.color }}
@@ -156,20 +139,21 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
                 showReal={showReal}
                 color={col.color}
                 endYear={endYear}
-                hideSecondaryLabel
+                primaryLabelInline
+                size="lg"
               />
               {col.sub && (
-                <div className="text-[10px] text-text-dim mt-1 truncate" title={col.sub}>
+                <div className="text-[10px] text-text-dim mt-0.5 truncate" title={col.sub}>
                   {col.sub}
                 </div>
               )}
               {col.gains && (
-                <div className="mt-3 pt-2.5 border-t" style={{ borderColor: "var(--color-border)" }}>
+                <div className="mt-2 pt-2 border-t" style={{ borderColor: "var(--color-border)" }}>
                   {/* Sans tracking-wider : sur mobile (2 colonnes), le libellé
                       dépasse de 2 px et se tronquait — la statistique vedette
                       mérite son nom complet (vérifié à 320 px). */}
-                  <div className="text-[10px] text-text-dim uppercase truncate" title="Gains de la bourse">
-                    Gains de la bourse
+                  <div className="text-[10px] text-text-dim uppercase truncate" title={tr("Gains de la bourse")}>
+                    {tr("Gains de la bourse")}
                   </div>
                   {/* Gains en or (même teinte que la carte « Net fiscal ») :
                       la statistique la plus motivante du panneau n'est plus une
@@ -180,7 +164,8 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
                     showReal={showReal}
                     color="var(--color-value-gold)"
                     endYear={endYear}
-                    hideSecondaryLabel
+                    primaryLabelInline
+                    size="lg"
                     prefix="+"
                     className="mt-1"
                   />

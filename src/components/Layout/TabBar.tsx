@@ -1,6 +1,7 @@
 import { useRef } from "react"
 import { motion } from "framer-motion"
 import type { LucideIcon } from "lucide-react"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 
 export interface TabDef {
@@ -16,6 +17,7 @@ interface TabBarProps {
 }
 
 export function TabBar({ tabs, active, onChange }: TabBarProps) {
+  const { tr } = useLang()
   const listRef = useRef<HTMLDivElement>(null)
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -36,7 +38,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
     <div
       ref={listRef}
       role="tablist"
-      aria-label="Onglets de simulation"
+      aria-label={tr("Onglets de simulation")}
       className="flex flex-wrap gap-1 glass rounded-2xl p-1.5 no-print"
     >
       {tabs.map((tab, index) => {

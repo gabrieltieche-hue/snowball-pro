@@ -23,9 +23,7 @@ export function SegmentedControl<T extends string>({ value, onChange, options, a
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return
     e.preventDefault()
-    const buttons = Array.from(
-      containerRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? [],
-    )
+    const buttons = Array.from(containerRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? [])
     const idx = buttons.findIndex(b => b.getAttribute("aria-checked") === "true")
     let next: HTMLButtonElement | undefined
     if (e.key === "Home") next = buttons[0]

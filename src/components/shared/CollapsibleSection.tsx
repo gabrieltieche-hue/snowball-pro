@@ -55,7 +55,10 @@ export function CollapsibleSection({
         </span>
         <ChevronDown
           size={13}
-          className={cn("text-text-dim transition-transform duration-200 shrink-0 group-hover:text-text", isOpen && "rotate-180")}
+          className={cn(
+            "text-text-dim transition-transform duration-200 shrink-0 group-hover:text-text",
+            isOpen && "rotate-180",
+          )}
         />
       </button>
       {isOpen && <div className="mt-3 animate-fade-in">{children}</div>}

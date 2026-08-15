@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { Trophy } from "lucide-react"
+import { useLang } from "../../i18n"
 import { SectionHeader } from "../shared/SectionHeader"
 import type { Milestone, YearRow } from "../../types"
 
@@ -11,6 +12,7 @@ interface MilestoneTimelineProps {
 const springConfigSoft = { type: "spring" as const, stiffness: 200, damping: 20 }
 
 export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) {
+  const { tr } = useLang()
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
@@ -18,11 +20,11 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
 
   return (
     <div className="card-subtle rounded-2xl p-5">
-      <SectionHeader title="Vos étapes clés" icon={Trophy} level="card" />
+      <SectionHeader title={tr("Vos étapes clés")} icon={Trophy} level="card" />
       <div className="space-y-3">
         {reached.length === 0 && (
           <p className="text-xs text-text-dim">
-            Épargnez plus ou allongez la durée pour atteindre vos premières étapes.
+            {tr("Épargnez plus ou allongez la durée pour atteindre vos premières étapes.")}
           </p>
         )}
         {reached.map((m, i) => (
@@ -37,9 +39,9 @@ export function MilestoneTimeline({ milestones, rows }: MilestoneTimelineProps) 
               <Trophy size={11} className="text-primary" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-text">{m.label}</p>
+              <p className="text-xs font-semibold text-text">{tr(m.label)}</p>
               <p className="text-[10px] text-text-dim">
-                {m.year <= 0 ? "Atteint dès aujourd'hui" : `Atteint en année ${m.year}`}
+                {m.year <= 0 ? tr("Atteint dès aujourd'hui") : tr("Atteint en année {year}", { year: m.year })}
               </p>
             </div>
           </motion.div>

@@ -4,6 +4,60 @@
 
 ---
 
+## SESSION — 2026-08-15 (v6.12.0 : l'application en anglais 🇬🇧 — bouton FR/EN)
+
+### Résumé
+
+Demande utilisateur : _« je veux ajouter un bouton sur le site pour traduire dans plusieurs langues et rendre accessible à plus de gens. On met juste l'anglais. »_ Implémentation complète de l'i18n FR→EN, sans toucher au moteur de calcul ni aux 373 tests existants :
+
+- **Moteur de traduction pur** (`src/engine/i18n.ts`, testable en node) : `tr(lang, texteFR, params?)` indexé par le **texte français exact** — le JSX garde le français, fallback naturel si une traduction manque, zéro invention de clés. `Lang`, `LANG_LOCALE` (fr-FR/en-US), `interpolate`, `langCode`.
+- **Formatters localisés** (`formatting.ts`, `taxRules.ts`) : `lang` optionnel, défaut `fr` — rétrocompatibilité totale.
+- **`src/i18n.tsx`** : `LangProvider` + `useLang()` ; sans provider (tests isolés) tout retombe en français. Préférence persistée (`snowball_v5_lang`), langue du navigateur au premier passage, `<html lang>` + titre suivent.
+- **Bouton `LanguageToggle`** dans l'ActionBar de l'app et l'en-tête de la landing ; ~60 fichiers traduits (tabs, sidebar, graphiques, rapport PDF, landing, auth).
+- **Tests** : i18n moteur + bascule de langue (toggle/formatters/inscription) ; **`scripts/i18n-check.mjs`** garantit 100 % de couverture des clés.
+
+### Décisions
+
+- **Clés = texte français exact** plutôt qu'identifiants : le JSX reste lisible, les tests existants (qui scrutent des libellés FR) passent inchangés, et une clé manquante retombe proprement sur le français.
+- **Traduction à l'affichage pour les messages moteur** (validation, auth) : le moteur reste en français (tests moteur intacts), `tr()` est appliqué là où le message s'affiche (Sidebar, ActionBar, formulaires).
+- **Le français reste la langue par défaut** ; l'architecture (dictionnaire indexé par texte FR) est prête pour d'autres langues sans refonte.
+- **Formatage localisé** : montants et pourcentages suivent la langue (€1,234.56 vs 1 234,56 €) via les formatters liés de `useLang`.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **385/385 tests** ✓ build ✓ (single-file 1,2 Mo inliné).
+- Couverture des clés : `node scripts/i18n-check.mjs` → 0 clé manquante (seules exceptions volontaires : dataKeys, libellés de langue « Français », erreur #root).
+- Release **v6.12.0** : package.json, package-lock.json local, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.12.0`, footer + « Dernières éditions » landing (FR + EN), CHANGELOG (cette entrée), MEMORY (cette entrée).
+
+---
+
+## SESSION — 2026-08-15 (panneau « Votre capital en détail » : échelles libellées sur chaque valeur + panneau resserré)
+
+### Résumé
+
+Retour utilisateur sur le panneau « Votre capital en détail » (SummaryStats) : _« c'est trop étendu vers le bas, on comprend pas, c'est pas appliqué, je comprends pas ! sur le compte en 2045 / en euros d'aujourd'hui »_. Deux corrections (bundles /process + /apex + /ui-ux) :
+
+1. **Hauteur** : le bloc est resserré verticalement — padding `p-4 sm:p-5` (au lieu de p-5/p-6), header `mb-3`, rangée icône `mb-1.5`, sous-texte `mt-0.5`, section gains `mt-2 pt-2`, grille `gap-y-4` ; en contrepartie les **grands chiffres passent en `text-lg sm:text-xl`** (taille augmentée, comme suggéré par l'utilisateur).
+2. **Compréhension** : la légende d'échelle PARTAGÉE de l'en-tête (v6.9.0) ne rattachait pas les pastilles aux chiffres — elle est **supprimée** ; chaque valeur porte désormais SON libellé via `DualAmount primaryLabelInline` (« 682 770 € sur le compte en 2050 » / « 406 098 € en euros d'aujourd'hui »). En colonne étroite (mobile 320 px), le libellé du grand chiffre ET celui de la ligne secondaire passent à la ligne (flex-wrap) au lieu de tronquer — plus de « en euros d… » coupé.
+
+Aucun libellé i18n nouveau (clés « sur le compte en {year} » / « en euros d'aujourd'hui » existantes) ; `DualAmount` gagne deux props optionnelles (`primaryLabelInline`, `size`) sans changer son rendu par défaut — les autres usages (HeroResult, Sidebar, FiscalPanel…) ne bougent pas.
+
+**Release v6.11.2** (demande utilisateur : _« commit, publie sur vercel et met tout à jour, le travail que tu as fait toi »_) : version bumpée (package.json, package-lock.json local, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.11.2`), carte « Dernières éditions » v6.11.2 + footer FR/EN (`LandingPage.tsx` + `i18n.ts`), CHANGELOG (cette entrée), déploiement Vercel. **À noter** : le chantier i18n v6.12.0 de l'autre thread (60+ fichiers, dont SummaryStats/DualAmount/LandingPage/interlacés avec mes changements) était toujours **non commité** au moment de la release — le build déployé l'inclut (gate 100 % vert : typecheck ✓ lint ✓ **385/385 tests** ✓ build ✓), mais le commit de cette partie revient à sa propre session ; mon correctif seul est indissociable de son i18n dans les fichiers partagés (commit séparé impossible sans commiter son travail).
+
+### Décisions
+
+- **Légende d'en-tête retirée, libellés appliqués aux valeurs** : l'utilisateur rejette explicitement le choix v6.9.0 (« légende partagée ») — chaque montant doit se lire seul, sans avoir à décoder une légende.
+- **Flex-wrap plutôt que truncate** pour les libellés d'échelle (grand chiffre en ligne, ligne secondaire) : sur desktop ils restent en ligne, sur mobile ils passent à la ligne entiers — lisibilité partout, y compris en anglais (libellés plus longs).
+- **Rendu par défaut de `DualAmount` inchangé** : les nouvelles props sont opt-in, les tests existants (dont « peut masquer le libellé de la seconde échelle ») passent sans modification.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ (0 erreur) **385/385 tests** ✓ (dont tests SummaryStats/DualAmount mis à jour) build ✓.
+- Vérifié en navigateur réel (dev server 5173, preview) : chaque valeur porte son échelle, aucune légende d'en-tête, aucun libellé tronqué à 320 px, panneau dans les limites (l'overflow horizontal résiduel à 320 px vient de la barre d'onglets « Robustesse de votre plan », préexistant et hors périmètre).
+- Déployé : Vercel prod (v6.11.2), footer + « Dernières éditions » vérifiés sur la landing.
+
+---
+
 ## SESSION — 2026-08-15 (v6.11.1 : favicon — une icône .ico pour Google)
 
 ### Résumé

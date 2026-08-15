@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, Download, FileJson, Printer } from "lucide-react"
+import { useLang } from "../../i18n"
 
 interface ExportMenuProps {
   onExportCSV: () => void
@@ -14,6 +15,7 @@ interface ExportMenuProps {
  * Se ferme au clic extérieur ou à Échap (aucun comportement piégé).
  */
 export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuProps) {
+  const { tr } = useLang()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -43,11 +45,11 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
   }, [open])
 
   const actions = [
-    { label: "Export CSV", desc: "Tableau année par année", icon: Download, onClick: onExportCSV },
-    { label: "Export JSON", desc: "Paramètres + résultats bruts", icon: FileJson, onClick: onExportJSON },
+    { label: tr("Export CSV"), desc: tr("Tableau année par année"), icon: Download, onClick: onExportCSV },
+    { label: tr("Export JSON"), desc: tr("Paramètres + résultats bruts"), icon: FileJson, onClick: onExportJSON },
     {
-      label: "Rapport PDF",
-      desc: "Rapport patrimonial de synthèse — imprimer ou enregistrer en PDF",
+      label: tr("Rapport PDF"),
+      desc: tr("Rapport patrimonial de synthèse — imprimer ou enregistrer en PDF"),
       icon: Printer,
       onClick: onPrint,
     },
@@ -61,10 +63,10 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title="Exporter la simulation"
+        title={tr("Exporter la simulation")}
         className="btn-shine inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
       >
-        <Download size={12} /> Exporter
+        <Download size={12} /> {tr("Exporter")}
         <ChevronDown size={11} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
@@ -73,7 +75,7 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
           <motion.div
             ref={menuRef}
             role="menu"
-            aria-label="Options d'export"
+            aria-label={tr("Options d'export")}
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}

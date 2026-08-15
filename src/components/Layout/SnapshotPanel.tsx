@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { Camera, RotateCcw, Trash2 } from "lucide-react"
-import { fmtCurrency } from "../../engine"
+import { useLang } from "../../i18n"
 import type { SavedSnapshot } from "../../types"
 
 interface SnapshotPanelProps {
@@ -11,6 +11,7 @@ interface SnapshotPanelProps {
 }
 
 export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotPanelProps) {
+  const { tr, fmtCurrency } = useLang()
   // M2 — suppression en deux temps : un premier clic arme la confirmation,
   // le second exécute. Évite de détruire un scénario d'un simple tap (pas
   // d'undo sur les snapshots).
@@ -33,20 +34,20 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
           <span className="w-1 h-3.5 rounded-full bg-primary shrink-0" aria-hidden />
-          <Camera size={12} className="text-primary" aria-hidden /> Snapshots
+          <Camera size={12} className="text-primary" aria-hidden /> {tr("Snapshots")}
         </div>
         <button
           type="button"
           onClick={onSave}
           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
         >
-          <Camera size={11} /> Sauvegarder
+          <Camera size={11} /> {tr("Sauvegarder")}
         </button>
       </div>
 
       {snapshots.length === 0 ? (
         <p className="text-[10px] text-text-dim leading-relaxed">
-          Aucun état sauvegardé. Figez un scénario pour le retrouver plus tard.
+          {tr("Aucun état sauvegardé. Figez un scénario pour le retrouver plus tard.")}
         </p>
       ) : (
         <ul className="space-y-1.5">
@@ -60,7 +61,7 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
                 <button
                   type="button"
                   onClick={() => onLoad(snap.id)}
-                  title="Charger ce scénario"
+                  title={tr("Charger ce scénario")}
                   className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
                 >
                   <RotateCcw size={12} />
@@ -68,11 +69,11 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
                 <button
                   type="button"
                   onClick={() => requestRemove(snap)}
-                  title={confirmingId === snap.id ? "Confirmer la suppression" : "Supprimer ce snapshot"}
+                  title={confirmingId === snap.id ? tr("Confirmer la suppression") : tr("Supprimer ce snapshot")}
                   aria-label={
                     confirmingId === snap.id
-                      ? `Confirmer la suppression de ${snap.name}`
-                      : `Supprimer ce snapshot`
+                      ? tr("Confirmer la suppression de {name}", { name: snap.name })
+                      : tr("Supprimer ce snapshot")
                   }
                   className={`p-1.5 rounded-lg transition-colors ${
                     confirmingId === snap.id
@@ -81,7 +82,7 @@ export function SnapshotPanel({ snapshots, onSave, onLoad, onRemove }: SnapshotP
                   }`}
                 >
                   {confirmingId === snap.id ? (
-                    <span className="text-[10px] font-bold px-0.5">Confirmer ?</span>
+                    <span className="text-[10px] font-bold px-0.5">{tr("Confirmer ?")}</span>
                   ) : (
                     <Trash2 size={12} />
                   )}

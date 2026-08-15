@@ -32,15 +32,9 @@ import {
   ReferenceLine,
 } from "recharts"
 
-import {
-  ENVELOPE_CONFIGS,
-  fmtCurrency,
-  fmtCompact,
-  fmtDecimal,
-  getHistoricalPool,
-  runStressTest,
-  STRESS_TEST_SCENARIOS,
-} from "../../engine"
+import { ENVELOPE_CONFIGS, fmtDecimal, getHistoricalPool, runStressTest, STRESS_TEST_SCENARIOS } from "../../engine"
+import type { Lang } from "../../engine"
+import { useLang } from "../../i18n"
 import { chartTheme } from "../../utils/chartTheme"
 import { cn } from "@/utils/cn"
 import { useChartA11y } from "../../hooks/useChartA11y"
@@ -127,11 +121,14 @@ export function RenteRetraiteTab({
   const startingCapital = lastRow?.nominal && lastRow.nominal > 0 ? lastRow.nominal : inputs.capitalInitial
   const selectedModel = WITHDRAWAL_MODELS.find(m => m.id === inputs.withdrawalModel) ?? WITHDRAWAL_MODELS[0]
   const envelopeLabel = ENVELOPE_CONFIGS.find(e => e.id === inputs.envelope)?.shortLabel ?? "BRUT"
+  const { tr, lang, fmtCurrency } = useLang()
   // Profil (paquet 3) : un repère d'âge dans l'en-tête quand le profil est
   // renseigné — « retraite à X ans, fin de rente à Y ans ».
   const retirementAgeInfo =
     inputs.ageRetirement > inputs.ageNow
-      ? `${inputs.ageRetirement} ans au départ de la retraite · ${inputs.ageRetirement + inputs.retirementYears} ans à la fin de la rente`
+      ? `${tr("{n} ans au départ de la retraite", { n: inputs.ageRetirement })} · ${tr("{n} ans à la fin de la rente", {
+          n: inputs.ageRetirement + inputs.retirementYears,
+        })}`
       : null
   // Le pire repli pic→creux du vivier réellement rejoué (56 ou 100 ans selon
   // l'option), comparé à la tolérance du profil : le verdict « trop risqué »
@@ -161,9 +158,10 @@ export function RenteRetraiteTab({
 
   // Note de transparence sur le krach paramétrable, affichée avec les résultats
   const crisisNote = inputs.crisisScenario
-    ? `Un krach de −${Math.round(inputs.crisisIntensity * 100)} % frappe chaque scénario en année ${
-        inputs.crisisStartOffset + 1
-      } de la retraite (partir en période difficile).`
+    ? tr("Un krach de −{pct} % frappe chaque scénario en année {year} de la retraite (partir en période difficile).", {
+        pct: Math.round(inputs.crisisIntensity * 100),
+        year: inputs.crisisStartOffset + 1,
+      })
     : null
 
   // Les stress tests historiques sont repliés par défaut : ils ne s'imposent
@@ -182,22 +180,27 @@ export function RenteRetraiteTab({
               as="h2"
               level="page"
               icon={TrendingUp}
-              title="Simulation de décaissement & rente"
+              title={tr("Simulation de décaissement & rente")}
               className="mb-2"
             />
             <p className="text-[11px] text-text-dim leading-relaxed max-w-xl">
-              Analysez la soutenabilité de vos retraits sur{" "}
-              <strong className="text-text">{inputs.retirementYears} ans</strong> via une simulation Monte-Carlo.
+              {tr("Analysez la soutenabilité de vos retraits sur")}{" "}
+              <strong className="text-text">
+                {inputs.retirementYears} {tr("ans")}
+              </strong>{" "}
+              {tr("via une simulation Monte-Carlo.")}
             </p>
             <div className="flex items-center gap-1.5 mt-2 text-[10px] text-text-dim">
               <AlertTriangle size={11} className="text-primary" />
-              <span>La rente n'est pas garantie — les performances passées ne préjugent pas des résultats futurs.</span>
+              <span>
+                {tr("La rente n'est pas garantie — les performances passées ne préjugent pas des résultats futurs.")}
+              </span>
             </div>
             {retirementAgeInfo && (
               <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-text-muted">
                 <Coins size={11} className="text-text-dim shrink-0" />
                 <span>
-                  Profil : <strong className="text-text">{retirementAgeInfo}</strong>
+                  {tr("Profil :")} <strong className="text-text">{retirementAgeInfo}</strong>
                 </span>
               </div>
             )}
@@ -206,7 +209,7 @@ export function RenteRetraiteTab({
           <div className="glass rounded-2xl px-4 py-3 min-w-[200px]">
             <div className="flex items-center gap-1.5 mb-1">
               <Coins size={11} className="text-text-dim" />
-              <span className="text-[10px] text-text-dim uppercase tracking-wider">Capital à décumuler</span>
+              <span className="text-[10px] text-text-dim uppercase tracking-wider">{tr("Capital à décumuler")}</span>
             </div>
             {/* La simulation démarre du montant BRUT (ce qui est sur le compte
                 en fin d'accumulation) : les impôts ne sont prélevés qu'AU
@@ -219,15 +222,15 @@ export function RenteRetraiteTab({
             <div className="text-[10px] text-text-dim mt-1">
               {lastRow?.nominal && lastRow.nominal > 0 ? (
                 <>
-                  Brut en fin d'accumulation — après impôts de sortie :{" "}
+                  {tr("Brut en fin d'accumulation — après impôts de sortie :")}{" "}
                   <strong className="mono text-text">{fmtCurrency(lastRow.taxNet)}</strong>
                 </>
               ) : (
-                "Capital initial (aucune simulation)"
+                tr("Capital initial (aucune simulation)")
               )}
             </div>
             <div className="text-[9px] text-text-dim mt-1 leading-snug">
-              La rente est calculée sur le brut ; chaque retrait n'est imposé que sur sa part de gains.
+              {tr("La rente est calculée sur le brut ; chaque retrait n'est imposé que sur sa part de gains.")}
             </div>
           </div>
         </div>
@@ -238,7 +241,7 @@ export function RenteRetraiteTab({
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Sélecteur de modèle */}
           <div className="lg:col-span-3">
-            <SectionHeader level="label">Modèle de retrait</SectionHeader>
+            <SectionHeader level="label">{tr("Modèle de retrait")}</SectionHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {WITHDRAWAL_MODELS.map(model => {
                 const isActive = inputs.withdrawalModel === model.id
@@ -264,13 +267,13 @@ export function RenteRetraiteTab({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold">{model.label}</span>
+                          <span className="text-xs font-bold">{tr(model.label)}</span>
                           {isActive && <CheckCircle2 size={13} className="text-primary shrink-0" />}
                         </div>
-                        <div className="text-[10px] text-text-dim mt-0.5 leading-snug">{model.desc}</div>
+                        <div className="text-[10px] text-text-dim mt-0.5 leading-snug">{tr(model.desc)}</div>
                         {model.rate > 0 && (
                           <div className="text-[10px] mono text-text-dim mt-1.5">
-                            ≈ {fmtCurrency((startingCapital * model.rate) / 12)} / mois
+                            ≈ {fmtCurrency((startingCapital * model.rate) / 12)} / {tr("mois")}
                           </div>
                         )}
                       </div>
@@ -286,27 +289,32 @@ export function RenteRetraiteTab({
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb size={12} className="text-primary shrink-0" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                  Quel modèle choisir ?
+                  {tr("Quel modèle choisir ?")}
                 </span>
               </div>
               <p className="text-[10px] text-text-dim leading-relaxed">
-                La <strong className="text-text">règle des 4 %</strong> est le standard historique (Bengen) : elle a
-                tenu sur toutes les périodes de 30 ans testées. <strong className="text-text">Très prudent</strong>{" "}
-                sacrifie du confort pour la sécurité, pendant que <strong className="text-text">Optimiste</strong>{" "}
-                convient si vous pouvez réduire vos retraits les mauvaises années. Le mode{" "}
-                <strong className="text-text">Personnalisé</strong> teste le montant exact que vous visez.
+                <strong className="text-text">{tr("La règle des 4 %")}</strong>{" "}
+                {tr("est le standard historique (Bengen) : elle a tenu sur toutes les périodes de 30 ans testées.")}{" "}
+                <strong className="text-text">{tr("Très prudent")}</strong>{" "}
+                {tr("sacrifie du confort pour la sécurité, pendant que")}{" "}
+                <strong className="text-text">{tr("Optimiste")}</strong>{" "}
+                {tr("convient si vous pouvez réduire vos retraits les mauvaises années. Le mode")}{" "}
+                <strong className="text-text">{tr("Personnalisé")}</strong>{" "}
+                {tr("teste le montant exact que vous visez.")}
               </p>
             </div>
           </div>
 
           {/* Paramètres */}
           <div className="lg:col-span-2 space-y-3">
-            <SectionHeader level="label">Paramètres</SectionHeader>
+            <SectionHeader level="label">{tr("Paramètres")}</SectionHeader>
 
             {/* Aperçu rente */}
             <div className="card-subtle rounded-xl p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] text-text-dim uppercase tracking-wider">Rente mensuelle initiale</span>
+                <span className="text-[10px] text-text-dim uppercase tracking-wider">
+                  {tr("Rente mensuelle initiale")}
+                </span>
                 <span
                   className="text-[10px] mono font-bold px-1.5 py-0.5 rounded"
                   style={{
@@ -315,8 +323,8 @@ export function RenteRetraiteTab({
                   }}
                 >
                   {inputs.withdrawalModel === "custom"
-                    ? "Montant fixe"
-                    : `${fmtDecimal(selectedModel.rate * 100, 1).replace(/,0$/, "")} %`}
+                    ? tr("Montant fixe")
+                    : fmtPercent(selectedModel.rate * 100, lang)}
                 </span>
               </div>
 
@@ -328,10 +336,10 @@ export function RenteRetraiteTab({
                     step={50}
                     value={inputs.withdrawalFixed}
                     onChange={e => updateInput("withdrawalFixed", Math.max(0, Number(e.target.value) || 0))}
-                    aria-label="Montant de la rente fixe en euros par mois"
+                    aria-label={tr("Montant de la rente fixe en euros par mois")}
                     className="mono text-base font-bold bg-glass border border-border rounded-lg px-2 py-1 outline-none focus:border-primary/50 transition-colors w-32"
                   />
-                  <span className="text-xs text-text-dim">€ / mois</span>
+                  <span className="text-xs text-text-dim">€ / {tr("mois")}</span>
                 </div>
               ) : (
                 <div className="mt-1">
@@ -339,8 +347,8 @@ export function RenteRetraiteTab({
                     {fmtCurrency(estimatedMonthly)}
                   </div>
                   <div className="text-[10px] text-text-dim mt-1.5">
-                    soit <span className="mono">{fmtCurrency(estimatedMonthly * 12)}</span> / an
-                    {inputs.withdrawalInflation && " · indexée sur l'inflation"}
+                    {tr("soit")} <span className="mono">{fmtCurrency(estimatedMonthly * 12)}</span> / {tr("an")}
+                    {inputs.withdrawalInflation && ` · ${tr("indexée sur l'inflation")}`}
                   </div>
                 </div>
               )}
@@ -349,8 +357,10 @@ export function RenteRetraiteTab({
             {/* Durée de la retraite */}
             <div className="card-subtle rounded-xl p-4">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] text-text-dim uppercase tracking-wider">Durée de la rente</span>
-                <span className="text-xs mono font-bold text-text">{inputs.retirementYears} ans</span>
+                <span className="text-[10px] text-text-dim uppercase tracking-wider">{tr("Durée de la rente")}</span>
+                <span className="text-xs mono font-bold text-text">
+                  {inputs.retirementYears} {tr("ans")}
+                </span>
               </div>
               <input
                 type="range"
@@ -360,7 +370,7 @@ export function RenteRetraiteTab({
                 value={inputs.retirementYears}
                 onChange={e => updateInput("retirementYears", Number(e.target.value))}
                 className="w-full mt-2"
-                aria-label="Durée de la rente en années"
+                aria-label={tr("Durée de la rente en années")}
                 style={rangeFill(inputs.retirementYears, 5, 60, "var(--color-primary)")}
               />
               <div className="flex justify-between text-[10px] text-text-dim mt-1">
@@ -381,9 +391,9 @@ export function RenteRetraiteTab({
               aria-checked={inputs.withdrawalInflation}
             >
               <div>
-                <div className="text-xs font-semibold">Indexer sur l'inflation</div>
+                <div className="text-xs font-semibold">{tr("Indexer sur l'inflation")}</div>
                 <div className="text-[10px] text-text-dim mt-0.5">
-                  Préserve le pouvoir d'achat ({fmtPercent(inputs.inflation)})
+                  {tr("Préserve le pouvoir d'achat")} ({fmtPercent(inputs.inflation, lang)})
                 </div>
               </div>
               <div
@@ -406,18 +416,20 @@ export function RenteRetraiteTab({
               <Toggle
                 checked={inputs.crisisScenario}
                 onChange={v => updateInput("crisisScenario", v)}
-                label="Partir en période difficile"
-                sub="Simule un krach au moment et à l'intensité de votre choix"
+                label={tr("Partir en période difficile")}
+                sub={tr("Simule un krach au moment et à l'intensité de votre choix")}
               />
               {inputs.crisisScenario && (
                 <div className="mt-3 space-y-3 animate-fade-in border-t border-border/50 pt-3">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[10px] text-text-dim uppercase tracking-wider">Le krach frappe après</span>
+                      <span className="text-[10px] text-text-dim uppercase tracking-wider">
+                        {tr("Le krach frappe après")}
+                      </span>
                       <span className="text-xs mono font-bold text-text">
                         {inputs.crisisStartOffset === 0
-                          ? "dès le début"
-                          : `${inputs.crisisStartOffset} an${inputs.crisisStartOffset > 1 ? "s" : ""}`}
+                          ? tr("dès le début")
+                          : `${inputs.crisisStartOffset} ${tr(inputs.crisisStartOffset > 1 ? "ans" : "an")}`}
                       </span>
                     </div>
                     {/* Le krach doit pouvoir frapper pendant la rente : le
@@ -435,7 +447,7 @@ export function RenteRetraiteTab({
                             value={Math.min(inputs.crisisStartOffset, maxOffset)}
                             onChange={e => updateInput("crisisStartOffset", Number(e.target.value))}
                             className="w-full"
-                            aria-label="Années avant le krach"
+                            aria-label={tr("Années avant le krach")}
                             style={rangeFill(
                               Math.min(inputs.crisisStartOffset, maxOffset),
                               0,
@@ -444,8 +456,8 @@ export function RenteRetraiteTab({
                             )}
                           />
                           <div className="flex justify-between text-[10px] text-text-dim mt-1">
-                            <span>Année 1</span>
-                            <span>{maxOffset === 0 ? "Année 1" : `+${maxOffset} ans`}</span>
+                            <span>{tr("Année 1")}</span>
+                            <span>{maxOffset === 0 ? tr("Année 1") : `+${maxOffset} ${tr("ans")}`}</span>
                           </div>
                         </>
                       )
@@ -453,7 +465,9 @@ export function RenteRetraiteTab({
                   </div>
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[10px] text-text-dim uppercase tracking-wider">Intensité du krach</span>
+                      <span className="text-[10px] text-text-dim uppercase tracking-wider">
+                        {tr("Intensité du krach")}
+                      </span>
                       <span className="text-xs mono font-bold text-warning">
                         −{Math.round(inputs.crisisIntensity * 100)} %
                       </span>
@@ -466,7 +480,7 @@ export function RenteRetraiteTab({
                       value={Math.round(inputs.crisisIntensity * 100)}
                       onChange={e => updateInput("crisisIntensity", Number(e.target.value) / 100)}
                       className="w-full"
-                      aria-label="Intensité du krach en pourcentage"
+                      aria-label={tr("Intensité du krach en pourcentage")}
                       style={rangeFill(Math.round(inputs.crisisIntensity * 100), 10, 60, "var(--color-warning)")}
                     />
                     <div className="flex justify-between text-[10px] text-text-dim mt-1">
@@ -476,8 +490,9 @@ export function RenteRetraiteTab({
                   </div>
                   <p className="text-[9px] text-text-dim leading-snug flex items-start gap-1">
                     <AlertTriangle size={10} className="shrink-0 mt-0.5 text-warning" />
-                    Chaque scénario subit cette chute la même année — le « et si le départ tombait en pleine crise ? »
-                    appliqué à 100 % des cas, pas seulement au cas pessimiste.
+                    {tr(
+                      "Chaque scénario subit cette chute la même année — le « et si le départ tombait en pleine crise ? » appliqué à 100 % des cas, pas seulement au cas pessimiste.",
+                    )}
                   </p>
                 </div>
               )}
@@ -497,7 +512,7 @@ export function RenteRetraiteTab({
               )}
             >
               <Play size={13} fill="currentColor" />{" "}
-              {running ? `Calcul... ${progress}%` : "Lancer la simulation Monte-Carlo"}
+              {running ? tr("Calcul... {progress}%", { progress }) : tr("Lancer la simulation Monte-Carlo")}
               {!running && decumResult && <RefreshCw size={11} className="opacity-70" />}
             </motion.button>
 
@@ -512,7 +527,7 @@ export function RenteRetraiteTab({
                   />
                 </div>
                 <p className="text-[10px] text-text-dim text-right mono">
-                  {progress}% — interface fluide pendant le calcul
+                  {tr("{progress}% — interface fluide pendant le calcul", { progress })}
                 </p>
               </div>
             )}
@@ -538,17 +553,18 @@ export function RenteRetraiteTab({
         <p className="text-[10px] leading-relaxed text-text-dim">
           {exceedsRisk ? (
             <>
-              <strong className="text-warning">Tolérance au risque dépassée :</strong> le pire repli historique de votre
-              indice est de <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>, au-delà de
-              votre tolérance de −{Math.round(inputs.maxDrawdownTolerance * 100)} %. Ce plan peut être{" "}
-              <strong className="text-text">trop risqué pour vous</strong> — envisagez une part plus prudente
-              (obligations, livrets) ou un taux de retrait plus faible.
+              <strong className="text-warning">{tr("Tolérance au risque dépassée :")}</strong>{" "}
+              {tr("le pire repli historique de votre indice est de")}{" "}
+              <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>
+              {tr(", au-delà de votre tolérance de")} −{Math.round(inputs.maxDrawdownTolerance * 100)} %.{" "}
+              {tr("Ce plan peut être")} <strong className="text-text">{tr("trop risqué pour vous")}</strong>{" "}
+              {tr("— envisagez une part plus prudente (obligations, livrets) ou un taux de retrait plus faible.")}
             </>
           ) : (
             <>
-              <strong className="text-text">Risque maîtrisé :</strong> le pire repli historique de votre indice (−
-              {Math.round(worstDrawdown * 100)} %) reste dans votre tolérance de −
-              {Math.round(inputs.maxDrawdownTolerance * 100)} %.
+              <strong className="text-text">{tr("Risque maîtrisé :")}</strong>{" "}
+              {tr("le pire repli historique de votre indice")} (−{Math.round(worstDrawdown * 100)} %)
+              {tr("reste dans votre tolérance de")} −{Math.round(inputs.maxDrawdownTolerance * 100)} %.
             </>
           )}
         </p>
@@ -560,19 +576,29 @@ export function RenteRetraiteTab({
         <div className="rounded-xl bg-primary/8 border border-primary/20 px-3.5 py-2.5 flex items-start gap-2">
           <Coins size={13} className="text-primary shrink-0 mt-0.5" />
           <p className="text-[10px] leading-relaxed text-text-dim">
-            Votre projection s'arrête à <strong className="text-text">{inputs.ageNow + inputs.duration} ans</strong>{" "}
-            (âge actuel {inputs.ageNow} + durée {inputs.duration} ans) et votre retraite est prévue à{" "}
-            <strong className="text-text">{inputs.ageRetirement} ans</strong>. Le capital à décumuler correspond à{" "}
+            {tr("Votre projection s'arrête à")}{" "}
+            <strong className="text-text">
+              {inputs.ageNow + inputs.duration} {tr("ans")}
+            </strong>{" "}
+            ({tr("âge actuel")} {inputs.ageNow} + {tr("durée")} {inputs.duration} {tr("ans")}){" "}
+            {tr("et votre retraite est prévue à")}{" "}
+            <strong className="text-text">
+              {inputs.ageRetirement} {tr("ans")}
+            </strong>
+            . {tr("Le capital à décumuler correspond à")}{" "}
             {inputs.ageNow + inputs.duration < inputs.ageRetirement ? (
               <>
-                un âge <strong className="text-warning">antérieur</strong> à votre départ — allongez la durée ou avancez
-                la retraite pour que le capital projeté couvre la rente.
+                {tr("un âge")} <strong className="text-warning">{tr("antérieur")}</strong>{" "}
+                {tr(
+                  "à votre départ — allongez la durée ou avancez la retraite pour que le capital projeté couvre la rente.",
+                )}
               </>
             ) : (
               <>
-                un âge <strong className="text-warning">postérieur</strong> à votre départ — les{" "}
-                {inputs.ageNow + inputs.duration - inputs.ageRetirement} dernières années de projection ne servent pas à
-                la rente.
+                {tr("un âge")} <strong className="text-warning">{tr("postérieur")}</strong> {tr("à votre départ — les")}{" "}
+                {tr("{n} dernières années de projection ne servent pas à la rente.", {
+                  n: inputs.ageNow + inputs.duration - inputs.ageRetirement,
+                })}
               </>
             )}
           </p>
@@ -588,7 +614,7 @@ export function RenteRetraiteTab({
       {uiMode === "avance" && (
         <div className="glass rounded-3xl p-4 sm:p-6">
           <CollapsibleSection
-            title="Fiabilité & sûreté des estimations"
+            title={tr("Fiabilité & sûreté des estimations")}
             icon={<ShieldCheck size={12} className="text-primary" />}
             defaultOpen={false}
           >
@@ -596,31 +622,40 @@ export function RenteRetraiteTab({
               <Toggle
                 checked={inputs.parameterUncertainty}
                 onChange={v => updateInput("parameterUncertainty", v)}
-                label="Incertitude des paramètres"
-                sub="La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie."
+                label={tr("Incertitude des paramètres")}
+                sub={tr(
+                  "La moyenne et la volatilité du marché sont des estimations, pas des vérités : chaque scénario tire les siennes. Élargit honnêtement le taux de survie.",
+                )}
               />
               <Toggle
                 checked={inputs.extendedHistory}
                 onChange={v => updateInput("extendedHistory", v)}
-                label="Historique étendu (100 ans)"
-                sub="Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés."
+                label={tr("Historique étendu (100 ans)")}
+                sub={tr(
+                  "Rejoue 100 ans de rendements réels (1929, 1931, 1933…) au lieu des 56 dernières années : plus de krachs testés.",
+                )}
               />
               <Toggle
                 checked={inputs.stochasticInflation}
                 onChange={v => updateInput("stochasticInflation", v)}
-                label="Inflation stochastique"
-                sub="L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe."
+                label={tr("Inflation stochastique")}
+                sub={tr(
+                  "L'indexation rejoue l'inflation française réelle 1970-2025 (pics à 13,7 % en 1974) au lieu d'un taux fixe.",
+                )}
               />
               <Toggle
                 checked={inputs.dynamicGuardrails}
                 onChange={v => updateInput("dynamicGuardrails", v)}
-                label="Garde-fous dynamiques (Guyton–Klinger)"
-                sub="Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine."
+                label={tr("Garde-fous dynamiques (Guyton–Klinger)")}
+                sub={tr(
+                  "Après une année boursière négative, la rente de l'année suivante est réduite de 10 % — sauve la majorité des cas de ruine.",
+                )}
               />
             </div>
             <p className="text-[9px] text-text-dim mt-2.5">
-              Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges,
-              taux de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.
+              {tr(
+                "Ces 4 options sont actives par défaut : elles rendent les estimations plus honnêtes (bandes plus larges, taux de survie plus crédibles). Désactivez-les pour comparer avec le comportement historique simple.",
+              )}
             </p>
           </CollapsibleSection>
         </div>
@@ -633,8 +668,8 @@ export function RenteRetraiteTab({
         <div className="space-y-3">
           {isStale && (
             <p className="text-[10px] text-warning flex items-center gap-1">
-              <AlertTriangle size={11} /> Paramètres modifiés depuis le lancement — relancez la simulation pour mettre à
-              jour les résultats.
+              <AlertTriangle size={11} />{" "}
+              {tr("Paramètres modifiés depuis le lancement — relancez la simulation pour mettre à jour les résultats.")}
             </p>
           )}
           <ResultsSection
@@ -669,14 +704,14 @@ export function RenteRetraiteTab({
             icon={Activity}
             title={
               <>
-                Et si vous partiez en pleine crise ?{" "}
-                <span className="text-text-dim font-medium">(scénarios réels 1973 · 2000 · 2008)</span>
+                {tr("Et si vous partiez en pleine crise ?")}{" "}
+                <span className="text-text-dim font-medium">{tr("(scénarios réels 1973 · 2000 · 2008)")}</span>
               </>
             }
             className="flex-1 min-w-0"
           />
           <span className="text-[10px] text-text-dim flex items-center gap-1 shrink-0">
-            {stressOpen ? "Réduire" : "Voir le détail"}
+            {stressOpen ? tr("Réduire") : tr("Voir le détail")}
             <ChevronDown size={12} className={cn("transition-transform", stressOpen && "rotate-180")} />
           </span>
         </button>
@@ -699,8 +734,12 @@ export function RenteRetraiteTab({
 // Sous-composants
 // ───────────────────────────────────────────────────────────
 
-function fmtPercent(v: number): string {
-  return `${fmtDecimal(v * 100, 1).replace(/,0$/, "")} %`
+function fmtPercent(v: number, lang: Lang = "fr"): string {
+  return `${fmtDecimal(v * 100, 1, lang).replace(/,0$/, "")} %`
+}
+
+function fmtPct(v: number, locale = "fr-FR"): string {
+  return `${v.toLocaleString(locale, { maximumFractionDigits: 1 })} %`
 }
 
 /** Rail de curseur « rempli » (même langage que SliderInput). */
@@ -728,6 +767,7 @@ function ResultsSection({
   lastRow: YearRow | undefined
   envelopeLabel: string
 }) {
+  const { tr, fmtCurrency, fmtCompact, locale } = useLang()
   const survival = decumResult.survivalProbability
   const survivalTone =
     survival >= 90 ? "var(--color-success)" : survival >= 75 ? "var(--color-primary)" : "var(--color-danger)"
@@ -737,7 +777,7 @@ function ResultsSection({
   const finalSurvival = finalMedian > 0
   const success = survival >= 85
   const [showGuide, setShowGuide] = useState(false)
-  const chartRef = useChartA11y("Votre capital pendant la retraite — P10, P50 et P90")
+  const chartRef = useChartA11y(tr("Votre capital pendant la retraite — P10, P50 et P90"))
   const coarse = useIsCoarsePointer()
 
   // Paquet 2 — rente nette : retraits nets moyens par mois sur toute la
@@ -794,24 +834,30 @@ function ResultsSection({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-bold">{success ? "Votre rente est sûre" : "Votre rente est risquée"}</h3>
+            <h3 className="text-sm font-bold">
+              {success ? tr("Votre rente est sûre") : tr("Votre rente est risquée")}
+            </h3>
             <span
               className="text-[10px] mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
               style={{ background: `color-mix(in srgb, ${survivalTone} 20%, transparent)`, color: survivalTone }}
             >
-              {survivalLabel}
+              {tr(survivalLabel)}
             </span>
           </div>
           <p className="text-[11px] text-text-dim mt-1 leading-relaxed">
-            Nous avons rejoué votre plan{" "}
-            <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")} fois</strong>, avec des évolutions
-            de bourse différentes à chaque fois. Résultat : votre rente de{" "}
-            <strong className="text-text">{fmtCurrency(decumResult.initialWithdrawal)} / mois</strong> est payée
-            jusqu'au bout dans{" "}
-            <strong className={success ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}>
-              {fmtPct(survival)}
+            {tr("Nous avons rejoué votre plan")}{" "}
+            <strong className="text-text">
+              {decumResult.runs.toLocaleString(locale)} {tr("fois")}
+            </strong>
+            {tr(", avec des évolutions de bourse différentes à chaque fois. Résultat : votre rente de")}{" "}
+            <strong className="text-text">
+              {fmtCurrency(decumResult.initialWithdrawal)} / {tr("mois")}
             </strong>{" "}
-            des cas.
+            {tr("est payée jusqu'au bout dans")}{" "}
+            <strong className={success ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}>
+              {fmtPct(survival, locale)}
+            </strong>{" "}
+            {tr("des cas.")}
           </p>
         </div>
       </div>
@@ -824,7 +870,7 @@ function ResultsSection({
         <div className="rounded-xl bg-warning/8 border border-warning/20 px-4 py-3 flex items-start gap-2.5">
           <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed text-text-dim">
-            <strong className="text-warning">Krach simulé :</strong> {crisisNote}
+            <strong className="text-warning">{tr("Krach simulé :")}</strong> {crisisNote}
           </p>
         </div>
       )}
@@ -835,17 +881,18 @@ function ResultsSection({
       <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 flex items-start gap-2.5">
         <Lightbulb size={14} className="text-primary shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed text-text-dim">
-          <strong className="text-text">En clair :</strong>{" "}
+          <strong className="text-text">{tr("En clair :")}</strong>{" "}
           {ruinYear !== null ? (
             <>
-              quand un plan échoue, l'argent manque généralement autour de l'année{" "}
-              <strong className="text-text">{ruinYear}</strong> — les autres années, la rente est versée sans
-              interruption pendant {decumResult.years.length - 1} ans.
+              {tr("quand un plan échoue, l'argent manque généralement autour de l'année")}{" "}
+              <strong className="text-text">{ruinYear}</strong>{" "}
+              {tr("— les autres années, la rente est versée sans interruption pendant")} {decumResult.years.length - 1}{" "}
+              {tr("ans.")}
             </>
           ) : (
             <>
-              dans <strong className="text-text">100 % des simulations</strong>, votre rente est payée jusqu'au bout —
-              et il reste toujours de l'argent à la fin.
+              {tr("dans")} <strong className="text-text">{tr("100 % des simulations")}</strong>
+              {tr(", votre rente est payée jusqu'au bout — et il reste toujours de l'argent à la fin.")}
             </>
           )}
         </p>
@@ -857,9 +904,12 @@ function ResultsSection({
           fiscalité des retraits ET les frais de gestion — on dit la vérité. */}
       <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
         <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
-        Basé sur <strong className="text-text">{decumResult.runs.toLocaleString("fr-FR")} scénarios</strong> ·{" "}
-        {extendedHistory ? "100 ans" : "56 ans"} d'historique réel · fiscalité des retraits incluse (enveloppe{" "}
-        {envelopeLabel})
+        {tr("Basé sur")}{" "}
+        <strong className="text-text">
+          {decumResult.runs.toLocaleString(locale)} {tr("scénarios")}
+        </strong>{" "}
+        · {tr(extendedHistory ? "100 ans" : "56 ans")}{" "}
+        {tr("d'historique réel · fiscalité des retraits incluse (enveloppe")} {envelopeLabel})
       </p>
 
       {/* Paquet 2 — la fiscalité des retraits est désormais modélisée : on
@@ -869,20 +919,28 @@ function ResultsSection({
         <Landmark size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
         {inputs.envelope === "none" ? (
           <p className="text-[10px] leading-relaxed text-text-dim">
-            <strong className="text-text">Sans fiscalité :</strong> l'enveloppe choisie est « BRUT » — aucun impôt n'est
-            prélevé sur les retraits. La rente affichée est donc la rente brute.
+            <strong className="text-text">{tr("Sans fiscalité :")}</strong>{" "}
+            {tr(
+              "l'enveloppe choisie est « BRUT » — aucun impôt n'est prélevé sur les retraits. La rente affichée est donc la rente brute.",
+            )}
           </p>
         ) : (
           <p className="text-[10px] leading-relaxed text-text-dim">
-            <strong className="text-text">Rente nette :</strong> après impôt sur les retraits (enveloppe{" "}
-            <strong className="text-text">{envelopeLabel}</strong>), vous recevez en moyenne{" "}
-            <strong className="text-text">{fmtCurrency(Math.round(netMonthly))} / mois</strong> (euros courants) — soit{" "}
+            <strong className="text-text">{tr("Rente nette :")}</strong> {tr("après impôt sur les retraits (enveloppe")}{" "}
+            <strong className="text-text">{envelopeLabel}</strong>
+            {tr("), vous recevez en moyenne")}{" "}
             <strong className="text-text">
-              {fmtCurrency(Math.round(netMonthlyToday))} / mois en euros d'aujourd'hui
+              {fmtCurrency(Math.round(netMonthly))} / {tr("mois")}
+            </strong>{" "}
+            ({tr("euros courants")}) — {tr("soit")}{" "}
+            <strong className="text-text">
+              {fmtCurrency(Math.round(netMonthlyToday))} / {tr("mois")} {tr("en euros d'aujourd'hui")}
             </strong>
-            . Au total : <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong> d'impôts et{" "}
-            <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong> de frais de gestion payés
-            pendant toute la retraite (la rente brute reste {fmtCurrency(decumResult.initialWithdrawal)}/mois).
+            . {tr("Au total :")} <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong>{" "}
+            {tr("d'impôts et")} <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong>{" "}
+            {tr("de frais de gestion payés pendant toute la retraite (la rente brute reste")}{" "}
+            {fmtCurrency(decumResult.initialWithdrawal)}
+            {tr("/mois).")}
           </p>
         )}
       </div>
@@ -908,23 +966,39 @@ function ResultsSection({
           <p className="text-[10px] leading-relaxed text-text-dim">
             {coverage >= 100 ? (
               <>
-                <strong className="text-text">Revenus couverts :</strong> votre rente nette ({" "}
-                <strong className="text-text">{fmtCurrency(Math.round(netMonthlyToday))}/mois</strong> en euros
-                d'aujourd'hui) plus vos autres revenus ({" "}
-                <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) couvrent{" "}
-                <strong className="text-[var(--color-success)]">{coverage} %</strong> de vos dépenses prévues ({" "}
-                {fmtCurrency(inputs.retirementExpenses)}/mois).
+                <strong className="text-text">{tr("Revenus couverts :")}</strong> {tr("votre rente nette")} ({" "}
+                <strong className="text-text">
+                  {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
+                </strong>{" "}
+                {tr("en euros d'aujourd'hui")}) {tr("plus vos autres revenus")} ({" "}
+                <strong className="text-text">
+                  {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
+                </strong>
+                ) {tr("couvrent")} <strong className="text-[var(--color-success)]">{coverage} %</strong>{" "}
+                {tr("de vos dépenses prévues")} ( {fmtCurrency(inputs.retirementExpenses)}
+                {tr("/mois).")}
               </>
             ) : (
               <>
-                <strong className="text-text">Manque à couvrir :</strong> rente nette ({" "}
-                <strong className="text-text">{fmtCurrency(Math.round(netMonthlyToday))}/mois</strong> en euros
-                d'aujourd'hui) + autres revenus ({" "}
-                <strong className="text-text">{fmtCurrency(inputs.otherPensions)}/mois</strong>) ={" "}
-                <strong className="text-text">{fmtCurrency(Math.round(retirementIncome))}/mois</strong>, soit{" "}
-                <strong className="text-text">{coverage} %</strong> de vos dépenses prévues ({" "}
-                {fmtCurrency(inputs.retirementExpenses)}/mois) — il manque{" "}
-                <strong className="text-warning">{fmtCurrency(Math.round(Math.max(0, shortfall)))}/mois</strong>.
+                <strong className="text-text">{tr("Manque à couvrir :")}</strong> {tr("rente nette")} ({" "}
+                <strong className="text-text">
+                  {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
+                </strong>{" "}
+                {tr("en euros d'aujourd'hui")}) + {tr("autres revenus")} ({" "}
+                <strong className="text-text">
+                  {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
+                </strong>
+                ) ={" "}
+                <strong className="text-text">
+                  {fmtCurrency(Math.round(retirementIncome))}/{tr("mois")}
+                </strong>
+                , {tr("soit")} <strong className="text-text">{coverage} %</strong> {tr("de vos dépenses prévues")} ({" "}
+                {fmtCurrency(inputs.retirementExpenses)}
+                {tr("/mois) — il manque")}{" "}
+                <strong className="text-warning">
+                  {fmtCurrency(Math.round(Math.max(0, shortfall)))}/{tr("mois")}
+                </strong>
+                .
               </>
             )}
           </p>
@@ -933,41 +1007,42 @@ function ResultsSection({
 
       {/* 4 KPI cards */}
       <p className="text-[10px] text-text-dim italic">
-        Montants en <strong className="text-text not-italic">euros courants</strong> (non corrigés de l'inflation) —
-        l'accumulation affichait les deux échelles, le décaissement est projeté en valeur nominale du compte.
+        {tr("Montants en")} <strong className="text-text not-italic">{tr("euros courants")}</strong> (
+        {tr("non corrigés de l'inflation")}) —{" "}
+        {tr("l'accumulation affichait les deux échelles, le décaissement est projeté en valeur nominale du compte.")}
       </p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
-          label="Votre rente"
+          label={tr("Votre rente")}
           value={fmtCurrency(decumResult.initialWithdrawal)}
           sub={
             inputs.envelope === "none"
-              ? `par mois, pendant ${decumResult.years.length - 1} ans (brute, sans fiscalité)`
-              : `par mois (brute) — net ≈ ${fmtCurrency(Math.round(netMonthly))}/mois après impôt`
+              ? tr("par mois, pendant {n} ans (brute, sans fiscalité)", { n: decumResult.years.length - 1 })
+              : tr("par mois (brute) — net ≈ {n}/mois après impôt", { n: fmtCurrency(Math.round(netMonthly)) })
           }
           tone="var(--color-primary)"
         />
         <KpiCard
-          label="La rente dure-t-elle ?"
-          value={fmtPct(survival)}
-          sub={`≈ ${Math.round(survival)} cas sur 100`}
+          label={tr("La rente dure-t-elle ?")}
+          value={fmtPct(survival, locale)}
+          sub={tr("≈ {n} cas sur 100", { n: Math.round(survival) })}
           tone={survivalTone}
           gauge={survival / 100}
         />
         <KpiCard
-          label="Capital épuisé (si échec)"
-          value={ruinYear !== null ? `Année ${ruinYear}` : "Jamais"}
+          label={tr("Capital épuisé (si échec)")}
+          value={ruinYear !== null ? tr("Année {n}", { n: ruinYear }) : tr("Jamais")}
           sub={
             ruinYear !== null
-              ? `l'argent manque vers l'année ${ruinYear} dans les cas défavorables`
-              : "le capital résiste dans 100 % des cas"
+              ? tr("l'argent manque vers l'année {n} dans les cas défavorables", { n: ruinYear })
+              : tr("le capital résiste dans 100 % des cas")
           }
           tone={ruinYear !== null ? "var(--color-danger)" : "var(--color-success)"}
         />
         <KpiCard
-          label="Capital restant"
+          label={tr("Capital restant")}
           value={fmtCurrency(finalMedian)}
-          sub={`reste à la fin dans le scénario moyen (sur ${decumResult.years.length - 1} ans)`}
+          sub={tr("reste à la fin dans le scénario moyen (sur {n} ans)", { n: decumResult.years.length - 1 })}
           tone={finalSurvival ? "var(--color-success)" : "var(--color-danger)"}
         />
       </div>
@@ -976,14 +1051,15 @@ function ResultsSection({
       <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
         <HelpCircle size={12} className="text-text-dim shrink-0 mt-0.5" />
         <p className="text-[10px] leading-relaxed text-text-dim">
-          Ce taux de survie n'est pas un point exact : sur {decumResult.runs.toLocaleString("fr-FR")} simulations, il se
-          situe en réalité entre{" "}
+          {tr("Ce taux de survie n'est pas un point exact : sur")} {decumResult.runs.toLocaleString(locale)}{" "}
+          {tr("simulations, il se situe en réalité entre")}{" "}
           <strong className="text-text">
-            {fmtPct(decumResult.survivalRateCI.low)} et {fmtPct(decumResult.survivalRateCI.high)}
+            {fmtPct(decumResult.survivalRateCI.low, locale)} {tr("et")}{" "}
+            {fmtPct(decumResult.survivalRateCI.high, locale)}
           </strong>{" "}
-          (intervalle de confiance à 95 %). La moyenne des capitaux finaux ({" "}
-          <strong className="text-text">{fmtCurrency(decumResult.mean)}</strong>) est tirée par quelques cas très
-          chanceux — planifiez sur la médiane.
+          ({tr("intervalle de confiance à 95 %")}). {tr("La moyenne des capitaux finaux")} ({" "}
+          <strong className="text-text">{fmtCurrency(decumResult.mean)}</strong>){" "}
+          {tr("est tirée par quelques cas très chanceux — planifiez sur la médiane.")}
         </p>
       </div>
 
@@ -994,9 +1070,9 @@ function ResultsSection({
             as="h3"
             level="card"
             icon={BarChart3}
-            title="Distribution des capitaux finaux"
+            title={tr("Distribution des capitaux finaux")}
             className="mb-3 px-1"
-            trailing={<span className="text-[10px] text-text-dim">0 € = capital épuisé</span>}
+            trailing={<span className="text-[10px] text-text-dim">{tr("0 € = capital épuisé")}</span>}
           />
           <TerminalHistogram
             bins={decumResult.terminalDistribution}
@@ -1004,7 +1080,7 @@ function ResultsSection({
             median={finalMedian}
             format={fmtCurrency}
             highlightRuin
-            leftNote="0 € = rente stoppée"
+            leftNote={tr("0 € = rente stoppée")}
           />
         </div>
       )}
@@ -1016,7 +1092,7 @@ function ResultsSection({
             as="h3"
             level="card"
             icon={TrendingUp}
-            title="Votre capital, année après année"
+            title={tr("Votre capital, année après année")}
             className="mb-2 px-1"
             trailing={
               <button
@@ -1027,48 +1103,54 @@ function ResultsSection({
                   showGuide && "text-primary",
                 )}
               >
-                <HelpCircle size={11} /> Comment lire ?
+                <HelpCircle size={11} /> {tr("Comment lire ?")}
                 <ChevronDown size={11} className={cn("transition-transform", showGuide && "rotate-180")} />
               </button>
             }
           />
           <p className="text-[10px] text-text-dim mb-2 px-1">
-            {decumResult.runs.toLocaleString("fr-FR")} évolutions de bourse différentes testées · chaque ligne est un
-            cas possible
+            {decumResult.runs.toLocaleString(locale)}{" "}
+            {tr("évolutions de bourse différentes testées · chaque ligne est un cas possible")}
           </p>
 
           {showGuide && (
             <div className="mb-3 rounded-xl bg-glass border border-border p-3 sm:p-4 text-[11px] text-text-dim leading-relaxed space-y-2">
               <p>
-                <strong className="text-text">Pourquoi ce graphique ?</strong> Personne ne peut prédire l'avenir de la
-                bourse. Nous avons donc rejoué votre plan {decumResult.runs.toLocaleString("fr-FR")} fois, avec des
-                évolutions différentes, pour voir dans quels cas votre argent dure jusqu'au bout.
+                <strong className="text-text">{tr("Pourquoi ce graphique ?")}</strong>{" "}
+                {tr("Personne ne peut prédire l'avenir de la bourse. Nous avons donc rejoué votre plan")}{" "}
+                {decumResult.runs.toLocaleString(locale)}{" "}
+                {tr("fois, avec des évolutions différentes, pour voir dans quels cas votre argent dure jusqu'au bout.")}
               </p>
               <ul className="space-y-1.5 list-disc pl-4">
                 <li>
-                  <strong className="text-primary">Ligne dorée (scénario moyen)</strong> : le cas le plus courant. Une
-                  fois sur deux, votre résultat est meilleur ; une fois sur deux, il est moins bon.
+                  <strong className="text-primary">{tr("Ligne dorée (scénario moyen)")}</strong> :{" "}
+                  {tr(
+                    "le cas le plus courant. Une fois sur deux, votre résultat est meilleur ; une fois sur deux, il est moins bon.",
+                  )}
                 </li>
                 <li>
-                  <strong className="text-text">Zone jaune pâle</strong> : votre vrai résultat se situera probablement
-                  quelque part entre la ligne verte et la ligne rouge.
+                  <strong className="text-text">{tr("Zone jaune pâle")}</strong> :{" "}
+                  {tr(
+                    "votre vrai résultat se situera probablement quelque part entre la ligne verte et la ligne rouge.",
+                  )}
                 </li>
                 <li>
-                  <strong className="text-[var(--color-success)]">Ligne verte (bonne période de bourse)</strong> : la
-                  bourse vous sourit. Seul 1 cas sur 10 fait encore mieux.
+                  <strong className="text-[var(--color-success)]">{tr("Ligne verte (bonne période de bourse)")}</strong>{" "}
+                  : {tr("la bourse vous sourit. Seul 1 cas sur 10 fait encore mieux.")}
                 </li>
                 <li>
-                  <strong className="text-[var(--color-danger)]">Ligne rouge (période difficile)</strong> : la bourse
-                  est décevante. Seul 1 cas sur 10 fait encore moins bien.
+                  <strong className="text-[var(--color-danger)]">{tr("Ligne rouge (période difficile)")}</strong> :{" "}
+                  {tr("la bourse est décevante. Seul 1 cas sur 10 fait encore moins bien.")}
                 </li>
                 <li>
-                  <strong className="text-text">Quand une ligne touche 0 €</strong> : dans ce scénario, tout le capital
-                  a été dépensé avant la fin — la rente s'arrête.
+                  <strong className="text-text">{tr("Quand une ligne touche 0 €")}</strong> :{" "}
+                  {tr("dans ce scénario, tout le capital a été dépensé avant la fin — la rente s'arrête.")}
                 </li>
               </ul>
               <p className="italic text-[10px]">
-                Astuce : regardez surtout si la ligne rouge tient jusqu'à la fin de votre retraite. Si oui, votre plan
-                résiste même quand la bourse est mauvaise.
+                {tr(
+                  "Astuce : regardez surtout si la ligne rouge tient jusqu'à la fin de votre retraite. Si oui, votre plan résiste même quand la bourse est mauvaise.",
+                )}
               </p>
             </div>
           )}
@@ -1081,7 +1163,7 @@ function ResultsSection({
                   const p50 = decumResult.p50[i] ?? 0
                   const p90 = decumResult.p90[i] ?? 0
                   return {
-                    year: y === 0 ? "Aujourd'hui" : `+${y}`,
+                    year: y === 0 ? tr("Aujourd'hui") : `+${y}`,
                     p10,
                     p90,
                     médian: p50,
@@ -1109,10 +1191,10 @@ function ResultsSection({
                     return (
                       <div className="glass-strong rounded-xl p-3 shadow-premium min-w-[200px]">
                         <div className="text-[10px] text-text-dim uppercase tracking-wider mb-2">
-                          {label === "Aujourd'hui" ? "Aujourd'hui" : `${label} ans`}
+                          {label === tr("Aujourd'hui") ? tr("Aujourd'hui") : `${label} ${tr("ans")}`}
                         </div>
                         {payload
-                          .filter(entry => entry.name !== "Fourchette (pire – meilleur cas)")
+                          .filter(entry => entry.name !== tr("Fourchette (pire – meilleur cas)"))
                           .map((entry, i) => (
                             <div key={i} className="flex items-center justify-between gap-3 py-0.5">
                               <span className="text-[11px] flex items-center gap-1.5">
@@ -1131,7 +1213,7 @@ function ResultsSection({
                 <Area
                   type="monotone"
                   dataKey="bande"
-                  name="Fourchette (pire – meilleur cas)"
+                  name={tr("Fourchette (pire – meilleur cas)")}
                   stroke="none"
                   fill="url(#bandGradientRente)"
                   isAnimationActive={false}
@@ -1139,7 +1221,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="p90"
-                  name="Bonne période de bourse (P90)"
+                  name={tr("Bonne période de bourse (P90)")}
                   stroke="var(--color-success)"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
@@ -1148,7 +1230,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="médian"
-                  name="Scénario moyen (P50)"
+                  name={tr("Scénario moyen (P50)")}
                   stroke="var(--color-primary)"
                   strokeWidth={2.5}
                   dot={false}
@@ -1156,7 +1238,7 @@ function ResultsSection({
                 <Line
                   type="monotone"
                   dataKey="p10"
-                  name="Période difficile (P10)"
+                  name={tr("Période difficile (P10)")}
                   stroke="var(--color-danger)"
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
@@ -1171,28 +1253,24 @@ function ResultsSection({
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] leading-snug">
             <LegendItem
               color="var(--color-success)"
-              label="Bonne période de bourse (P90)"
-              desc="La bourse vous sourit — seul 1 cas sur 10 fait encore mieux"
+              label={tr("Bonne période de bourse (P90)")}
+              desc={tr("La bourse vous sourit — seul 1 cas sur 10 fait encore mieux")}
             />
             <LegendItem
               color="var(--color-primary)"
-              label="Scénario moyen (P50)"
-              desc="Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien"
+              label={tr("Scénario moyen (P50)")}
+              desc={tr("Le cas le plus courant : 1 fois sur 2 mieux, 1 fois sur 2 moins bien")}
             />
             <LegendItem
               color="var(--color-danger)"
-              label="Période difficile (P10)"
-              desc="La bourse est décevante — seul 1 cas sur 10 fait encore moins bien"
+              label={tr("Période difficile (P10)")}
+              desc={tr("La bourse est décevante — seul 1 cas sur 10 fait encore moins bien")}
             />
           </div>
         </div>
       )}
     </motion.div>
   )
-}
-
-function fmtPct(v: number): string {
-  return `${v.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`
 }
 
 function KpiCard({
@@ -1243,17 +1321,22 @@ function LegendItem({ color, label, desc }: { color: string; label: string; desc
 }
 
 function EmptyState({ hasAccumulation }: { hasAccumulation: boolean }) {
+  const { tr } = useLang()
   return (
     <div className="glass rounded-3xl p-8 sm:p-12 border border-dashed border-border">
       <div className="max-w-md mx-auto text-center space-y-3">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
           <TrendingUp size={24} className="text-primary" />
         </div>
-        <h3 className="text-sm font-bold">Lancez la simulation Monte-Carlo</h3>
+        <h3 className="text-sm font-bold">{tr("Lancez la simulation Monte-Carlo")}</h3>
         <p className="text-[11px] text-text-dim leading-relaxed">
           {hasAccumulation
-            ? "Analysez sur des centaines de scénarios stochastiques la viabilité de votre stratégie de décaissement."
-            : "Commencez par simuler une phase d'accumulation dans l'onglet Simulateur pour disposer d'un capital à décumuler."}
+            ? tr(
+                "Analysez sur des centaines de scénarios stochastiques la viabilité de votre stratégie de décaissement.",
+              )
+            : tr(
+                "Commencez par simuler une phase d'accumulation dans l'onglet Simulateur pour disposer d'un capital à décumuler.",
+              )}
         </p>
       </div>
     </div>
@@ -1277,6 +1360,7 @@ function StressTestsSection({
   startingBasis: number
   darkMode: boolean
 }) {
+  const { tr } = useLang()
   const results = useMemo(() => {
     if (startingCapital <= 0) return []
     return STRESS_TEST_SCENARIOS.map(scenario => ({
@@ -1290,13 +1374,17 @@ function StressTestsSection({
   return (
     <div className="pt-2">
       <p className="text-[10px] text-text-dim leading-relaxed mb-4 max-w-2xl">
-        Les percentiles ci-dessus mélangent toutes les époques. Ici, nous rejouons{" "}
+        {tr("Les percentiles ci-dessus mélangent toutes les époques. Ici, nous rejouons")}{" "}
         <strong className="text-text">
-          les trois pires fenêtres historiques telles qu'elles se sont réellement déroulées
+          {tr("les trois pires fenêtres historiques telles qu'elles se sont réellement déroulées")}
         </strong>{" "}
-        (rendements contigus réels, inflation réelle de l'époque, garde-fous et indexation appliqués à l'identique).
-        Aucun hasard : c'est exactement ce que la bourse a fait. Pour un krach au moment de votre choix, utilisez
-        l'option <strong className="text-text">« Partir en période difficile »</strong> dans les paramètres.
+        {tr(
+          "(rendements contigus réels, inflation réelle de l'époque, garde-fous et indexation appliqués à l'identique).",
+        )}{" "}
+        {tr(
+          "Aucun hasard : c'est exactement ce que la bourse a fait. Pour un krach au moment de votre choix, utilisez l'option",
+        )}{" "}
+        <strong className="text-text">« {tr("Partir en période difficile")} »</strong> {tr("dans les paramètres.")}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {results.map(({ scenario, result }) => (
@@ -1316,6 +1404,7 @@ function StressTestCard({
   result: StressTestResult
   darkMode: boolean
 }) {
+  const { tr, fmtCurrency, fmtDecimal } = useLang()
   const [open, setOpen] = useState(false)
   const survived = result.survived
   const ruinYear = result.ruinYear
@@ -1337,26 +1426,27 @@ function StressTestCard({
               : "bg-[var(--color-danger)]/20 text-[var(--color-danger)]",
           )}
         >
-          {survived ? "Survit" : "Épuisé"}
+          {survived ? tr("Survit") : tr("Épuisé")}
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-glass p-2">
-          <div className="text-[9px] text-text-dim uppercase tracking-wider">Capital final</div>
+          <div className="text-[9px] text-text-dim uppercase tracking-wider">{tr("Capital final")}</div>
           <div
             className={cn(
               "mono text-xs font-bold",
               survived ? "text-[var(--color-success)]" : "text-[var(--color-danger)]",
             )}
           >
-            {survived ? fmtCurrency(result.finalCapital) : "0 €"}
+            {survived ? fmtCurrency(result.finalCapital) : tr("0 €")}
           </div>
         </div>
         <div className="rounded-xl bg-glass p-2">
-          <div className="text-[9px] text-text-dim uppercase tracking-wider">Perte max</div>
+          <div className="text-[9px] text-text-dim uppercase tracking-wider">{tr("Perte max")}</div>
           <div className="mono text-xs font-bold text-[var(--color-danger)]">
-            −{Math.round(drawdown * 100)}% <span className="text-[9px] text-text-dim font-normal">(pic → creux)</span>
+            −{Math.round(drawdown * 100)}%{" "}
+            <span className="text-[9px] text-text-dim font-normal">{tr("(pic → creux)")}</span>
           </div>
         </div>
       </div>
@@ -1364,8 +1454,8 @@ function StressTestCard({
       <div className="flex items-center justify-between text-[9px] text-text-dim">
         <span>
           {ruinYear !== null
-            ? `Rente stoppée en ${result.scenario.startYear + (ruinYear ?? 0) - 1}`
-            : "Rente versée jusqu'au bout"}
+            ? tr("Rente stoppée en {n}", { n: result.scenario.startYear + (ruinYear ?? 0) - 1 })
+            : tr("Rente versée jusqu'au bout")}
         </span>
         <button
           type="button"
@@ -1373,14 +1463,14 @@ function StressTestCard({
           aria-expanded={open}
           className="inline-flex items-center gap-1 hover:text-text transition-colors"
         >
-          Voir le détail <ChevronDown size={10} className={cn("transition-transform", open && "rotate-180")} />
+          {tr("Voir le détail")} <ChevronDown size={10} className={cn("transition-transform", open && "rotate-180")} />
         </button>
       </div>
 
       {open && (
         <div className="space-y-2 border-t border-border/60 pt-2.5">
           <div className="flex items-center gap-2 text-[9px] text-text-dim">
-            <span>Rendements réels rejoués :</span>
+            <span>{tr("Rendements réels rejoués :")}</span>
           </div>
           <div className="flex flex-wrap gap-1">
             {result.windowReturns.map(({ year, return: r }) => (
@@ -1394,17 +1484,17 @@ function StressTestCard({
                     : "bg-[var(--color-danger)]/15 text-[var(--color-danger)]",
                 )}
               >
-                {year} {(r * 100).toFixed(1).replace(".", ",")} %
+                {year} {fmtDecimal(r * 100, 1)} %
               </span>
             ))}
           </div>
           <div className="mt-1 space-y-1 text-[9px] text-text-dim">
             <div className="flex justify-between">
-              <span>Capital le plus bas</span>
+              <span>{tr("Capital le plus bas")}</span>
               <span className="mono font-bold text-text">{fmtCurrency(result.minCapital)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Total retiré sur la période</span>
+              <span>{tr("Total retiré sur la période")}</span>
               <span className="mono font-bold text-text">{fmtCurrency(result.totalWithdrawn)}</span>
             </div>
           </div>

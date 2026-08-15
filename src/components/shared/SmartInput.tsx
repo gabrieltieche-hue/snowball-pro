@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { AlertTriangle } from "lucide-react"
 import { parseCurrencyInput } from "../../engine"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 
 interface SmartInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> {
@@ -23,23 +24,16 @@ interface SmartInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElemen
  *   entre le champ affiché et la simulation (ex. 999 999 999 € calculé sur
  *   100 M€).
  */
-export function SmartInput({
-  value,
-  onChange,
-  className,
-  min,
-  max,
-  allowNegative = false,
-  ...props
-}: SmartInputProps) {
-  const [text, setText] = useState(() => value.toLocaleString("fr-FR"))
+export function SmartInput({ value, onChange, className, min, max, allowNegative = false, ...props }: SmartInputProps) {
+  const { tr, locale } = useLang()
+  const [text, setText] = useState(() => value.toLocaleString(locale))
   const [error, setError] = useState<string | null>(null)
   const ref = useRef<HTMLInputElement>(null)
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    setText(value.toLocaleString("fr-FR"))
-  }, [value])
+    setText(value.toLocaleString(locale))
+  }, [value, locale])
 
   // Le message disparaît tout seul après ~3 s (sans bloquer la saisie suivante).
   useEffect(() => {
@@ -56,33 +50,33 @@ export function SmartInput({
     // Champ vidé → on conserve la valeur précédente au lieu d'écraser
     // silencieusement la simulation par 0.
     if (trimmed === "") {
-      setText(value.toLocaleString("fr-FR"))
+      setText(value.toLocaleString(locale))
       setError(null)
       return
     }
     const parsed = parseCurrencyInput(trimmed)
     if (!Number.isFinite(parsed)) {
-      setText(value.toLocaleString("fr-FR"))
-      setError("Valeur invalide")
+      setText(value.toLocaleString(locale))
+      setError(tr("Valeur invalide"))
       return
     }
     if (!allowNegative && parsed < 0) {
-      setText(value.toLocaleString("fr-FR"))
-      setError("Valeur négative non acceptée")
+      setText(value.toLocaleString(locale))
+      setError(tr("Valeur négative non acceptée"))
       return
     }
     // Clamp sur les bornes réelles du calcul : le champ affiche le MÊME
     // montant que celui utilisé par la simulation, avec un message clair.
     if (max !== undefined && parsed > max) {
       onChange(max)
-      setText(max.toLocaleString("fr-FR"))
-      setError(`Limité au maximum (${max.toLocaleString("fr-FR")})`)
+      setText(max.toLocaleString(locale))
+      setError(tr("Limité au maximum ({max})", { max: max.toLocaleString(locale) }))
       return
     }
     if (min !== undefined && parsed < min) {
       onChange(min)
-      setText(min.toLocaleString("fr-FR"))
-      setError(`Limité au minimum (${min.toLocaleString("fr-FR")})`)
+      setText(min.toLocaleString(locale))
+      setError(tr("Limité au minimum ({min})", { min: min.toLocaleString(locale) }))
       return
     }
     onChange(parsed)

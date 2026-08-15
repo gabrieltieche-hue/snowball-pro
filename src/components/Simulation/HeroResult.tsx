@@ -1,6 +1,6 @@
 import { Sparkles, TrendingUp, Wallet } from "lucide-react"
 import { SectionHeader } from "../shared/SectionHeader"
-import { fmtCurrency } from "../../engine"
+import { useLang } from "../../i18n"
 import type { SimulationInputs, YearRow } from "../../types"
 
 interface HeroResultProps {
@@ -23,6 +23,7 @@ interface HeroResultProps {
  * moteur), aucune logique de calcul ici.
  */
 export function HeroResult({ rows, inputs }: HeroResultProps) {
+  const { tr, fmtCurrency, fmtDecimal } = useLang()
   const lastRow = rows[rows.length - 1]
   if (!lastRow) return null
 
@@ -37,20 +38,20 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
   const ratio = invested > 0 ? total / invested : null
 
   const endYear = lastRow.date.split(" ")[1]?.replace(".", "")
-  const accountLabel = `sur le compte${endYear ? ` en ${endYear}` : ""}`
+  const accountLabel = endYear ? tr("sur le compte en {year}", { year: endYear }) : tr("sur le compte")
   const secondary = showReal
     ? { amount: lastRow.nominal, label: accountLabel }
-    : { amount: lastRow.real, label: "en euros d'aujourd'hui" }
+    : { amount: lastRow.real, label: tr("en euros d'aujourd'hui") }
 
   return (
     <section
-      aria-label="Résultat principal de la projection"
+      aria-label={tr("Résultat principal de la projection")}
       className="glass rounded-3xl p-6 sm:p-8 relative overflow-hidden"
     >
       {/* Hiérarchie des titres (I6) : h1 sr-only en tête de page, le héro porte
           le premier h2 — masqué visuellement (le libellé visible « Votre
           patrimoine estimé » est le même), le graphique suit en h2. */}
-      <h2 className="sr-only">Votre patrimoine estimé</h2>
+      <h2 className="sr-only">{tr("Votre patrimoine estimé")}</h2>
       {/* La seconde échelle est rendue manuellement (pas DualAmount) :
           DualAmount afficherait aussi SON grand chiffre — un doublon du héro.
           On garde exactement ses libellés (« sur le compte en … » / « en euros
@@ -75,11 +76,11 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
           level="card"
           as="span"
           icon={Wallet}
-          title="Votre patrimoine estimé"
+          title={tr("Votre patrimoine estimé")}
           className="mb-0 items-center"
           trailing={
             <span className="text-[10px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
-              {inputs.duration} ans · {endYear}
+              {tr("{n} ans · {year}", { n: inputs.duration, year: endYear ?? "" })}
             </span>
           }
         />
@@ -90,7 +91,7 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
           {fmtCurrency(total)}
         </p>
         <p className="text-[11px] text-text-muted mt-2">
-          {showReal ? "en euros d'aujourd'hui (pouvoir d'achat)" : accountLabel} —{" "}
+          {showReal ? tr("en euros d'aujourd'hui (pouvoir d'achat)") : accountLabel} —{" "}
           <span className="text-text-dim">
             {fmtCurrency(secondary.amount)} {secondary.label}
           </span>
@@ -102,7 +103,10 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
           <div className="mt-6 sm:mt-7">
             <div
               role="img"
-              aria-label={`${investedPct.toFixed(0)} % de votre capital provient de votre épargne, ${growthPct.toFixed(0)} % de la croissance de la bourse`}
+              aria-label={tr("{a} % de votre capital provient de votre épargne, {b} % de la croissance de la bourse", {
+                a: investedPct.toFixed(0),
+                b: growthPct.toFixed(0),
+              })}
               className="flex h-2.5 rounded-full overflow-hidden bg-glass-hover"
             >
               <div
@@ -117,9 +121,10 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
               )}
             </div>
             <div className="flex items-center justify-between gap-3 mt-2.5 flex-wrap">
+              {" "}
               <span className="text-[10px] text-text-muted flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-text-muted shrink-0" aria-hidden />
-                Épargné : <span className="mono font-semibold text-text">{fmtCurrency(invested)}</span>
+                {tr("Épargné :")} <span className="mono font-semibold text-text">{fmtCurrency(invested)}</span>
               </span>
               {growth > 0 && (
                 /* Vocabulaire unifié (v6.9.0) : « Gains de la bourse » comme le
@@ -127,7 +132,7 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
                    trois noms pour le même chiffre dans le même viewport. */
                 <span className="text-[10px] text-primary flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary shrink-0" aria-hidden />
-                  Gains de la bourse : <span className="mono font-semibold">+{fmtCurrency(growth)}</span>
+                  {tr("Gains de la bourse :")} <span className="mono font-semibold">+{fmtCurrency(growth)}</span>
                 </span>
               )}
             </div>
@@ -137,18 +142,23 @@ export function HeroResult({ rows, inputs }: HeroResultProps) {
               <span>
                 {growth > 0 ? (
                   <>
-                    La croissance de la bourse représente{" "}
-                    <strong className="text-primary">{growthPct.toFixed(0)} %</strong> de votre capital final
+                    {tr("La croissance de la bourse représente")}{" "}
+                    <strong className="text-primary">{growthPct.toFixed(0)} %</strong> {tr("de votre capital final")}
                     {ratio && (
                       <>
-                        {" "}— votre épargne est multipliée par{" "}
-                        <strong className="text-primary">~{ratio.toFixed(1).replace(".", ",")}</strong>
+                        {" "}
+                        — {tr("votre épargne est multipliée par")}{" "}
+                        <strong className="text-primary">~{fmtDecimal(ratio, 1)}</strong>
                       </>
                     )}
                     .
                   </>
                 ) : (
-                  <>Votre capital repose pour l'instant sur votre épargne — la croissance s'ajoutera avec le temps.</>
+                  <>
+                    {tr(
+                      "Votre capital repose pour l'instant sur votre épargne — la croissance s'ajoutera avec le temps.",
+                    )}
+                  </>
                 )}
               </span>
             </p>

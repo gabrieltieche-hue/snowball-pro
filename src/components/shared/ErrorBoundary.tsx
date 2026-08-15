@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
 import { RefreshCw, TriangleAlert } from "lucide-react"
+import { useLang } from "../../i18n"
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -11,10 +12,37 @@ interface ErrorBoundaryState {
   message: string
 }
 
+function ErrorFallback({ label, message }: { label?: string; message: string }) {
+  const { tr } = useLang()
+  return (
+    <div role="alert" className="glass rounded-3xl p-8 text-center border border-danger/40 bg-danger/10">
+      <div className="mb-3 flex justify-center">
+        <TriangleAlert size={40} className="text-danger" aria-hidden />
+      </div>
+      <h2 className="text-sm font-bold text-text mb-1">
+        {label ? tr("Une erreur est survenue dans « {label} »", { label }) : tr("Une erreur est survenue")}
+      </h2>
+      <p className="text-xs text-text-muted leading-relaxed max-w-md mx-auto mb-4">
+        {tr(
+          "L'application a rencontré un problème imprévu dans cette zone. Rechargez pour repartir sur de bonnes bases — vos réglages sont enregistrés sur cet appareil.",
+        )}
+      </p>
+      {message && <p className="text-[11px] mono text-danger/80 mb-4 break-words max-w-sm mx-auto">{message}</p>}
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
+      >
+        <RefreshCw size={13} aria-hidden /> {tr("Recharger")}
+      </button>
+    </div>
+  )
+}
+
 /**
  * Garde-fou par onglet : une erreur de rendu (ex. un graphe Recharts) ne doit
- * jamais faire tomber toute l'application. Affiche un message en français avec
- * un bouton de rechargement ciblé.
+ * jamais faire tomber toute l'application. Affiche un message (traduit, v6.12)
+ * avec un bouton de rechargement ciblé.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, message: "" }
@@ -33,29 +61,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div role="alert" className="glass rounded-3xl p-8 text-center border border-danger/40 bg-danger/10">
-          <div className="mb-3 flex justify-center">
-            <TriangleAlert size={40} className="text-danger" aria-hidden />
-          </div>
-          <h2 className="text-sm font-bold text-text mb-1">
-            Une erreur est survenue{this.props.label ? ` dans « ${this.props.label} »` : ""}
-          </h2>
-          <p className="text-xs text-text-muted leading-relaxed max-w-md mx-auto mb-4">
-            L'application a rencontré un problème imprévu dans cette zone. Rechargez pour repartir sur de bonnes bases —
-            vos réglages sont enregistrés sur cet appareil.
-          </p>
-          {this.state.message && (
-            <p className="text-[11px] mono text-danger/80 mb-4 break-words max-w-sm mx-auto">{this.state.message}</p>
-          )}            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
-            >
-              <RefreshCw size={13} aria-hidden /> Recharger
-            </button>
-        </div>
-      )
+      return <ErrorFallback label={this.props.label} message={this.state.message} />
     }
     return this.props.children
   }

@@ -26,14 +26,8 @@ import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
 import { cn } from "../../utils/cn"
-import {
-  fmtCurrency,
-  fmtTaxPercent,
-  getHistoricalDataset,
-  getTaxRules,
-  pfuRate,
-  validateInputs,
-} from "../../engine"
+import { getHistoricalDataset, getTaxRules, pfuRate, validateInputs } from "../../engine"
+import { useLang } from "../../i18n"
 import type { ValidationError } from "../../engine"
 import type { SavedSnapshot, SimulationInputs, YearRow } from "../../types"
 import type { UiMode } from "../../utils/uiMode"
@@ -105,6 +99,7 @@ export function Sidebar({
   collapsed,
   onToggleCollapsed,
 }: SidebarProps) {
+  const { tr, fmtCurrency, fmtDecimal, fmtTaxPercent } = useLang()
   const lastRow = rows[rows.length - 1]
   // Les deux échelles sont TOUJOURS affichées côte à côte : le montant qui
   // sera sur le compte (euros courants) et son pouvoir d'achat en euros
@@ -122,6 +117,16 @@ export function Sidebar({
     validationErrors.find(e => e.field === field && e.severity === "error")
   const fieldWarning = (field: keyof SimulationInputs): ValidationError | undefined =>
     validationErrors.find(e => e.field === field && e.severity === "warning")
+  // Messages localisés : le moteur reste en français (tests intacts), la
+  // traduction a lieu à l'affichage (i18n v6.12.0).
+  const fieldErrorMsg = (field: keyof SimulationInputs): string | undefined => {
+    const e = fieldError(field)
+    return e ? tr(e.message) : undefined
+  }
+  const fieldWarningMsg = (field: keyof SimulationInputs): string | undefined => {
+    const w = fieldWarning(field)
+    return w ? tr(w.message) : undefined
+  }
 
   // Ouverture des sections, pilotée par Sidebar (cf. DEFAULT_OPEN).
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(DEFAULT_OPEN)
@@ -189,17 +194,17 @@ export function Sidebar({
           <button
             type="button"
             onClick={onToggleCollapsed}
-            aria-label="Déplier les réglages"
+            aria-label={tr("Déplier les réglages")}
             className="group/rail hidden lg:flex relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-light via-primary to-primary-dark items-center justify-center shadow-gold shrink-0 hover:brightness-110 transition-[filter] mb-1"
           >
             <Settings2 size={18} className="btn-gold-text" aria-hidden />
-            <RailTip>Déplier les réglages</RailTip>
+            <RailTip>{tr("Déplier les réglages")}</RailTip>
           </button>
 
           {/* Séparateur après la marque (desktop uniquement). */}
           <div className="hidden lg:block w-9 h-px bg-border/70" aria-hidden />
 
-          <nav aria-label="Sections de réglages" className="flex lg:flex-col items-center gap-1 lg:gap-2">
+          <nav aria-label={tr("Sections de réglages")} className="flex lg:flex-col items-center gap-1 lg:gap-2">
             {SECTIONS.map(({ id, label, icon: Icon }) => {
               const active = openSections[id]
               return (
@@ -207,8 +212,8 @@ export function Sidebar({
                   key={id}
                   type="button"
                   onClick={() => revealSection(id)}
-                  aria-label={label}
-                  title={label}
+                  aria-label={tr(label)}
+                  title={tr(label)}
                   className={cn(
                     "group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 transition-all duration-200",
                     active
@@ -218,7 +223,7 @@ export function Sidebar({
                 >
                   <Icon size={17} className="lg:hidden" aria-hidden />
                   <Icon size={18} className="hidden lg:block" aria-hidden />
-                  <RailTip>{label}</RailTip>
+                  <RailTip>{tr(label)}</RailTip>
                 </button>
               )
             })}
@@ -233,8 +238,8 @@ export function Sidebar({
           <button
             type="button"
             onClick={onSaveSnapshot}
-            aria-label="Sauvegarder un snapshot"
-            title="Sauvegarder un snapshot"
+            aria-label={tr("Sauvegarder un snapshot")}
+            title={tr("Sauvegarder un snapshot")}
             className="group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 text-text-dim hover:text-primary hover:bg-primary/10 transition-all duration-200"
           >
             <Camera size={17} className="lg:hidden" aria-hidden />
@@ -247,19 +252,19 @@ export function Sidebar({
                 {snapshots.length}
               </span>
             )}
-            <RailTip>Snapshot</RailTip>
+            <RailTip>{tr("Snapshot")}</RailTip>
           </button>
 
           {/* Déplier (chevron) — contrôles utilitaires en bas, comme ChatGPT. */}
           <button
             type="button"
             onClick={onToggleCollapsed}
-            aria-label="Déplier les réglages"
+            aria-label={tr("Déplier les réglages")}
             className="group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 border border-border text-text-dim hover:text-text hover:border-primary/40 transition-all duration-200"
           >
             <ChevronRight size={17} className="lg:hidden" aria-hidden />
             <ChevronRight size={18} className="hidden lg:block" aria-hidden />
-            <RailTip>Déplier les réglages</RailTip>
+            <RailTip>{tr("Déplier les réglages")}</RailTip>
           </button>
         </motion.div>
       ) : (
@@ -279,7 +284,7 @@ export function Sidebar({
           <SectionHeader
             level="card"
             icon={Settings2}
-            title="Réglages"
+            title={tr("Réglages")}
             className="mb-6 items-center"
             trailing={
               <div className="flex items-center gap-2 shrink-0">
@@ -293,8 +298,8 @@ export function Sidebar({
                   onClick={onToggleCollapsed}
                   aria-expanded={!collapsed}
                   aria-controls="sidebar-settings"
-                  aria-label={collapsed ? "Déplier les réglages" : "Replier les réglages"}
-                  title={collapsed ? "Déplier les réglages" : "Replier les réglages"}
+                  aria-label={collapsed ? tr("Déplier les réglages") : tr("Replier les réglages")}
+                  title={collapsed ? tr("Déplier les réglages") : tr("Replier les réglages")}
                   className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
                 >
                   {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -306,13 +311,13 @@ export function Sidebar({
           {/* Bases */}
           <RailSection
             id="epargne"
-            title="Votre épargne"
+            title={tr("Votre épargne")}
             icon={<Coins size={12} />}
             open={openSections.epargne}
             onOpenChange={() => toggleSection("epargne")}
           >
             <SliderInput
-              label="Capital de départ (€)"
+              label={tr("Capital de départ (€)")}
               id="capital-initial"
               value={inputs.capitalInitial}
               min={0}
@@ -320,12 +325,12 @@ export function Sidebar({
               step={1000}
               hardMin={0}
               hardMax={100000000}
-              error={fieldError("capitalInitial")?.message}
-              warning={fieldWarning("capitalInitial")?.message}
+              error={fieldErrorMsg("capitalInitial")}
+              warning={fieldWarningMsg("capitalInitial")}
               onChange={v => updateInput("capitalInitial", v)}
             />
             <SliderInput
-              label="Épargne mensuelle (€)"
+              label={tr("Épargne mensuelle (€)")}
               id="monthly-payment"
               value={inputs.monthlyPayment}
               min={0}
@@ -333,8 +338,8 @@ export function Sidebar({
               step={50}
               hardMin={0}
               hardMax={200000}
-              error={fieldError("monthlyPayment")?.message}
-              warning={fieldWarning("monthlyPayment")?.message}
+              error={fieldErrorMsg("monthlyPayment")}
+              warning={fieldWarningMsg("monthlyPayment")}
               onChange={v => updateInput("monthlyPayment", v)}
             />
             {/* La carte « Rendement de la bourse » (échelle 10,07 → 8,22 → 5,99 et
@@ -342,7 +347,7 @@ export function Sidebar({
             la sidebar (v6) : c'est un contenu pédagogique de qualité, mais il
             n'appartient plus au chemin de réglages — il s'ouvre à la demande. */}
             <SliderInput
-              label="Durée (années)"
+              label={tr("Durée (années)")}
               id="duration"
               value={inputs.duration}
               min={1}
@@ -350,8 +355,8 @@ export function Sidebar({
               step={1}
               hardMin={1}
               hardMax={80}
-              error={fieldError("duration")?.message}
-              warning={fieldWarning("duration")?.message}
+              error={fieldErrorMsg("duration")}
+              warning={fieldWarningMsg("duration")}
               onChange={v => updateInput("duration", v)}
             />
             {/* Scénario de rendement (v6.4.1) : le choix prudent / central /
@@ -366,7 +371,7 @@ export function Sidebar({
           conservé depuis la carte « Rendement de la bourse » de la v5.7. */}
           <RailSection
             id="pourquoi"
-            title="Pourquoi ces chiffres ?"
+            title={tr("Pourquoi ces chiffres ?")}
             icon={<HelpCircle size={12} />}
             open={openSections.pourquoi}
             onOpenChange={() => toggleSection("pourquoi")}
@@ -379,47 +384,54 @@ export function Sidebar({
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={12} className="text-primary shrink-0" />
                 <span className="text-[11px] font-bold text-text leading-tight">
-                  Rendement de la bourse (MSCI World)
+                  {tr("Rendement de la bourse (MSCI World)")}
                 </span>
               </div>
               {/* Les trois étages de l'échelle : chaque ligne déduit UNE chose. */}
               <dl className="mt-2 space-y-1.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <dt className="text-[10px] text-text-muted">Brut (moyenne des années)</dt>
+                  <dt className="text-[10px] text-text-muted">{tr("Brut (moyenne des années)")}</dt>
                   <dd className="mono text-[11px] font-bold text-text">
-                    {(historical.avgReturn * 100).toFixed(2).replace(".", ",")} %/an
+                    {fmtDecimal(historical.avgReturn * 100, 2)}
+                    {tr(" %/an")}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <dt className="text-[10px] text-text-muted">Composé (krachs inclus)</dt>
+                  <dt className="text-[10px] text-text-muted">{tr("Composé (krachs inclus)")}</dt>
                   <dd className="mono text-[11px] font-bold text-text">
-                    {(historical.compoundedReturn * 100).toFixed(2).replace(".", ",")} %/an
+                    {fmtDecimal(historical.compoundedReturn * 100, 2)}
+                    {tr(" %/an")}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-2 border-t border-primary/15 pt-1.5">
-                  <dt className="text-[10px] text-text-muted">Réel (après inflation 2,1 %)</dt>
+                  <dt className="text-[10px] text-text-muted">{tr("Réel (après inflation 2,1 %)")}</dt>
                   <dd className="mono text-[11px] font-extrabold text-primary">
-                    {(historical.netReturn * 100).toFixed(2).replace(".", ",")} %/an
+                    {fmtDecimal(historical.netReturn * 100, 2)}
+                    {tr(" %/an")}
                   </dd>
                 </div>
               </dl>
               <p className="text-[9.5px] text-text-dim mt-1.5 leading-relaxed">
-                Hypothèse d'inflation : <strong className="text-text">2,1 %/an (cible BCE)</strong>, vs 4,0 % en
-                moyenne réelle 1970-2025 — la médiane de la période est justement 2,1 %.
+                {tr("Hypothèse d'inflation : ")}
+                <strong className="text-text">{tr("2,1 %/an (cible BCE)")}</strong>
+                {tr(", vs 4,0 % en moyenne réelle 1970-2025 — la médiane de la période est justement 2,1 %.")}
               </p>
               <p className="text-[9.5px] text-text-muted mt-2 leading-relaxed">
-                Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
-                <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
-                gain composé) puis <strong className="text-text">l'inflation</strong> (2,1 %/an). Le Simulateur applique
-                le scénario choisi dans « Votre épargne » (défaut : <strong className="text-text">Central</strong> =
-                ligne composée) chaque année — courbe lissée, sans krachs.
+                {tr("Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire")}{" "}
+                <strong className="text-text">{tr("une seule")}</strong> {tr("chose :")}{" "}
+                <strong className="text-text">{tr("la volatilité")}</strong>{" "}
+                {tr("(les mauvaises années -37 %, -33 %… réduisent le gain composé) puis")}{" "}
+                <strong className="text-text">{tr("l'inflation")}</strong>{" "}
+                {tr("(2,1 %/an). Le Simulateur applique le scénario choisi dans « Votre épargne » (défaut :")}{" "}
+                <strong className="text-text">{tr("Central")}</strong> ={" "}
+                {tr("ligne composée) chaque année — courbe lissée, sans krachs.")}
               </p>
               {/* Formule de Fisher : réservée au mode Avancé (audit). */}
               {uiMode === "avance" && (
                 <p className="text-[9px] text-text-dim mt-1.5 leading-relaxed border-t border-primary/10 pt-1.5">
-                  Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est{" "}
-                  <span className="mono">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> — l'inflation rogne aussi vos
-                  gains, pas seulement votre capital de départ.
+                  {tr("Pourquoi pas 6,12 % (8,22 − 2,1) ? C'est une approximation : la formule exacte (Fisher) est")}{" "}
+                  <span className="mono">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span>
+                  {tr(" — l'inflation rogne aussi vos gains, pas seulement votre capital de départ.")}
                 </p>
               )}
             </div>
@@ -429,13 +441,13 @@ export function Sidebar({
               essentiels s'imposent à la lecture. */}
           <RailSection
             id="avance"
-            title="Paramètres avancés"
+            title={tr("Paramètres avancés")}
             icon={<Settings2 size={12} />}
             open={openSections.avance}
             onOpenChange={() => toggleSection("avance")}
           >
             <SliderInput
-              label="Augmentation de votre épargne (%/an)"
+              label={tr("Augmentation de votre épargne (%/an)")}
               id="indexation"
               value={inputs.indexation * 100}
               min={0}
@@ -443,16 +455,16 @@ export function Sidebar({
               step={0.1}
               hardMin={0}
               hardMax={50}
-              suffix="Votre épargne mensuelle augmente chaque année"
-              error={fieldError("indexation")?.message}
-              warning={fieldWarning("indexation")?.message}
+              suffix={tr("Votre épargne mensuelle augmente chaque année")}
+              error={fieldErrorMsg("indexation")}
+              warning={fieldWarningMsg("indexation")}
               onChange={v => updateInput("indexation", v / 100)}
             />
             {/* Les 3 modes d'inflation (Personnalisée/Historique/Cyclique) ont été
             supprimés : l'inflation est toujours le taux personnalisé du
             curseur (défaut 2,1 %/an), librement modifiable. */}
             <SliderInput
-              label="Inflation annuelle (%)"
+              label={tr("Inflation annuelle (%)")}
               id="inflation"
               value={inputs.inflation * 100}
               min={0}
@@ -461,13 +473,13 @@ export function Sidebar({
               hardMin={-10}
               hardMax={100}
               allowNegative
-              suffix="défaut 2,1 %/an — taux personnalisé"
-              error={fieldError("inflation")?.message}
-              warning={fieldWarning("inflation")?.message}
+              suffix={tr("défaut 2,1 %/an — taux personnalisé")}
+              error={fieldErrorMsg("inflation")}
+              warning={fieldWarningMsg("inflation")}
               onChange={v => updateInput("inflation", v / 100)}
             />
             <SliderInput
-              label="Simulations Monte Carlo"
+              label={tr("Simulations Monte Carlo")}
               id="mc-runs"
               value={inputs.mcRuns}
               min={100}
@@ -475,16 +487,16 @@ export function Sidebar({
               step={100}
               hardMin={100}
               hardMax={10000}
-              suffix="nombre de scénarios testés (Monte Carlo & Rente)"
-              error={fieldError("mcRuns")?.message}
-              warning={fieldWarning("mcRuns")?.message}
+              suffix={tr("nombre de scénarios testés (Monte Carlo & Rente)")}
+              error={fieldErrorMsg("mcRuns")}
+              warning={fieldWarningMsg("mcRuns")}
               onChange={v => updateInput("mcRuns", Math.round(v))}
             />
             <Toggle
               checked={inputs.showReal}
               onChange={v => updateInput("showReal", v)}
-              label="Euros d'aujourd'hui"
-              sub="Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout"
+              label={tr("Euros d'aujourd'hui")}
+              sub={tr("Met en avant le pouvoir d'achat — la valeur sur le compte reste affichée partout")}
             />
           </RailSection>
 
@@ -492,7 +504,7 @@ export function Sidebar({
               visible dans le résumé replié et « Votre épargne ». */}
           <RailSection
             id="compte"
-            title="Compte d'investissement"
+            title={tr("Compte d'investissement")}
             icon={<Landmark size={12} />}
             open={openSections.compte}
             onOpenChange={() => toggleSection("compte")}
@@ -501,7 +513,7 @@ export function Sidebar({
             {inputs.envelope === "pea" && (
               <div className="mt-3 animate-fade-in">
                 <SliderInput
-                  label="Années de détention du PEA"
+                  label={tr("Années de détention du PEA")}
                   id="pea-years"
                   value={inputs.peaYearsHeld}
                   min={0}
@@ -511,8 +523,8 @@ export function Sidebar({
                   hardMax={50}
                   suffix={
                     inputs.peaYearsHeld < 5
-                      ? `moins de 5 ans : PFU ${fmtTaxPercent(pfuRate(rules))}`
-                      : `au-delà de 5 ans : taux réduit (${fmtTaxPercent(rules.socialRate)})`
+                      ? tr("moins de 5 ans : PFU {rate}", { rate: fmtTaxPercent(pfuRate(rules)) })
+                      : tr("au-delà de 5 ans : taux réduit ({rate})", { rate: fmtTaxPercent(rules.socialRate) })
                   }
                   onChange={v => updateInput("peaYearsHeld", v)}
                 />
@@ -521,7 +533,7 @@ export function Sidebar({
             {inputs.envelope === "av" && (
               <div className="mt-3 animate-fade-in">
                 <SliderInput
-                  label="Années de détention de l'AV"
+                  label={tr("Années de détention de l'AV")}
                   id="av-years"
                   value={inputs.avYearsHeld}
                   min={0}
@@ -529,7 +541,7 @@ export function Sidebar({
                   step={1}
                   hardMin={0}
                   hardMax={50}
-                  suffix="au-delà de 8 ans : abattement annuel"
+                  suffix={tr("au-delà de 8 ans : abattement annuel")}
                   onChange={v => updateInput("avYearsHeld", v)}
                 />
               </div>
@@ -543,39 +555,44 @@ export function Sidebar({
                   <>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                        Fiscalité du CTO
+                        {tr("Fiscalité du CTO")}
                       </span>
                       <HelpTip
-                        text={`PFU : Prélèvement Forfaitaire Unique — ${fmtTaxPercent(pfuRate(rules))} sur les gains (${fmtTaxPercent(
-                          rules.socialRate,
-                        )} de prélèvements sociaux + ${fmtTaxPercent(rules.pfuIncomeRate)} d'impôt sur le revenu), sans barème.`}
+                        text={tr(
+                          "PFU : Prélèvement Forfaitaire Unique — {pfu} sur les gains ({social} de prélèvements sociaux + {ir} d'impôt sur le revenu), sans barème.",
+                          {
+                            pfu: fmtTaxPercent(pfuRate(rules)),
+                            social: fmtTaxPercent(rules.socialRate),
+                            ir: fmtTaxPercent(rules.pfuIncomeRate),
+                          },
+                        )}
                       />
                     </div>
                     <SegmentedControl
                       value={inputs.ctoTaxMode}
                       onChange={v => updateInput("ctoTaxMode", v)}
-                      ariaLabel="Fiscalité du CTO"
+                      ariaLabel={tr("Fiscalité du CTO")}
                       options={[
-                        { id: "pfu", label: `PFU ${fmtTaxPercent(pfuRate(rules))}`, sub: "impôt unique" },
+                        { id: "pfu", label: `PFU ${fmtTaxPercent(pfuRate(rules))}`, sub: tr("impôt unique") },
                         {
                           id: "bareme",
-                          label: "Barème",
-                          sub: `${fmtTaxPercent(rules.socialRate)} + impôt à votre TMI`,
+                          label: tr("Barème"),
+                          sub: tr("{social} + impôt à votre TMI", { social: fmtTaxPercent(rules.socialRate) }),
                         },
                       ]}
                     />
                   </>
                 ) : inputs.ctoTaxMode === "bareme" ? (
                   <p className="text-[10px] text-text-muted leading-relaxed rounded-lg bg-glass px-3 py-2">
-                    Barème progressif : <strong className="text-text">{fmtTaxPercent(rules.socialRate)}</strong> de
-                    prélèvements sociaux + impôt sur le revenu à votre TMI de{" "}
-                    <strong className="text-text">{(inputs.tmi * 100).toFixed(0)} %</strong> (réglage hérité du mode
-                    Avancé).
+                    {tr("Barème progressif :")} <strong className="text-text">{fmtTaxPercent(rules.socialRate)}</strong>{" "}
+                    {tr("de prélèvements sociaux + impôt sur le revenu à votre TMI de")}{" "}
+                    <strong className="text-text">{fmtDecimal(inputs.tmi * 100, 0)} %</strong>{" "}
+                    {tr("(réglage hérité du mode Avancé).")}
                   </p>
                 ) : (
                   <p className="text-[10px] text-text-muted leading-relaxed rounded-lg bg-glass px-3 py-2">
-                    Impôt unique de <strong className="text-text">{fmtTaxPercent(pfuRate(rules))}</strong> sur vos gains
-                    (prélèvement forfaitaire) — pour le barème progressif, passez en mode Avancé.
+                    {tr("Impôt unique de")} <strong className="text-text">{fmtTaxPercent(pfuRate(rules))}</strong>{" "}
+                    {tr("sur vos gains (prélèvement forfaitaire) — pour le barème progressif, passez en mode Avancé.")}
                   </p>
                 )}
               </div>
@@ -586,7 +603,7 @@ export function Sidebar({
               (uiMode === "avance" && inputs.envelope === "cto" && inputs.ctoTaxMode === "bareme")) && (
               <div className="mt-3 animate-fade-in">
                 <SliderInput
-                  label="Tranche marginale d'imposition (%)"
+                  label={tr("Tranche marginale d'imposition (%)")}
                   id="tmi"
                   value={inputs.tmi * 100}
                   min={0}
@@ -596,11 +613,13 @@ export function Sidebar({
                   hardMax={45}
                   suffix={
                     inputs.envelope === "per"
-                      ? "Versements déduits à ce taux ; sortie : versements imposés à votre TMI (sans abattement de 10 %), gains au PFU"
-                      : "Impôt appliqué à vos gains CTO (barème)"
+                      ? tr(
+                          "Versements déduits à ce taux ; sortie : versements imposés à votre TMI (sans abattement de 10 %), gains au PFU",
+                        )
+                      : tr("Impôt appliqué à vos gains CTO (barème)")
                   }
-                  error={fieldError("tmi")?.message}
-                  warning={fieldWarning("tmi")?.message}
+                  error={fieldErrorMsg("tmi")}
+                  warning={fieldWarningMsg("tmi")}
                   onChange={v => updateInput("tmi", v / 100)}
                 />
               </div>
@@ -612,8 +631,8 @@ export function Sidebar({
                 <Toggle
                   checked={inputs.taxCouple}
                   onChange={v => updateInput("taxCouple", v)}
-                  label="Fiscalité en couple"
-                  sub="Plafond de versements PEA doublé (300 000 €)"
+                  label={tr("Fiscalité en couple")}
+                  sub={tr("Plafond de versements PEA doublé (300 000 €)")}
                 />
               </div>
             )}
@@ -626,7 +645,7 @@ export function Sidebar({
           {/* Frais — repliés par défaut (audit). */}
           <RailSection
             id="frais"
-            title="Frais"
+            title={tr("Frais")}
             icon={<Percent size={12} />}
             open={openSections.frais}
             onOpenChange={() => toggleSection("frais")}
@@ -639,13 +658,13 @@ export function Sidebar({
               l'onglet Rente. Replié par défaut (réglages secondaires). */}
           <RailSection
             id="profil"
-            title="Votre profil"
+            title={tr("Votre profil")}
             icon={<UserRound size={12} />}
             open={openSections.profil}
             onOpenChange={() => toggleSection("profil")}
           >
             <SliderInput
-              label="Âge actuel"
+              label={tr("Âge actuel")}
               id="age-now"
               value={inputs.ageNow}
               min={16}
@@ -653,11 +672,11 @@ export function Sidebar({
               step={1}
               hardMin={16}
               hardMax={100}
-              suffix="utilisé pour situer votre retraite"
+              suffix={tr("utilisé pour situer votre retraite")}
               onChange={v => updateInput("ageNow", Math.round(v))}
             />
             <SliderInput
-              label="Âge de départ à la retraite"
+              label={tr("Âge de départ à la retraite")}
               id="age-retirement"
               value={inputs.ageRetirement}
               min={16}
@@ -665,11 +684,11 @@ export function Sidebar({
               step={1}
               hardMin={16}
               hardMax={100}
-              suffix="votre rente démarre à cet âge"
+              suffix={tr("votre rente démarre à cet âge")}
               onChange={v => updateInput("ageRetirement", Math.round(v))}
             />
             <SliderInput
-              label="Dépenses à la retraite (€/mois)"
+              label={tr("Dépenses à la retraite (€/mois)")}
               id="retirement-expenses"
               value={inputs.retirementExpenses}
               min={0}
@@ -677,11 +696,11 @@ export function Sidebar({
               step={50}
               hardMin={0}
               hardMax={1000000}
-              suffix="ce dont vous aurez besoin chaque mois (profil)"
+              suffix={tr("ce dont vous aurez besoin chaque mois (profil)")}
               onChange={v => updateInput("retirementExpenses", v)}
             />
             <SliderInput
-              label="Autres revenus à la retraite (€/mois)"
+              label={tr("Autres revenus à la retraite (€/mois)")}
               id="other-pensions"
               value={inputs.otherPensions}
               min={0}
@@ -689,15 +708,19 @@ export function Sidebar({
               step={50}
               hardMin={0}
               hardMax={1000000}
-              suffix="pensions publiques, immobilier… s'ajoutent à votre rente"
+              suffix={tr("pensions publiques, immobilier… s'ajoutent à votre rente")}
               onChange={v => updateInput("otherPensions", v)}
             />
             <div className="mt-1 mb-3">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                  Tolérance au risque
+                  {tr("Tolérance au risque")}
                 </span>
-                <HelpTip text="Votre profil de risque sert à l'alerte « plan trop risqué » de l'onglet Rente (pire repli historique vs perte acceptée) et recalibre la perte maximale acceptée (Prudent 20 %, Équilibré 35 %, Audacieux 50 %)." />
+                <HelpTip
+                  text={tr(
+                    "Votre profil de risque sert à l'alerte « plan trop risqué » de l'onglet Rente (pire repli historique vs perte acceptée) et recalibre la perte maximale acceptée (Prudent 20 %, Équilibré 35 %, Audacieux 50 %).",
+                  )}
+                />
               </div>
               <SegmentedControl
                 value={inputs.riskTolerance}
@@ -707,16 +730,16 @@ export function Sidebar({
                   updateInput("riskTolerance", v)
                   updateInput("maxDrawdownTolerance", RISK_TOLERANCE_DEFAULTS[v])
                 }}
-                ariaLabel="Tolérance au risque"
+                ariaLabel={tr("Tolérance au risque")}
                 options={[
-                  { id: "prudent", label: "Prudent", sub: "repli faible" },
-                  { id: "equilibre", label: "Équilibré", sub: "compromis" },
-                  { id: "audacieux", label: "Audacieux", sub: "repli fort" },
+                  { id: "prudent", label: tr("Prudent"), sub: tr("repli faible") },
+                  { id: "equilibre", label: tr("Équilibré"), sub: tr("compromis") },
+                  { id: "audacieux", label: tr("Audacieux"), sub: tr("repli fort") },
                 ]}
               />
             </div>
             <SliderInput
-              label="Perte maximale acceptée (%)"
+              label={tr("Perte maximale acceptée (%)")}
               id="max-drawdown-tolerance"
               value={Math.round(inputs.maxDrawdownTolerance * 100)}
               min={5}
@@ -724,7 +747,7 @@ export function Sidebar({
               step={5}
               hardMin={5}
               hardMax={60}
-              suffix="le pire repli de bourse que vous acceptez de traverser"
+              suffix={tr("le pire repli de bourse que vous acceptez de traverser")}
               onChange={v => updateInput("maxDrawdownTolerance", v / 100)}
             />
             {/* Cohérence âge / durée / retraite (audit) : la projection doit
@@ -732,10 +755,13 @@ export function Sidebar({
                 correspond pas au départ en retraite. */}
             {inputs.ageRetirement >= inputs.ageNow && inputs.ageNow + inputs.duration !== inputs.ageRetirement && (
               <p className="text-[9px] text-warning leading-snug rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-2">
-                Âge actuel ({inputs.ageNow}) + durée ({inputs.duration} ans) ={" "}
-                <strong>{inputs.ageNow + inputs.duration} ans</strong>, mais retraite prévue à{" "}
-                <strong>{inputs.ageRetirement} ans</strong> — le capital de l'onglet Rente ne correspond pas à votre
-                départ en retraite.
+                {tr("Âge actuel ({ageNow}) + durée ({duration} ans) =", {
+                  ageNow: inputs.ageNow,
+                  duration: inputs.duration,
+                })}{" "}
+                <strong>{tr("{n} ans", { n: inputs.ageNow + inputs.duration })}</strong>
+                {tr(", mais retraite prévue à")} <strong>{tr("{n} ans", { n: inputs.ageRetirement })}</strong>
+                {tr(" — le capital de l'onglet Rente ne correspond pas à votre départ en retraite.")}
               </p>
             )}
           </RailSection>
@@ -744,16 +770,24 @@ export function Sidebar({
           <div className="mb-5 glass-gold rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-2">
               <Lightbulb size={13} className="text-primary shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">Votre projet</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                {tr("Votre projet")}
+              </span>
             </div>
             <p className="text-xs leading-relaxed text-text-muted">
-              Projection sur <strong className="text-text">{inputs.duration} ans</strong>. Capital final :{" "}
-              <strong className="text-primary">{fmtCurrency(displayNominal)}</strong> sur le compte (fin de projet) ·{" "}
-              <strong className="text-primary">{fmtCurrency(displayReal)}</strong> en euros d'aujourd'hui.
+              {tr("Projection sur")} <strong className="text-text">{tr("{n} ans", { n: inputs.duration })}</strong>
+              {tr(". Capital final :")} <strong className="text-primary">{fmtCurrency(displayNominal)}</strong>{" "}
+              {tr("sur le compte (fin de projet) ·")}{" "}
+              <strong className="text-primary">{fmtCurrency(displayReal)}</strong> {tr("en euros d'aujourd'hui.")}
               {inputs.indexation > 0 && (
-                <> Votre épargne augmente de {(inputs.indexation * 100).toFixed(0)} %/an.</>
+                <>
+                  {" "}
+                  {tr("Votre épargne augmente de {pct} %/an.", {
+                    pct: fmtDecimal(inputs.indexation * 100, 0),
+                  })}
+                </>
               )}{" "}
-              Les rendements rejoués sont ceux du MSCI World (1970–2025).
+              {tr("Les rendements rejoués sont ceux du MSCI World (1970–2025).")}
             </p>
           </div>
 

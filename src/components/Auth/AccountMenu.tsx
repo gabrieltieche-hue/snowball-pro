@@ -4,6 +4,7 @@ import { ChevronDown, KeyRound, LogOut, Trash2, User, UserPlus } from "lucide-re
 import { browserStorage, changePassword, deleteAccount, getAccount, logout } from "../../auth/auth"
 import { removeScopedData } from "../../auth/storage"
 import { syncSession, useSession } from "../../auth/store"
+import { useLang } from "../../i18n"
 import { navigateTo } from "../../router"
 import { cn } from "../../utils/cn"
 import { TextField } from "./fields"
@@ -20,6 +21,7 @@ const itemClass =
  * clic extérieur et à Échap.
  */
 export function AccountMenu() {
+  const { tr } = useLang()
   const session = useSession()
   const account = session ? getAccount(browserStorage, session.userId) : null
   const [open, setOpen] = useState(false)
@@ -83,7 +85,7 @@ export function AccountMenu() {
         }}
         aria-haspopup="menu"
         aria-expanded={open}
-        title={account ? `Compte de ${account.name}` : "Compte invité — se connecter"}
+        title={account ? tr("Compte de {name}", { name: account.name }) : tr("Compte invité — se connecter")}
         className={cn(
           "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]",
           open ? "glass-gold border border-primary/40" : "glass hover:bg-glass-hover",
@@ -102,7 +104,7 @@ export function AccountMenu() {
         ) : (
           <>
             <User size={13} className="text-primary" aria-hidden />
-            <span>Se connecter</span>
+            <span>{tr("Se connecter")}</span>
           </>
         )}
         <ChevronDown size={12} aria-hidden className={cn("text-text-dim transition-transform", open && "rotate-180")} />
@@ -114,21 +116,21 @@ export function AccountMenu() {
         // dans un menu (revue adverse v6.1).
         <div
           role={panel === "menu" ? "menu" : undefined}
-          aria-label={panel === "menu" ? "Menu du compte" : undefined}
+          aria-label={panel === "menu" ? tr("Menu du compte") : undefined}
           className="absolute right-0 top-[calc(100%+8px)] w-72 glass-strong rounded-2xl shadow-premium-lg p-2 z-50 animate-scale-in"
         >
           {panel === "menu" && !account && (
             <div className="p-2 space-y-1">
               <p className="text-[10px] text-text-dim px-3 pt-1 pb-2 leading-relaxed">
-                Compte invité — vos simulations restent sur cet appareil. Créer un compte ne transfère rien en ligne :
-                il crée des espaces de simulation séparés et protégés par mot de passe, pour plusieurs projets sur le
-                même appareil.
+                {tr(
+                  "Compte invité — vos simulations restent sur cet appareil. Créer un compte ne transfère rien en ligne : il crée des espaces de simulation séparés et protégés par mot de passe, pour plusieurs projets sur le même appareil.",
+                )}
               </p>
               <button type="button" role="menuitem" className={itemClass} onClick={() => navigateTo("login")}>
-                <User size={13} className="text-primary" aria-hidden /> Se connecter
+                <User size={13} className="text-primary" aria-hidden /> {tr("Se connecter")}
               </button>
               <button type="button" role="menuitem" className={itemClass} onClick={() => navigateTo("register")}>
-                <UserPlus size={13} className="text-primary" aria-hidden /> Créer un compte
+                <UserPlus size={13} className="text-primary" aria-hidden /> {tr("Créer un compte")}
               </button>
             </div>
           )}
@@ -140,10 +142,10 @@ export function AccountMenu() {
                 <p className="text-[10px] text-text-dim truncate">{account.email}</p>
               </div>
               <button type="button" role="menuitem" className={itemClass} onClick={() => setPanel("password")}>
-                <KeyRound size={13} className="text-primary" aria-hidden /> Changer le mot de passe
+                <KeyRound size={13} className="text-primary" aria-hidden /> {tr("Changer le mot de passe")}
               </button>
               <button type="button" role="menuitem" className={itemClass} onClick={handleLogout}>
-                <LogOut size={13} className="text-primary" aria-hidden /> Se déconnecter
+                <LogOut size={13} className="text-primary" aria-hidden /> {tr("Se déconnecter")}
               </button>
               <div className="border-t border-border/70 pt-1 mt-1">
                 <button
@@ -152,7 +154,7 @@ export function AccountMenu() {
                   className={cn(itemClass, "text-danger hover:bg-danger/10")}
                   onClick={() => setPanel("delete")}
                 >
-                  <Trash2 size={13} aria-hidden /> Supprimer mon compte
+                  <Trash2 size={13} aria-hidden /> {tr("Supprimer mon compte")}
                 </button>
               </div>
             </div>
@@ -173,16 +175,17 @@ export function AccountMenu() {
 // ─── Panneaux internes ───────────────────────────────────────────────────────
 
 function PanelShell({ title, onBack, children }: { title: string; onBack: () => void; children: ReactNode }) {
+  const { tr } = useLang()
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-text">{title}</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-text">{tr(title)}</p>
         <button
           type="button"
           onClick={onBack}
           className="text-[10px] font-bold text-text-muted hover:text-text transition-colors"
         >
-          ← Retour
+          ← {tr("Retour")}
         </button>
       </div>
       {children}
@@ -199,6 +202,7 @@ function PasswordPanel({
   onClose: () => void
   onBack: () => void
 }) {
+  const { tr } = useLang()
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -211,7 +215,7 @@ function PasswordPanel({
     event.preventDefault()
     setError(null)
     if (next !== confirm) {
-      setError("Les deux nouveaux mots de passe ne correspondent pas.")
+      setError(tr("Les deux nouveaux mots de passe ne correspondent pas."))
       return
     }
     if (!session) return
@@ -221,7 +225,7 @@ function PasswordPanel({
       newPassword: next,
     })
     if (!result.ok) {
-      setError(result.error)
+      setError(tr(result.error))
       return
     }
     setDone(true)
@@ -230,13 +234,13 @@ function PasswordPanel({
   if (done) {
     return (
       <PanelShell title="Mot de passe" onBack={onClose}>
-        <p className="text-xs text-success font-semibold">Mot de passe modifié ✓</p>
+        <p className="text-xs text-success font-semibold">{tr("Mot de passe modifié ✓")}</p>
         <button
           type="button"
           onClick={onClose}
           className="w-full rounded-xl bg-primary btn-gold-text font-extrabold text-xs py-2.5 shadow-gold transition-all active:scale-[0.98]"
         >
-          Fermer
+          {tr("Fermer")}
         </button>
       </PanelShell>
     )
@@ -244,11 +248,11 @@ function PasswordPanel({
 
   return (
     <PanelShell title="Changer le mot de passe" onBack={onBack}>
-      <p className="text-[10.5px] text-text-dim leading-relaxed">Compte de {accountName}</p>
+      <p className="text-[10.5px] text-text-dim leading-relaxed">{tr("Compte de {name}", { name: accountName })}</p>
       <form onSubmit={submit} noValidate className="space-y-3">
         <TextField
           id="pw-current"
-          label="Mot de passe actuel"
+          label={tr("Mot de passe actuel")}
           type="password"
           value={current}
           onChange={setCurrent}
@@ -258,17 +262,17 @@ function PasswordPanel({
         />
         <TextField
           id="pw-new"
-          label="Nouveau mot de passe"
+          label={tr("Nouveau mot de passe")}
           type="password"
           value={next}
           onChange={setNext}
           autoComplete="new-password"
-          hint="8 caractères minimum, avec une lettre et un chiffre"
+          hint={tr("8 caractères minimum, avec une lettre et un chiffre")}
           maxLength={128}
         />
         <TextField
           id="pw-confirm"
-          label="Confirmer"
+          label={tr("Confirmer")}
           type="password"
           value={confirm}
           onChange={setConfirm}
@@ -284,7 +288,7 @@ function PasswordPanel({
           type="submit"
           className="w-full rounded-xl bg-primary btn-gold-text font-extrabold text-xs py-2.5 shadow-gold transition-all active:scale-[0.98]"
         >
-          Mettre à jour
+          {tr("Mettre à jour")}
         </button>
       </form>
     </PanelShell>
@@ -300,6 +304,7 @@ function DeletePanel({
   onConfirm: (password: string) => { ok: boolean; error?: string }
   onBack: () => void
 }) {
+  const { tr } = useLang()
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [confirmStep, setConfirmStep] = useState(false)
@@ -308,11 +313,11 @@ function DeletePanel({
     event.preventDefault()
     setError(null)
     if (password.length === 0) {
-      setError("Saisissez votre mot de passe pour confirmer.")
+      setError(tr("Saisissez votre mot de passe pour confirmer."))
       return
     }
     const result = onConfirm(password)
-    if (!result.ok && result.error) setError(result.error)
+    if (!result.ok && result.error) setError(tr(result.error))
   }
 
   return (
@@ -320,22 +325,24 @@ function DeletePanel({
       {!confirmStep ? (
         <>
           <p className="text-[10.5px] text-danger leading-relaxed border border-danger/30 bg-danger/10 rounded-xl px-3 py-2.5">
-            <strong>{accountName}</strong> et toutes ses simulations sur cet appareil seront définitivement supprimés.
-            Cette action est irréversible.
+            <strong>{accountName}</strong>{" "}
+            {tr(
+              "et toutes ses simulations sur cet appareil seront définitivement supprimés. Cette action est irréversible.",
+            )}
           </p>
           <button
             type="button"
             onClick={() => setConfirmStep(true)}
             className="w-full rounded-xl bg-danger/15 border border-danger/40 text-danger font-extrabold text-xs py-2.5 transition-all active:scale-[0.98]"
           >
-            Je comprends, continuer
+            {tr("Je comprends, continuer")}
           </button>
         </>
       ) : (
         <form onSubmit={submit} noValidate className="space-y-3">
           <TextField
             id="delete-password"
-            label="Mot de passe"
+            label={tr("Mot de passe")}
             type="password"
             value={password}
             onChange={setPassword}
@@ -348,7 +355,7 @@ function DeletePanel({
             type="submit"
             className="w-full rounded-xl bg-danger text-white font-extrabold text-xs py-2.5 transition-all active:scale-[0.98] hover:brightness-110"
           >
-            Supprimer définitivement
+            {tr("Supprimer définitivement")}
           </button>
         </form>
       )}

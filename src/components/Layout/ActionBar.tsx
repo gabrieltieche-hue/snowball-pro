@@ -14,7 +14,9 @@ import {
 import type { ValidationError } from "../../engine"
 import { cn } from "../../utils/cn"
 import type { UiMode } from "../../utils/uiMode"
+import { useLang } from "../../i18n"
 import { ExportMenu } from "./ExportMenu"
+import { LanguageToggle } from "../shared/LanguageToggle"
 
 interface ActionBarProps {
   onExportCSV: () => void
@@ -64,6 +66,7 @@ export function ActionBar({
   onToggleUiMode,
   onReset,
 }: ActionBarProps) {
+  const { tr } = useLang()
   const errorCount = validationErrors.filter(e => e.severity === "error").length
   const warningCount = validationErrors.filter(e => e.severity === "warning").length
   const [open, setOpen] = useState(false)
@@ -98,15 +101,15 @@ export function ActionBar({
     <div className="flex gap-2 sm:gap-2.5 justify-end flex-wrap no-print items-center max-sm:justify-start">
       {(errorCount > 0 || warningCount > 0) && (
         <span
-          title={validationErrors.map(e => e.message).join(" · ")}
+          title={validationErrors.map(e => tr(e.message)).join(" · ")}
           className={`inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-[10px] font-bold ${
             errorCount > 0 ? "bg-danger/15 text-danger" : "bg-warning/15 text-warning"
           }`}
         >
           <AlertTriangle size={11} aria-hidden />
           {errorCount > 0
-            ? `${errorCount} erreur${errorCount > 1 ? "s" : ""}`
-            : `${warningCount} avertissement${warningCount > 1 ? "s" : ""}`}
+            ? tr(errorCount > 1 ? "{n} erreurs" : "{n} erreur", { n: errorCount })
+            : tr(warningCount > 1 ? "{n} avertissements" : "{n} avertissement", { n: warningCount })}
         </span>
       )}
 
@@ -116,34 +119,37 @@ export function ActionBar({
           type="button"
           onClick={onUndo}
           disabled={!canUndo}
-          title="Annuler (⌘Z)"
-          aria-label="Annuler la dernière modification"
+          title={tr("Annuler (⌘Z)")}
+          aria-label={tr("Annuler la dernière modification")}
           className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed border-r border-border"
         >
-          <Undo2 size={12} aria-hidden /> Annuler
+          <Undo2 size={12} aria-hidden /> {tr("Annuler")}
         </button>
         <button
           type="button"
           onClick={onRedo}
           disabled={!canRedo}
-          title="Rétablir (⌘⇧Z)"
-          aria-label="Rétablir la modification annulée"
+          title={tr("Rétablir (⌘⇧Z)")}
+          aria-label={tr("Rétablir la modification annulée")}
           className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
         >
-          <Redo2 size={12} aria-hidden /> Rétablir
+          <Redo2 size={12} aria-hidden /> {tr("Rétablir")}
         </button>
       </div>
 
       <ExportMenu onExportCSV={onExportCSV} onExportJSON={onExportJSON} onPrint={onPrint} />
 
+      <LanguageToggle />
+
       <button
         type="button"
         onClick={onToggleDarkMode}
-        title={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
-        aria-label={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
+        title={darkMode ? tr("Passer en mode clair") : tr("Passer en mode sombre")}
+        aria-label={darkMode ? tr("Passer en mode clair") : tr("Passer en mode sombre")}
         className={cn(baseBtn, "glass hover:bg-glass-hover")}
       >
-        {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />} {darkMode ? "Clair" : "Sombre"}
+        {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />}{" "}
+        {darkMode ? tr("Clair") : tr("Sombre")}
       </button>
 
       {/* Menu « ⋯ » : les actions secondaires regroupées (audit) */}
@@ -153,8 +159,8 @@ export function ActionBar({
           onClick={() => setOpen(o => !o)}
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-label="Autres actions"
-          title="Autres actions"
+          aria-label={tr("Autres actions")}
+          title={tr("Autres actions")}
           className={cn(baseBtn, open ? "glass-gold border border-primary/40" : "glass hover:bg-glass-hover")}
         >
           <MoreHorizontal size={13} aria-hidden />
@@ -175,7 +181,7 @@ export function ActionBar({
               className={cn(itemClass, comparing && "text-primary")}
             >
               <GitCompareArrows size={13} className="text-primary" aria-hidden />
-              {comparing ? "Quitter la comparaison" : "Comparer deux scénarios"}
+              {comparing ? tr("Quitter la comparaison") : tr("Comparer deux scénarios")}
             </button>
             <button
               type="button"
@@ -187,7 +193,7 @@ export function ActionBar({
               className={itemClass}
             >
               <Link2 size={13} className="text-primary" aria-hidden />
-              {linkCopied ? "Lien copié !" : "Partager la simulation"}
+              {linkCopied ? tr("Lien copié !") : tr("Partager la simulation")}
             </button>
             <button
               type="button"
@@ -197,16 +203,16 @@ export function ActionBar({
               aria-pressed={uiMode === "avance"}
             >
               <GraduationCap size={13} className="text-primary" aria-hidden />
-              Mode {uiMode === "debutant" ? "Avancé" : "Débutant"}
+              {tr(uiMode === "debutant" ? "Mode Avancé" : "Mode Débutant")}
               <span className="ml-auto text-[9px] font-semibold text-text-dim">
-                {uiMode === "debutant" ? "notions techniques visibles" : "notions techniques masquées"}
+                {tr(uiMode === "debutant" ? "notions techniques visibles" : "notions techniques masquées")}
               </span>
             </button>
             <div className="border-t border-border/70 my-1" />
             {confirmReset ? (
               <div className="px-3 py-2 space-y-1.5">
                 <p className="text-[10px] text-danger leading-snug">
-                  Revenir aux réglages par défaut ? Vos simulations et snapshots de cet espace seront effacés.
+                  {tr("Revenir aux réglages par défaut ? Vos simulations et snapshots de cet espace seront effacés.")}
                 </p>
                 <div className="flex gap-1.5">
                   <button
@@ -214,7 +220,7 @@ export function ActionBar({
                     onClick={() => setConfirmReset(false)}
                     className="flex-1 rounded-lg px-2 py-1.5 text-[10px] font-bold border border-border hover:bg-glass-hover transition-colors"
                   >
-                    Annuler
+                    {tr("Annuler")}
                   </button>
                   <button
                     type="button"
@@ -224,7 +230,7 @@ export function ActionBar({
                     }}
                     className="flex-1 rounded-lg px-2 py-1.5 text-[10px] font-bold bg-danger/15 border border-danger/40 text-danger hover:bg-danger/25 transition-colors"
                   >
-                    Réinitialiser
+                    {tr("Réinitialiser")}
                   </button>
                 </div>
               </div>
@@ -235,7 +241,7 @@ export function ActionBar({
                 onClick={() => setConfirmReset(true)}
                 className={cn(itemClass, "text-danger hover:bg-danger/10")}
               >
-                <Eraser size={13} aria-hidden /> Tout réinitialiser
+                <Eraser size={13} aria-hidden /> {tr("Tout réinitialiser")}
               </button>
             )}
           </div>

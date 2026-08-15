@@ -5,11 +5,10 @@ import {
   computeTaxBreakdown,
   deflationFactor,
   ENVELOPE_CONFIGS,
-  fmtCompact,
-  fmtCurrency,
   fmtDecimal,
   getHistoricalDataset,
 } from "../../engine"
+import { useLang } from "../../i18n"
 import { buildEquitySeries } from "../Charts/EquityChart"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -25,7 +24,7 @@ const GRAY = "#9ca3af"
 const DARK = "#1f2937"
 const REAL = "#334155"
 
-const fmtRate = (r: number): string => `${fmtDecimal(r * 100, 2)} %`
+const fmtRate = (r: number, lang: "fr" | "en" = "fr"): string => `${fmtDecimal(r * 100, 2, lang)} %`
 
 /**
  * Rapport patrimonial de synthèse — la vue « Enregistrer en PDF ».
@@ -43,6 +42,7 @@ const fmtRate = (r: number): string => `${fmtDecimal(r * 100, 2)} %`
  * promis (PISTES V6.1 — idée 2 validée).
  */
 export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
+  const { tr, lang, fmtCurrency, fmtCompact } = useLang()
   const lastRow = rows[rows.length - 1]
   const kpis = useMemo(() => computeKPIs(rows, inputs), [rows, inputs])
   const historical = getHistoricalDataset(inputs.historicalIndex)
@@ -75,8 +75,8 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
   const investedPct = total > 0 ? Math.max(0, 100 - growthPct) : 100
   const ratio = invested > 0 ? total / invested : null
   const secondary = showReal
-    ? { amount: lastRow.nominal, label: `sur le compte${endYear ? ` en ${endYear}` : ""}` }
-    : { amount: lastRow.real, label: "en euros d'aujourd'hui" }
+    ? { amount: lastRow.nominal, label: tr("sur le compte") + (endYear ? ` ${tr("en")} ${endYear}` : "") }
+    : { amount: lastRow.real, label: tr("en euros d'aujourd'hui") }
 
   // Fiscalité : MÊME appel que le FiscalPanel de l'app (une seule doctrine).
   const taxInfo = computeTaxBreakdown(
@@ -103,19 +103,20 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
   taxLines.push({ label: "Gains après impôts", value: taxInfo.netGains, strong: true })
 
   const generatedAt = new Date()
-  const dateLabel = generatedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-  const timeLabel = generatedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+  const locale = lang === "en" ? "en-US" : "fr-FR"
+  const dateLabel = generatedAt.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" })
+  const timeLabel = generatedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
 
   const params: { label: string; value: string }[] = [
-    { label: "Capital de départ", value: fmtCurrency(inputs.capitalInitial) },
-    { label: "Épargne mensuelle", value: `${fmtCurrency(inputs.monthlyPayment)}/mois` },
-    { label: "Durée", value: `${inputs.duration} ans` },
-    { label: "Enveloppe", value: envelopeCfg?.name ?? "—" },
+    { label: tr("Capital de départ"), value: fmtCurrency(inputs.capitalInitial) },
+    { label: tr("Épargne mensuelle"), value: `${fmtCurrency(inputs.monthlyPayment)}/${tr("mois")}` },
+    { label: tr("Durée"), value: `${inputs.duration} ${tr("ans")}` },
+    { label: tr("Enveloppe"), value: envelopeCfg?.name ?? "—" },
     {
-      label: "Scénario de rendement",
-      value: `${SCENARIO_LABELS[inputs.returnScenario]} · ${fmtRate(scenarioRate)} brut/an`,
+      label: tr("Scénario de rendement"),
+      value: `${tr(SCENARIO_LABELS[inputs.returnScenario])} · ${fmtRate(scenarioRate, lang)} ${tr("brut/an")}`,
     },
-    { label: "Inflation", value: `${fmtRate(inputs.inflation)}` },
+    { label: tr("Inflation"), value: fmtRate(inputs.inflation, lang) },
   ]
 
   // MÊMES DONNÉES que SummaryStats (une seule doctrine) : l'app les montre en
@@ -127,29 +128,34 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
   const taxAmount = Math.max(0, lastRow.nominal - lastRow.taxNet)
   const kpiCards: { label: string; value: string; sub: string; tone: string; subStrong?: boolean }[] = [
     {
-      label: showReal ? "Valeur réelle finale" : "Valeur brute finale",
+      label: tr(showReal ? "Valeur réelle finale" : "Valeur brute finale"),
       value: fmtCurrency(showReal ? lastRow.real : lastRow.nominal),
       sub: fmtCurrency(showReal ? lastRow.nominal : lastRow.real),
       tone: GOLD,
     },
     {
-      label: `Net fiscal (${envelopeCfg?.shortLabel ?? "BRUT"})`,
+      label: tr("Net fiscal ({env})", { env: envelopeCfg?.shortLabel ?? "BRUT" }),
       value: fmtCurrency(showReal ? netAfterTax * factor : netAfterTax),
       sub: fmtCurrency(showReal ? netAfterTax : netAfterTax * factor),
       tone: GOLD,
     },
     {
-      label: "Impôt théorique",
+      label: tr("Impôt théorique"),
       value: fmtCurrency(showReal ? taxAmount * factor : taxAmount),
-      sub: "à la liquidation",
+      sub: tr("à la liquidation"),
       tone: "#b91c1c",
     },
     {
-      label: "Total épargné",
+      label: tr("Total épargné"),
       value: fmtCurrency(showReal ? lastRow.investedReal : lastRow.investedNom),
       // Gains en or (même traitement que le panneau de l'app v6.9.0) : la
       // statistique la plus motivante n'est plus une légende grise.
-      sub: `Gains de la bourse : +${fmtCurrency(Math.max(0, (showReal ? lastRow.real : lastRow.nominal) - (showReal ? lastRow.investedReal : lastRow.investedNom)))}`,
+      sub: `${tr("Gains de la bourse :")} +${fmtCurrency(
+        Math.max(
+          0,
+          (showReal ? lastRow.real : lastRow.nominal) - (showReal ? lastRow.investedReal : lastRow.investedNom),
+        ),
+      )}`,
       tone: GRAY,
       subStrong: true,
     },
@@ -168,25 +174,25 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
               <p className="font-display text-lg font-extrabold tracking-tight">
                 SNOWBALL <span className="text-[#b8960f]">PRO</span>
               </p>
-              <p className="text-[9px] text-gray-500 uppercase tracking-[0.22em]">Simulateur patrimonial</p>
+              <p className="text-[9px] text-gray-500 uppercase tracking-[0.22em]">{tr("Simulateur patrimonial")}</p>
             </div>
           </div>
           <p className="text-[10px] text-gray-400 text-right leading-snug">
-            Rapport généré le {dateLabel} à {timeLabel}
+            {tr("Rapport généré le")} {dateLabel} {tr("à")} {timeLabel}
             <br />
-            Simulation non contractuelle
+            {tr("Simulation non contractuelle")}
           </p>
         </div>
 
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#b8960f] mt-10">
-          Rapport patrimonial de synthèse
+          {tr("Rapport patrimonial de synthèse")}
         </p>
-        <h2 className="font-display text-3xl font-extrabold tracking-tight mt-1">Votre patrimoine estimé</h2>
+        <h2 className="font-display text-3xl font-extrabold tracking-tight mt-1">{tr("Votre patrimoine estimé")}</h2>
 
         {/* Héro — le « nombre magique » */}
         <p className="font-mono text-5xl font-extrabold tracking-tight mt-8 leading-none">{fmtCurrency(total)}</p>
         <p className="text-xs text-gray-500 mt-2">
-          {showReal ? "en euros d'aujourd'hui (pouvoir d'achat)" : secondary.label} —{" "}
+          {showReal ? tr("en euros d'aujourd'hui (pouvoir d'achat)") : secondary.label} —{" "}
           <span className="text-gray-400">
             {fmtCurrency(secondary.amount)} {secondary.label}
           </span>
@@ -202,19 +208,20 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
             <div className="flex items-center justify-between gap-3 mt-2.5 text-[11px]">
               <span className="text-gray-600 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GRAY }} />
-                Épargné : <strong className="text-gray-900 font-mono">{fmtCurrency(invested)}</strong>
+                {tr("Épargné :")} <strong className="text-gray-900 font-mono">{fmtCurrency(invested)}</strong>
               </span>
               {growth > 0 && (
                 <span className="text-gray-600 flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GOLD }} />
-                  Croissance : <strong className="text-gray-900 font-mono">{fmtCurrency(growth)}</strong>
+                  {tr("Croissance :")} <strong className="text-gray-900 font-mono">{fmtCurrency(growth)}</strong>
                 </span>
               )}
             </div>
             {growth > 0 && ratio && (
               <p className="text-xs text-gray-600 mt-3">
-                La croissance de la bourse représente <strong>{growthPct.toFixed(0)} %</strong> de votre capital final —
-                votre épargne est multipliée par <strong>~{fmtDecimal(ratio, 1)}</strong>.
+                {tr("La croissance de la bourse représente")} <strong>{growthPct.toFixed(0)} %</strong>{" "}
+                {tr("de votre capital final — votre épargne est multipliée par")}{" "}
+                <strong>~{fmtDecimal(ratio, 1, lang)}</strong>.
               </p>
             )}
           </div>
@@ -222,7 +229,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
 
         {/* Paramètres clés */}
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mt-10 mb-3">
-          Paramètres de la simulation
+          {tr("Paramètres de la simulation")}
         </h3>
         <div className="grid grid-cols-3 gap-x-6 gap-y-3">
           {params.map(p => (
@@ -234,7 +241,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
         </div>
 
         <p className="absolute bottom-0 left-0 right-0 text-[9px] text-gray-400 text-center py-4">
-          Snowball Pro — snowball-pro.vercel.app · Données 100 % locales, aucun chiffre ne quitte votre appareil
+          {tr("Snowball Pro — snowball-pro.vercel.app · Données 100 % locales, aucun chiffre ne quitte votre appareil")}
         </p>
       </section>
 
@@ -242,13 +249,14 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
       <section className="bg-white text-gray-900 p-10">
         <div className="flex items-center justify-between border-b border-gray-200 pb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8960f]">Synthèse</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8960f]">{tr("Synthèse")}</p>
             <h2 className="font-display text-xl font-extrabold tracking-tight mt-0.5">
-              Projection sur {inputs.duration} ans
+              {tr("Projection sur {n} ans", { n: inputs.duration })}
             </h2>
           </div>
           <p className="text-[10px] text-gray-400">
-            {endYear ? `Projection jusqu'en ${endYear}` : ""} · scénario {SCENARIO_LABELS[inputs.returnScenario]}
+            {endYear ? tr("Projection jusqu'en {year}", { year: endYear }) : ""} · {tr("scénario")}{" "}
+            {tr(SCENARIO_LABELS[inputs.returnScenario])}
           </p>
         </div>
 
@@ -273,9 +281,9 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
         {/* Rendements mesurés */}
         <div className="grid grid-cols-3 gap-3 mt-3">
           {[
-            { label: "Rendement net / an (XIRR)", value: `${fmtDecimal(kpis.xirr, 2)} %` },
-            { label: "Rendement réel / an", value: `${fmtDecimal(kpis.realReturn, 2)} %` },
-            { label: "Capital multiplié par", value: `× ${fmtDecimal(kpis.capitalMultiple, 1)}` },
+            { label: tr("Rendement net / an (XIRR)"), value: `${fmtDecimal(kpis.xirr, 2, lang)} %` },
+            { label: tr("Rendement réel / an"), value: `${fmtDecimal(kpis.realReturn, 2, lang)} %` },
+            { label: tr("Capital multiplié par"), value: `× ${fmtDecimal(kpis.capitalMultiple, 1, lang)}` },
           ].map(s => (
             <div
               key={s.label}
@@ -290,7 +298,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
         {/* Graphique de projection */}
         <div className="mt-8">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-2">
-            Projection de votre capital (euros courants)
+            {tr("Projection de votre capital (euros courants)")}
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -339,7 +347,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
                 <Area
                   type="monotone"
                   dataKey="investi"
-                  name="Argent épargné"
+                  name={tr("Argent épargné")}
                   stackId="1"
                   stroke={GRAY}
                   strokeWidth={2}
@@ -349,7 +357,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
                 <Area
                   type="monotone"
                   dataKey="gains"
-                  name="Gains (bourse)"
+                  name={tr("Gains (bourse)")}
                   stackId="1"
                   stroke={GOLD}
                   strokeWidth={2}
@@ -359,7 +367,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
                 <Line
                   type="monotone"
                   dataKey="réel"
-                  name="Pouvoir d'achat"
+                  name={tr("Pouvoir d'achat")}
                   stroke={REAL}
                   strokeWidth={2}
                   strokeDasharray="6 3"
@@ -371,14 +379,16 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
           </div>
           <div className="flex items-center gap-4 text-[10px] text-gray-500 mt-1.5">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GRAY }} /> Argent épargné
+              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GRAY }} />{" "}
+              {tr("Argent épargné")}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GOLD }} /> Gains (bourse)
+              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: GOLD }} />{" "}
+              {tr("Gains (bourse)")}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-4 h-0 border-t-2 border-dashed inline-block" style={{ borderColor: REAL }} /> Pouvoir
-              d'achat
+              <span className="w-4 h-0 border-t-2 border-dashed inline-block" style={{ borderColor: REAL }} />{" "}
+              {tr("Pouvoir d'achat")}
             </span>
           </div>
         </div>
@@ -387,7 +397,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
         <div className="mt-8 grid grid-cols-2 gap-6">
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-3">
-              Fiscalité — {envelopeCfg?.name ?? "CTO"}
+              {tr("Fiscalité — {env}", { env: envelopeCfg?.name ?? "CTO" })}
             </h3>
             <div className="rounded-xl border border-gray-200 p-4 space-y-1.5">
               {taxLines.map(line => (
@@ -399,7 +409,7 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
                 </div>
               ))}
               <div className="border-t border-gray-100 mt-2 pt-2 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">Part des gains prise par les impôts</span>
+                <span className="text-[10px] text-gray-400">{tr("Part des gains prise par les impôts")}</span>
                 <span className="font-mono text-xs font-bold text-[#b91c1c]">
                   {fmtDecimal(
                     (exitTax / Math.max(1, taxInfo.grossGains + (taxInfo.taxableContributions ?? 0))) * 100,
@@ -410,15 +420,16 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
               </div>
             </div>
             <p className="text-[9px] text-gray-400 mt-2 leading-snug">
-              Estimation : ces impôts supposent une liquidation totale aujourd'hui. Les gains latents ne sont taxés qu'à
-              la revente réelle.
+              {tr(
+                "Estimation : ces impôts supposent une liquidation totale aujourd'hui. Les gains latents ne sont taxés qu'à la revente réelle.",
+              )}
             </p>
           </div>
 
           {/* Détail année par année */}
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-3">
-              Détail année par année
+              {tr("Détail année par année")}
             </h3>
             {/* Pas de max-height : le rapport est invisible à l'écran et la
                 table DOIT s'imprimer intégralement (un max-h clipperait le
@@ -427,11 +438,11 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
               <table className="w-full text-[10px] border-collapse">
                 <thead>
                   <tr className="bg-gray-50 text-left text-[9px] uppercase tracking-wider text-gray-400">
-                    <th className="px-2.5 py-2 font-bold">Année</th>
-                    <th className="px-2.5 py-2 font-bold text-right">Versé</th>
-                    <th className="px-2.5 py-2 font-bold text-right">Intérêts</th>
-                    <th className="px-2.5 py-2 font-bold text-right">Capital (€)</th>
-                    <th className="px-2.5 py-2 font-bold text-right">Pouvoir d'achat</th>
+                    <th className="px-2.5 py-2 font-bold">{tr("Année")}</th>
+                    <th className="px-2.5 py-2 font-bold text-right">{tr("Versé")}</th>
+                    <th className="px-2.5 py-2 font-bold text-right">{tr("Intérêts")}</th>
+                    <th className="px-2.5 py-2 font-bold text-right">{tr("Capital (€)")}</th>
+                    <th className="px-2.5 py-2 font-bold text-right">{tr("Pouvoir d'achat")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -454,31 +465,42 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
 
         {/* Méthodologie + mentions */}
         <div className="mt-10 rounded-xl bg-gray-50 border border-gray-100 p-5">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-3">Méthodologie</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 mb-3">{tr("Méthodologie")}</h3>
           <ul className="text-[10px] text-gray-600 space-y-1.5 leading-relaxed">
             <li>
-              • <strong className="text-gray-900">100 ans d'histoire boursière réelle</strong> (S&amp;P 500 1926–1969 +
-              MSCI World 1970–2025). La projection applique le scénario{" "}
-              <strong className="text-gray-900">{SCENARIO_LABELS[inputs.returnScenario]}</strong> :{" "}
-              <strong className="text-gray-900">{fmtRate(scenarioRate)}/an brut</strong> (courbe lissée, sans hasard).
+              • <strong className="text-gray-900">{tr("100 ans d'histoire boursière réelle")}</strong> (S&amp;P 500
+              1926–1969 + MSCI World 1970–2025). {tr("La projection applique le scénario")}{" "}
+              <strong className="text-gray-900">{tr(SCENARIO_LABELS[inputs.returnScenario])}</strong> :{" "}
+              <strong className="text-gray-900">
+                {fmtRate(scenarioRate, lang)} {tr("brut/an")}
+              </strong>{" "}
+              {tr("(courbe lissée, sans hasard).")}
             </li>
             <li>
-              • <strong className="text-gray-900">Fiscalité française appliquée</strong> ({envelopeCfg?.name ?? "CTO"})
-              : prélèvements sociaux, PFU ou barème progressif, abattements — règles 2026.
+              • <strong className="text-gray-900">{tr("Fiscalité française appliquée")}</strong> ({" "}
+              {envelopeCfg?.name ?? "CTO"}) :{" "}
+              {tr("prélèvements sociaux, PFU ou barème progressif, abattements — règles 2026.")}
             </li>
             <li>
-              • <strong className="text-gray-900">Inflation de {fmtRate(inputs.inflation)}/an</strong> retirée pour
-              l'échelle « euros d'aujourd'hui » (formule de Fisher, jamais une simple soustraction).
+              •{" "}
+              <strong className="text-gray-900">
+                {tr("Inflation de {rate}/an", { rate: fmtRate(inputs.inflation, lang) })}
+              </strong>{" "}
+              {tr(
+                "retirée pour l'échelle « euros d'aujourd'hui » (formule de Fisher, jamais une simple soustraction).",
+              )}
             </li>
             <li>
-              • <strong className="text-gray-900">Robustesse du plan</strong> : jusqu'à{" "}
-              {inputs.mcRuns.toLocaleString("fr-FR")} scénarios Monte Carlo rééchantillonnés (onglet « Robustesse de
-              votre plan ») et garde-fous dynamiques (Guyton–Klinger) pour la rente.
+              • <strong className="text-gray-900">{tr("Robustesse du plan")}</strong> : {tr("jusqu'à")}{" "}
+              {inputs.mcRuns.toLocaleString(locale)} {tr("scénarios Monte Carlo rééchantillonnés")} ({" "}
+              {tr("onglet « Robustesse de votre plan »")}){" "}
+              {tr("et garde-fous dynamiques (Guyton–Klinger) pour la rente.")}
             </li>
           </ul>
           <p className="text-[9px] text-gray-400 mt-3 border-t border-gray-200 pt-3 leading-snug">
-            Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les résultats dépendent
-            des hypothèses saisies (capital, épargne, durée, frais, scénario). Données 100 % locales.
+            {tr(
+              "Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les résultats dépendent des hypothèses saisies (capital, épargne, durée, frais, scénario). Données 100 % locales.",
+            )}
           </p>
         </div>
       </section>

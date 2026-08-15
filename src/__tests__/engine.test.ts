@@ -58,6 +58,9 @@ import {
   MSCI_WORLD_AVG_RETURN,
   EXTENDED_WORLD_RETURNS,
   getTaxRules,
+  tr,
+  langCode,
+  LANG_LOCALE,
 } from "../engine"
 import { chartTheme } from "../utils/chartTheme"
 import { pie3dGeometry } from "../utils/pie3d"
@@ -2252,5 +2255,61 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
     const realFeesRatio = (last.feesLost * factor) / last.real
     const nominalFeesRatio = last.feesLost / last.nominal
     expect(realFeesRatio).toBeCloseTo(nominalFeesRatio, 6)
+  })
+
+  // ─── i18n (v6.12.0) ────────────────────────────────────────────────────────
+  describe("i18n — tr / interpolate / langCode / LANG_LOCALE", () => {
+    it("tr en français renvoie le texte inchangé", () => {
+      expect(tr("fr", "Durée")).toBe("Durée")
+      expect(tr("fr", "Votre capital en détail")).toBe("Votre capital en détail")
+    })
+
+    it("tr en anglais traduit les clés connues", () => {
+      expect(tr("en", "Durée")).toBe("Duration")
+      expect(tr("en", "Règle des 4 %")).toBe("4% rule")
+      expect(tr("en", "Capital final")).toBe("Final capital")
+    })
+
+    it("tr retombe sur le français quand la traduction manque", () => {
+      expect(tr("en", "Libellé jamais traduit")).toBe("Libellé jamais traduit")
+    })
+
+    it("interpole les placeholders {x} dans les deux langues", () => {
+      expect(tr("fr", "{n} ans", { n: 25 })).toBe("25 ans")
+      expect(tr("en", "{n} ans", { n: 25 })).toBe("25 years")
+      expect(tr("en", "Lancer {n} simulations", { n: 1000 })).toBe("Run 1000 simulations")
+      expect(tr("en", "Inflation de {rate}/an", { rate: "2,1 %" })).toBe("Inflation of 2,1 %/year")
+    })
+
+    it("langCode renvoie FR / EN", () => {
+      expect(langCode("fr")).toBe("FR")
+      expect(langCode("en")).toBe("EN")
+    })
+
+    it("LANG_LOCALE associe fr-FR et en-US", () => {
+      expect(LANG_LOCALE.fr).toBe("fr-FR")
+      expect(LANG_LOCALE.en).toBe("en-US")
+    })
+  })
+
+  describe("i18n — formatters localisés (lang optionnel, défaut fr)", () => {
+    it("fmtCurrency passe du format français au format anglais", () => {
+      expect(fmtCurrency(1_234_567.89)).toBe("1,23 M€")
+      expect(fmtCurrency(1_234_567.89, "en")).toBe("€1.23M")
+      expect(fmtCurrency(1234.5, "en")).toBe("€1,234.50")
+      expect(fmtCurrency(12_000_000, "en")).toBe("€12.00M")
+    })
+
+    it("fmtCompact utilise le séparateur de la langue", () => {
+      expect(fmtCompact(1_200_000)).toBe("1,2M")
+      expect(fmtCompact(1_200_000, "en")).toBe("1.2M")
+    })
+
+    it("fmtPercent et fmtDecimal utilisent la virgule en fr et le point en en", () => {
+      expect(fmtPercent(5.99, 2)).toBe("+5,99%")
+      expect(fmtPercent(5.99, 2, "en")).toBe("+5.99%")
+      expect(fmtDecimal(12.5)).toBe("12,5")
+      expect(fmtDecimal(12.5, 1, "en")).toBe("12.5")
+    })
   })
 })

@@ -23,7 +23,6 @@ import { cn } from "../../utils/cn"
 import { navigateTo } from "../../router"
 import { loadInitialDarkMode, persistThemeClass } from "../../utils/theme"
 import {
-  fmtCurrency,
   fmtTaxPercent,
   getHistoricalDataset,
   getTaxRules,
@@ -31,6 +30,7 @@ import {
   pfuRate,
   runSimulation,
 } from "../../engine"
+import { useLang } from "../../i18n"
 import type { EnvelopeType, ReturnScenario, YearRow } from "../../types"
 import { QUICKSTART_PROFILES } from "../../utils/quickStart"
 import { Brand } from "./Brand"
@@ -86,6 +86,7 @@ function useCountUp(target: number, delayMs = 0): number {
 
 /** Montant animé (compteur) — isolé pour que le héro recalcule sans recréer le reste. */
 function AnimatedAmount({ value }: { value: number }) {
+  const { fmtCurrency } = useLang()
   const shown = useCountUp(value)
   return <>{fmtCurrency(shown)}</>
 }
@@ -110,11 +111,12 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
 // ─── Petits blocs de section ─────────────────────────────────────────────────
 
 function SectionTitle({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+  const { tr } = useLang()
   return (
     <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary mb-3">{eyebrow}</p>
-      <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-text">{title}</h2>
-      {sub && <p className="text-sm text-text-muted mt-3 leading-relaxed">{sub}</p>}
+      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary mb-3">{tr(eyebrow)}</p>
+      <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-text">{tr(title)}</h2>
+      {sub && <p className="text-sm text-text-muted mt-3 leading-relaxed">{tr(sub)}</p>}
     </div>
   )
 }
@@ -128,24 +130,26 @@ function FeatureCard({
   title: string
   children: React.ReactNode
 }) {
+  const { tr } = useLang()
   return (
     <article className="glass rounded-3xl p-6 card-interactive group">
       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/25 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
         <Icon size={19} className="text-primary" aria-hidden />
       </div>
-      <h3 className="font-display font-bold text-[15px] text-text mb-2">{title}</h3>
+      <h3 className="font-display font-bold text-[15px] text-text mb-2">{tr(title)}</h3>
       <p className="text-xs text-text-muted leading-relaxed">{children}</p>
     </article>
   )
 }
 
 function EnvelopeCard({ badge, title, children }: { badge: string; title: string; children: React.ReactNode }) {
+  const { tr } = useLang()
   return (
     <article className="glass rounded-3xl p-5 card-interactive">
       <span className="inline-block text-[9.5px] font-bold uppercase tracking-[0.14em] text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg mb-3">
-        {badge}
+        {tr(badge)}
       </span>
-      <h3 className="font-display font-bold text-sm text-text mb-1.5">{title}</h3>
+      <h3 className="font-display font-bold text-sm text-text mb-1.5">{tr(title)}</h3>
       <p className="text-[11.5px] text-text-muted leading-relaxed">{children}</p>
     </article>
   )
@@ -162,6 +166,7 @@ function FaqItem({
   open: boolean
   onToggle: () => void
 }) {
+  const { tr } = useLang()
   return (
     <div className={cn("glass rounded-2xl overflow-hidden transition-colors", open && "border-primary/25")}>
       <button
@@ -170,7 +175,7 @@ function FaqItem({
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
       >
-        <span className="text-[13px] font-bold text-text">{question}</span>
+        <span className="text-[13px] font-bold text-text">{tr(question)}</span>
         <ChevronDown
           size={15}
           aria-hidden
@@ -211,6 +216,7 @@ function CountUpStat({
   icon: typeof History
   delay?: number
 }) {
+  const { tr, locale } = useLang()
   const shown = useCountUp(value, delay)
   return (
     <div className="flex items-center gap-4 sm:flex-col sm:gap-3 sm:text-center">
@@ -219,10 +225,10 @@ function CountUpStat({
       </div>
       <div className="sm:text-center">
         <p className="font-display text-3xl sm:text-4xl font-extrabold text-primary tracking-tight mono">
-          {shown.toLocaleString("fr-FR")}
-          {suffix}
+          {shown.toLocaleString(locale)}
+          {tr(suffix)}
         </p>
-        <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed max-w-[220px] mx-auto">{label}</p>
+        <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed max-w-[220px] mx-auto">{tr(label)}</p>
       </div>
     </div>
   )
@@ -242,57 +248,60 @@ function ScenarioCard({
   text: string
   last: YearRow | null
 }) {
+  const { tr, fmtCurrency } = useLang()
   return (
     <article className="glass rounded-3xl p-6 card-interactive flex flex-col">
       <div className="flex items-center justify-between gap-2 mb-4">
         <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg">
-          {badge}
+          {tr(badge)}
         </span>
-        <span className="mono text-[11px] font-bold text-text-muted">{rate}</span>
+        <span className="mono text-[11px] font-bold text-text-muted">{tr(rate)}</span>
       </div>
-      <h3 className="font-display font-bold text-[15px] text-text mb-1">{title}</h3>
+      <h3 className="font-display font-bold text-[15px] text-text mb-1">{tr(title)}</h3>
       {last && (
         <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10.5px] text-text-muted">Capital final</span>
+            <span className="text-[10.5px] text-text-muted">{tr("Capital final")}</span>
             <span className="mono text-[15px] font-extrabold text-primary">{fmtCurrency(last.nominal)}</span>
           </div>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10.5px] text-text-muted">En € d'aujourd'hui</span>
+            <span className="text-[10.5px] text-text-muted">{tr("En € d'aujourd'hui")}</span>
             <span className="mono text-[12px] font-bold text-text-muted">{fmtCurrency(last.real)}</span>
           </div>
         </div>
       )}
-      <p className="text-xs text-text-muted leading-relaxed mt-3">{text}</p>
+      <p className="text-xs text-text-muted leading-relaxed mt-3">{tr(text)}</p>
     </article>
   )
 }
 
 /** Carte profil « Pour qui » : moteur réel sur une situation type. */
 function ProfileCard({ name, meta, last, note }: { name: string; meta: string; last: YearRow | null; note: string }) {
+  const { tr, fmtCurrency } = useLang()
   return (
     <article className="glass rounded-3xl p-6 card-interactive flex flex-col">
-      <h3 className="font-display font-bold text-[15px] text-text mb-1">{name}</h3>
-      <p className="text-[10.5px] text-text-muted uppercase tracking-[0.12em]">{meta}</p>
+      <h3 className="font-display font-bold text-[15px] text-text mb-1">{tr(name)}</h3>
+      <p className="text-[10.5px] text-text-muted uppercase tracking-[0.12em]">{tr(meta)}</p>
       {last && (
         <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10.5px] text-text-muted">Capital final</span>
+            <span className="text-[10.5px] text-text-muted">{tr("Capital final")}</span>
             <span className="mono text-[15px] font-extrabold text-primary">{fmtCurrency(last.nominal)}</span>
           </div>
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[10.5px] text-text-muted">En € d'aujourd'hui</span>
+            <span className="text-[10.5px] text-text-muted">{tr("En € d'aujourd'hui")}</span>
             <span className="mono text-[12px] font-bold text-text-muted">{fmtCurrency(last.real)}</span>
           </div>
         </div>
       )}
-      <p className="text-[10.5px] text-text-dim leading-relaxed mt-3">{note}</p>
+      <p className="text-[10.5px] text-text-dim leading-relaxed mt-3">{tr(note)}</p>
     </article>
   )
 }
 
 /** Barre de décomposition épargné / croissance (résultat d'abord). */
 function DecompositionBar({ invested, growth }: { invested: number; growth: number }) {
+  const { tr, fmtCurrency } = useLang()
   const total = Math.max(1, invested + growth)
   const investedPct = (invested / total) * 100
   const growthPct = (growth / total) * 100
@@ -305,11 +314,11 @@ function DecompositionBar({ invested, growth }: { invested: number; growth: numb
       <div className="flex items-center justify-between gap-3 mt-2 text-[9.5px] text-text-muted">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-text-muted/50 shrink-0" aria-hidden />
-          Épargné · <span className="mono text-text">{fmtCurrency(invested)}</span>
+          {tr("Épargné")} · <span className="mono text-text">{fmtCurrency(invested)}</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-primary shrink-0" aria-hidden />
-          Croissance · <span className="mono text-primary">{fmtCurrency(growth)}</span>
+          {tr("Croissance")} · <span className="mono text-primary">{fmtCurrency(growth)}</span>
         </span>
       </div>
     </div>
@@ -336,14 +345,16 @@ function ScenarioSwitch({
   onChange: (v: ReturnScenario) => void
   rates: Record<ReturnScenario, number>
 }) {
+  const { tr, lang } = useLang()
   return (
     <div
       role="radiogroup"
-      aria-label="Scénario de rendement de la démo"
+      aria-label={tr("Scénario de rendement de la démo")}
       className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-surface-50/70 border border-border"
     >
       {SCENARIO_ORDER.map(id => {
         const active = value === id
+        const rate = (rates[id] * 100).toFixed(2)
         return (
           <button
             key={id}
@@ -356,11 +367,11 @@ function ScenarioSwitch({
               active ? "bg-primary btn-gold-text shadow-gold" : "text-text-muted hover:text-text hover:bg-glass-hover",
             )}
           >
-            <span className="block text-[10px] font-extrabold leading-tight">{SCENARIO_META[id].label}</span>
+            <span className="block text-[10px] font-extrabold leading-tight">{tr(SCENARIO_META[id].label)}</span>
             <span
               className={cn("block text-[8.5px] mt-0.5 leading-none mono", active ? "opacity-80" : "text-text-dim")}
             >
-              {(rates[id] * 100).toFixed(2).replace(".", ",")} %
+              {lang === "en" ? rate : rate.replace(".", ",")} %
             </span>
           </button>
         )
@@ -382,6 +393,16 @@ const NAV = [
 
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.12.0",
+    title: "L'application en anglais 🇬🇧",
+    text: "Un bouton FR/EN (en-tête de l'app et de la landing) traduit toute l'application en anglais : simulateur, Monte Carlo, rente, objectif, rapport PDF et landing — avec le formatage des montants adapté (€1,234.56 au lieu de 1 234,56 €).",
+  },
+  {
+    version: "v6.11.2",
+    title: "Capital en détail, clarifié",
+    text: "Le panneau « Votre capital en détail » est resserré (grands chiffres en text-lg/xl) et chaque montant porte son échelle : « sur le compte en 2050 » et « en euros d'aujourd'hui » sont écrits sur chaque valeur — fini la légende à décoder.",
+  },
   {
     version: "v6.11.1",
     title: "Icône Google",
@@ -415,6 +436,7 @@ const UPDATES = [
 ]
 
 export function LandingPage() {
+  const { tr, fmtCurrency, locale } = useLang()
   const [darkMode, setDarkMode] = useState<boolean>(loadInitialDarkMode)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   // Scénario actif de la démo interactive : le héro devient un vrai simulateur.
@@ -497,13 +519,15 @@ export function LandingPage() {
   const noteForProfile = (envelope: EnvelopeType | undefined): string => {
     switch (envelope) {
       case "pea":
-        return `PEA : ${tax.pea} de cotisations sociales après 5 ans de détention, plafond 150 000 €.`
+        return tr("PEA : {rate} de cotisations sociales après 5 ans de détention, plafond 150 000 €.", {
+          rate: tax.pea,
+        })
       case "av":
-        return "AV : abattement annuel de 4 600 € (9 200 € en couple) après 8 ans de détention."
+        return tr("AV : abattement annuel de 4 600 € (9 200 € en couple) après 8 ans de détention.")
       case "per":
-        return "PER : versements déduits à votre TMI à l'entrée, sortie imposée selon la nature des fonds."
+        return tr("PER : versements déduits à votre TMI à l'entrée, sortie imposée selon la nature des fonds.")
       default:
-        return `CTO : impôt unique de ${tax.pfu} sur les gains, ou barème progressif à votre TMI.`
+        return tr("CTO : impôt unique de {rate} sur les gains, ou barème progressif à votre TMI.", { rate: tax.pfu })
     }
   }
 
@@ -512,24 +536,25 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-surface text-text">
       <h1 className="sr-only">
-        Snowball Pro — simulateur patrimonial français : projection d'épargne, fiscalité CTO PEA AV PER, Monte Carlo et
-        rente retraite
+        {tr(
+          "Snowball Pro — simulateur patrimonial français : projection d'épargne, fiscalité CTO PEA AV PER, Monte Carlo et rente retraite",
+        )}
       </h1>
 
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <a href="#/" aria-label="Snowball Pro — accueil" className="flex items-center">
+          <a href="#/" aria-label={tr("Snowball Pro — accueil")} className="flex items-center">
             <Brand />
           </a>
-          <nav aria-label="Navigation principale" className="hidden md:flex items-center gap-1">
+          <nav aria-label={tr("Navigation principale")} className="hidden md:flex items-center gap-1">
             {NAV.map(item => (
               <a
                 key={item.href}
                 href={item.href}
                 className="px-3 py-2 rounded-lg text-[11.5px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
               >
-                {item.label}
+                {tr(item.label)}
               </a>
             ))}
           </nav>
@@ -537,26 +562,26 @@ export function LandingPage() {
             <button
               type="button"
               onClick={() => setDarkMode(d => !d)}
-              aria-label={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
-              title={darkMode ? "Passer en mode clair" : "Passer en mode sombre"}
+              aria-label={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
+              title={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
             >
               {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />}
-              <span className="hidden sm:inline">{darkMode ? "Clair" : "Sombre"}</span>
+              <span className="hidden sm:inline">{tr(darkMode ? "Clair" : "Sombre")}</span>
             </button>
             <button
               type="button"
               onClick={() => navigateTo("login")}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover text-primary border border-primary/30 transition-colors"
             >
-              Se connecter
+              {tr("Se connecter")}
             </button>
             <button
               type="button"
               onClick={launch}
               className="btn-shine inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
             >
-              Calculer mon nombre magique <ArrowRight size={12} aria-hidden />
+              {tr("Calculer mon nombre magique")} <ArrowRight size={12} aria-hidden />
             </button>
           </div>
         </div>
@@ -579,20 +604,21 @@ export function LandingPage() {
             transition={{ duration: 0.6, ease: EASE }}
           >
             <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-6">
-              <Sparkles size={11} aria-hidden /> Fiscalité française 2026 · 100 ans d'historique réel
+              <Sparkles size={11} aria-hidden /> {tr("Fiscalité française 2026 · 100 ans d'historique réel")}
             </p>
             <h2
-              aria-label="Combien peut valoir votre épargne dans 25 ans ?"
+              aria-label={tr("Combien peut valoir votre épargne dans 25 ans ?")}
               className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold tracking-tight leading-[1.06]"
             >
-              <span className="block">Combien peut valoir votre épargne</span>
+              <span className="block">{tr("Combien peut valoir votre épargne")}</span>
               <span className="block">
-                <span className="text-primary whitespace-nowrap">dans 25 ans</span> ?
+                <span className="text-primary whitespace-nowrap">{tr("dans 25 ans")}</span> ?
               </span>
             </h2>
             <p className="text-sm sm:text-[15px] text-text-muted mt-5 leading-relaxed max-w-xl">
-              Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire
-              boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil.
+              {tr(
+                "Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil.",
+              )}
             </p>
             <div className="flex items-center gap-3 mt-7 flex-wrap">
               <button
@@ -600,17 +626,17 @@ export function LandingPage() {
                 onClick={launch}
                 className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
               >
-                Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
+                {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
               </button>
               <a
                 href="#methode"
                 className="inline-flex items-center gap-2 rounded-2xl glass px-6 py-3.5 text-sm font-bold text-text hover:bg-glass-hover transition-colors"
               >
-                Voir la méthode <ArrowDown size={14} aria-hidden />
+                {tr("Voir la méthode")} <ArrowDown size={14} aria-hidden />
               </a>
             </div>
             <ul className="flex items-center gap-4 mt-6 flex-wrap text-[10.5px] text-text-dim">
-              {["Gratuit", "Sans inscription", "Vos données restent sur cet appareil"].map(item => (
+              {[tr("Gratuit"), tr("Sans inscription"), tr("Vos données restent sur cet appareil")].map(item => (
                 <li key={item} className="flex items-center gap-1.5">
                   <Check size={11} className="text-primary" aria-hidden /> {item}
                 </li>
@@ -618,8 +644,9 @@ export function LandingPage() {
             </ul>
             <p className="mt-4 text-[10.5px] text-text-muted leading-relaxed flex items-start gap-1.5 max-w-xl">
               <ShieldCheck size={11} className="text-primary shrink-0 mt-0.5" aria-hidden />
-              Des chiffres réels, pas des promesses : chaque nombre de cette page est calculé en direct par le moteur,
-              sur les vrais rendements MSCI World 1970-2025 — krachs inclus, fiscalité française 2026.
+              {tr(
+                "Des chiffres réels, pas des promesses : chaque nombre de cette page est calculé en direct par le moteur, sur les vrais rendements MSCI World 1970-2025 — krachs inclus, fiscalité française 2026.",
+              )}
             </p>
           </motion.div>
 
@@ -634,7 +661,7 @@ export function LandingPage() {
                 <div className="flex items-center gap-2">
                   <span className="w-1 h-4 rounded-full bg-primary shrink-0" aria-hidden />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
-                    Simulation par défaut — démo réelle
+                    {tr("Simulation par défaut — démo réelle")}
                   </span>
                 </div>
                 <span className="text-[9.5px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg">
@@ -649,14 +676,14 @@ export function LandingPage() {
                 <div className="flex items-end justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
-                      Capital final · {SCENARIO_META[heroScenario].label}
+                      {tr("Capital final")} · {tr(SCENARIO_META[heroScenario].label)}
                     </p>
                     <p className="font-display text-[2.6rem] sm:text-5xl font-extrabold tracking-tight text-text mono leading-none">
                       <AnimatedAmount value={heroLast.nominal} />
                     </p>
                   </div>
                   <div className="text-right pb-0.5">
-                    <p className="text-[9.5px] text-text-dim">en € d'aujourd'hui</p>
+                    <p className="text-[9.5px] text-text-dim">{tr("en € d'aujourd'hui")}</p>
                     <p className="mono text-base font-bold text-text-muted">{fmtCurrency(heroLast.real)}</p>
                   </div>
                 </div>
@@ -673,8 +700,8 @@ export function LandingPage() {
                 />
                 <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
                   <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
-                  {base.duration} ans · {base.monthlyPayment.toLocaleString("fr-FR")} €/mois ·{" "}
-                  {SCENARIO_META[heroScenario].desc}
+                  {base.duration} {tr("ans")} · {base.monthlyPayment.toLocaleString(locale)} €/{tr("mois")} ·{" "}
+                  {tr(SCENARIO_META[heroScenario].desc)}
                 </p>
               </div>
             </div>
@@ -683,7 +710,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Chiffres clés ───────────────────────────────────────────────── */}
-      <section aria-label="Chiffres clés" className="border-y border-border/70 bg-glass/40">
+      <section aria-label={tr("Chiffres clés")} className="border-y border-border/70 bg-glass/40">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           <CountUpStat
             value={100}
@@ -760,7 +787,7 @@ export function LandingPage() {
           ].map((f, i) => (
             <Reveal key={f.title} delay={i * 0.06}>
               <FeatureCard icon={f.icon} title={f.title}>
-                {f.text}
+                {tr(f.text)}
               </FeatureCard>
             </Reveal>
           ))}
@@ -808,8 +835,9 @@ export function LandingPage() {
           </div>
           <Reveal delay={0.1}>
             <p className="text-[10.5px] text-text-dim mt-6 text-center">
-              Moteur réel — mêmes défauts que l'app (10 k€, 500 €/mois, 25 ans, CTO, frais inclus). Vos chiffres dans
-              l'app, en changeant le scénario dans « Votre épargne ».
+              {tr(
+                "Moteur réel — mêmes défauts que l'app (10 k€, 500 €/mois, 25 ans, CTO, frais inclus). Vos chiffres dans l'app, en changeant le scénario dans « Votre épargne ».",
+              )}
             </p>
           </Reveal>
         </div>
@@ -849,7 +877,7 @@ export function LandingPage() {
           ].map((env, i) => (
             <Reveal key={env.badge} delay={i * 0.06}>
               <EnvelopeCard badge={env.badge} title={env.title}>
-                {env.text}
+                {tr(env.text)}
               </EnvelopeCard>
             </Reveal>
           ))}
@@ -876,14 +904,15 @@ export function LandingPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-[13px] font-bold text-text">
-                      Brut <span className="font-medium text-text-muted">— la moyenne des années</span>
+                      {tr("Brut")} <span className="font-medium text-text-muted">{tr("— la moyenne des années")}</span>
                     </p>
                     <p className="text-[10.5px] text-text-dim mt-0.5">
-                      moyenne arithmétique · scénario <span className="font-semibold text-text">Optimiste</span>
+                      {tr("moyenne arithmétique")} · {tr("scénario")}{" "}
+                      <span className="font-semibold text-text">{tr("Optimiste")}</span>
                     </p>
                   </div>
                   <p className="mono text-2xl font-extrabold text-text shrink-0">
-                    10,07 <span className="text-[11px] font-medium text-text-muted">%/an</span>
+                    10,07 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
 
@@ -892,25 +921,26 @@ export function LandingPage() {
                     <ArrowDown size={11} className="text-primary" aria-hidden />
                   </span>
                   <p className="text-[10.5px] text-text-muted leading-snug">
-                    on retire <strong className="text-text">la volatilité</strong> — les krachs réels (2000, 2008,
-                    2022…) réduisent le gain réellement composé
+                    {tr("on retire")} <strong className="text-text">{tr("la volatilité")}</strong>{" "}
+                    {tr("— les krachs réels (2000, 2008, 2022…) réduisent le gain réellement composé")}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary/8 px-3.5 py-3">
                   <div className="min-w-0">
                     <p className="text-[13px] font-bold text-primary">
-                      Composé <span className="font-medium text-text-muted">— krachs inclus</span>
+                      {tr("Composé")} <span className="font-medium text-text-muted">{tr("— krachs inclus")}</span>
                       <span className="ml-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em] text-primary bg-primary/15 border border-primary/30 px-1.5 py-0.5 rounded align-middle">
-                        défaut
+                        {tr("défaut")}
                       </span>
                     </p>
                     <p className="text-[10.5px] text-text-dim mt-0.5">
-                      moyenne géométrique · scénario <span className="font-semibold text-text">Central</span>
+                      {tr("moyenne géométrique")} · {tr("scénario")}{" "}
+                      <span className="font-semibold text-text">{tr("Central")}</span>
                     </p>
                   </div>
                   <p className="mono text-2xl font-extrabold text-primary shrink-0">
-                    8,22 <span className="text-[11px] font-medium text-text-muted">%/an</span>
+                    8,22 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
 
@@ -919,39 +949,42 @@ export function LandingPage() {
                     <ArrowDown size={11} className="text-primary" aria-hidden />
                   </span>
                   <p className="text-[10.5px] text-text-muted leading-snug">
-                    on retire <strong className="text-text">l'inflation</strong> (2,1 %/an) — pour connaître votre
-                    pouvoir d'achat réel
+                    {tr("on retire")} <strong className="text-text">{tr("l'inflation")}</strong> (2,1 %/an) —{" "}
+                    {tr("pour connaître votre pouvoir d'achat réel")}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-[13px] font-bold text-primary">
-                      Réel <span className="font-medium text-text-muted">— après inflation</span>
+                      {tr("Réel")} <span className="font-medium text-text-muted">{tr("— après inflation")}</span>
                     </p>
                     <p className="text-[10.5px] text-text-dim mt-0.5">
-                      formule de Fisher · scénario <span className="font-semibold text-text">Prudent</span>
+                      {tr("formule de Fisher")} · {tr("scénario")}{" "}
+                      <span className="font-semibold text-text">{tr("Prudent")}</span>
                     </p>
                   </div>
                   <p className="mono text-2xl font-extrabold text-primary shrink-0">
-                    5,99 <span className="text-[11px] font-medium text-text-muted">%/an</span>
+                    5,99 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
 
                 <p className="text-[10.5px] text-text-muted mt-5 pt-4 border-t border-border/60 leading-relaxed">
-                  Pourquoi pas 6,12 % (8,22 − 2,1) ? La soustraction simple est une approximation : la formule exacte de
-                  Fisher est{" "}
-                  <span className="mono font-semibold text-text">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> —
-                  l'inflation rogne aussi vos gains, pas seulement votre capital de départ.
+                  {tr(
+                    "Pourquoi pas 6,12 % (8,22 − 2,1) ? La soustraction simple est une approximation : la formule exacte de Fisher est",
+                  )}{" "}
+                  <span className="mono font-semibold text-text">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> —{" "}
+                  {tr("l'inflation rogne aussi vos gains, pas seulement votre capital de départ.")}
                 </p>
                 <p className="text-[10px] text-text-dim mt-2 leading-relaxed">
-                  Hypothèse d'inflation : <strong className="text-text">2,1 %/an (cible BCE)</strong>, vs 4,0 % en
-                  moyenne réelle 1970-2025. La médiane de la période est justement 2,1 % : la moyenne est tirée vers
-                  le haut par les chocs des années 1970-1985.
+                  {tr("Hypothèse d'inflation :")} <strong className="text-text">{tr("2,1 %/an (cible BCE)")}</strong>,{" "}
+                  {tr(
+                    "vs 4,0 % en moyenne réelle 1970-2025. La médiane de la période est justement 2,1 % : la moyenne est tirée vers le haut par les chocs des années 1970-1985.",
+                  )}
                 </p>
                 <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
                   <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
-                  Sources : S&P 500 SBBI 1926-1969 · MSCI World 1970-2025 · inflation française INSEE 1970-2025.
+                  {tr("Sources : S&P 500 SBBI 1926-1969 · MSCI World 1970-2025 · inflation française INSEE 1970-2025.")}
                 </p>
               </div>
 
@@ -967,8 +1000,8 @@ export function LandingPage() {
                       <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-light via-primary to-primary-dark btn-gold-text flex items-center justify-center font-extrabold text-xs shadow-gold mb-3">
                         {step.n}
                       </span>
-                      <h3 className="font-display font-bold text-[13px] text-text mb-1">{step.title}</h3>
-                      <p className="text-[11px] text-text-muted leading-relaxed">{step.text}</p>
+                      <h3 className="font-display font-bold text-[13px] text-text mb-1">{tr(step.title)}</h3>
+                      <p className="text-[11px] text-text-muted leading-relaxed">{tr(step.text)}</p>
                     </div>
                   </Reveal>
                 ))}
@@ -996,8 +1029,9 @@ export function LandingPage() {
         </div>
         <Reveal delay={0.1}>
           <p className="text-[10.5px] text-text-dim mt-6 text-center">
-            Moteur réel — versements et durées indiqués sur chaque carte, frais et fiscalité inclus, scénario Central.
-            Ajustez tout cela dans l'app : c'est votre situation qui compte, pas un exemple.
+            {tr(
+              "Moteur réel — versements et durées indiqués sur chaque carte, frais et fiscalité inclus, scénario Central. Ajustez tout cela dans l'app : c'est votre situation qui compte, pas un exemple.",
+            )}
           </p>
         </Reveal>
       </section>
@@ -1015,9 +1049,9 @@ export function LandingPage() {
                 open={openFaq === 0}
                 onToggle={() => setOpenFaq(openFaq === 0 ? null : 0)}
               >
-                Non. Tout est calculé et stocké dans votre navigateur (localStorage) : aucune donnée ne quitte votre
-                appareil. Un compte crée un espace isolé pour vos simulations sur cet appareil — la synchronisation
-                cloud n'existe pas encore.
+                {tr(
+                  "Non. Tout est calculé et stocké dans votre navigateur (localStorage) : aucune donnée ne quitte votre appareil. Un compte crée un espace isolé pour vos simulations sur cet appareil — la synchronisation cloud n'existe pas encore.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1026,8 +1060,9 @@ export function LandingPage() {
                 open={openFaq === 1}
                 onToggle={() => setOpenFaq(openFaq === 1 ? null : 1)}
               >
-                Non, l'application fonctionne intégralement sans compte. Un compte vous permet d'isoler vos simulations
-                de celles des autres utilisateurs de l'appareil et prépare la synchronisation future.
+                {tr(
+                  "Non, l'application fonctionne intégralement sans compte. Un compte vous permet d'isoler vos simulations de celles des autres utilisateurs de l'appareil et prépare la synchronisation future.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1036,10 +1071,9 @@ export function LandingPage() {
                 open={openFaq === 2}
                 onToggle={() => setOpenFaq(openFaq === 2 ? null : 2)}
               >
-                Trois lectures du même historique (MSCI World 1970-2025). L'app applique par défaut le Central : la
-                moyenne géométrique composée (≈ 8,22 %/an), krachs inclus. L'Optimiste est la moyenne arithmétique des
-                années (≈ 10,07 %), le Prudent le rendement réel après inflation (≈ 5,99 %). Comparez votre plan dans
-                les trois mondes — c'est la même échelle que la section Méthodologie.
+                {tr(
+                  "Trois lectures du même historique (MSCI World 1970-2025). L'app applique par défaut le Central : la moyenne géométrique composée (≈ 8,22 %/an), krachs inclus. L'Optimiste est la moyenne arithmétique des années (≈ 10,07 %), le Prudent le rendement réel après inflation (≈ 5,99 %). Comparez votre plan dans les trois mondes — c'est la même échelle que la section Méthodologie.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1048,9 +1082,9 @@ export function LandingPage() {
                 open={openFaq === 3}
                 onToggle={() => setOpenFaq(openFaq === 3 ? null : 3)}
               >
-                10,07 % est la moyenne arithmétique des années (scénario Optimiste) ; l'app applique par défaut le
-                Central, 8,22 %/an composé. 6,12 serait la simple soustraction 8,22 − 2,1 : c'est une approximation. La
-                formule exacte de Fisher est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %/an réel — le scénario Prudent.
+                {tr(
+                  "10,07 % est la moyenne arithmétique des années (scénario Optimiste) ; l'app applique par défaut le Central, 8,22 %/an composé. 6,12 serait la simple soustraction 8,22 − 2,1 : c'est une approximation. La formule exacte de Fisher est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %/an réel — le scénario Prudent.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1059,11 +1093,9 @@ export function LandingPage() {
                 open={openFaq === 4}
                 onToggle={() => setOpenFaq(openFaq === 4 ? null : 4)}
               >
-                2,1 % est une hypothèse d'inflation future (proche de la cible BCE de 2 %), pas la moyenne
-                historique : l'inflation française réelle 1970-2025 est de 4,0 % en moyenne, mais cette moyenne est
-                tirée vers le haut par les chocs des années 1970-1985 (jusqu'à 13,7 % en 1974). La médiane de la
-                période est justement 2,1 %, et depuis 1986 la moyenne n'est que de 1,9 % — pour l'avenir, 2,1 % est
-                une hypothèse raisonnable, voire prudente.
+                {tr(
+                  "2,1 % est une hypothèse d'inflation future (proche de la cible BCE de 2 %), pas la moyenne historique : l'inflation française réelle 1970-2025 est de 4,0 % en moyenne, mais cette moyenne est tirée vers le haut par les chocs des années 1970-1985 (jusqu'à 13,7 % en 1974). La médiane de la période est justement 2,1 %, et depuis 1986 la moyenne n'est que de 1,9 % — pour l'avenir, 2,1 % est une hypothèse raisonnable, voire prudente.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1072,9 +1104,9 @@ export function LandingPage() {
                 open={openFaq === 5}
                 onToggle={() => setOpenFaq(openFaq === 5 ? null : 5)}
               >
-                Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous
-                obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette
-                estimation.
+                {tr(
+                  "Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette estimation.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1083,9 +1115,9 @@ export function LandingPage() {
                 open={openFaq === 6}
                 onToggle={() => setOpenFaq(openFaq === 6 ? null : 6)}
               >
-                S&P 500 SBBI 1926-1969 (dividendes réinvestis) puis MSCI World 1970-2025 : la période récente est
-                couverte par un indice mondial, l'ancienne par le marché américain, seul indice de référence fiable à
-                l'époque. L'inflation utilisée est la série INSEE française.
+                {tr(
+                  "S&P 500 SBBI 1926-1969 (dividendes réinvestis) puis MSCI World 1970-2025 : la période récente est couverte par un indice mondial, l'ancienne par le marché américain, seul indice de référence fiable à l'époque. L'inflation utilisée est la série INSEE française.",
+                )}
               </FaqItem>
             </Reveal>
             <Reveal>
@@ -1094,7 +1126,7 @@ export function LandingPage() {
                 open={openFaq === 7}
                 onToggle={() => setOpenFaq(openFaq === 7 ? null : 7)}
               >
-                Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain.
+                {tr("Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain.")}
               </FaqItem>
             </Reveal>
           </div>
@@ -1106,7 +1138,7 @@ export function LandingPage() {
         <Reveal>
           <div className="flex items-center gap-2 justify-center mb-6">
             <History size={13} className="text-primary" aria-hidden />
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">Dernières éditions</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">{tr("Dernières éditions")}</p>
           </div>
         </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 max-w-4xl mx-auto">
@@ -1116,8 +1148,8 @@ export function LandingPage() {
                 <span className="mono text-[9.5px] font-bold text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg">
                   {u.version}
                 </span>
-                <h3 className="font-display font-bold text-[13px] text-text mt-2.5 mb-1">{u.title}</h3>
-                <p className="text-[11px] text-text-muted leading-relaxed">{u.text}</p>
+                <h3 className="font-display font-bold text-[13px] text-text mt-2.5 mb-1">{tr(u.title)}</h3>
+                <p className="text-[11px] text-text-muted leading-relaxed">{tr(u.text)}</p>
               </article>
             </Reveal>
           ))}
@@ -1137,20 +1169,21 @@ export function LandingPage() {
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
           <Reveal>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Voyez où va votre épargne, <span className="text-primary">avant de l'y mettre</span>
+              {tr("Voyez où va votre épargne,")} <span className="text-primary">{tr("avant de l'y mettre")}</span>
             </h2>
             <p className="text-sm text-text-muted mt-4 max-w-xl mx-auto">
-              Quelques secondes suffisent — gratuit, sans inscription, sans envoyer vos données nulle part.
+              {tr("Quelques secondes suffisent — gratuit, sans inscription, sans envoyer vos données nulle part.")}
             </p>
             <button
               type="button"
               onClick={launch}
               className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-8 py-4 mt-8 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
             >
-              Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
+              {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
             </button>
             <p className="text-[10.5px] text-text-dim mt-4 flex items-center justify-center gap-1.5">
-              <Lock size={10} aria-hidden /> Aucune inscription requise — vos données ne quittent pas cet appareil.
+              <Lock size={10} aria-hidden />{" "}
+              {tr("Aucune inscription requise — vos données ne quittent pas cet appareil.")}
             </p>
           </Reveal>
         </div>
@@ -1175,7 +1208,7 @@ export function LandingPage() {
             onClick={launch}
             className="btn-shine w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
           >
-            Calculer mon nombre magique <ArrowRight size={15} aria-hidden />
+            {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
           </button>
         </div>
       </div>
@@ -1186,27 +1219,29 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <Brand />
             <nav
-              aria-label="Navigation pied de page"
+              aria-label={tr("Navigation pied de page")}
               className="flex items-center gap-5 flex-wrap text-[11px] font-bold text-text-muted"
             >
               {NAV.map(item => (
                 <a key={item.href} href={item.href} className="hover:text-text transition-colors">
-                  {item.label}
+                  {tr(item.label)}
                 </a>
               ))}
               <a href="#/login" className="hover:text-text transition-colors">
-                Se connecter
+                {tr("Se connecter")}
               </a>
             </nav>
           </div>
           <div className="gold-divider my-6" aria-hidden />
           <p className="text-[10px] text-text-dim leading-relaxed max-w-3xl">
-            Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne
-            constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances
-            futures. Vos données restent stockées localement sur votre appareil.
+            {tr(
+              "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.",
+            )}
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.11.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            {tr(
+              "© 2026 Snowball Pro · v6.12.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+            )}
           </p>
         </div>
       </footer>

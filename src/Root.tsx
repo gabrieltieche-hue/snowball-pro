@@ -8,12 +8,19 @@ import App from "./App"
 import { AuthScreen } from "./components/Auth/AuthScreen"
 import { LandingPage } from "./components/Landing/LandingPage"
 import { useHashView } from "./router"
+import { LangProvider } from "./i18n"
 
 export default function Root() {
   const view = useHashView()
-
-  if (view === "login") return <AuthScreen mode="login" />
-  if (view === "register") return <AuthScreen mode="register" />
-  if (view === "app") return <App />
-  return <LandingPage />
+  const surface = (
+    <>
+      {view === "login" && <AuthScreen mode="login" />}
+      {view === "register" && <AuthScreen mode="register" />}
+      {view === "app" && <App />}
+      {view === "landing" && <LandingPage />}
+    </>
+  )
+  // i18n (v6.12) : le provider langue englobe TOUTES les surfaces (landing,
+  // app, auth) — le bouton FR/EN fonctionne partout et la préférence persiste.
+  return <LangProvider>{surface}</LangProvider>
 }

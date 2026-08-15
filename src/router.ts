@@ -30,8 +30,7 @@ export function getCurrentView(): View {
 
 /** Navigue vers une vue (écrit dans le hash ; déclenche les abonnés). */
 export function navigateTo(view: View): void {
-  const target =
-    view === "app" ? "#/app" : view === "login" ? "#/login" : view === "register" ? "#/register" : "#/"
+  const target = view === "app" ? "#/app" : view === "login" ? "#/login" : view === "register" ? "#/register" : "#/"
   window.location.hash = target
 }
 

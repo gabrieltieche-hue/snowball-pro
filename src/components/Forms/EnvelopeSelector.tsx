@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 import { Landmark, Shield, Briefcase, Wallet, Leaf } from "lucide-react"
 import { ENVELOPE_CONFIGS } from "../../engine"
+import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
 import type { EnvelopeType } from "../../types"
 
@@ -10,6 +11,7 @@ interface EnvelopeSelectorProps {
 }
 
 export function EnvelopeSelector({ value, onChange }: EnvelopeSelectorProps) {
+  const { tr } = useLang()
   return (
     <div className="grid grid-cols-5 gap-2">
       {ENVELOPE_CONFIGS.map(env => {
@@ -37,8 +39,8 @@ export function EnvelopeSelector({ value, onChange }: EnvelopeSelectorProps) {
               borderColor: isActive ? env.color : undefined,
               background: isActive ? `color-mix(in srgb, ${env.color} 15%, transparent)` : undefined,
             }}
-            aria-label={env.name}
-            title={env.desc}
+            aria-label={tr(env.name)}
+            title={tr(env.desc)}
           >
             <Icon size={16} style={{ color: isActive ? env.color : "var(--color-text-muted)" }} />
             <span
