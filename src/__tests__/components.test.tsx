@@ -420,6 +420,10 @@ describe("rendement BRUT — clarté sur tous les onglets (demande TRUC 1/2/4)",
     expect(text).toContain("5,99 %/an")
     expect(text).toContain("la volatilité")
     expect(text).toContain("l'inflation")
+    // L'hypothèse d'inflation est explicitée : 2,1 %/an (cible BCE), vs 4,0 %
+    // de moyenne réelle 1970-2025 — et la médiane de la période est 2,1 %.
+    expect(text).toContain("cible BCE")
+    expect(text).toContain("médiane de la période")
     // v5.7.2 : la formule de Fisher est explicitée — 8,22 − 2,1 = 6,12 est une
     // approximation, la formule exacte (1+8,22%)/(1+2,1%)−1 = 5,99 % explique
     // pourquoi le chiffre affiché n'est pas une simple soustraction.
@@ -1045,6 +1049,9 @@ describe("v6.1 — landing page", () => {
     // Sections fonctionnalités + méthodologie + FAQ
     expect(screen.getByText("Quatre onglets, une question : où va votre argent ?")).toBeInTheDocument()
     expect(screen.getByText("Pourquoi 10,07 % → 5,99 % ?")).toBeInTheDocument()
+    // La méthodologie précise que 2,1 % est une hypothèse d'inflation future (cible BCE),
+    // pas la moyenne réelle 1970-2025 (4,0 %) — la médiane tombe justement sur 2,1 %.
+    expect(screen.getByText("2,1 %/an (cible BCE)")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /mes données sont-elles envoyées/i })).toBeInTheDocument()
   })
 
@@ -1055,6 +1062,16 @@ describe("v6.1 — landing page", () => {
     fireEvent.click(question)
     expect(question).toHaveAttribute("aria-expanded", "true")
     expect(screen.getByText(/non, l'application fonctionne intégralement sans compte/i)).toBeInTheDocument()
+  })
+
+  it("FAQ : « Pourquoi 2,1 % d'inflation… » justifie l'hypothèse par la médiane", () => {
+    render(<LandingPage />)
+    const question = screen.getByRole("button", { name: /pourquoi 2,1 % d'inflation/i })
+    expect(question).toHaveAttribute("aria-expanded", "false")
+    fireEvent.click(question)
+    expect(question).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText(/cible BCE de 2 %/i)).toBeInTheDocument()
+    expect(screen.getByText(/13,7 % en 1974/i)).toBeInTheDocument()
   })
 
   it("le thème partagé avec l'app : le bouton bascule la classe light-mode", () => {

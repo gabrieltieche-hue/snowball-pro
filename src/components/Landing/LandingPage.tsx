@@ -383,6 +383,11 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.11.0",
+    title: "L'inflation, sans détour",
+    text: "L'hypothèse d'inflation 2,1 %/an (cible BCE) est explicitée face à la moyenne réelle 1970-2025 (4,0 %) — et la médiane de la période tombe justement sur 2,1 %. Nouvelle entrée FAQ : pourquoi 2,1 % et pas la moyenne ?",
+  },
+  {
     version: "v6.10.0",
     title: "Graphiques lus d'un coup d'œil",
     text: "La valeur finale de chaque courbe s'affiche en bout de tracé, sans survol — avec un point or sur les gains. Palette unifiée entre camembert et courbes, légendes en chips, axes et infobulles harmonisés.",
@@ -934,6 +939,11 @@ export function LandingPage() {
                   <span className="mono font-semibold text-text">(1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %</span> —
                   l'inflation rogne aussi vos gains, pas seulement votre capital de départ.
                 </p>
+                <p className="text-[10px] text-text-dim mt-2 leading-relaxed">
+                  Hypothèse d'inflation : <strong className="text-text">2,1 %/an (cible BCE)</strong>, vs 4,0 % en
+                  moyenne réelle 1970-2025. La médiane de la période est justement 2,1 % : la moyenne est tirée vers
+                  le haut par les chocs des années 1970-1985.
+                </p>
                 <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
                   <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
                   Sources : S&P 500 SBBI 1926-1969 · MSCI World 1970-2025 · inflation française INSEE 1970-2025.
@@ -1040,9 +1050,22 @@ export function LandingPage() {
             </Reveal>
             <Reveal>
               <FaqItem
-                question="Qu'est-ce que Monte Carlo ?"
+                question="Pourquoi 2,1 % d'inflation et pas la moyenne réelle ?"
                 open={openFaq === 4}
                 onToggle={() => setOpenFaq(openFaq === 4 ? null : 4)}
+              >
+                2,1 % est une hypothèse d'inflation future (proche de la cible BCE de 2 %), pas la moyenne
+                historique : l'inflation française réelle 1970-2025 est de 4,0 % en moyenne, mais cette moyenne est
+                tirée vers le haut par les chocs des années 1970-1985 (jusqu'à 13,7 % en 1974). La médiane de la
+                période est justement 2,1 %, et depuis 1986 la moyenne n'est que de 1,9 % — pour l'avenir, 2,1 % est
+                une hypothèse raisonnable, voire prudente.
+              </FaqItem>
+            </Reveal>
+            <Reveal>
+              <FaqItem
+                question="Qu'est-ce que Monte Carlo ?"
+                open={openFaq === 5}
+                onToggle={() => setOpenFaq(openFaq === 5 ? null : 5)}
               >
                 Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous
                 obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette
@@ -1052,8 +1075,8 @@ export function LandingPage() {
             <Reveal>
               <FaqItem
                 question="Comment est construit l'historique de 100 ans ?"
-                open={openFaq === 5}
-                onToggle={() => setOpenFaq(openFaq === 5 ? null : 5)}
+                open={openFaq === 6}
+                onToggle={() => setOpenFaq(openFaq === 6 ? null : 6)}
               >
                 S&P 500 SBBI 1926-1969 (dividendes réinvestis) puis MSCI World 1970-2025 : la période récente est
                 couverte par un indice mondial, l'ancienne par le marché américain, seul indice de référence fiable à
@@ -1063,8 +1086,8 @@ export function LandingPage() {
             <Reveal>
               <FaqItem
                 question="L'application est-elle vraiment gratuite ?"
-                open={openFaq === 6}
-                onToggle={() => setOpenFaq(openFaq === 6 ? null : 6)}
+                open={openFaq === 7}
+                onToggle={() => setOpenFaq(openFaq === 7 ? null : 7)}
               >
                 Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain.
               </FaqItem>
@@ -1178,7 +1201,7 @@ export function LandingPage() {
             futures. Vos données restent stockées localement sur votre appareil.
           </p>
           <p className="text-[10px] text-text-dim mt-3">
-            © 2026 Snowball Pro · v6.10.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
+            © 2026 Snowball Pro · v6.11.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.
           </p>
         </div>
       </footer>

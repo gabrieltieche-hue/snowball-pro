@@ -4,6 +4,20 @@
 
 ---
 
+## v6.11.0 — Inflation : l'hypothèse 2,1 % (cible BCE) explicitée, médiane 2,1 %
+
+Retour utilisateur sur la véracité des trois taux (10,07 → 8,22 → 5,99) : audit complet — math interne vérifiée au centième (moyenne arithmétique 10,0655 %, composé 8,2196 %, réel Fisher 5,9938 %), série MSCI World Net EUR 1970-2025 recoupée année par année contre les rendements officiels USD convertis au change EUR/USD. Constat : le 5,99 % utilisait une hypothèse d'inflation forfaitaire 2,1 %, inférieure à la moyenne réelle 1970-2025 (4,05 %, INSEE). Analyse médiane : **la médiane de la période est exactement 2,10 %** — 2,1 % est donc l'hypothèse la plus naturelle (et prudente vs 1,87 % de moyenne depuis 1986) : **on la garde**, et on l'explique dans l'UI. **373 tests**, gate 100 % vert, vérifié en navigateur réel.
+
+### 🔄 Changements
+
+- **`Sidebar.tsx`** (panneau « Pourquoi ces chiffres ? ») : note explicite sous les trois taux — « Hypothèse d'inflation : 2,1 %/an (cible BCE), vs 4,0 % en moyenne réelle 1970-2025 — la médiane de la période est justement 2,1 %. »
+- **`LandingPage.tsx`** (section Méthodologie) : même note enrichie (la moyenne est tirée vers le haut par les chocs des années 1970-1985) ; nouvelle entrée **FAQ « Pourquoi 2,1 % d'inflation et pas la moyenne réelle ? »** (médiane 2,1 %, chocs 1970-85 jusqu'à 13,7 % en 1974, moyenne 1,9 % depuis 1986) ; « Dernières éditions » + footer en v6.11.0.
+- **Tests** : +3 assertions (note sidebar, note méthodologie, FAQ) — **373/373**.
+- Gate : typecheck ✓ lint ✓ **373/373 tests** ✓ build ✓.
+- Version 6.10.0 → **6.11.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.11.0`, footer landing v6.11.0, « Dernières éditions » v6.11.0 en tête), CHANGELOG (cette entrée), MEMORY.md (entrée session v6.11.0).
+
+---
+
 ## v6.10.0 — Graphiques : la valeur finale lisible sans hover, palette unifiée, légendes en chips
 
 Suite de v6.9.0 — **release cumulée** : le panneau « Votre capital en détail » et ce lot partent ensemble (v6.9.0 n'ayant pas encore été livré). La courbe « Projection de votre capital » ne livrait sa conclusion qu'au survol : la valeur finale de chaque série (épargné, gains, impôts) s'affiche désormais **en bout de tracé**, sans hover, avec un point or sur « Gains ». Au passage, unification du vocabulaire visuel des graphiques : une seule palette partagée avec le camembert, légendes en chips, axes et infobulles harmonisés sur tous les onglets. **372 tests**, gate 100 % vert.

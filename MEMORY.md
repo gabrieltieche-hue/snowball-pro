@@ -4,6 +4,27 @@
 
 ---
 
+## SESSION — 2026-08-15 (v6.11.0 : inflation — l'hypothèse 2,1 % explicitée, médiane 2,1 %)
+
+### Résumé
+
+Audit de véracité des trois taux pédagogiques (Brut 10,07 % → Composé 8,22 % → Réel 5,99 %) — demande utilisateur : _« est-on sûr et certain de l'exactitude et de la véracité de ces chiffres ? »_ (bundles /research + /apex + /business). Vérifié au centième sur le moteur (moyenne arithmétique 10,0655 %, composé géométrique 8,2196 %, réel Fisher 5,9938 % — l'écart 1,85 pp = σ²/2 exact avec σ ≈ 19,3 %) ; série MSCI World Net EUR 1970-2025 recoupée année par année contre les rendements officiels USD (Wikipedia/MSCI) convertis au change EUR/USD — cohérente (1999 +46,2 %, 2008 −37,3 %, 2022-2025 vs CW8). Seul point discutable : le 5,99 % déflaté d'une hypothèse forfaitaire 2,1 %, inférieure à la moyenne réelle INSEE 1970-2025 (4,05 %). Analyse médiane demandée : **médiane = 2,10 %** (pile 2,1 %), moyenne sans années > 5 % = 1,78 %, moyenne 1986-2025 = 1,87 % → **2,1 % est l'hypothèse la plus naturelle et plutôt prudente pour l'avenir : on la garde**, et on l'explicite dans l'UI. À la demande _« ok commit, publie sur vercel et met tout à jour »_ : **373 tests**, gate 100 % vert, vérifié en navigateur réel, commit + déploiement Vercel.
+
+### Décisions
+
+- **On garde 2,1 %** (validé par l'utilisateur) : c'est la médiane de l'inflation française 1970-2025 (2,10 %) et elle est supérieure à la moyenne des 40 dernières années (1,87 %) — prudente, pas optimiste.
+- **`Sidebar.tsx`** (panneau « Pourquoi ces chiffres ? ») : note « Hypothèse d'inflation : 2,1 %/an (cible BCE), vs 4,0 % en moyenne réelle 1970-2025 — la médiane de la période est justement 2,1 %. »
+- **`LandingPage.tsx`** : même note en méthodologie (moyenne tirée vers le haut par les chocs 1970-1985) + nouvelle FAQ « Pourquoi 2,1 % d'inflation et pas la moyenne réelle ? » (médiane 2,1 %, pic 13,7 % en 1974, moyenne 1,9 % depuis 1986) + « Dernières éditions » et footer en v6.11.0.
+- **Version 6.11.0** : package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.11.0`, footer + « Dernières éditions » landing, CHANGELOG (cette entrée), MEMORY (cette entrée).
+- Piste laissée : les labels « 2,1 % » restent codés en dur (Sidebar/Landing) — les dériver du moteur si l'hypothèse change un jour.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **373/373 tests** ✓ build ✓.
+- Navigateur réel : panneau « Pourquoi ces chiffres ? » (note présente), landing méthodologie, FAQ dépliée.
+
+---
+
 ## SESSION — 2026-08-15 (v6.10.0 : graphiques — valeur finale sans hover, palette unifiée, légendes en chips)
 
 ### Résumé

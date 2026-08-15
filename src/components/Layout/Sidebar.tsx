@@ -403,6 +403,10 @@ export function Sidebar({
                   </dd>
                 </div>
               </dl>
+              <p className="text-[9.5px] text-text-dim mt-1.5 leading-relaxed">
+                Hypothèse d'inflation : <strong className="text-text">2,1 %/an (cible BCE)</strong>, vs 4,0 % en
+                moyenne réelle 1970-2025 — la médiane de la période est justement 2,1 %.
+              </p>
               <p className="text-[9.5px] text-text-muted mt-2 leading-relaxed">
                 Pourquoi 10,07 % → 5,99 % ? Chaque ligne retire <strong className="text-text">une seule</strong> chose :{" "}
                 <strong className="text-text">la volatilité</strong> (les mauvaises années -37 %, -33 %… réduisent le
