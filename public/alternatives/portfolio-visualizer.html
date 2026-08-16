@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio Visualizer : l'alternative française pour votre épargne (PEA, AV, PER)</title>
+    <meta
+      name="description"
+      content="Portfolio Visualizer est un outil américain de backtesting. Snowball Pro est l'alternative française : fiscalité PEA/AV/PER 2026, inflation INSEE, Monte Carlo et projection d'épargne personnelle — 100 % gratuit et sans inscription."
+    />
+    <link rel="canonical" href="https://snowball-pro.vercel.app/alternatives/portfolio-visualizer.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app/alternatives/portfolio-visualizer.html" />
+    <meta property="og:title" content="Portfolio Visualizer : l'alternative française" />
+    <meta
+      property="og:description"
+      content="Backtesting US vs simulation française : PEA, assurance vie, PER, inflation INSEE. Comparaison honnête + outil gratuit sans inscription."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f5f2eb;
+        color: #1c1917;
+        line-height: 1.65;
+        font-size: 16px;
+      }
+      ::selection {
+        background: rgba(184, 150, 15, 0.25);
+      }
+      .site-header {
+        background: rgba(245, 242, 235, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(28, 25, 23, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .site-header-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .brand-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-family: "Outfit", sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        font-size: 17px;
+        line-height: 1.1;
+      }
+      .brand-name em {
+        font-style: normal;
+        color: #b8960f;
+      }
+      .brand-tag {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #78716c;
+      }
+      .header-link {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1c1917;
+        text-decoration: none;
+        border: 1px solid rgba(28, 25, 23, 0.15);
+        border-radius: 10px;
+        padding: 7px 14px;
+        transition: background 0.15s ease;
+        white-space: nowrap;
+      }
+      .header-link:hover {
+        background: rgba(28, 25, 23, 0.05);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 20px 24px;
+      }
+      .article-kicker {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #8a720c;
+        background: rgba(184, 150, 15, 0.12);
+        border: 1px solid rgba(184, 150, 15, 0.25);
+        border-radius: 999px;
+        padding: 5px 12px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-family: "Outfit", sans-serif;
+        font-size: 32px;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
+        margin-bottom: 14px;
+      }
+      .article-intro {
+        font-size: 17px;
+        color: #57534e;
+        margin-bottom: 28px;
+      }
+      h2 {
+        font-family: "Outfit", sans-serif;
+        font-size: 21px;
+        letter-spacing: -0.01em;
+        margin: 36px 0 12px;
+      }
+      h3 {
+        font-family: "Outfit", sans-serif;
+        font-size: 16px;
+        margin: 22px 0 8px;
+      }
+      p {
+        margin-bottom: 14px;
+      }
+      ul,
+      ol {
+        margin: 0 0 16px 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      strong {
+        font-weight: 700;
+      }
+      a {
+        color: #a17d0c;
+        text-decoration-color: rgba(161, 125, 12, 0.35);
+        text-underline-offset: 3px;
+      }
+      .article-intro strong {
+        color: #1c1917;
+      }
+      .callout {
+        background: #fff;
+        border: 1px solid rgba(184, 150, 15, 0.35);
+        border-left: 4px solid #b8960f;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .callout h3 {
+        margin-top: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #8a720c;
+      }
+      .callout ul {
+        margin-bottom: 0;
+      }
+      .fact-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid rgba(28, 25, 23, 0.07);
+        font-size: 14px;
+      }
+      .fact-row:last-child {
+        border-bottom: none;
+      }
+      .fact-row dt {
+        color: #57534e;
+      }
+      .fact-row dd {
+        font-weight: 700;
+        text-align: right;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13.5px;
+      }
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 14px;
+        overflow: hidden;
+        margin: 18px 0 24px;
+        font-size: 13.5px;
+      }
+      .compare-table th,
+      .compare-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid rgba(28, 25, 23, 0.07);
+        vertical-align: top;
+      }
+      .compare-table thead th {
+        background: #faf7ef;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #57534e;
+      }
+      .compare-table thead th:last-child {
+        background: #f7f0dc;
+        color: #8a720c;
+      }
+      .compare-table th:first-child {
+        width: 30%;
+        color: #78716c;
+        font-weight: 600;
+      }
+      .compare-table tbody tr:nth-child(even) {
+        background: #faf8f2;
+      }
+      .compare-table tbody td:last-child {
+        background: rgba(248, 241, 219, 0.55);
+        font-weight: 600;
+      }
+      .compare-table tbody tr:hover td {
+        background: #f3ede0;
+      }
+      .compare-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin: 18px 0 8px;
+      }
+      .choice-card {
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .choice-card h3 {
+        margin: 0 0 8px;
+        font-size: 15px;
+      }
+      .choice-card p {
+        margin: 0;
+        font-size: 13.5px;
+        color: #57534e;
+      }
+      .choice-card-sp {
+        border: 1px solid rgba(184, 150, 15, 0.4);
+        background: linear-gradient(180deg, #fffdf6, #faf4e2);
+        box-shadow: 0 4px 14px rgba(184, 150, 15, 0.12);
+      }
+      .choice-card-sp h3 {
+        color: #8a720c;
+      }
+      .cta-card {
+        background: linear-gradient(135deg, #1c1917, #2b2620 60%, #3a332b);
+        border-radius: 18px;
+        padding: 30px 26px;
+        margin: 40px 0 28px;
+        color: #fff;
+        text-align: center;
+      }
+      .cta-card h2 {
+        margin: 0 0 8px;
+        color: #fff;
+        font-size: 22px;
+      }
+      .cta-card p {
+        color: #d6d0c4;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .cta-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        text-decoration: none;
+        border-radius: 12px;
+        padding: 13px 22px;
+        box-shadow: 0 8px 20px rgba(184, 150, 15, 0.35);
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease;
+      }
+      .cta-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(184, 150, 15, 0.45);
+      }
+      .cta-button.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+      .cta-caption {
+        font-size: 11.5px;
+        color: #a8a29e;
+        margin-top: 14px;
+        margin-bottom: 0;
+      }
+      .faq-list {
+        margin: 16px 0 0;
+      }
+      .faq-item {
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .faq-item:hover {
+        border-color: rgba(184, 150, 15, 0.35);
+        box-shadow: 0 4px 14px rgba(28, 25, 23, 0.06);
+      }
+      .faq-item summary {
+        cursor: pointer;
+        padding: 15px 18px;
+        font-weight: 700;
+        font-size: 14.5px;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .faq-item summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq-item summary::after {
+        content: "+";
+        font-size: 18px;
+        color: #b8960f;
+        flex-shrink: 0;
+      }
+      .faq-item[open] summary::after {
+        content: "−";
+      }
+      .faq-item .faq-answer {
+        padding: 0 18px 16px;
+        font-size: 14px;
+        color: #57534e;
+      }
+      .site-footer {
+        max-width: 760px;
+        margin: 40px auto 0;
+        padding: 24px 20px 40px;
+        border-top: 1px solid rgba(28, 25, 23, 0.1);
+        font-size: 12px;
+        color: #78716c;
+      }
+      .site-footer p {
+        margin-bottom: 8px;
+      }
+      @media (max-width: 560px) {
+        h1 {
+          font-size: 25px;
+        }
+        .article-intro {
+          font-size: 15.5px;
+        }
+        .compare-table {
+          font-size: 12.5px;
+        }
+        .compare-table th:first-child {
+          width: 38%;
+        }
+        .choice-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Portfolio Visualizer : l'alternative française pour votre épargne",
+        "description": "Comparaison honnête entre Portfolio Visualizer (backtesting US) et Snowball Pro (simulation française : PEA, AV, PER, inflation INSEE).",
+        "inLanguage": "fr-FR",
+        "datePublished": "2026-08-16",
+        "publisher": { "@type": "Organization", "name": "Snowball Pro" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Snowball Pro est-il une vraie alternative à Portfolio Visualizer ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Pour projeter une épargne personnelle en France (PEA, assurance vie, PER) avec la fiscalité et l'inflation françaises, oui : Snowball Pro couvre ce que Portfolio Visualizer ne fait pas. Pour le backtesting multi-actifs de portefeuilles complexes, Portfolio Visualizer reste plus complet — les deux outils se complètent."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Portfolio Visualizer est-il gratuit ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Portfolio Visualizer a une version gratuite limitée et un abonnement Premium payant. Snowball Pro est 100 % gratuit, sans inscription et sans limite, avec les données stockées localement dans le navigateur."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Portfolio Visualizer gère-t-il le PEA ou l'assurance vie française ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Non. Portfolio Visualizer est conçu pour le contexte américain (fiscalité US, indices US). Snowball Pro applique les règles françaises 2026 : PEA exonéré d'impôt après 5 ans, assurance vie, PER, prélèvements sociaux, flat tax."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Puis-je tester un scénario type dans Snowball Pro ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui, chaque page propose un scénario pré-rempli en un clic : 100 000 € + 1 500 €/mois sur 20 ans en PEA, par exemple. Vous ajustez ensuite librement tous les paramètres dans l'application."
+            }
+          }
+        ]
+      }
+    </script>
+    <script
+      data-goatcounter="https://gabriel322jsj222.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="https://snowball-pro.vercel.app/" title="Snowball Pro — Simulateur patrimonial">
+          <span class="brand-logo">SP</span>
+          <span>
+            <span class="brand-name">SNOWBALL <em>PRO</em></span>
+            <span class="brand-tag" style="display: block">Simulateur patrimonial</span>
+          </span>
+        </a>
+        <a class="header-link" href="https://snowball-pro.vercel.app/">Ouvrir l'application</a>
+      </div>
+    </header>
+
+    <main>
+      <article>
+        <p class="article-kicker">Alternative · Backtesting vs épargne française</p>
+        <h1>Portfolio Visualizer : l'alternative française pour votre épargne</h1>
+        <p class="article-intro">
+          Portfolio Visualizer est l'outil de référence pour backtester des allocations d'actifs… aux États-Unis. Si
+          vous épargnez en France (PEA, assurance vie, PER), la fiscalité et l'inflation françaises changent tout le
+          résultat. Snowball Pro est l'alternative pensée pour ça : gratuite, sans inscription, et alignée sur les
+          règles fiscales françaises 2026.
+        </p>
+
+        <h2>Ce que fait Portfolio Visualizer</h2>
+        <p>
+          Portfolio Visualizer est un outil américain d'analyse de portefeuille : backtesting historique d'allocations
+          (actions/obligations/or…), simulation Monte Carlo, optimisation d'allocation et analyse factorielle. Il est
+          puissant pour comparer des stratégies multi-actifs, mais il est
+          <strong>conçu pour le contexte américain</strong> : indices US, fiscalité US, aucune notion de PEA,
+          d'assurance vie ou de PER.
+        </p>
+
+        <h2>Comparaison honnête</h2>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Portfolio Visualizer</th>
+              <th>Snowball Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Fiscalité française (PEA, AV, PER, flat tax)</th>
+              <td>❌ Non (fiscalité US)</td>
+              <td>✅ Règles 2026 appliquées</td>
+            </tr>
+            <tr>
+              <th>Inflation française INSEE</th>
+              <td>❌ Non</td>
+              <td>✅ Oui, depuis 1970</td>
+            </tr>
+            <tr>
+              <th>Rendements réels MSCI World (€)</th>
+              <td>⚠️ Indices US par défaut</td>
+              <td>✅ MSCI World 1970-2025 + S&P 500 depuis 1926</td>
+            </tr>
+            <tr>
+              <th>Backtesting multi-actifs complexe</th>
+              <td>✅ Oui (le plus complet)</td>
+              <td>⚠️ Non (focus épargne personnelle)</td>
+            </tr>
+            <tr>
+              <th>Monte Carlo</th>
+              <td>✅ Oui (limité en gratuit)</td>
+              <td>✅ Jusqu'à 10 000 scénarios, gratuit</td>
+            </tr>
+            <tr>
+              <th>Rente &amp; retraite (décaissement)</th>
+              <td>⚠️ Approche US</td>
+              <td>✅ Garde-fous Guyton-Klinger + stress tests 1973/2000/2008</td>
+            </tr>
+            <tr>
+              <th>Prix</th>
+              <td>Freemium + Premium payant</td>
+              <td>100 % gratuit, sans inscription</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Quand choisir l'un ou l'autre ?</h2>
+        <div class="choice-grid">
+          <div class="choice-card">
+            <h3>Choisissez Portfolio Visualizer</h3>
+            <p>
+              Si vous gérez un portefeuille multi-actifs complexe et voulez comparer des allocations ou faire de
+              l'optimisation factorielle à la manière américaine.
+            </p>
+          </div>
+          <div class="choice-card choice-card-sp">
+            <h3>Choisissez Snowball Pro</h3>
+            <p>
+              Si vous épargnez en France : projection de capital avec vos versements, fiscalité PEA/AV/PER appliquée,
+              pouvoir d'achat en euros d'aujourd'hui (inflation INSEE), robustesse Monte Carlo et test de votre retraite
+              — sans payer et sans créer de compte.
+            </p>
+          </div>
+        </div>
+
+        <div class="cta-card">
+          <h2>Simulez votre scénario type (PEA, 20 ans)</h2>
+          <p>Scénario pré-rempli : 100 000 € de départ + 1 500 €/mois sur 20 ans en PEA — ajustez-le librement.</p>
+          <div class="cta-row">
+            <a
+              class="cta-button"
+              href="https://snowball-pro.vercel.app/#s=eyJjYXBpdGFsSW5pdGlhbCI6MTAwMDAwLCJtb250aGx5UGF5bWVudCI6MTUwMCwiZHVyYXRpb24iOjIwLCJlbnZlbG9wZSI6InBlYSIsInBlYVllYXJzSGVsZCI6NX0"
+            >
+              Lancer la simulation →
+            </a>
+          </div>
+          <p class="cta-caption">Gratuit · Sans inscription · Vos données ne quittent pas votre navigateur</p>
+        </div>
+
+        <h2>Autres alternatives comparées</h2>
+        <ul>
+          <li><a href="/alternatives/firecalc.html">FireCalc : l'alternative pour la retraite (règle des 4 %)</a></li>
+          <li><a href="/alternatives/networthify.html">Networthify : l'alternative pour l'objectif d'épargne</a></li>
+          <li><a href="/alternatives/quantalys.html">Quantalys : l'alternative pour l'analyse de portefeuille</a></li>
+          <li><a href="/guides/simulateur-pea.html">Guide : le simulateur PEA complet</a></li>
+        </ul>
+
+        <h2>Questions fréquentes</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Snowball Pro est-il une vraie alternative à Portfolio Visualizer ?</summary>
+            <div class="faq-answer">
+              <p>
+                Pour projeter une épargne personnelle en France avec la fiscalité et l'inflation françaises, oui : c'est
+                exactement ce que Portfolio Visualizer ne fait pas. Pour le backtesting multi-actifs de portefeuilles
+                complexes, Portfolio Visualizer reste plus complet. Les deux outils se complètent.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Portfolio Visualizer est-il gratuit ?</summary>
+            <div class="faq-answer">
+              <p>
+                Il a une version gratuite limitée et un abonnement Premium payant. Snowball Pro est 100 % gratuit, sans
+                inscription et sans limite.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Portfolio Visualizer gère-t-il le PEA ou l'assurance vie française ?</summary>
+            <div class="faq-answer">
+              <p>
+                Non. Snowball Pro applique les règles françaises 2026 : PEA exonéré d'impôt après 5 ans, assurance vie,
+                PER, prélèvements sociaux, flat tax sur le compte-titres.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Mes données sont-elles envoyées sur un serveur ?</summary>
+            <div class="faq-answer">
+              <p>
+                Non. Les simulations sont calculées localement dans votre navigateur et ne quittent jamais votre
+                appareil. Les comptes sont optionnels et eux aussi 100 % locaux.
+              </p>
+            </div>
+          </details>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>Snowball Pro</strong> — simulateur patrimonial français gratuit : PEA, assurance vie, PER,
+        compte-titres, rente et retraite.
+      </p>
+      <p>
+        Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les performances passées ne
+        préjugent pas des performances futures.
+      </p>
+      <p><a href="https://snowball-pro.vercel.app/">Ouvrir l'application</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </body>
+</html>

@@ -28,6 +28,11 @@
 - [Guide — Simulateur PEA](https://snowball-pro.vercel.app/guides/simulateur-pea.html)
 - [Guide — PEA ou assurance vie](https://snowball-pro.vercel.app/guides/pea-ou-assurance-vie.html)
 - [Guide — Calcul des intérêts composés](https://snowball-pro.vercel.app/guides/calcul-interets-composes.html)
+- [Alternative — Portfolio Visualizer](https://snowball-pro.vercel.app/alternatives/portfolio-visualizer.html)
+- [Alternative — FireCalc](https://snowball-pro.vercel.app/alternatives/firecalc.html)
+- [Alternative — Networthify](https://snowball-pro.vercel.app/alternatives/networthify.html)
+- [Alternative — Quantalys](https://snowball-pro.vercel.app/alternatives/quantalys.html)
+- [Pricing — 100 % gratuit](https://snowball-pro.vercel.app/pricing.html)
 
 ## FAQ
 

@@ -4,6 +4,24 @@
 
 ---
 
+## v6.14.0 — Distribution : 4 pages alternatives + page Tarifs, footer landing, guides autonomes
+
+Suite de la brique distribution (v6.13.0) : le canal SEO s'étoffe avec **4 comparatifs honnêtes** face aux outils que les internautes français tapent déjà (Portfolio Visualizer, FireCalc, Networthify, Quantalys), une **page Tarifs « 100 % gratuit »**, et l'app pointe enfin vers ses pages statiques (rangée « Guides et comparatifs » dans le pied de page de la landing). Les CTA deep-link `#s=…` de toutes les pages publiques sont désormais **protégés par un test de régression** : un payload indécodable casserait la suite plutôt que d'ouvrir l'app avec les défauts en silence.
+
+### 🔄 Changements
+
+- **`public/alternatives/`** (nouveau) : `portfolio-visualizer.html`, `firecalc.html`, `networthify.html`, `quantalys.html` — comparatifs honnêtes (tableau de comparaison, « quand choisir l'un ou l'autre », FAQ), JSON-LD Article + FAQPage, canonical, OG, CSP identique à l'app, GoatCounter, CTA deep-link `#s=…` et liens croisés entre pages. Chaque page reconnaît ce que l'outil comparé fait mieux (ex. backtesting multi-actifs pour Portfolio Visualizer).
+- **`public/pricing.html`** (nouveau) : « 100 % gratuit, pour toujours » — grille du plan gratuit, FAQ (financement, données, limites), CTA deep-link PEA. Remplace le brouillon orphelin `pricing.md` (supprimé). Ajoutée au sitemap et à `llms.txt`.
+- **`src/components/Landing/LandingPage.tsx`** : rangée « Guides et comparatifs » dans le footer (3 guides + 4 alternatives + Tarifs) — l'app lie enfin ses pages statiques (distribution SEO) ; clés i18n FR/EN ajoutées (`src/engine/i18n.ts`).
+- **`public/guides/`** : le CSS partagé `guides.css` est inliné à l'identique dans les 3 guides (pages 100 % autonomes — le chemin absolu `/guides/guides.css` cassait en preview locale) ; `guides.css` supprimé (orphelin).
+- **`src/__tests__/public-pages.test.ts`** (nouveau, 12 tests) : chaque `#s=` des 8 pages publiques doit se décoder via `decodeInputsFromUrl` (le chemin exact de l'app) avec ses champs clés ; chaque URL du sitemap et de `llms.txt` doit correspondre à un fichier réellement servi.
+- **`public/sitemap.xml`** : +5 URLs (4 alternatives + pricing, priority 0.7, monthly). **`public/llms.txt`** : +5 liens (AEO).
+- **Prettier** : 8 pages publiques + 2 fichiers `src/` en dette (`ShareMenu.tsx`, `PatrimonialReport.tsx`) remis au style — `format:check` à zéro.
+- Gate : typecheck ✓ lint ✓ **401/401 tests** (389 + 12) ✓ i18n 0 clé manquante ✓ format ✓ build ✓ (guides, alternatives et pricing copiés dans `dist/`).
+- Version 6.13.1 → **6.14.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.14.0`, footer landing v6.14.0, « Dernières éditions » v6.14.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.13.1 — Correctifs : panneaux expérimentaux retirés avant publication, onglets nets sur mobile
 
 Suite à la demande utilisateur (les panneaux « Et si vous changiez d'enveloppe ? » et « Quel levier compte le plus ? » jugés hors périmètre), les deux fonctionnalités expérimentales — **jamais publiées** — ont été retirées proprement du code avant le premier déploiement de la v6.13. Le reste de la release (partage, guides SEO, llms.txt) et le correctif mobile sont déployés.

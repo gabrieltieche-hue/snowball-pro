@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FireCalc : l'alternative française au calculateur de retraite FIRE</title>
+    <meta
+      name="description"
+      content="FireCalc teste la règle des 4 % avec l'histoire boursière américaine. Snowball Pro est l'alternative française : décaissement en euros réels, garde-fous Guyton-Klinger, stress tests 1973/2000/2008, fiscalité PEA/AV/PER — gratuit et sans inscription."
+    />
+    <link rel="canonical" href="https://snowball-pro.vercel.app/alternatives/firecalc.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app/alternatives/firecalc.html" />
+    <meta property="og:title" content="FireCalc : l'alternative française pour la retraite" />
+    <meta
+      property="og:description"
+      content="Testez votre rente avec les vrais rendements historiques et la fiscalité française. Comparaison honnête FireCalc vs Snowball Pro."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f5f2eb;
+        color: #1c1917;
+        line-height: 1.65;
+        font-size: 16px;
+      }
+      ::selection {
+        background: rgba(184, 150, 15, 0.25);
+      }
+      .site-header {
+        background: rgba(245, 242, 235, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(28, 25, 23, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .site-header-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .brand-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-family: "Outfit", sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        font-size: 17px;
+        line-height: 1.1;
+      }
+      .brand-name em {
+        font-style: normal;
+        color: #b8960f;
+      }
+      .brand-tag {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #78716c;
+      }
+      .header-link {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1c1917;
+        text-decoration: none;
+        border: 1px solid rgba(28, 25, 23, 0.15);
+        border-radius: 10px;
+        padding: 7px 14px;
+        transition: background 0.15s ease;
+        white-space: nowrap;
+      }
+      .header-link:hover {
+        background: rgba(28, 25, 23, 0.05);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 20px 24px;
+      }
+      .article-kicker {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #8a720c;
+        background: rgba(184, 150, 15, 0.12);
+        border: 1px solid rgba(184, 150, 15, 0.25);
+        border-radius: 999px;
+        padding: 5px 12px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-family: "Outfit", sans-serif;
+        font-size: 32px;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
+        margin-bottom: 14px;
+      }
+      .article-intro {
+        font-size: 17px;
+        color: #57534e;
+        margin-bottom: 28px;
+      }
+      h2 {
+        font-family: "Outfit", sans-serif;
+        font-size: 21px;
+        letter-spacing: -0.01em;
+        margin: 36px 0 12px;
+      }
+      h3 {
+        font-family: "Outfit", sans-serif;
+        font-size: 16px;
+        margin: 22px 0 8px;
+      }
+      p {
+        margin-bottom: 14px;
+      }
+      ul,
+      ol {
+        margin: 0 0 16px 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      strong {
+        font-weight: 700;
+      }
+      a {
+        color: #a17d0c;
+        text-decoration-color: rgba(161, 125, 12, 0.35);
+        text-underline-offset: 3px;
+      }
+      .article-intro strong {
+        color: #1c1917;
+      }
+      .callout {
+        background: #fff;
+        border: 1px solid rgba(184, 150, 15, 0.35);
+        border-left: 4px solid #b8960f;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .callout h3 {
+        margin-top: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #8a720c;
+      }
+      .callout ul {
+        margin-bottom: 0;
+      }
+      .fact-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid rgba(28, 25, 23, 0.07);
+        font-size: 14px;
+      }
+      .fact-row:last-child {
+        border-bottom: none;
+      }
+      .fact-row dt {
+        color: #57534e;
+      }
+      .fact-row dd {
+        font-weight: 700;
+        text-align: right;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13.5px;
+      }
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 14px;
+        overflow: hidden;
+        margin: 18px 0 24px;
+        font-size: 13.5px;
+      }
+      .compare-table th,
+      .compare-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid rgba(28, 25, 23, 0.07);
+        vertical-align: top;
+      }
+      .compare-table thead th {
+        background: #faf7ef;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #57534e;
+      }
+      .compare-table thead th:last-child {
+        background: #f7f0dc;
+        color: #8a720c;
+      }
+      .compare-table th:first-child {
+        width: 30%;
+        color: #78716c;
+        font-weight: 600;
+      }
+      .compare-table tbody tr:nth-child(even) {
+        background: #faf8f2;
+      }
+      .compare-table tbody td:last-child {
+        background: rgba(248, 241, 219, 0.55);
+        font-weight: 600;
+      }
+      .compare-table tbody tr:hover td {
+        background: #f3ede0;
+      }
+      .compare-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin: 18px 0 8px;
+      }
+      .choice-card {
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .choice-card h3 {
+        margin: 0 0 8px;
+        font-size: 15px;
+      }
+      .choice-card p {
+        margin: 0;
+        font-size: 13.5px;
+        color: #57534e;
+      }
+      .choice-card-sp {
+        border: 1px solid rgba(184, 150, 15, 0.4);
+        background: linear-gradient(180deg, #fffdf6, #faf4e2);
+        box-shadow: 0 4px 14px rgba(184, 150, 15, 0.12);
+      }
+      .choice-card-sp h3 {
+        color: #8a720c;
+      }
+      .cta-card {
+        background: linear-gradient(135deg, #1c1917, #2b2620 60%, #3a332b);
+        border-radius: 18px;
+        padding: 30px 26px;
+        margin: 40px 0 28px;
+        color: #fff;
+        text-align: center;
+      }
+      .cta-card h2 {
+        margin: 0 0 8px;
+        color: #fff;
+        font-size: 22px;
+      }
+      .cta-card p {
+        color: #d6d0c4;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .cta-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        text-decoration: none;
+        border-radius: 12px;
+        padding: 13px 22px;
+        box-shadow: 0 8px 20px rgba(184, 150, 15, 0.35);
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease;
+      }
+      .cta-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(184, 150, 15, 0.45);
+      }
+      .cta-button.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+      .cta-caption {
+        font-size: 11.5px;
+        color: #a8a29e;
+        margin-top: 14px;
+        margin-bottom: 0;
+      }
+      .faq-list {
+        margin: 16px 0 0;
+      }
+      .faq-item {
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .faq-item:hover {
+        border-color: rgba(184, 150, 15, 0.35);
+        box-shadow: 0 4px 14px rgba(28, 25, 23, 0.06);
+      }
+      .faq-item summary {
+        cursor: pointer;
+        padding: 15px 18px;
+        font-weight: 700;
+        font-size: 14.5px;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .faq-item summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq-item summary::after {
+        content: "+";
+        font-size: 18px;
+        color: #b8960f;
+        flex-shrink: 0;
+      }
+      .faq-item[open] summary::after {
+        content: "−";
+      }
+      .faq-item .faq-answer {
+        padding: 0 18px 16px;
+        font-size: 14px;
+        color: #57534e;
+      }
+      .site-footer {
+        max-width: 760px;
+        margin: 40px auto 0;
+        padding: 24px 20px 40px;
+        border-top: 1px solid rgba(28, 25, 23, 0.1);
+        font-size: 12px;
+        color: #78716c;
+      }
+      .site-footer p {
+        margin-bottom: 8px;
+      }
+      @media (max-width: 560px) {
+        h1 {
+          font-size: 25px;
+        }
+        .article-intro {
+          font-size: 15.5px;
+        }
+        .compare-table {
+          font-size: 12.5px;
+        }
+        .compare-table th:first-child {
+          width: 38%;
+        }
+        .choice-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "FireCalc : l'alternative française au calculateur de retraite FIRE",
+        "description": "Comparaison honnête entre FireCalc (SWR historique US) et Snowball Pro (rente en euros réels, garde-fous Guyton-Klinger, fiscalité française).",
+        "inLanguage": "fr-FR",
+        "datePublished": "2026-08-16",
+        "publisher": { "@type": "Organization", "name": "Snowball Pro" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Qu'est-ce que la règle des 4 % ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "La règle des 4 % (retraite de Trinity Study) consiste à retirer 4 % de son capital la première année de retraite, puis à indexer ce montant sur l'inflation. Historiquement, un portefeuille diversifié y survit 30 ans dans la grande majorité des cas."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "FireCalc fonctionne-t-il avec la fiscalité française ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Non. FireCalc utilise l'historique boursier américain et ignore le PEA, l'assurance vie, le PER et la flat tax. Snowball Pro applique les règles françaises 2026 et l'inflation française INSEE depuis 1970."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Snowball Pro teste-t-il les crises historiques ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui : stress tests sur les krachs de 1973, 2000 et 2008, scénario de crise paramétrable, et jusqu'à 10 000 simulations Monte Carlo pour mesurer la robustesse de la rente."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Puis-je tester un scénario de rente sans créer de compte ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui, tout est gratuit et sans inscription. Un scénario de retraite type (500 000 €, règle des 4 %, 30 ans) est pré-rempli en un clic et entièrement ajustable."
+            }
+          }
+        ]
+      }
+    </script>
+    <script
+      data-goatcounter="https://gabriel322jsj222.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="https://snowball-pro.vercel.app/" title="Snowball Pro — Simulateur patrimonial">
+          <span class="brand-logo">SP</span>
+          <span>
+            <span class="brand-name">SNOWBALL <em>PRO</em></span>
+            <span class="brand-tag" style="display: block">Simulateur patrimonial</span>
+          </span>
+        </a>
+        <a class="header-link" href="https://snowball-pro.vercel.app/">Ouvrir l'application</a>
+      </div>
+    </header>
+
+    <main>
+      <article>
+        <p class="article-kicker">Alternative · Retraite &amp; FIRE</p>
+        <h1>FireCalc : l'alternative française au calculateur de retraite FIRE</h1>
+        <p class="article-intro">
+          FireCalc est la référence historique pour tester la règle des 4 % : est-ce que mon capital survit 30 ans de
+          retraits ? Mais il raisonne en dollars, avec l'historique boursier américain et sans la fiscalité française.
+          Snowball Pro fait le même test — en euros réels, avec les règles fiscales françaises 2026 et l'inflation
+          INSEE.
+        </p>
+
+        <h2>Ce que fait FireCalc</h2>
+        <p>
+          FireCalc (firecalc.com) calcule la probabilité de succès d'un plan de retraite : vous entrez votre capital,
+          vos retraits annuels et votre durée, et il rejoue chaque séquence historique de rendements depuis 1871. C'est
+          <strong>la référence de la communauté FIRE américaine</strong> — gratuit, financé par les dons, mais 100 %
+          centré sur le contexte des États-Unis.
+        </p>
+
+        <h2>Comparaison honnête</h2>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>FireCalc</th>
+              <th>Snowball Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Règle des 4 % / taux de retrait</th>
+              <td>✅ Oui (référence historique)</td>
+              <td>✅ Oui, personnalisable (4 %, prudent, optimiste)</td>
+            </tr>
+            <tr>
+              <th>Fiscalité française (PEA, AV, PER, flat tax)</th>
+              <td>❌ Non (contexte US)</td>
+              <td>✅ Règles 2026 appliquées</td>
+            </tr>
+            <tr>
+              <th>Inflation française INSEE</th>
+              <td>❌ Non (inflation US)</td>
+              <td>✅ Oui, depuis 1970</td>
+            </tr>
+            <tr>
+              <th>Euros d'aujourd'hui (pouvoir d'achat)</th>
+              <td>⚠️ Approche US</td>
+              <td>✅ Double échelle nominal / réel</td>
+            </tr>
+            <tr>
+              <th>Garde-fous de retrait (Guyton-Klinger)</th>
+              <td>⚠️ Non</td>
+              <td>✅ Oui, avec déclencheurs automatiques</td>
+            </tr>
+            <tr>
+              <th>Stress tests 1973 / 2000 / 2008</th>
+              <td>⚠️ Séries US</td>
+              <td>✅ Scénarios intégrés + crise paramétrable</td>
+            </tr>
+            <tr>
+              <th>Prix</th>
+              <td>Gratuit (dons)</td>
+              <td>100 % gratuit, sans inscription</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Quand choisir l'un ou l'autre ?</h2>
+        <div class="choice-grid">
+          <div class="choice-card">
+            <h3>Choisissez FireCalc</h3>
+            <p>
+              Si vous voulez la référence académique historique du taux de retrait sûr américain et comparer vos
+              résultats avec la communauté FIRE anglophone.
+            </p>
+          </div>
+          <div class="choice-card choice-card-sp">
+            <h3>Choisissez Snowball Pro</h3>
+            <p>
+              Si vous voulez savoir ce que votre retraite donne <em>en France</em> : rente après flat tax ou
+              prélèvements sociaux, pouvoir d'achat en euros d'aujourd'hui (inflation INSEE), garde-fous modernes et
+              stress tests sur les vraies crises qui ont touché les marchés mondiaux.
+            </p>
+          </div>
+        </div>
+
+        <div class="cta-card">
+          <h2>Testez votre retraite (500 000 €, règle des 4 %)</h2>
+          <p>Scénario pré-rempli : 500 000 € de capital, 30 ans de retraits à 4 %/an — ajustez-le librement.</p>
+          <div class="cta-row">
+            <a
+              class="cta-button"
+              href="https://snowball-pro.vercel.app/#s=eyJjYXBpdGFsSW5pdGlhbCI6NTAwMDAwLCJtb250aGx5UGF5bWVudCI6MCwiZHVyYXRpb24iOjMwLCJlbnZlbG9wZSI6ImN0byIsIndpdGhkcmF3YWxNb2RlbCI6InJ1bGUtNCIsIndpdGhkcmF3YWxSYXRlIjowLjA0LCJyZXRpcmVtZW50WWVhcnMiOjMwLCJhZ2VOb3ciOjM1LCJhZ2VSZXRpcmVtZW50Ijo2MCwicmV0aXJlbWVudEV4cGVuc2VzIjoyMDAwfQ"
+            >
+              Lancer la simulation →
+            </a>
+          </div>
+          <p class="cta-caption">Gratuit · Sans inscription · Vos données ne quittent pas votre navigateur</p>
+        </div>
+
+        <h2>Autres alternatives comparées</h2>
+        <ul>
+          <li>
+            <a href="/alternatives/portfolio-visualizer.html">Portfolio Visualizer : l'alternative backtesting</a>
+          </li>
+          <li><a href="/alternatives/networthify.html">Networthify : l'alternative pour l'objectif d'épargne</a></li>
+          <li><a href="/alternatives/quantalys.html">Quantalys : l'alternative pour l'analyse de portefeuille</a></li>
+          <li><a href="/guides/calcul-interets-composes.html">Guide : le calcul des intérêts composés</a></li>
+        </ul>
+
+        <h2>Questions fréquentes</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Qu'est-ce que la règle des 4 % ?</summary>
+            <div class="faq-answer">
+              <p>
+                La règle des 4 % (issue de la Trinity Study) consiste à retirer 4 % de son capital la première année de
+                retraite, puis à indexer ce montant sur l'inflation. Historiquement, un portefeuille diversifié y survit
+                30 ans dans la grande majorité des cas.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>FireCalc fonctionne-t-il avec la fiscalité française ?</summary>
+            <div class="faq-answer">
+              <p>
+                Non. Snowball Pro applique les règles françaises 2026 : flat tax sur le compte-titres, PEA exonéré
+                d'impôt après 5 ans (prélèvements sociaux seuls), assurance vie et PER.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Snowball Pro teste-t-il les crises historiques ?</summary>
+            <div class="faq-answer">
+              <p>
+                Oui : stress tests sur les krachs de 1973, 2000 et 2008, scénario de crise paramétrable, et jusqu'à 10
+                000 simulations Monte Carlo pour mesurer la robustesse de la rente.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Puis-je tester un scénario de rente sans créer de compte ?</summary>
+            <div class="faq-answer">
+              <p>
+                Oui, tout est gratuit et sans inscription. Le scénario de retraite type est pré-rempli en un clic et
+                entièrement ajustable (âge, dépenses, taux de retrait, durée).
+              </p>
+            </div>
+          </details>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>Snowball Pro</strong> — simulateur patrimonial français gratuit : PEA, assurance vie, PER,
+        compte-titres, rente et retraite.
+      </p>
+      <p>
+        Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les performances passées ne
+        préjugent pas des performances futures.
+      </p>
+      <p><a href="https://snowball-pro.vercel.app/">Ouvrir l'application</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </body>
+</html>

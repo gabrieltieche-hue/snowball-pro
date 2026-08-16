@@ -513,7 +513,9 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
             <p className="font-display text-[11px] font-extrabold tracking-tight">
               SNOWBALL <span className="text-[#b8960f]">PRO</span>
             </p>
-            <p className="mt-1 max-w-[280px]">{tr("Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne :")}</p>
+            <p className="mt-1 max-w-[280px]">
+              {tr("Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne :")}
+            </p>
             <p className="font-mono mt-0.5">https://snowball-pro.vercel.app</p>
           </div>
           <div className="text-[9px] text-gray-500 max-w-[340px] leading-snug">

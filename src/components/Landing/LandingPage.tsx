@@ -391,8 +391,25 @@ const NAV = [
   { href: "#faq", label: "FAQ" },
 ]
 
+/** Pages statiques SEO (guides, comparatifs, tarifs) — distribution. */
+const GUIDES_LINKS = [
+  { href: "/guides/simulateur-pea.html", label: "Simulateur PEA" },
+  { href: "/guides/pea-ou-assurance-vie.html", label: "PEA ou assurance vie" },
+  { href: "/guides/calcul-interets-composes.html", label: "Calcul des intérêts composés" },
+  { href: "/alternatives/portfolio-visualizer.html", label: "Portfolio Visualizer" },
+  { href: "/alternatives/firecalc.html", label: "FireCalc" },
+  { href: "/alternatives/networthify.html", label: "Networthify" },
+  { href: "/alternatives/quantalys.html", label: "Quantalys" },
+  { href: "/pricing.html", label: "Tarifs" },
+]
+
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.14.0",
+    title: "4 pages alternatives + page tarifs",
+    text: "Quatre comparatifs honnêtes (Portfolio Visualizer, FireCalc, Networthify, Quantalys) et une page Tarifs « 100 % gratuit » — indexées au sitemap, dans llms.txt et liées depuis le pied de page de la landing.",
+  },
   {
     version: "v6.13.1",
     title: "Onglets nets sur mobile",
@@ -552,7 +569,7 @@ export function LandingPage() {
       </h1>
 
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
+      <header className="sticky-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
           <a href="#/" aria-label={tr("Snowball Pro — accueil")} className="flex items-center">
             <Brand />
@@ -574,7 +591,7 @@ export function LandingPage() {
               onClick={() => setDarkMode(d => !d)}
               aria-label={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
               title={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
             >
               {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />}
               <span className="hidden sm:inline">{tr(darkMode ? "Clair" : "Sombre")}</span>
@@ -582,14 +599,14 @@ export function LandingPage() {
             <button
               type="button"
               onClick={() => navigateTo("login")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover text-primary border border-primary/30 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover text-primary border border-primary/30 transition-colors"
             >
               {tr("Se connecter")}
             </button>
             <button
               type="button"
               onClick={launch}
-              className="btn-shine inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
+              className="btn-shine inline-flex items-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
             >
               {tr("Calculer mon nombre magique")} <ArrowRight size={12} aria-hidden />
             </button>
@@ -1242,6 +1259,16 @@ export function LandingPage() {
               </a>
             </nav>
           </div>
+          <nav
+            aria-label={tr("Guides et comparatifs")}
+            className="mt-5 flex items-center gap-5 flex-wrap text-[11px] font-bold text-text-muted"
+          >
+            {GUIDES_LINKS.map(item => (
+              <a key={item.href} href={item.href} className="hover:text-text transition-colors">
+                {tr(item.label)}
+              </a>
+            ))}
+          </nav>
           <div className="gold-divider my-6" aria-hidden />
           <p className="text-[10px] text-text-dim leading-relaxed max-w-3xl">
             {tr(
@@ -1250,7 +1277,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.13.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.14.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

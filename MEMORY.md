@@ -4,6 +4,36 @@
 
 ---
 
+## SESSION — 2026-08-16 (finitions distribution : 4 pages alternatives + pricing.html, footer landing, test de régression SEO)
+
+### Résumé
+
+Demande utilisateur : _« ok on fini pour que tout soit 100 % parfait »_ — le travail en cours (guides + alternatives + pricing) a été passé en revue, complété et verrouillé par des tests. Aucun changement moteur.
+
+1. **4 pages alternatives SEO** (`public/alternatives/`) : `portfolio-visualizer.html`, `firecalc.html`, `networthify.html`, `quantalys.html` — comparatifs honnêtes (tableau + « quand choisir l'un ou l'autre » + FAQ), JSON-LD Article + FAQPage, canonical, OG, CSP identique à l'app, GoatCounter, CTA deep-link `#s=…` et liens croisés entre pages.
+2. **`public/pricing.html`** (nouvelle page, remplace le brouillon orphelin `pricing.md` supprimé) : « 100 % gratuit, pour toujours » — grille du plan gratuit, FAQ, CTA deep-link PEA. Ajoutée au sitemap et à `llms.txt`.
+3. **Footer landing** (`LandingPage.tsx`) : nouvelle rangée « Guides et comparatifs » (8 liens : 3 guides, 4 alternatives, Tarifs) — l'app pointe enfin vers ses pages statiques (distribution SEO) ; clés i18n FR/EN ajoutées.
+4. **Guides autonomes** : le CSS partagé `guides.css` a été inliné à l'identique dans les 3 guides (fini le chemin absolu qui cassait en preview locale) → `guides.css` supprimé (orphelin).
+5. **Test de régression** (`src/__tests__/public-pages.test.ts`, 12 tests) : chaque `#s=` des pages publiques doit se décoder via `decodeInputsFromUrl` (le chemin exact de l'app) avec ses champs clés ; chaque URL du sitemap et de `llms.txt` doit correspondre à un fichier réellement servi.
+6. **Prettier** : pages publiques + 2 fichiers `src/` en dette de formatage (`ShareMenu.tsx`, `PatrimonialReport.tsx`) remis au style.
+7. **Release v6.14.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.14.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.14.0), MEMORY (cette entrée), commit, puis **`vercel --prod`**.
+
+### Décisions
+
+- **Pages 100 % statiques autonomes** : CSS inliné dans chaque page (philosophie single-file du projet, résout le problème de preview du CSS absolu noté en v6.13.0) ; `guides.css` supprimé car plus référencé (récupérable via `git checkout`).
+- **`pricing.md` → `pricing.html`** : un brouillon non lié ne sert à rien pour le SEO ; la page réelle est indexable, dans le sitemap, dans `llms.txt` et liée depuis la landing.
+- **Comparatifs honnêtes** : chaque page reconnaît ce que l'outil comparé fait mieux (ex. backtesting multi-actifs pour Portfolio Visualizer) — positionnement crédible plutôt que rabaissement.
+- **Test des CTA comme contrat** : le payload `#s=` doit rester décodable par `parseStoredInputs` (un champ renommé retomberait silencieusement sur les défauts) — c'est désormais vérifié à chaque `npm test`.
+- **Release complète** (demande utilisateur : _« commit, publie sur vercel et met tout à jour »_) : bump v6.14.0 + CHANGELOG + commit + déploiement — tout le travail distribution (guides inlinés + alternatives + pricing + footer + test) part dans une seule release.
+
+### Vérifications
+
+- Liens profonds : 8 payloads `#s=` (3 guides + 4 alternatives + pricing) décodés — champs clés exacts (PEA 100 k€/1,5 k€/20 ans, FireCalc rule-4 4 %, Networthify 1 M€, Quantalys AV 50 k€/700 €/25 ans).
+- CSS inline des 3 guides identique à l'ancien `guides.css` mis à jour (vérifié hors commentaires).
+- Prettier : plus aucun fichier signalé (pages publiques + `ShareMenu.tsx` + `PatrimonialReport.tsx`).
+
+---
+
 ## SESSION — 2026-08-16 (v6.13.1 : panneaux expérimentaux retirés, fix mobile onglets, déploiement)
 
 ### Résumé
