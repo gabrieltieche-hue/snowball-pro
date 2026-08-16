@@ -8,3 +8,7 @@ dist/
 .git/
 *.log
 .DS_Store
+# Projet natif iOS (Capacitor) — pas de place sur le site web.
+ios/
+# Résidu accidentel de redirection shell (ancien lock) — jamais uploadé.
+package-lock 2.json
