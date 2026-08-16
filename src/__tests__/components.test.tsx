@@ -24,8 +24,6 @@ import { SmartInput } from "../components/shared/SmartInput"
 import { SectionHeader } from "../components/shared/SectionHeader"
 import { KpiGrid } from "../components/Simulation/KpiGrid"
 import { AIInsightCard } from "../components/Simulation/AIInsightCard"
-import { EnvelopeComparisonPanel } from "../components/Simulation/EnvelopeComparisonPanel"
-import { SensitivityPanel } from "../components/Simulation/SensitivityPanel"
 import { Shield } from "lucide-react"
 import {
   DEFAULT_INPUTS,
@@ -1432,51 +1430,6 @@ describe("i18n — bascule de langue", () => {
     fireEvent.click(screen.getByRole("button", { name: "Passer en anglais" }))
     expect(screen.getAllByText("Create your account").length).toBeGreaterThan(0)
     expect(screen.getByLabelText("Email address")).toBeTruthy()
-  })
-})
-
-describe("v6.13 — EnvelopeComparisonPanel : « PEA ou assurance-vie ? » répondue par le moteur", () => {
-  it("affiche les 4 enveloppes, le net après impôts et surligne l'enveloppe actuelle", () => {
-    const inputs = { ...DEFAULT_INPUTS, envelope: "pea" as const, duration: 25, monthlyPayment: 400 }
-    render(<EnvelopeComparisonPanel inputs={inputs} />)
-    expect(screen.getByRole("heading", { name: /Et si vous changiez d'enveloppe/i })).toBeInTheDocument()
-    expect(screen.getByText("CTO")).toBeInTheDocument()
-    expect(screen.getByText("PEA")).toBeInTheDocument()
-    expect(screen.getByText("AV")).toBeInTheDocument()
-    expect(screen.getByText("PER")).toBeInTheDocument()
-    expect(screen.getByText("Plan d'épargne en actions")).toBeInTheDocument()
-    expect(screen.getByText("Votre enveloppe")).toBeInTheDocument()
-    // Chaque ligne porte le net après impôts (format euros)
-    expect(screen.getAllByText(/€/).length).toBeGreaterThanOrEqual(4)
-  })
-
-  it("change de surlignage quand l'utilisateur change d'enveloppe (CTO)", () => {
-    const inputs = { ...DEFAULT_INPUTS, envelope: "cto" as const, duration: 25, monthlyPayment: 400 }
-    render(<EnvelopeComparisonPanel inputs={inputs} />)
-    expect(screen.getByText("Votre enveloppe")).toBeInTheDocument()
-    expect(screen.getByText("Compte-titres ordinaire")).toBeInTheDocument()
-  })
-})
-
-describe("v6.13 — SensitivityPanel : quel levier compte le plus ?", () => {
-  it("affiche les 4 leviers avec leur delta et met en avant le levier n°1", () => {
-    const inputs = { ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 25 }
-    render(<SensitivityPanel inputs={inputs} />)
-    expect(screen.getByRole("heading", { name: /Quel levier compte le plus/i })).toBeInTheDocument()
-    expect(screen.getByText("Versement mensuel · +100 €/mois")).toBeInTheDocument()
-    expect(screen.getByText("Durée · +2 ans")).toBeInTheDocument()
-    expect(screen.getByText("Scénario · Central → Optimiste")).toBeInTheDocument()
-    expect(screen.getByText("Capital de départ · +10 %")).toBeInTheDocument()
-    expect(screen.getByText("Levier n°1")).toBeInTheDocument()
-  })
-
-  it("à durée maximale, le levier « +2 ans » ne gagne pas la première place (borne respectée)", () => {
-    const inputs = { ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 80 }
-    render(<SensitivityPanel inputs={inputs} />)
-    // La durée est déjà au maximum : son delta est nul, un AUTRE levier est n°1.
-    const highlightedRow = screen.getByText("Levier n°1").closest(".rounded-xl")
-    const durationRow = screen.getByText("Durée · +2 ans").closest(".rounded-xl")
-    expect(highlightedRow).not.toBe(durationRow)
   })
 })
 

@@ -394,6 +394,11 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.13.1",
+    title: "Onglets nets sur mobile",
+    text: "Correction mobile : les onglets du simulateur ne débordent plus de l'écran sur téléphone — « Robustesse de votre plan » passe proprement à la ligne au lieu de déborder, même à 320 px.",
+  },
+  {
     version: "v6.13.0",
     title: "Partagez votre simulation en un clic",
     text: "Boutons de partage X, WhatsApp et LinkedIn avec votre scénario pré-rempli dans le lien (UTM par canal pour mesurer chaque source), pied de rapport PDF « Créé avec Snowball Pro » + lien du scénario, et 3 guides SEO qui arrivent de Google : simulateur PEA, PEA ou assurance vie, intérêts composés.",
@@ -1245,7 +1250,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.13.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.13.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

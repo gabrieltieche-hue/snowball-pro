@@ -70,7 +70,10 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
                 aria-hidden
               />
             )}
-            <span className="relative z-10 inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+            {/* Sans whitespace-nowrap : sur mobile étroit, le libellé passe à
+                la ligne au lieu de déborder (bug préexistant v6.11.2 — le bouton
+                flex-1 n'était pas assez large pour « Robustesse de votre plan »). */}
+            <span className="relative z-10 inline-flex items-center justify-center gap-1.5">
               {Icon && <Icon size={13} className="shrink-0" aria-hidden />}
               {tab.label}
             </span>

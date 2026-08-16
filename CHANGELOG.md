@@ -4,6 +4,19 @@
 
 ---
 
+## v6.13.1 — Correctifs : panneaux expérimentaux retirés avant publication, onglets nets sur mobile
+
+Suite à la demande utilisateur (les panneaux « Et si vous changiez d'enveloppe ? » et « Quel levier compte le plus ? » jugés hors périmètre), les deux fonctionnalités expérimentales — **jamais publiées** — ont été retirées proprement du code avant le premier déploiement de la v6.13. Le reste de la release (partage, guides SEO, llms.txt) et le correctif mobile sont déployés.
+
+### 🔄 Changements
+
+- **Retrait des panneaux « Et si vous changiez d'enveloppe ? » et « Quel levier compte le plus ? »** : suppression des composants (`EnvelopeComparisonPanel.tsx`, `SensitivityPanel.tsx`), du moteur (`envelopeComparison.ts`, `sensitivity.ts`), des exports du barrel `engine/index.ts`, du branchement `SimulatorTab.tsx`, des clés i18n FR/EN et des tests associés (402 → **389 tests**). Fonctionnalités jamais déployées — aucun utilisateur impacté.
+- **`src/components/Layout/TabBar.tsx`** : fix mobile — le `whitespace-nowrap` est retiré des libellés d'onglets : « Robustesse de votre plan » débordait horizontalement à 320 px (bug préexistant v6.11.2) ; le libellé passe à la ligne, **0 overflow** à 314 px.
+- Gate : typecheck ✓ lint ✓ **389/389 tests** ✓ i18n 0 clé manquante ✓ build ✓ (dist 1 222 ko / 358 ko gzip).
+- Version 6.13.0 → **6.13.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.13.1`, footer landing v6.13.1, « Dernières éditions » v6.13.1), CHANGELOG (cette entrée), MEMORY.md (entrée session), déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.13.0 — Distribution : partage en un clic (X, WhatsApp, LinkedIn), rapport PDF signé et 3 guides SEO long-tail
 
 Brique « distribution » de la stratégie (canal SEO + boucle virale) : le produit est prêt depuis longtemps, c'est la visibilité qui manque. Trois leviers techniques implémentés : (1) **bouton « Partager » visible** dans l'en-tête — X (Twitter), WhatsApp, LinkedIn et copie du lien, chaque lien embarque le scénario pré-rempli (`#s=…` via `buildShareUrl`) + un **UTM par canal** (`utm_source=partage&utm_medium=x|whatsapp|linkedin|copie`) pour mesurer chaque source dans GoatCounter ; (2) **rapport PDF signé** — pied de rapport « Créé avec Snowball Pro » + URL du site + **lien du scénario partageable** : chaque rapport imprimé devient une publicité ; (3) **3 pages guides SEO** statiques (`public/guides/`) ciblant les requêtes long-tail françaises — « simulateur PEA », « PEA ou assurance vie », « calcul intérêts composés » — chacune avec données structurées (Article + FAQPage), CTA « Simulez votre scénario » en **lien profond pré-rempli** et GoatCounter. Sitemap + llms.txt mis à jour. **402 tests**, gate 100 % vert.
