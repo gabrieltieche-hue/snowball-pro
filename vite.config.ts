@@ -16,6 +16,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  // Le scan de pré-bundling parcourt par défaut tous les *.html du root, y compris
+  // les artefacts générés par Capacitor (ios/App/App/public, copie du build dist/).
+  // Ce bundle inliné contient require("@emotion/is-prop-valid") (peer optionnel de
+  // framer-motion, jamais installé) et fait échouer le scan. On restreint le scan à
+  // l'unique entrée réelle de l'app, comme Vite ignore déjà dist/.
+  optimizeDeps: {
+    entries: ["index.html"],
+  },
   // Sécurité : les vulnérabilités connues du dev server (lecture de fichiers
   // arbitraires) ne sont exploitables que si le serveur est joignable depuis
   // le réseau. Restriction au loopback — `npm run dev -- --host 0.0.0.0` pour
