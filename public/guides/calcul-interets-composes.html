@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calcul des intérêts composés : formule, règle de 72 et exemples chiffrés</title>
+    <meta
+      name="description"
+      content="Comment calculer les intérêts composés : la formule (VF = V0 × (1+r)^n), la règle de 72, et des exemples chiffrés avec les rendements réels du MSCI World. Simulateur gratuit intégré."
+    />
+    <link rel="canonical" href="https://snowball-pro.vercel.app/guides/calcul-interets-composes.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app/guides/calcul-interets-composes.html" />
+    <meta property="og:title" content="Calcul des intérêts composés : la formule qui fait travailler l'argent" />
+    <meta
+      property="og:description"
+      content="Formule des intérêts composés, règle de 72, exemples chiffrés et simulateur gratuit avec les rendements réels du MSCI World."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/guides/guides.css" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Intérêts composés : la formule qui fait travailler l'argent",
+        "description": "La formule des intérêts composés expliquée simplement, la règle de 72, des exemples chiffrés et un simulateur gratuit basé sur les rendements réels du MSCI World.",
+        "inLanguage": "fr-FR",
+        "datePublished": "2026-08-15",
+        "publisher": { "@type": "Organization", "name": "Snowball Pro" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Quelle est la formule des intérêts composés ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Pour un capital initial V0 placé au taux annuel r pendant n années : VF = V0 × (1 + r)^n. Avec des versements mensuels, le simulateur Snowball Pro fait le calcul complet mois par mois."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Comment calculer les intérêts composés avec des versements mensuels ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Chaque versement compose son propre intérêt jusqu'à l'horizon : le montant final est la somme de V0 × (1+r)^n et des versements capitalisés. Le plus simple : utiliser un simulateur — Snowball Pro le calcule avec les rendements réels du MSCI World."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "C'est quoi la règle de 72 ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Divisez 72 par le taux de rendement annuel : vous obtenez le nombre d'années pour doubler votre capital. À 8 % par an, votre argent double tous les 9 ans environ."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Quel est le rendement moyen du MSCI World ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sur 1970-2025, le MSCI World a rapporté en moyenne ≈ 10,07 %/an brut (arithmétique) et ≈ 8,22 %/an composé, krachs inclus. C'est la base du scénario central de Snowball Pro."
+            }
+          }
+        ]
+      }
+    </script>
+    <script
+      data-goatcounter="https://gabriel322jsj222.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="https://snowball-pro.vercel.app/" title="Snowball Pro — Simulateur patrimonial">
+          <span class="brand-logo">SP</span>
+          <span>
+            <span class="brand-name">SNOWBALL <em>PRO</em></span>
+            <span class="brand-tag" style="display: block">Simulateur patrimonial</span>
+          </span>
+        </a>
+        <a class="header-link" href="https://snowball-pro.vercel.app/">Ouvrir l'application</a>
+      </div>
+    </header>
+
+    <main>
+      <article>
+        <p class="article-kicker">Guide · Maths de l'épargne</p>
+        <h1>Intérêts composés : la formule qui fait travailler l'argent</h1>
+        <p class="article-intro">
+          Einstein l'aurait appelée « la huitième merveille du monde ». Les intérêts composés, c'est le
+          mécanisme par lequel vos gains produisent eux-mêmes des gains. Comprendre la formule et la règle de
+          72 change la façon dont on épargne — voici tout, avec un simulateur gratuit en bas de page.
+        </p>
+
+        <h2>La formule des intérêts composés</h2>
+        <p>Pour un capital initial <strong>V₀</strong> placé au taux annuel <strong>r</strong> pendant
+        <strong>n</strong> années :</p>
+        <div class="callout">
+          <p style="font-family: 'JetBrains Mono', monospace; font-size: 18px; text-align: center; margin: 4px 0">
+            VF = V₀ × (1 + r)<sup>n</sup>
+          </p>
+        </div>
+        <p>
+          La différence avec les intérêts simples ? En intérêts simples, seuls vos versements produisent des
+          intérêts. En intérêts composés, <strong>les intérêts de l'année précédente produisent à leur tour
+          des intérêts</strong> — la courbe devient exponentielle, pas linéaire.
+        </p>
+        <p>
+          Avec des versements réguliers (le cas le plus courant : 200 €, 500 €, 1 000 € par mois), chaque
+          versement compose son propre intérêt jusqu'à l'horizon. Le calcul complet devient vite fastidieux à
+          la main — c'est exactement ce que fait le simulateur en bas de page, mois par mois.
+        </p>
+
+        <h2>La règle de 72 : le temps pour doubler</h2>
+        <p>
+          Pour estimer en combien d'années votre capital double, divisez 72 par le taux annuel :
+        </p>
+        <ul>
+          <li>À <strong>4 %</strong> / an → 72 ÷ 4 = <strong>18 ans</strong> pour doubler</li>
+          <li>À <strong>6 %</strong> / an → 72 ÷ 6 = <strong>12 ans</strong></li>
+          <li>À <strong>8 %</strong> / an → 72 ÷ 8 = <strong>9 ans</strong></li>
+          <li>À <strong>10 %</strong> / an → 72 ÷ 10 = <strong>7,2 ans</strong></li>
+        </ul>
+        <p>
+          Conséquence directe : doubler le taux divise par deux le temps de doublement, mais doubler la durée
+          de placement <strong>double le nombre de doublements</strong>. Le temps est le levier le plus
+          puissant — et le seul qu'on ne peut pas rattraper.
+        </p>
+
+        <h2>Exemple chiffré : 5 000 € + 400 €/mois pendant 20 ans</h2>
+        <p>
+          Reprenons le rendement composé réel du MSCI World (≈ 8,22 %/an, krachs inclus — scénario central
+          de Snowball Pro) :
+        </p>
+        <ul>
+          <li><strong>Épargné au total :</strong> 101 000 € (5 000 € + 400 € × 240 mois)</li>
+          <li><strong>Valeur estimée :</strong> ≈ 250 000 €</li>
+          <li><strong>Gains :</strong> ≈ 149 000 € — <strong>60 % du résultat final ne vient pas de vos poches</strong></li>
+        </ul>
+        <p>
+          Et si vous placez 5 ans de plus (25 ans au lieu de 20), le résultat n'augmente pas de 25 % — il
+          bondit bien davantage, parce que les 5 dernières années font composer <em>tout</em> le capital
+          accumulé. Le simulateur vous montre cette accélération visuellement, année par année.
+        </p>
+
+        <div class="cta-card">
+          <h2>Calculez vos intérêts composés</h2>
+          <p>
+            Scénario pré-rempli (5 000 € + 400 €/mois, 20 ans) — ajustez les montants, la durée ou
+            l'enveloppe fiscale dans l'application.
+          </p>
+          <div class="cta-row">
+            <a class="cta-button" href="https://snowball-pro.vercel.app/#s=eyJjYXBpdGFsSW5pdGlhbCI6NTAwMCwibW9udGhseVBheW1lbnQiOjQwMCwiZHVyYXRpb24iOjIwLCJlbnZlbG9wZSI6InBlYSIsInBlYVllYXJzSGVsZCI6NX0">
+              Lancer le calcul →
+            </a>
+          </div>
+          <p class="cta-caption">Gratuit · Sans inscription · Vos données ne quittent pas votre navigateur</p>
+        </div>
+
+        <h2>Questions fréquentes</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Quelle est la formule des intérêts composés ?</summary>
+            <div class="faq-answer">
+              <p>
+                Pour un capital initial V₀ au taux annuel r pendant n années : VF = V₀ × (1 + r)<sup>n</sup>.
+                Avec des versements réguliers, chaque versement compose à son tour — le simulateur Snowball
+                Pro fait ce calcul complet, mois par mois.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Comment calculer les intérêts composés avec des versements mensuels ?</summary>
+            <div class="faq-answer">
+              <p>
+                Chaque versement mensuel produit des intérêts qui composent jusqu'à l'horizon. La somme totale
+                est le cumul de ces contributions — un calcul fastidieux à la main, instantané avec un
+                simulateur.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>C'est quoi la règle de 72 ?</summary>
+            <div class="faq-answer">
+              <p>
+                Divisez 72 par le taux annuel : vous obtenez le nombre d'années pour doubler votre capital.
+                À 8 %/an, il double tous les 9 ans environ ; à 10 %, tous les 7,2 ans.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Quel rendement moyen pour le MSCI World ?</summary>
+            <div class="faq-answer">
+              <p>
+                Sur 1970-2025 : ≈ 10,07 %/an brut en moyenne arithmétique, ≈ 8,22 %/an en rendement composé
+                (krachs inclus). C'est la base du scénario central de Snowball Pro — des données
+                historiques, pas une promesse.
+              </p>
+            </div>
+          </details>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>Snowball Pro</strong> — simulateur patrimonial français gratuit : PEA, assurance vie, PER,
+        compte-titres, rente et retraite.
+      </p>
+      <p>
+        Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les performances
+        passées ne préjugent pas des performances futures.
+      </p>
+      <p><a href="https://snowball-pro.vercel.app/">Ouvrir l'application</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </body>
+</html>

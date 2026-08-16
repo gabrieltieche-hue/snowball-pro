@@ -9,6 +9,7 @@ import {
   getHistoricalDataset,
 } from "../../engine"
 import { useLang } from "../../i18n"
+import { buildShareUrl } from "../../utils/urlState"
 import { buildEquitySeries } from "../Charts/EquityChart"
 import type { SimulationInputs, YearRow } from "../../types"
 
@@ -502,6 +503,23 @@ export function PatrimonialReport({ rows, inputs }: PatrimonialReportProps) {
               "Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les résultats dépendent des hypothèses saisies (capital, épargne, durée, frais, scénario). Données 100 % locales.",
             )}
           </p>
+        </div>
+
+        {/* Pied de rapport (boucle virale — v6.13.0) : chaque rapport imprimé
+            ou exporté devient une publicité pour l'outil. Le lien de scénario
+            permet de reproduire le calcul d'un clic. */}
+        <div className="mt-8 pt-5 border-t border-gray-200 flex items-start justify-between gap-6 flex-wrap">
+          <div className="text-[9px] text-gray-500 leading-snug">
+            <p className="font-display text-[11px] font-extrabold tracking-tight">
+              SNOWBALL <span className="text-[#b8960f]">PRO</span>
+            </p>
+            <p className="mt-1 max-w-[280px]">{tr("Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne :")}</p>
+            <p className="font-mono mt-0.5">https://snowball-pro.vercel.app</p>
+          </div>
+          <div className="text-[9px] text-gray-500 max-w-[340px] leading-snug">
+            <p className="font-bold text-gray-700 mb-1">{tr("Votre scénario partageable :")}</p>
+            <p className="font-mono break-all">{buildShareUrl(inputs)}</p>
+          </div>
         </div>
       </section>
     </div>

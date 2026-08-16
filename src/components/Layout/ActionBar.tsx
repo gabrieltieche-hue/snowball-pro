@@ -4,7 +4,6 @@ import {
   Eraser,
   GitCompareArrows,
   GraduationCap,
-  Link2,
   MoreHorizontal,
   Moon,
   Redo2,
@@ -15,7 +14,9 @@ import type { ValidationError } from "../../engine"
 import { cn } from "../../utils/cn"
 import type { UiMode } from "../../utils/uiMode"
 import { useLang } from "../../i18n"
+import type { SimulationInputs } from "../../types"
 import { ExportMenu } from "./ExportMenu"
+import { ShareMenu } from "./ShareMenu"
 import { LanguageToggle } from "../shared/LanguageToggle"
 
 interface ActionBarProps {
@@ -31,8 +32,7 @@ interface ActionBarProps {
   onUndo: () => void
   onRedo: () => void
   validationErrors: ValidationError[]
-  onCopyLink: () => void
-  linkCopied: boolean
+  inputs: SimulationInputs
   uiMode: UiMode
   onToggleUiMode: () => void
   onReset: () => void
@@ -60,8 +60,7 @@ export function ActionBar({
   onUndo,
   onRedo,
   validationErrors,
-  onCopyLink,
-  linkCopied,
+  inputs,
   uiMode,
   onToggleUiMode,
   onReset,
@@ -139,6 +138,8 @@ export function ActionBar({
 
       <ExportMenu onExportCSV={onExportCSV} onExportJSON={onExportJSON} onPrint={onPrint} />
 
+      <ShareMenu inputs={inputs} />
+
       <LanguageToggle />
 
       <button
@@ -182,18 +183,6 @@ export function ActionBar({
             >
               <GitCompareArrows size={13} className="text-primary" aria-hidden />
               {comparing ? tr("Quitter la comparaison") : tr("Comparer deux scénarios")}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                close()
-                onCopyLink()
-              }}
-              className={itemClass}
-            >
-              <Link2 size={13} className="text-primary" aria-hidden />
-              {linkCopied ? tr("Lien copié !") : tr("Partager la simulation")}
             </button>
             <button
               type="button"

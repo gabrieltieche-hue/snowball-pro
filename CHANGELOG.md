@@ -4,6 +4,25 @@
 
 ---
 
+## v6.13.0 — Distribution : partage en un clic (X, WhatsApp, LinkedIn), rapport PDF signé et 3 guides SEO long-tail
+
+Brique « distribution » de la stratégie (canal SEO + boucle virale) : le produit est prêt depuis longtemps, c'est la visibilité qui manque. Trois leviers techniques implémentés : (1) **bouton « Partager » visible** dans l'en-tête — X (Twitter), WhatsApp, LinkedIn et copie du lien, chaque lien embarque le scénario pré-rempli (`#s=…` via `buildShareUrl`) + un **UTM par canal** (`utm_source=partage&utm_medium=x|whatsapp|linkedin|copie`) pour mesurer chaque source dans GoatCounter ; (2) **rapport PDF signé** — pied de rapport « Créé avec Snowball Pro » + URL du site + **lien du scénario partageable** : chaque rapport imprimé devient une publicité ; (3) **3 pages guides SEO** statiques (`public/guides/`) ciblant les requêtes long-tail françaises — « simulateur PEA », « PEA ou assurance vie », « calcul intérêts composés » — chacune avec données structurées (Article + FAQPage), CTA « Simulez votre scénario » en **lien profond pré-rempli** et GoatCounter. Sitemap + llms.txt mis à jour. **402 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`src/components/Layout/ShareMenu.tsx`** (nouveau) : bouton « Partager » de l'en-tête — panneau 4 canaux (X / WhatsApp / LinkedIn / copie) ; liens construits sur `buildShareUrl(inputs)` avec UTM inséré AVANT le hash (`?utm_source=partage&utm_medium=…` + `#s=…` intact) ; état « Lien copié ! » ; fermeture au clic extérieur / Échap.
+- **`src/components/Layout/ActionBar.tsx`** : le menu « Partager la simulation » (caché dans « ⋯ ») devient le bouton visible `ShareMenu` (le menu « ⋯ » ne contient plus que Comparer, mode, réinitialiser).
+- **`src/App.tsx`** : `handleCopyLink`/`linkCopied` remplacés par le passage de `inputs={activeInputs}` à l'ActionBar (le lien est reconstruit à chaque ouverture — toujours à jour).
+- **`src/components/Report/PatrimonialReport.tsx`** : pied de rapport — marque SNOWBALL PRO, « Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne », URL du site et **lien partageable du scénario** (`buildShareUrl(inputs)`, sans UTM : c'est un artefact imprimé).
+- **`src/engine/i18n.ts`** : nouvelles clés FR→EN (partage, pied de rapport), carte « Dernières éditions » v6.13.0 et footer v6.13.0 (FR + EN).
+- **`public/guides/`** (nouveau) : `guides.css` (thème clair aligné sur l'app) + `simulateur-pea.html`, `pea-ou-assurance-vie.html`, `calcul-interets-composes.html` — pages statiques indexables, JSON-LD Article + FAQPage, canonical, OG, CSP identique à l'app, GoatCounter, CTA deep-link `/#s=…` (scénarios vérifiés décodables par le moteur).
+- **`public/sitemap.xml`** : 3 URLs guides ajoutées (priority 0.7, monthly). **`public/llms.txt`** : liens guides ajoutés (AEO).
+- **`src/__tests__/components.test.tsx`** : +4 tests partage — ouverture des 4 canaux, UTM + scénario décodable dans chaque lien (X, WhatsApp, LinkedIn), copie avec UTM « copie » + feedback, fermeture au clic extérieur.
+- Gate : typecheck ✓ lint ✓ **402/402 tests** ✓ build ✓ (guides copiés dans `dist/`).
+- Version 6.12.0 → **6.13.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.13.0`, footer landing v6.13.0, « Dernières éditions » v6.13.0), CHANGELOG (cette entrée), MEMORY.md (entrée session).
+
+---
+
 ## v6.12.0 — L'application en anglais : un bouton FR/EN traduit toute l'app 🇬🇧
 
 Demande utilisateur : _« je veux ajouter un bouton sur le site pour traduire dans plusieurs langues et rendre accessible à plus de gens. On met juste l'anglais. »_ Un bouton FR/EN (en-tête de l'app **et** de la landing) bascule l'intégralité de l'interface en anglais : simulateur, Monte Carlo, rente & retraite, objectif, comparaison, sidebar, graphiques, rapport PDF, landing et écrans de compte. Le formatage des montants suit la langue (€1,234.56 / 1,234,567.89 € au lieu de 1 234,56 € / 1 234 567,89 €), la préférence est persistée (`snowball_v5_lang`), et la langue du navigateur sert de défaut au premier passage. Le français reste la langue par défaut et l'architecture est prête pour d'autres langues. **385 tests**, gate 100 % vert.

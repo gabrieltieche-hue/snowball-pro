@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulateur PEA gratuit — projetez votre épargne boursière en 30 secondes</title>
+    <meta
+      name="description"
+      content="Simulateur PEA gratuit et sans inscription : projection de votre épargne avec les rendements réels du MSCI World (1970-2025), fiscalité PEA (prélèvements sociaux seuls après 5 ans), Monte Carlo. Données 100 % locales."
+    />
+    <link rel="canonical" href="https://snowball-pro.vercel.app/guides/simulateur-pea.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app/guides/simulateur-pea.html" />
+    <meta property="og:title" content="Simulateur PEA gratuit — projetez votre épargne boursière" />
+    <meta
+      property="og:description"
+      content="Projetez votre PEA avec les rendements réels du MSCI World et la fiscalité française. Gratuit, sans inscription, données en local."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/guides/guides.css" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Simulateur PEA : combien rapporte votre plan d'épargne en actions ?",
+        "description": "Guide du PEA (plafond, fiscalité après 5 ans, exemples chiffrés) + simulateur gratuit qui projette votre épargne avec les rendements réels du MSCI World.",
+        "inLanguage": "fr-FR",
+        "datePublished": "2026-08-15",
+        "publisher": { "@type": "Organization", "name": "Snowball Pro" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Le simulateur PEA est-il gratuit ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui, Snowball Pro est 100 % gratuit et sans inscription. Aucune limite, aucun paywall : vos données ne quittent jamais votre navigateur."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Quel rendement utiliser pour simuler un PEA ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Snowball Pro utilise les rendements réels du MSCI World (1970-2025, ≈ 8,22 %/an composé en scénario central) plus 100 ans d'historique S&P 500. Ce ne sont pas des rendements promis, mais ce que le marché a réellement donné."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Le PEA est-il vraiment exonéré d'impôt après 5 ans ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Après 5 ans de détention, les gains du PEA sont exonérés d'impôt sur le revenu : seuls les prélèvements sociaux (18,6 % en 2026) s'appliquent. Avant 5 ans, un retrait clôture le plan et les gains sont taxés au PFU."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Quel est le plafond du PEA ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Les versements sur un PEA sont plafonnés à 150 000 € (225 000 € avec un PEA-PME). Les gains générés ne comptent pas dans ce plafond."
+            }
+          }
+        ]
+      }
+    </script>
+    <script
+      data-goatcounter="https://gabriel322jsj222.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="https://snowball-pro.vercel.app/" title="Snowball Pro — Simulateur patrimonial">
+          <span class="brand-logo">SP</span>
+          <span>
+            <span class="brand-name">SNOWBALL <em>PRO</em></span>
+            <span class="brand-tag" style="display: block">Simulateur patrimonial</span>
+          </span>
+        </a>
+        <a class="header-link" href="https://snowball-pro.vercel.app/">Ouvrir l'application</a>
+      </div>
+    </header>
+
+    <main>
+      <article>
+        <p class="article-kicker">Guide · Épargne boursière</p>
+        <h1>Simulateur PEA : combien rapporte votre plan d'épargne en actions ?</h1>
+        <p class="article-intro">
+          Le PEA est l'enveloppe boursière la plus avantageuse de la fiscalité française — à condition de le
+          garder au moins 5 ans. Ce guide vous donne les chiffres clés (plafond, impôts, exemples) et un
+          simulateur gratuit qui projette votre scénario précis avec les rendements réels du marché mondial.
+        </p>
+
+        <h2>Pourquoi simuler son PEA ?</h2>
+        <p>
+          Un PEA (Plan d'Épargne en Actions) est une enveloppe qui contient des actions ou des ETF, avec un
+          régime fiscal privilégié : <strong>après 5 ans de détention, vos gains sont exonérés d'impôt sur le
+          revenu</strong>. Seuls les prélèvements sociaux (18,6 % en 2026) restent dus.
+        </p>
+        <p>
+          La différence avec un compte-titres ordinaire (CTO) est massive : sur le CTO, les plus-values sont
+          taxées au PFU de 31,4 % en 2026. C'est pourquoi la simulation importe : <strong>le choix de
+          l'enveloppe peut changer de plusieurs dizaines de milliers d'euros le montant final</strong> sur
+          20-30 ans.
+        </p>
+
+        <div class="callout">
+          <h3>Les chiffres clés du PEA (règles 2026)</h3>
+          <dl>
+            <div class="fact-row">
+              <dt>Plafond de versements</dt>
+              <dd>150 000 €</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Durée minimale</dt>
+              <dd>5 ans</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Fiscalité après 5 ans</dt>
+              <dd>18,6 % de prélèvements sociaux</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Avant 5 ans</dt>
+              <dd>PFU 30 % + clôture du plan</dd>
+            </div>
+            <div class="fact-row">
+              <dt>Retraits après 5 ans</dt>
+              <dd>Partiels, sans clôturer</dd>
+            </div>
+          </dl>
+        </div>
+
+        <h2>Exemple chiffré : 10 000 € + 500 €/mois pendant 25 ans</h2>
+        <p>
+          Prenons un scénario réaliste : 10 000 € de départ, 500 € versés chaque mois, horizon 25 ans. En
+          appliquant le rendement composé réel du MSCI World (≈ 8,22 %/an en scénario central), l'épargne
+          progresse ainsi :
+        </p>
+        <ul>
+          <li><strong>Épargné au total :</strong> 160 000 € (10 000 € + 500 € × 300 mois)</li>
+          <li><strong>Valeur estimée :</strong> ≈ 525 000 €</li>
+          <li><strong>Gains (croissance boursière) :</strong> ≈ 365 000 € — soit plus de 2× le montant épargné</li>
+        </ul>
+        <p>
+          Le moteur de Snowball Pro calcule votre résultat exact (pas une approximation) : mêmes paramètres,
+          rendements historiques réels année par année, frais d'ETF, inflation et fiscalité appliqués à la
+          lettre.
+        </p>
+
+        <h2>Comment fonctionne ce simulateur PEA ?</h2>
+        <ul>
+          <li><strong>100 ans d'histoire boursière réelle</strong> : S&amp;P 500 (1926-1969) + MSCI World (1970-2025) — pas de taux « promis ».</li>
+          <li><strong>Fiscalité française appliquée</strong> : durée de détention du PEA prise en compte (5 ans), prélèvements sociaux 2026.</li>
+          <li><strong>Scénarios prudent / central / optimiste</strong> et jusqu'à 10 000 simulations Monte Carlo pour la robustesse.</li>
+          <li><strong>Inflation réelle INSEE</strong> : le « pouvoir d'achat » de votre épargne est affiché en euros d'aujourd'hui.</li>
+          <li><strong>100 % local</strong> : rien ne part sur un serveur. Sans inscription.</li>
+        </ul>
+
+        <div class="cta-card">
+          <h2>Simulez votre PEA maintenant</h2>
+          <p>
+            Scénario pré-rempli (10 000 € + 500 €/mois, 25 ans) — ajustez-le librement dans l'application.
+          </p>
+          <div class="cta-row">
+            <a class="cta-button" href="https://snowball-pro.vercel.app/#s=eyJjYXBpdGFsSW5pdGlhbCI6MTAwMDAsIm1vbnRobHlQYXltZW50Ijo1MDAsImR1cmF0aW9uIjoyNSwiZW52ZWxvcGUiOiJwZWEiLCJwZWFZZWFyc0hlbGQiOjV9">
+              Lancer la simulation →
+            </a>
+          </div>
+          <p class="cta-caption">Gratuit · Sans inscription · Vos données ne quittent pas votre navigateur</p>
+        </div>
+
+        <h2>Questions fréquentes sur le simulateur PEA</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Le simulateur PEA est-il gratuit ?</summary>
+            <div class="faq-answer">
+              <p>
+                Oui, Snowball Pro est 100 % gratuit, sans inscription et sans limite. Aucun compte n'est
+                requis : vos données restent dans votre navigateur (les comptes sont optionnels et locaux).
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Quel rendement utiliser pour simuler un PEA ?</summary>
+            <div class="faq-answer">
+              <p>
+                Le simulateur applique les rendements réels du MSCI World (1970-2025) : ≈ 10,07 %/an brut en
+                moyenne arithmétique, ≈ 8,22 %/an composé (krachs inclus) en scénario central. Ce sont des
+                données historiques, pas une promesse de rendement.
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Le PEA est-il vraiment exonéré d'impôt après 5 ans ?</summary>
+            <div class="faq-answer">
+              <p>
+                Oui pour l'impôt sur le revenu : après 5 ans de détention, seuls les prélèvements sociaux
+                (18,6 % en 2026) s'appliquent sur les gains retirés. Avant 5 ans, un retrait clôture le plan
+                et les gains sont taxés au PFU (30 %).
+              </p>
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary>Mes données sont-elles en sécurité ?</summary>
+            <div class="faq-answer">
+              <p>
+                Vos simulations sont stockées localement sur votre appareil (localStorage) et ne sont jamais
+                envoyées sur un serveur. Le seul partage possible est celui que vous faites vous-même, via un
+                lien.
+              </p>
+            </div>
+          </details>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>Snowball Pro</strong> — simulateur patrimonial français gratuit : PEA, assurance vie, PER,
+        compte-titres, rente et retraite.
+      </p>
+      <p>
+        Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les performances
+        passées ne préjugent pas des performances futures.
+      </p>
+      <p><a href="https://snowball-pro.vercel.app/">Ouvrir l'application</a> · <a href="/sitemap.xml">Sitemap</a></p>
+    </footer>
+  </body>
+</html>

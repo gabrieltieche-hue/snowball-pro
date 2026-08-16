@@ -1,0 +1,41 @@
+# Snowball Pro
+
+> Snowball Pro is a free French wealth and retirement simulator. It projects
+> your savings (starting capital + monthly contributions) using the real
+> returns of the MSCI World (1970–2025) plus 100 years of history (S&P 500
+> SBBI 1926–1969), applies French taxation (CTO, PEA, AV, PER — 2026 rules),
+> and measures plan robustness with Monte Carlo (up to 10,000 scenarios) and
+> decumulation (Guyton–Klinger guardrails, 1973/2000/2008 stress tests).
+
+## Key facts
+
+- Free, no sign-up, no account required (accounts are optional and local-only)
+- 100% local: data never leaves the device (localStorage); works offline (PWA)
+- Available in French and English
+- No advertising, no data resale, no cookies
+- Historical data: MSCI World net returns 1970–2025 (EUR), S&P 500 SBBI
+  1926–1969, French INSEE inflation 1970–2025
+- French tax year 2026 modeled: flat tax (PFU) 31.4% on CTO gains; PEA exempt
+  from income tax after 5 years (18.6% social contributions); life insurance
+  (AV) excluded from the 2026 CSG increase (17.2%); PER deductible on entry,
+  taxed at exit
+- Pedagogical rate chain: gross 10.07% → compounded 8.22% → real 5.99%
+  (MSCI World 1970–2025, 2.1% inflation assumption — the period median)
+
+## Links
+
+- [App](https://snowball-pro.vercel.app/)
+- [Guide — Simulateur PEA](https://snowball-pro.vercel.app/guides/simulateur-pea.html)
+- [Guide — PEA ou assurance vie](https://snowball-pro.vercel.app/guides/pea-ou-assurance-vie.html)
+- [Guide — Calcul des intérêts composés](https://snowball-pro.vercel.app/guides/calcul-interets-composes.html)
+
+## FAQ
+
+- Q: Is Snowball Pro free?
+  A: Yes — completely free, with no sign-up required and no paywall.
+- Q: Where do the return assumptions come from?
+  A: Real historical returns of the MSCI World (1970–2025) and S&P 500
+  (1926–1969), not promised returns.
+- Q: Is this investment advice?
+  A: No. Snowball Pro provides educational simulations based on historical
+  data; past performance does not predict future results.

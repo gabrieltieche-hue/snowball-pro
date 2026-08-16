@@ -4,6 +4,35 @@
 
 ---
 
+## SESSION — 2026-08-15 (v6.13.0 : Distribution — partage en un clic + rapport PDF signé + 3 guides SEO long-tail)
+
+### Résumé
+
+Brique « distribution » de la stratégie (canal SEO + boucle virale) — le produit est prêt, c'est la visibilité qui manque. Trois leviers techniques, zéro changement moteur :
+
+1. **Bouton « Partager » visible** (`ShareMenu.tsx`, dans l'en-tête) : X (Twitter), WhatsApp, LinkedIn et copie du lien. Chaque lien embarque le scénario pré-rempli (`#s=…` via `buildShareUrl`) + **UTM par canal** (`utm_source=partage&utm_medium=x|whatsapp|linkedin|copie`) inséré AVANT le hash — GoatCounter voit la source, l'état partagé reste intact. Remplacé le menu « Partager la simulation » caché dans « ⋯ » (ActionBar) ; `App.tsx` passe `inputs={activeInputs}` au lieu de `onCopyLink`/`linkCopied`.
+2. **Rapport PDF signé** (`PatrimonialReport.tsx`) : pied de rapport « Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne » + URL du site + **lien partageable du scénario** (`buildShareUrl`, sans UTM — artefact imprimé). Chaque rapport imprimé = une publicité.
+3. **3 guides SEO statiques** (`public/guides/`) : `simulateur-pea.html`, `pea-ou-assurance-vie.html`, `calcul-interets-composes.html` + `guides.css` partagé. Requêtes long-tail françaises ciblées, JSON-LD **Article + FAQPage**, canonical, OG, CSP identique à l'app, GoatCounter, et CTA « Simulez votre scénario » en **lien profond pré-rempli** (payloads vérifiés décodables par `parseStoredInputs` — enveloppe + années de détention + montants). Sitemap + `llms.txt` (AEO) mis à jour.
+
+**402 tests** (373 → 402 : +4 tests partage, +25 de l'autre thread), gate 100 % vert, build ✓ (guides copiés dans `dist/`). Release **v6.13.0** complète : package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.13.0`, footer + « Dernières éditions » landing (FR + EN), CHANGELOG (entrée v6.13.0), MEMORY (cette entrée).
+
+### Décisions
+
+- **UTM avant le hash** : `?utm_source=partage&utm_medium=x#s=…` — le scénario pré-rempli n'est jamais altéré par le tracking (le hash est l'état, la query est la source).
+- **Guides 100 % statiques** plutôt que routes SPA : le single-file Vite + hash router n'est pas indexable par requête long-tail — des pages HTML statiques dans `public/` (copiées telles quelles dans `dist/`) le sont, et chaque page peut porter ses propres données structurées + CTA deep-link.
+- **Taux cités alignés sur le moteur** (règle 2026 du repo) : CTO PFU 31,4 %, PEA 18,6 % de PS après 5 ans, AV 17,2 % — jamais les taux 2025 (leçon v6.8.0 : la landing mentait, le moteur avait raison).
+- **Le partage famille reste interdit** (règle AGENTS #4) : les guides et boutons de partage sont des canaux anonymes/publics, conformes.
+- **Prochaine étape** : déployer (`vercel --prod`), resoumettre le sitemap dans GSC (URLs guides), surveiller GoatCounter par UTM, et générer les guides suivants (règle des 4 %, PER vs AV, calcul PFU, combien investir pour 1 M€) si les premiers performent (règle 50-100 visites).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **402/402 tests** ✓ build ✓ (dist 1 227 ko / 359 ko gzip, guides présents).
+- Liens profonds décodés : `s=` des 3 pages → payloads exacts (enveloppe/années/montants), conformes au schéma `parseStoredInputs`.
+- Page guide vérifiée en preview (structure complète : header, article, CTA, FAQ disclosure, footer) — le CSS absolu `/guides/guides.css` ne se charge pas dans la preview locale (servie à la racine) mais résout correctement en prod (`/guides/…`).
+- Worktree : les fichiers non commités de l'autre thread (SimulatorTab, engine/index.ts, EnvelopeComparisonPanel, SensitivityPanel, engine.test.ts) n'ont PAS été touchés.
+
+---
+
 ## SESSION — 2026-08-15 (v6.12.0 : l'application en anglais 🇬🇧 — bouton FR/EN)
 
 ### Résumé

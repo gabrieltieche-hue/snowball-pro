@@ -76,6 +76,14 @@ const EN: Record<string, string> = {
     "Reset to default settings? Your simulations and snapshots in this workspace will be erased.",
   Réinitialiser: "Reset",
   "Tout réinitialiser": "Reset everything",
+  // ─── Partage (boutons réseaux — v6.13.0) ───────────────────────────────────
+  Partager: "Share",
+  "Partager sur X (Twitter)": "Share on X (Twitter)",
+  "Partager sur WhatsApp": "Share on WhatsApp",
+  "Partager sur LinkedIn": "Share on LinkedIn",
+  "Votre scénario est pré-rempli dans le lien partagé.": "Your scenario is pre-filled in the shared link.",
+  "Ma simulation d'épargne avec Snowball Pro — gratuit, sans inscription, données 100 % locales.":
+    "My savings projection with Snowball Pro — free, no signup, 100% local data.",
   avertissement: "warning",
   avertissements: "warnings",
 
@@ -87,6 +95,9 @@ const EN: Record<string, string> = {
   "Paramètres + résultats bruts": "Settings + raw results",
   "Rapport PDF": "PDF report",
   "Rapport patrimonial de synthèse — imprimer ou enregistrer en PDF": "Summary wealth report — print or save as PDF",
+  "Créé avec Snowball Pro — simulez gratuitement votre propre projet d'épargne :":
+    "Made with Snowball Pro — simulate your own savings plan for free:",
+  "Votre scénario partageable :": "Your shareable scenario:",
 
   // ─── Échelles de valeurs ───────────────────────────────────────────────────
   "sur le compte": "on the account",
@@ -818,6 +829,25 @@ const EN: Record<string, string> = {
   "Détail année par année": "Year-by-year detail",
   "Voir le détail annuel": "See annual details",
 
+  // ─── Comparaison d'enveloppes + leviers (v6.13) ───────────────────────────
+  "Et si vous changiez d'enveloppe ?": "What if you switched envelopes?",
+  "Mêmes versements, même scénario — seule la fiscalité change.":
+    "Same contributions, same scenario — only the taxation changes.",
+  "Votre enveloppe": "Your envelope",
+  "Impôts :": "Taxes:",
+  "Net après impôts à la liquidation — mêmes versements et scénario partout, chaque enveloppe applique ses frais et sa fiscalité réels.":
+    "Net after taxes at liquidation — same contributions and scenario everywhere; each envelope applies its own real fees and taxation.",
+  "Quel levier compte le plus ?": "Which lever matters most?",
+  "Un seul réglage change à la fois, le reste est identique.":
+    "Only one setting changes at a time, everything else stays identical.",
+  "Levier n°1": "Lever #1",
+  "Aucun levier ne change votre plan : vos réglages sont déjà aux bornes ou à zéro.":
+    "No lever changes your plan: your settings are already at their limits or zero.",
+  "Versement mensuel · +100 €/mois": "Monthly contribution · +€100/month",
+  "Durée · +2 ans": "Duration · +2 years",
+  "Scénario · Central → Optimiste": "Scenario · Central → Optimistic",
+  "Capital de départ · +10 %": "Starting capital · +10%",
+
   // ─── Onglet Objectif d'épargne ─────────────────────────────────────────────
   "Objectif d'épargne": "Savings goal",
   "Vous savez combien vous voulez avoir plus tard : l'app calcule combien épargner chaque mois (et quel rendement de la bourse viser) pour y arriver.":
@@ -1114,8 +1144,11 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.12.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.12.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.13.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.13.0 · 100% local data · Made with real returns, not promises.",
+  "Partagez votre simulation en un clic": "Share your simulation in one click",
+  "Boutons de partage X, WhatsApp et LinkedIn avec votre scénario pré-rempli dans le lien (UTM par canal pour mesurer chaque source), pied de rapport PDF « Créé avec Snowball Pro » + lien du scénario, et 3 guides SEO qui arrivent de Google : simulateur PEA, PEA ou assurance vie, intérêts composés.":
+    "X, WhatsApp and LinkedIn share buttons with your scenario pre-filled in the link (per-channel UTM to measure each source), a “Made with Snowball Pro” footer + scenario link on the PDF report, and 3 SEO guides coming from Google: PEA simulator, PEA vs life insurance, compound interest.",
   "L'application en anglais 🇬🇧": "The app in English 🇬🇧",
   "Un bouton FR/EN (en-tête de l'app et de la landing) traduit toute l'application en anglais : simulateur, Monte Carlo, rente, objectif, rapport PDF et landing — avec le formatage des montants adapté (€1,234.56 au lieu de 1 234,56 €).":
     "An FR/EN button (in the app and landing headers) translates the whole app into English: simulator, Monte Carlo, annuity, goal, PDF report and landing — with amounts formatted accordingly (€1,234.56 instead of 1 234,56 €).",

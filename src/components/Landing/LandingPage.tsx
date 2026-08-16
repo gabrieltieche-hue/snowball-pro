@@ -394,6 +394,11 @@ const NAV = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.13.0",
+    title: "Partagez votre simulation en un clic",
+    text: "Boutons de partage X, WhatsApp et LinkedIn avec votre scénario pré-rempli dans le lien (UTM par canal pour mesurer chaque source), pied de rapport PDF « Créé avec Snowball Pro » + lien du scénario, et 3 guides SEO qui arrivent de Google : simulateur PEA, PEA ou assurance vie, intérêts composés.",
+  },
+  {
     version: "v6.12.0",
     title: "L'application en anglais 🇬🇧",
     text: "Un bouton FR/EN (en-tête de l'app et de la landing) traduit toute l'application en anglais : simulateur, Monte Carlo, rente, objectif, rapport PDF et landing — avec le formatage des montants adapté (€1,234.56 au lieu de 1 234,56 €).",
@@ -1240,7 +1245,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.12.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.13.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

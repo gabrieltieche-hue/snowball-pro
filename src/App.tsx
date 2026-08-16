@@ -30,7 +30,7 @@ import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
 import { loadQuickStartVisible, saveQuickStartDismissed } from "./utils/quickStart"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
-import { buildShareUrl, copyTextToClipboard, readSharedState, writeSharedState } from "./utils/urlState"
+import { readSharedState, writeSharedState } from "./utils/urlState"
 import { AccountMenu } from "./components/Auth/AccountMenu"
 import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
@@ -149,7 +149,6 @@ function AppShell({ scope }: { scope: string | null }) {
   // complet de graphe à chaque changement de réglage), puis conservé.
   const [reportOpen, setReportOpen] = useState(false)
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
-  const [linkCopied, setLinkCopied] = useState(false)
   // Activation (v6.8) : bandeau « Commencez ici » proposé une seule fois aux
   // nouveaux visiteurs (voir utils/quickStart.ts) — disparaît au premier
   // réglage modifié ou au clic sur X, et ne revient jamais (clé persistée).
@@ -353,14 +352,6 @@ function AppShell({ scope }: { scope: string | null }) {
       writeSharedState(activeInputs)
     }, 500)
     return () => clearTimeout(timer)
-  }, [activeInputs])
-
-  const handleCopyLink = useCallback(async () => {
-    const ok = await copyTextToClipboard(buildShareUrl(activeInputs))
-    if (ok) {
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
-    }
   }, [activeInputs])
 
   useEffect(() => {
@@ -573,8 +564,7 @@ function AppShell({ scope }: { scope: string | null }) {
                 onUndo={handleUndo}
                 onRedo={handleRedo}
                 validationErrors={validationErrors}
-                onCopyLink={handleCopyLink}
-                linkCopied={linkCopied}
+                inputs={activeInputs}
                 uiMode={uiMode}
                 onToggleUiMode={toggleUiMode}
                 onReset={handleResetSettings}

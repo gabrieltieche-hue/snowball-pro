@@ -24,6 +24,8 @@ import { SmartInput } from "../components/shared/SmartInput"
 import { SectionHeader } from "../components/shared/SectionHeader"
 import { KpiGrid } from "../components/Simulation/KpiGrid"
 import { AIInsightCard } from "../components/Simulation/AIInsightCard"
+import { EnvelopeComparisonPanel } from "../components/Simulation/EnvelopeComparisonPanel"
+import { SensitivityPanel } from "../components/Simulation/SensitivityPanel"
 import { Shield } from "lucide-react"
 import {
   DEFAULT_INPUTS,
@@ -1430,5 +1432,123 @@ describe("i18n — bascule de langue", () => {
     fireEvent.click(screen.getByRole("button", { name: "Passer en anglais" }))
     expect(screen.getAllByText("Create your account").length).toBeGreaterThan(0)
     expect(screen.getByLabelText("Email address")).toBeTruthy()
+  })
+})
+
+describe("v6.13 — EnvelopeComparisonPanel : « PEA ou assurance-vie ? » répondue par le moteur", () => {
+  it("affiche les 4 enveloppes, le net après impôts et surligne l'enveloppe actuelle", () => {
+    const inputs = { ...DEFAULT_INPUTS, envelope: "pea" as const, duration: 25, monthlyPayment: 400 }
+    render(<EnvelopeComparisonPanel inputs={inputs} />)
+    expect(screen.getByRole("heading", { name: /Et si vous changiez d'enveloppe/i })).toBeInTheDocument()
+    expect(screen.getByText("CTO")).toBeInTheDocument()
+    expect(screen.getByText("PEA")).toBeInTheDocument()
+    expect(screen.getByText("AV")).toBeInTheDocument()
+    expect(screen.getByText("PER")).toBeInTheDocument()
+    expect(screen.getByText("Plan d'épargne en actions")).toBeInTheDocument()
+    expect(screen.getByText("Votre enveloppe")).toBeInTheDocument()
+    // Chaque ligne porte le net après impôts (format euros)
+    expect(screen.getAllByText(/€/).length).toBeGreaterThanOrEqual(4)
+  })
+
+  it("change de surlignage quand l'utilisateur change d'enveloppe (CTO)", () => {
+    const inputs = { ...DEFAULT_INPUTS, envelope: "cto" as const, duration: 25, monthlyPayment: 400 }
+    render(<EnvelopeComparisonPanel inputs={inputs} />)
+    expect(screen.getByText("Votre enveloppe")).toBeInTheDocument()
+    expect(screen.getByText("Compte-titres ordinaire")).toBeInTheDocument()
+  })
+})
+
+describe("v6.13 — SensitivityPanel : quel levier compte le plus ?", () => {
+  it("affiche les 4 leviers avec leur delta et met en avant le levier n°1", () => {
+    const inputs = { ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 25 }
+    render(<SensitivityPanel inputs={inputs} />)
+    expect(screen.getByRole("heading", { name: /Quel levier compte le plus/i })).toBeInTheDocument()
+    expect(screen.getByText("Versement mensuel · +100 €/mois")).toBeInTheDocument()
+    expect(screen.getByText("Durée · +2 ans")).toBeInTheDocument()
+    expect(screen.getByText("Scénario · Central → Optimiste")).toBeInTheDocument()
+    expect(screen.getByText("Capital de départ · +10 %")).toBeInTheDocument()
+    expect(screen.getByText("Levier n°1")).toBeInTheDocument()
+  })
+
+  it("à durée maximale, le levier « +2 ans » ne gagne pas la première place (borne respectée)", () => {
+    const inputs = { ...DEFAULT_INPUTS, capitalInitial: 10_000, monthlyPayment: 500, duration: 80 }
+    render(<SensitivityPanel inputs={inputs} />)
+    // La durée est déjà au maximum : son delta est nul, un AUTRE levier est n°1.
+    const highlightedRow = screen.getByText("Levier n°1").closest(".rounded-xl")
+    const durationRow = screen.getByText("Durée · +2 ans").closest(".rounded-xl")
+    expect(highlightedRow).not.toBe(durationRow)
+  })
+})
+
+describe("v6.13 — partage visible (boucle virale) : X, WhatsApp, LinkedIn, copie", () => {
+  it("ouvre le panneau Partager avec les 4 canaux au clic", () => {
+    render(<App />)
+    const shareButton = screen.getByRole("button", { name: /partager/i })
+    expect(screen.queryByRole("menuitem", { name: /partager sur x/i })).not.toBeInTheDocument()
+
+    fireEvent.click(shareButton)
+
+    expect(screen.getByRole("menuitem", { name: /partager sur x \(twitter\)/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /partager sur whatsapp/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /partager sur linkedin/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /copier le lien/i })).toBeInTheDocument()
+  })
+
+  it("embarque le scénario pré-rempli (#s=…) et l'UTM de canal dans chaque lien", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+
+    const xLink = screen.getByRole("menuitem", { name: /partager sur x \(twitter\)/i }) as HTMLAnchorElement
+    expect(xLink.href).toContain("https://twitter.com/intent/tweet?text=")
+    // L'URL du scénario est encodée dans le paramètre `url` : on la décode
+    // avant de vérifier l'UTM et l'état pré-rempli.
+    const sharedUrl = decodeURIComponent(xLink.href.split("url=")[1])
+    expect(sharedUrl).toContain("utm_source=partage&utm_medium=x")
+    expect(sharedUrl).toContain("#s=")
+    // Le scénario partagé doit être décodable par le décodeur de l'app.
+    const encoded = decodeInputsFromUrl(sharedUrl.slice(sharedUrl.indexOf("#s=") + 1))
+    expect(encoded).not.toBeNull()
+    expect(encoded?.monthlyPayment).toBe(DEFAULT_INPUTS.monthlyPayment)
+
+    const waLink = screen.getByRole("menuitem", { name: /partager sur whatsapp/i }) as HTMLAnchorElement
+    expect(waLink.href).toContain("wa.me/?text=")
+    // WhatsApp encode tout le texte dans `text=` : on décode avant de vérifier.
+    expect(decodeURIComponent(waLink.href)).toContain("utm_medium=whatsapp")
+
+    const liLink = screen.getByRole("menuitem", { name: /partager sur linkedin/i }) as HTMLAnchorElement
+    expect(liLink.href).toContain("linkedin.com/sharing/share-offsite/?url=")
+    const liUrl = decodeURIComponent(liLink.href.split("url=")[1])
+    expect(liUrl).toContain("utm_medium=linkedin")
+    expect(liUrl).toContain("#s=")
+  })
+
+  it("copie le lien avec l'UTM « copie » et affiche « Lien copié ! »", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    })
+    // jsdom n'est pas un « secure context » : l'API Clipboard n'est utilisée
+    // que si window.isSecureContext est vrai (urlState.ts en dépend).
+    Object.defineProperty(window, "isSecureContext", { value: true, configurable: true })
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /copier le lien/i }))
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled())
+    const copied = writeText.mock.calls[0][0] as string
+    expect(copied).toContain("utm_medium=copie")
+    expect(copied).toContain("#s=")
+    expect(screen.getByRole("menuitem", { name: /lien copié !/i })).toBeInTheDocument()
+  })
+
+  it("se ferme au clic extérieur", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+    expect(screen.getByRole("menuitem", { name: /copier le lien/i })).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole("menuitem", { name: /copier le lien/i })).not.toBeInTheDocument()
   })
 })
