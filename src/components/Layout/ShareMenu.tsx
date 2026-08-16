@@ -10,7 +10,7 @@ interface ShareMenuProps {
 }
 
 const baseBtn =
-  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]"
+  "inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]"
 
 /**
  * Bouton « Partager » visible de l'en-tête (boucle virale — v6.13.0).
@@ -53,9 +53,7 @@ export function ShareMenu({ inputs }: ShareMenuProps) {
     return `${base.slice(0, idx)}?utm_source=partage&utm_medium=${medium}${base.slice(idx)}`
   }
 
-  const shareText = tr(
-    "Ma simulation d'épargne avec Snowball Pro — gratuit, sans inscription, données 100 % locales.",
-  )
+  const shareText = tr("Ma simulation d'épargne avec Snowball Pro — gratuit, sans inscription, données 100 % locales.")
 
   const handleCopy = async () => {
     const ok = await copyTextToClipboard(withUtm("copie"))

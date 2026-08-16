@@ -29,6 +29,17 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["dist/", "node_modules/", "*.config.*", ".freebuff/", ".github/skills/", ".agents/skills/", "scripts/"],
+    // ios/ = projet natif généré par Capacitor (Swift + copie du build web,
+    // dont public/sw.js qui n'est pas du code source à lint) ; dist/ = build.
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "ios/",
+      "*.config.*",
+      ".freebuff/",
+      ".github/skills/",
+      ".agents/skills/",
+      "scripts/",
+    ],
   },
 )

@@ -104,7 +104,10 @@ export function SmartInput({ value, onChange, className, min, max, allowNegative
           if (e.key === "e" || e.key === "E") e.preventDefault()
         }}
         className={cn(
-          "mono text-right text-xs font-bold bg-glass border rounded-lg px-2.5 py-1.5 outline-none transition-colors min-w-0",
+          // text-base (16 px) sur mobile : iOS Safari zoome au focus sur tout
+          // champ < 16 px — la saisie directe deviendrait illisible. Sur sm+
+          // on revient à text-xs (12 px, densité desktop).
+          "mono text-right text-base sm:text-xs font-bold bg-glass border rounded-lg px-2.5 py-1.5 outline-none transition-colors min-w-0",
           error ? "border-danger/70 ring-1 ring-danger/40" : "border-border focus:border-primary/50",
           className,
         )}

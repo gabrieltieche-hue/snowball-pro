@@ -2,7 +2,18 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover : indispensable en PWA standalone ET en app
+         Capacitor — sans lui, les zones de sécurité (encoche, barre
+         d'accueil) ne sont pas gérées et le contenu passe dessous. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- iOS : expérience « Ajouter à l'écran d'accueil » / app standalone
+         (icône, titre, barre de statut, pas de barre Safari). Ignorés par
+         Android et desktop. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Snowball Pro" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta
       name="description"
       content="Snowball Pro — simulateur d'épargne et de patrimoine français : projection du capital, fiscalité (CTO, PEA, AV, PER), Monte Carlo, rente et retraite. Gratuit, données en local, compte optionnel."

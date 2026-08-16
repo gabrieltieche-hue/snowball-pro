@@ -37,7 +37,7 @@ export function HelpTip({ text, className }: HelpTipProps) {
         aria-describedby={open ? tooltipId : undefined}
         onClick={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="w-4 h-4 rounded-full bg-text-dim/15 text-text-dim text-[10px] font-bold leading-none flex items-center justify-center cursor-help hover:bg-primary/25 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        className="w-5 h-5 sm:w-4 sm:h-4 rounded-full bg-text-dim/15 text-text-dim text-[11px] sm:text-[10px] font-bold leading-none flex items-center justify-center cursor-help hover:bg-primary/25 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         ?
       </button>

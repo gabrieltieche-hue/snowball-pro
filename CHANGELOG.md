@@ -4,6 +4,24 @@
 
 ---
 
+## v6.15.0 — Mobile 100 % : résultat d'abord, zoom iOS corrigé, zones tactiles + socle app iOS (Capacitor)
+
+Chantier mobile complet, mesuré en navigateur réel (Playwright, 320 → 430 px). Sur téléphone, l'app respecte enfin la promesse produit : **le résultat d'abord** — les onglets et le héro passent AVANT les réglages (la sidebar les suit), le bandeau « Commencez ici » passe de ~700 px à **275 px** (3 cartes en défilement snap), les champs de saisie montent à **16 px sur mobile** (plus de zoom automatique iOS au focus), les boutons de l'en-tête gagnent des **zones tactiles confortables**, et l'app gère les **zones de sécurité iPhone** (encoche, barre d'accueil) + les meta PWA iOS (« Ajouter à l'écran d'accueil »). En parallèle, le **socle d'une future app iOS** est posé (Capacitor 8, projet Xcode, icône 1024², splash sombre, redirection native, workflow CI, politique de confidentialité, guide de soumission) — la soumission App Store reste en attente à la demande de l'utilisateur. **401 tests**, gate 100 % vert.
+
+### 🔄 Changements
+
+- **`src/App.tsx`** : sur mobile, `main` (onglets + résultats) passe avant la sidebar via `order-1/order-2` (desktop inchangé : réglages à gauche, résultats à droite) — le capital final et la courbe sont visibles dès l'ouverture, les réglages en dessous.
+- **`src/components/Layout/QuickStart.tsx`** : bandeau « Commencez ici » compact sur mobile — 3 cartes en ligne défilante (scroll-snap, 74 % de largeur) au lieu de 3 cartes empilées (~700 px → **275 px**) ; bouton « Utiliser ce profil » à ~40 px de haut ; croix de fermeture à zone tactile élargie.
+- **Zoom iOS au focus** : `SmartInput.tsx` et `fields.tsx` (auth) passent en `text-base` (16 px) sur mobile (`sm:` inchangé) + filet de sécurité CSS global étendu à email/password/tel/url/search (`src/index.css`) — plus aucun champ < 16 px ne déclenche le zoom automatique de Safari.
+- **Zones tactiles** : boutons de l'en-tête (ActionBar, ExportMenu, ShareMenu, LanguageToggle, AccountMenu, landing) en `py-2.5` sur mobile (~37 px), `HelpTip` agrandi, `py-1.5` → `py-2` au minimum — desktop inchangé.
+- **iOS / PWA** (`src/index.css` + `index.html`) : `viewport-fit=cover`, meta `apple-mobile-web-app-*`, `apple-touch-icon`, safe-areas (`env(safe-area-inset-*)` sur les en-têtes sticky et le bas de page), `touch-action: manipulation` (plus de délai ni zoom au double-tap), `-webkit-text-size-adjust: 100%` (anti « font inflation » paysage).
+- **Socle app iOS (Capacitor 8)** : `capacitor.config.ts` (appId `com.snowballpro.app`), projet Xcode généré `ios/` (icône App Store 1024×1024 + splash sombre #12100e générés par `scripts/generate-ios-assets.mjs`, LaunchScreen sombre), `src/main.tsx` redirige `#/` → `#/app` en contexte natif (l'app ouvre le simulateur, pas la landing), scripts `ios:build` / `ios:open`, workflow CI `.github/workflows/ios.yml` (Xcode 26, .ipa en artifact — le Mac local en macOS 12 ne peut pas builder), `public/privacy-policy.html` (page 100 % locale, exigence App Store), `GUIDE-APP-STORE.md` (guide de soumission complet).
+- **Deps & gates** : `@capacitor/core` / `@capacitor/cli` / `@capacitor/ios` en devDependencies ; `eslint.config.js`, `.prettierignore` et `tsconfig.json` intègrent le projet natif (`ios/` ignoré des gates, `capacitor.config.ts` typechecké).
+- Gate : typecheck ✓ lint ✓ **401/401 tests** ✓ i18n 0 clé manquante ✓ format ✓ build ✓ (dist 1 228 ko / 359 ko gzip).
+- Version 6.14.0 → **6.15.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.15.0`, footer landing v6.15.0, « Dernières éditions » v6.15.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.14.0 — Distribution : 4 pages alternatives + page Tarifs, footer landing, guides autonomes
 
 Suite de la brique distribution (v6.13.0) : le canal SEO s'étoffe avec **4 comparatifs honnêtes** face aux outils que les internautes français tapent déjà (Portfolio Visualizer, FireCalc, Networthify, Quantalys), une **page Tarifs « 100 % gratuit »**, et l'app pointe enfin vers ses pages statiques (rangée « Guides et comparatifs » dans le pied de page de la landing). Les CTA deep-link `#s=…` de toutes les pages publiques sont désormais **protégés par un test de régression** : un payload indécodable casserait la suite plutôt que d'ouvrir l'app avec les défauts en silence.

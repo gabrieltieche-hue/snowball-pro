@@ -1,0 +1,88 @@
+name: iOS
+
+on:
+  # Déclenchement manuel : Actions → « iOS » → Run workflow.
+  # (Alternative : pousser un tag `ios-*` déclenche aussi le build.)
+  workflow_dispatch:
+  push:
+    tags: ["ios-*"]
+
+# Moindre privilège (même règle que ci.yml) : pas d'écriture sur le repo.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Runner macOS avec Xcode 26 — exigence App Store depuis le 28/04/2026
+    # (voir GUIDE-APP-STORE.md §2.2 : le Mac local en macOS 12 ne peut pas).
+    runs-on: macos-15
+    steps:
+      # Actions épinglées par SHA complet (supply-chain) — mêmes versions que ci.yml.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      # Copie dist/ → ios/App/App/public (les assets web du build single-file).
+      - run: npx cap sync ios
+
+      # Signing : certificat de distribution + profil App Store — secrets à
+      # configurer (Settings → Secrets and variables → Actions), cf. GUIDE-APP-STORE.md §4.
+      - name: Installer le certificat de distribution
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/build_cert.p12"
+          PP_PATH="$RUNNER_TEMP/build_pp.mobileprovision"
+          echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode --output "$CERT_PATH"
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode --output "$PP_PATH"
+          KEYCHAIN="$RUNNER_TEMP/app-signing.keychain-db"
+          security create-keychain -p temp "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p temp "$KEYCHAIN"
+          security import "$CERT_PATH" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+
+      - name: Archive (Release)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            archive
+
+      - name: Exporter le .ipa (App Store)
+        run: |
+          cat > "$RUNNER_TEMP/exportOptions.plist" <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/exportOptions.plist"
+
+      # Le .ipa est déposé dans les Artifacts de l'action : à téléverser via
+      # Transporter (App Store Connect → Téléchargements), cf. GUIDE-APP-STORE.md §4.
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: snowball-pro-ios
+          path: ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: error

@@ -14,7 +14,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
       onClick={toggleLang}
       aria-label={label}
       title={label}
-      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97] glass hover:bg-glass-hover ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97] glass hover:bg-glass-hover ${className}`}
     >
       <Languages size={12} aria-hidden />
       <span className="uppercase tracking-wide">{lang === "fr" ? "FR" : "EN"}</span>

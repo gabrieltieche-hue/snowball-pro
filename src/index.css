@@ -596,12 +596,47 @@ input[type="range"]:focus-visible::-moz-range-thumb {
   }
 }
 
+/* iOS : Safari zoome au focus sur tout champ < 16 px (même règle qu'Apple
+   recommande). Filet de sécurité global — les composants (SmartInput,
+   TextField) appliquent déjà text-base sur mobile, mais un champ oublié ne
+   doit jamais déclencher le zoom. email/password/tel inclus (écrans auth). */
 @media (max-width: 640px) {
   input[type="text"],
   input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
   select {
     font-size: 16px !important;
   }
+}
+
+/* Mobile/iOS :
+   - -webkit-text-size-adjust : interdit le « font inflation » de Safari sur
+     les rotations paysage/portrait (texte qui explose hors des cartes).
+   - touch-action: manipulation : supprime le délai 300 ms et le zoom au
+     double-tap sur les contrôles (le zoom reste sur le reste de la page).
+   - Zones de sécurité iPhone (encoche / barre d'accueil) : en PWA standalone
+     ou Capacitor (viewport-fit=cover), le contenu ne doit jamais passer
+     sous la barre d'état ni l'indicateur d'accueil. env() vaut 0 partout
+     ailleurs : aucun effet sur desktop ni dans le navigateur standard. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+button,
+a,
+[role="button"],
+input[type="range"],
+select {
+  touch-action: manipulation;
+}
+.sticky-header {
+  padding-top: env(safe-area-inset-top);
+}
+.app-shell {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 input[type="text"].mono,

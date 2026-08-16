@@ -533,7 +533,7 @@ function AppShell({ scope }: { scope: string | null }) {
 
         {/* En-tête global : la marque et les actions (annuler, partager, thème,
           export…) restent accessibles pendant tout le scroll. */}
-        <header className="sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
+        <header className="sticky-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
@@ -590,23 +590,29 @@ function AppShell({ scope }: { scope: string | null }) {
               sidebarCollapsed ? "lg:grid-cols-[76px_1fr]" : "lg:grid-cols-[380px_1fr]"
             }`}
           >
-            <ErrorBoundary label={tr("les réglages")}>
-              <Sidebar
-                inputs={activeInputs}
-                rows={rows}
-                updateInput={updateInput}
-                scenarioLabel={comparing ? "Scénario B" : undefined}
-                snapshots={snapshots}
-                onSaveSnapshot={handleSaveSnapshot}
-                onLoadSnapshot={handleLoadSnapshot}
-                onRemoveSnapshot={handleRemoveSnapshot}
-                uiMode={uiMode}
-                collapsed={sidebarCollapsed}
-                onToggleCollapsed={toggleSidebarCollapsed}
-              />
-            </ErrorBoundary>
+            {/* Mobile : RÉSULTAT D'ABORD (promesse produit) — les onglets et le
+                héro passent avant les réglages (order), la sidebar suit. Sur
+                desktop la grille conserve l'ordre source : réglages à gauche,
+                résultats à droite, visibles côte à côte. */}
+            <div className="order-2 lg:order-1 min-w-0">
+              <ErrorBoundary label={tr("les réglages")}>
+                <Sidebar
+                  inputs={activeInputs}
+                  rows={rows}
+                  updateInput={updateInput}
+                  scenarioLabel={comparing ? "Scénario B" : undefined}
+                  snapshots={snapshots}
+                  onSaveSnapshot={handleSaveSnapshot}
+                  onLoadSnapshot={handleLoadSnapshot}
+                  onRemoveSnapshot={handleRemoveSnapshot}
+                  uiMode={uiMode}
+                  collapsed={sidebarCollapsed}
+                  onToggleCollapsed={toggleSidebarCollapsed}
+                />
+              </ErrorBoundary>
+            </div>
 
-            <main className="space-y-5 min-w-0">
+            <main className="space-y-5 min-w-0 order-1 lg:order-2">
               {sharedLinkLoaded && (
                 <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">

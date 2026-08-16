@@ -1,1 +1,6 @@
 dist/
+# Projet natif généré par Capacitor (Swift, JSON, assets Xcode) — jamais formaté par Prettier.
+ios/
+# Résidu accidentel de redirection shell (ancien lock v6.7.2, daté du 14 août) —
+# à supprimer manuellement : `rm "package-lock 2.json"`.
+package-lock 2.json

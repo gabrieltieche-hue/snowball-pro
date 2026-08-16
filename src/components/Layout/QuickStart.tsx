@@ -39,11 +39,13 @@ export function QuickStart({ onApply, onDismiss }: QuickStartProps) {
             {tr("Commencez ici — choisissez un profil de départ")}
           </p>
         </div>
+        {/* Cible tactile confortable : padding autour de la croix 14 px
+            (la marge négative garde l'alignement visuel). */}
         <button
           type="button"
           onClick={onDismiss}
           aria-label={tr("Fermer les profils de départ")}
-          className="text-text-muted hover:text-text transition-colors shrink-0"
+          className="text-text-muted hover:text-text transition-colors shrink-0 p-2.5 -m-1"
         >
           <X size={14} aria-hidden />
         </button>
@@ -53,11 +55,14 @@ export function QuickStart({ onApply, onDismiss }: QuickStartProps) {
           "Les réglages par défaut sont une situation type. Un profil ajuste tout en un clic — capital, versement, durée et enveloppe fiscale.",
         )}
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
+      {/* Mobile : cartes en ligne défilante (snap) — un bandeau de 3 cartes
+          empilées ferait ~700 px de haut et repousserait le résultat. Sur
+          sm+ : vraie grille 3 colonnes comme avant. */}
+      <div className="mt-3 grid grid-flow-col auto-cols-[74%] gap-2.5 overflow-x-auto snap-x snap-mandatory pb-1 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-3 sm:overflow-visible sm:pb-0">
         {QUICKSTART_PROFILES.map(p => {
           const cap = capitals.find(c => c.id === p.id)
           return (
-            <div key={p.id} className="rounded-xl border border-border/70 bg-surface-50/40 p-3">
+            <div key={p.id} className="rounded-xl border border-border/70 bg-surface-50/40 p-3 snap-start sm:snap-none">
               <p className="text-[11px] font-bold text-text leading-tight">{tr(p.name)}</p>
               <p className="text-[9px] text-text-dim uppercase tracking-[0.1em] mt-1">{tr(p.meta)}</p>
               <div className="mt-2 flex items-baseline justify-between gap-2">
@@ -73,7 +78,7 @@ export function QuickStart({ onApply, onDismiss }: QuickStartProps) {
               <button
                 type="button"
                 onClick={() => onApply(p.patch)}
-                className="mt-2.5 w-full rounded-lg bg-primary btn-gold-text font-extrabold text-[10.5px] py-1.5 shadow-gold transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+                className="mt-2.5 w-full rounded-lg bg-primary btn-gold-text font-extrabold text-[10.5px] py-2.5 sm:py-1.5 shadow-gold transition-all duration-150 active:scale-[0.98] hover:brightness-110"
               >
                 {tr("Utiliser ce profil")}
               </button>

@@ -18,8 +18,10 @@ interface TextFieldProps {
   maxLength?: number
 }
 
+// text-base (16 px) sur mobile : iOS Safari zoome au focus sur tout champ
+// < 16 px (les écrans auth sont très utilisés sur téléphone). text-sm sur sm+.
 const inputBase =
-  "w-full rounded-xl border bg-surface-50 px-3.5 py-2.5 text-sm text-text placeholder:text-text-dim/50 outline-none transition-all duration-150"
+  "w-full rounded-xl border bg-surface-50 px-3.5 py-2.5 text-base sm:text-sm text-text placeholder:text-text-dim/50 outline-none transition-all duration-150"
 
 /**
  * Champ de formulaire des écrans auth — même langage visuel que SmartInput

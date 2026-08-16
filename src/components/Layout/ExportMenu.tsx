@@ -64,7 +64,7 @@ export function ExportMenu({ onExportCSV, onExportJSON, onPrint }: ExportMenuPro
         aria-haspopup="menu"
         aria-expanded={open}
         title={tr("Exporter la simulation")}
-        className="btn-shine inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
+        className="btn-shine inline-flex items-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-primary-light btn-gold-text shadow-gold hover:from-primary-light hover:to-primary transition-all"
       >
         <Download size={12} /> {tr("Exporter")}
         <ChevronDown size={11} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />

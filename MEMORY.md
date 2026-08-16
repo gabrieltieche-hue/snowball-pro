@@ -4,6 +4,39 @@
 
 ---
 
+## SESSION — 2026-08-16 (v6.15.0 : Mobile 100 % — résultat d'abord, zoom iOS corrigé, zones tactiles + socle app iOS Capacitor)
+
+### Résumé
+
+Demande utilisateur : _« je souhaiterai developper à 100 % le mode site web pour mobile, et une app sur ios, sur l'app store »_, puis _« pour l'app store on laisse un peu tomber pour le moment »_ — le socle iOS est livré et commité, la soumission reste en attente. Chantier mobile complet, mesuré en navigateur réel (Playwright, 320 → 430 px, 401 tests, gate 100 % vert) :
+
+1. **Résultat d'abord sur mobile** (`App.tsx`) : les onglets + le héro passent AVANT les réglages (`order-1/order-2` sur la grille, desktop inchangé) — avant, il fallait scroller ~2 000 px (QuickStart ~700 px + sidebar entière) avant de voir le capital final.
+2. **QuickStart compact** (`QuickStart.tsx`) : 3 cartes en ligne défilante (scroll-snap, 74 % de largeur) au lieu de 3 cartes empilées — bandeau de ~700 px à **275 px** ; bouton « Utiliser ce profil » ~40 px ; croix de fermeture élargie.
+3. **Zoom iOS au focus corrigé** : `SmartInput` et `fields.tsx` passent en `text-base` (16 px) sur mobile (le zoom auto de Safari frappe tout champ < 16 px) + filet de sécurité CSS global étendu (email/password/tel/url/search) — c'était déjà le cas via CSS pour text/number mais pas pour les champs auth.
+4. **Zones tactiles** : boutons de l'en-tête (ActionBar, ExportMenu, ShareMenu, LanguageToggle, AccountMenu, landing) en `py-2.5` mobile (~37 px), `HelpTip` agrandi (20 px), le tout `sm:` inchangé.
+5. **iOS/PWA** (`index.css` + `index.html`) : `viewport-fit=cover`, meta `apple-mobile-web-app-*`, `apple-touch-icon`, safe-areas (`env(safe-area-inset-*)` via `.sticky-header`/`.app-shell`), `touch-action: manipulation`, `-webkit-text-size-adjust: 100%`.
+6. **Socle app iOS (Capacitor 8.5)** : `capacitor.config.ts` (`com.snowballpro.app`), projet Xcode généré `ios/`, icône App Store 1024² + splash sombre 2732² (`scripts/generate-ios-assets.mjs`, PNG natif zlib), LaunchScreen sombre, redirection native `#/` → `#/app` (`main.tsx`), scripts `ios:build`/`ios:open`, workflow CI `.github/workflows/ios.yml` (Xcode 26, .ipa en artifact), `public/privacy-policy.html`, `GUIDE-APP-STORE.md`.
+7. **Release v6.15.0** : bump (package.json, package-lock.json via `npm version --no-git-tag-version`, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.15.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.15.0), MEMORY (cette entrée), commit + **`vercel --prod`**.
+
+### Décisions
+
+- **Résultat d'abord par `order`, pas par remontage DOM** : un simple `order-1 lg:order-2` sur la grille — aucun impact sur les tests, le focus, ni l'état ; desktop strictement inchangé.
+- **Scroll-snap plutôt qu'accordéon** pour le QuickStart : le bandeau reste un coup d'œil (275 px), le geste est natif, et `sm:` repasse en grille 3 colonnes exactement comme avant.
+- **16 px sur mobile, pas partout** : `text-base sm:text-xs/sm:text-sm` — la densité desktop est préservée ; le CSS `!important` existant reste en filet de sécurité (complété avec email/password/tel/url/search).
+- **Capacitor en devDependencies** (jamais importé dans le bundle web) ; `ios/` (projet natif généré) **commité** (convention Capacitor) mais **exclu des gates** (eslint `ignores`, `.prettierignore`) ; `capacitor.config.ts` ajouté au typecheck.
+- **Xcode 26 obligatoire depuis le 28/04/2026** (Apple) : le Mac local (macOS 12.7) ne peut pas builder → workflow GitHub Actions fourni (runner macOS, certificat + profil en secrets, .ipa en artifact) ; guide complet `GUIDE-APP-STORE.md`.
+- **Politique de confidentialité** : page statique `public/privacy-policy.html` (exigence App Store pour une app à comptes, même locaux) — noindex, servie par Vercel.
+- **`vite.config.ts`** (fix de l'autre thread, commité `29caa9b3`) : restreint le scan de pré-bundling à `index.html` — nécessaire avec le dossier `ios/` (copie du build web) ; non touché par cette session.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **401/401 tests** ✓ i18n 0 clé manquante ✓ format ✓ build ✓ (dist 1 228 ko / 359 ko gzip).
+- Playwright réel : ordre mobile main(520) < sidebar(3378) ✓, QuickStart 275 px ✓, 0 input < 16 px ✓, 0 overflow à 320/390 px sur les 4 onglets (sidebar ouverte incluse) + landing ✓, 0 overflow avec QuickStart neuf ✓.
+- `npm run ios:build` ✓ (build web + `cap sync ios`, privacy-policy copiée dans `dist/` et `ios/App/App/public/`).
+- Déploiement : `vercel --prod` → https://snowball-pro.vercel.app (v6.15.0).
+
+---
+
 ## SESSION — 2026-08-16 (finitions distribution : 4 pages alternatives + pricing.html, footer landing, test de régression SEO)
 
 ### Résumé

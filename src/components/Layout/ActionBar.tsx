@@ -38,8 +38,10 @@ interface ActionBarProps {
   onReset: () => void
 }
 
+// Cible tactile confortable sur mobile (py-2.5 ≈ 37 px) — densité desktop
+// conservée sur sm+ (py-2).
 const baseBtn =
-  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]"
+  "inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]"
 
 /**
  * Barre d'actions de l'en-tête (audit) : seules les actions fréquentes
@@ -120,7 +122,7 @@ export function ActionBar({
           disabled={!canUndo}
           title={tr("Annuler (⌘Z)")}
           aria-label={tr("Annuler la dernière modification")}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed border-r border-border"
+          className="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed border-r border-border"
         >
           <Undo2 size={12} aria-hidden /> {tr("Annuler")}
         </button>
@@ -130,7 +132,7 @@ export function ActionBar({
           disabled={!canRedo}
           title={tr("Rétablir (⌘⇧Z)")}
           aria-label={tr("Rétablir la modification annulée")}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 text-[11px] font-bold hover:bg-glass-hover transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
         >
           <Redo2 size={12} aria-hidden /> {tr("Rétablir")}
         </button>

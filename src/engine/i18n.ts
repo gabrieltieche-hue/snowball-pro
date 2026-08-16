@@ -1118,6 +1118,9 @@ const EN: Record<string, string> = {
   "Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette estimation.":
     "Up to 10,000 scenarios replaying the real history in blocks — crashes and bull markets included. You get the P10/P50/P90 percentiles, the success probability and the confidence interval of this estimate.",
   "Dernières éditions": "Latest releases",
+  "Mobile 100 % — résultat d'abord": "100% mobile — results first",
+  "Sur téléphone, le simulateur affiche d'abord le capital final et les onglets (les réglages passent en dessous), le bandeau « Commencez ici » devient compact et défilant, les champs ne déclenchent plus le zoom iOS et les boutons sont plus faciles à toucher. Le site est aussi prêt pour une future app iOS (Capacitor).":
+    "On phones, the simulator now shows the final capital and tabs first (settings move below), the “Get started” banner is compact and swipeable, input fields no longer trigger iOS zoom, and buttons are easier to tap. The site is also ready for a future iOS app (Capacitor).",
   "4 pages alternatives + page tarifs": "4 comparison pages + pricing page",
   "Quatre comparatifs honnêtes (Portfolio Visualizer, FireCalc, Networthify, Quantalys) et une page Tarifs « 100 % gratuit » — indexées au sitemap, dans llms.txt et liées depuis le pied de page de la landing.":
     "Four honest comparisons (Portfolio Visualizer, FireCalc, Networthify, Quantalys) and a “100% free” pricing page — indexed in the sitemap, in llms.txt and linked from the landing footer.",
@@ -1128,8 +1131,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.14.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.14.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.15.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.15.0 · 100% local data · Made with real returns, not promises.",
   "Onglets nets sur mobile": "Clean tabs on mobile",
   "Correction mobile : les onglets du simulateur ne débordent plus de l'écran sur téléphone — « Robustesse de votre plan » passe proprement à la ligne au lieu de déborder, même à 320 px.":
     "Mobile fix: the simulator tabs no longer overflow the screen on phones — “Plan robustness” now wraps cleanly instead of overflowing, even at 320px.",

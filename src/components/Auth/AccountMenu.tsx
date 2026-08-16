@@ -87,7 +87,7 @@ export function AccountMenu() {
         aria-expanded={open}
         title={account ? tr("Compte de {name}", { name: account.name }) : tr("Compte invité — se connecter")}
         className={cn(
-          "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]",
+          "inline-flex items-center gap-2 px-2.5 py-2 sm:py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]",
           open ? "glass-gold border border-primary/40" : "glass hover:bg-glass-hover",
         )}
       >

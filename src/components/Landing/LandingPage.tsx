@@ -406,6 +406,11 @@ const GUIDES_LINKS = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.15.0",
+    title: "Mobile 100 % — résultat d'abord",
+    text: "Sur téléphone, le simulateur affiche d'abord le capital final et les onglets (les réglages passent en dessous), le bandeau « Commencez ici » devient compact et défilant, les champs ne déclenchent plus le zoom iOS et les boutons sont plus faciles à toucher. Le site est aussi prêt pour une future app iOS (Capacitor).",
+  },
+  {
     version: "v6.14.0",
     title: "4 pages alternatives + page tarifs",
     text: "Quatre comparatifs honnêtes (Portfolio Visualizer, FireCalc, Networthify, Quantalys) et une page Tarifs « 100 % gratuit » — indexées au sitemap, dans llms.txt et liées depuis le pied de page de la landing.",
@@ -1277,7 +1282,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.14.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.15.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>
