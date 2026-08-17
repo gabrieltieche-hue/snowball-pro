@@ -31,6 +31,8 @@ import {
   createSnapshot,
   fmtCompact,
   fmtCurrency,
+  getHistoricalDataset,
+  parseStoredInputs,
   runSimulation,
   runDecumulation,
   buildTerminalHistogram,
@@ -1087,6 +1089,61 @@ describe("v6.1 — landing page", () => {
     expect(within(band).getByText(/nous, on rejoue 100 ans de vraie histoire, krachs inclus/i)).toBeInTheDocument()
     // Aucun « 5 % par an » n'est cité dans la bande (décision : pas de taux en dur).
     expect(within(band).queryByText(/5 % par an/i)).not.toBeInTheDocument()
+  })
+
+  it("comparaison : le tableau honnête cite les vrais concurrents et maillent les pages /alternatives/", () => {
+    render(<LandingPage />)
+    // Correspondance EXACTE : la carte « Dernières éditions » v6.18.0 s'appelle
+    // « Le tableau honnête + l'objectif inversé » — le regex large matcherait 2 headings.
+    expect(screen.getByRole("heading", { name: "Le tableau honnête" })).toBeInTheDocument()
+    // Les 3 colonnes concurrentes (Snowball Pro est la première colonne).
+    expect(screen.getByText("ProjectionLab")).toBeInTheDocument()
+    expect(screen.getByText("Finary")).toBeInTheDocument()
+    expect(screen.getByText("Simulateurs SEO FR")).toBeInTheDocument()
+    // Critères de différenciation : fiscalité FR, historique réel, Monte Carlo.
+    expect(screen.getByText("Fiscalité française (PEA, AV, PER)")).toBeInTheDocument()
+    expect(screen.getByText("Monte Carlo — l'incertitude")).toBeInTheDocument()
+    expect(screen.getByText("Décumulation (retraite)")).toBeInTheDocument()
+    // Maillage interne vers les 4 comparatifs détaillés (dans la section — le
+    // pied de page répète aussi ces liens).
+    const compare = screen.getByRole("region", { name: /comment on se compare/i })
+    for (const name of ["Portfolio Visualizer", "FireCalc", "Networthify", "Quantalys"]) {
+      expect(within(compare).getByRole("link", { name: new RegExp(name, "i") })).toBeInTheDocument()
+    }
+  })
+
+  it("objectif inversé : le solveur calcule l'épargne mensuelle en direct et le CTA repart via #s=", () => {
+    render(<LandingPage />)
+    expect(screen.getByRole("heading", { name: /je veux 1 m€/i })).toBeInTheDocument()
+    // Le montant affiché est celui du VRAI solveur (mêmes inputs que la section).
+    const base = parseStoredInputs(null)
+    const historical = getHistoricalDataset(base.historicalIndex)
+    const expected = solveGoal({
+      ...base,
+      goalTarget: 1_000_000,
+      goalDuration: 20,
+      goalCapital: 0,
+      goalAnnualReturn: historical.compoundedReturn,
+    }).pmtPerMonth
+    const section = screen.getByRole("region", { name: /objectif inversé/i })
+    const text = (section.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
+    expect(text).toContain(fmtCurrency(expected ?? 0).replace(/[\u202F\u00A0]/g, " "))
+    // Le CTA « Repartir de cette simulation » écrit un hash #s=… décodable qui
+    // route vers l'app avec les MÊMES réglages d'objectif (deep-link v6).
+    fireEvent.click(screen.getByRole("button", { name: /repartir de cette simulation/i }))
+    expect(window.location.hash).toMatch(/^#s=/)
+    const decoded = decodeInputsFromUrl(window.location.hash.slice(1))
+    expect(decoded?.goalTarget).toBe(1_000_000)
+    expect(decoded?.goalDuration).toBe(20)
+  })
+
+  it("dernières éditions : au plus 4 versions + lien vers le changelog complet", () => {
+    render(<LandingPage />)
+    const section = screen.getByRole("region", { name: /dernières évolutions/i })
+    const cards = within(section).getAllByRole("article")
+    expect(cards.length).toBeLessThanOrEqual(4)
+    const link = within(section).getByRole("link", { name: /toutes les versions/i })
+    expect(link).toHaveAttribute("href", "/changelog.html")
   })
 
   it("déplie la FAQ au clic", () => {

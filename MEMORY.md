@@ -19,6 +19,25 @@ Premier chantier de la feuille de route `IDEES-AMELIORATIONS-LANDING.md` (ordre 
 
 ---
 
+## SESSION — 2026-08-17 (v6.18.0 : Landing — tableau honnête + objectif inversé + FAQ schema + page changelog)
+
+### Résumé
+
+Quatrième vague de la feuille de route `IDEES-AMELIORATIONS-LANDING.md` : chantiers **n°2 (comparaison), n°4 (objectif inversé), n°8 (FAQ schema), n°9 (dernières éditions + changelog)** — la preuve par les faits après l'attaque de la bande v6.17.0. Mode inline APEX (TDD rouge/vert, auto-revue adverse), **418 tests**, gate 100 % vert, vérifié en navigateur réel : e2e complet du deep-link (CTA → `#s=` → app avec objectif 1 000 000 € / 20 ans pré-chargé dans l'onglet Objectif), EN traduit, 320 px sans overflow.
+
+### Décisions
+
+- **Tableau honnête (1.4 + 4.2)** : 4 colonnes (Snowball Pro, ProjectionLab, Finary, Simulateurs SEO FR) × 6 critères (fiscalité FR, 100 ans d'historique, Monte Carlo, décumulation, gratuit, 100 % local), cases ✅/⚠/✕ avec légende « partiel — à vérifier » et note datée (17/08/2026). **Aucun ✕ inventé** : chaque ⚠ est assumé (freemium, partiel, bases). Maillage interne vers les 4 pages `/alternatives/`.
+- **Objectif inversé (5.1)** : curseurs réels branchés sur `solveGoal` (même solveur que l'app, scénario Central, capital 0), jauge de difficulté (chaînes réutilisées de GoalTab), note honnête « calcul brut avant fiscalité et frais ». CTA « Repartir de cette simulation » écrit `window.location.hash = encodeInputsForUrl(...)` **directement** (pas `navigateTo` : il écraserait le `#s=`). `goalSync: false` par défaut → l'app honore les réglages d'objectif du lien.
+- **FAQ schema (4.1)** : JSON-LD `FAQPage` dans `index.html`, 8 questions de la FAQ verbatim (validé par parse : 8 Q/R complètes, à côté du WebApplication existant).
+- **Dernières éditions (2.4)** : 13 → 3 cartes (4 avec v6.18.0), grille `sm:grid-cols-2 lg:grid-cols-4`, lien « Toutes les versions » → `public/changelog.html` (générée depuis CHANGELOG.md par un script jetable, 52 versions, prettier-compliant, ajoutée à sitemap.xml + llms.txt + footer).
+- **Auto-revue (2 findings corrigés)** : `aria-label` « Dernières évolutions » traduit en EN (il était codé en dur) ; tests maillage scoped `within(region)` (le footer répète les mêmes liens).
+- **Environnement** : binaire natif `lightningcss-darwin-x64` évincé par iCloud (placeholder `.icloud`) → téléchargé depuis le registry et posé dans node_modules (réparé, build OK).
+- **Checkout partagé** : un autre agent travaille en parallèle (refonte header + validationTargets : `App.tsx`, `ActionBar.tsx`, `ExportMenu.tsx`, `ShareMenu.tsx`, `Sidebar.tsx`, `utils/validationTargets.ts`, tests associés dans `components.test.tsx`). **Ses fichiers ne sont ni touchés ni commités** ; seuls mes hunks de `components.test.tsx` sont stagés (git add -p).
+- **Release v6.18.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.18.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.18.0), MEMORY (cette entrée), commit + `vercel --prod`.
+
+---
+
 ## SESSION — 2026-08-16 (v6.16.0 : Onboarding guidé — tutoriel non-skippable + questionnaire « Nouvelle simulation » + bibliothèque multi-sims)
 
 ### Résumé

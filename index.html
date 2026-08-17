@@ -59,6 +59,81 @@
         }
       }
     </script>
+    <!-- Données structurées FAQPage (4.1) — les 8 questions de la FAQ de la
+         landing, verbatim : c'est la différence entre être cité et être
+         ignoré par les AI answers. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Mes données sont-elles envoyées sur un serveur ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Non. Tout est calculé et stocké dans votre navigateur (localStorage) : aucune donnée ne quitte votre appareil. Un compte crée un espace isolé pour vos simulations sur cet appareil — la synchronisation cloud n'existe pas encore."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Un compte est-il obligatoire ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Non, l'application fonctionne intégralement sans compte. Un compte vous permet d'isoler vos simulations de celles des autres utilisateurs de l'appareil et prépare la synchronisation future."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Prudent, Central, Optimiste : c'est quoi la différence ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Trois lectures du même historique (MSCI World 1970-2025). L'app applique par défaut le Central : la moyenne géométrique composée (≈ 8,22 %/an), krachs inclus. L'Optimiste est la moyenne arithmétique des années (≈ 10,07 %), le Prudent le rendement réel après inflation (≈ 5,99 %). Comparez votre plan dans les trois mondes — c'est la même échelle que la section Méthodologie."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Pourquoi 10,07 % et pas 6,12 % ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "10,07 % est la moyenne arithmétique des années (scénario Optimiste) ; l'app applique par défaut le Central, 8,22 %/an composé. 6,12 serait la simple soustraction 8,22 − 2,1 : c'est une approximation. La formule exacte de Fisher est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %/an réel — le scénario Prudent."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Pourquoi 2,1 % d'inflation et pas la moyenne réelle ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "2,1 % est une hypothèse d'inflation future (proche de la cible BCE de 2 %), pas la moyenne historique : l'inflation française réelle 1970-2025 est de 4,0 % en moyenne, mais cette moyenne est tirée vers le haut par les chocs des années 1970-1985 (jusqu'à 13,7 % en 1974). La médiane de la période est justement 2,1 %, et depuis 1986 la moyenne n'est que de 1,9 % — pour l'avenir, 2,1 % est une hypothèse raisonnable, voire prudente."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Qu'est-ce que Monte Carlo ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette estimation."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Comment est construit l'historique de 100 ans ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "S&P 500 SBBI 1926-1969 (dividendes réinvestis) puis MSCI World 1970-2025 : la période récente est couverte par un indice mondial, l'ancienne par le marché américain, seul indice de référence fiable à l'époque. L'inflation utilisée est la série INSEE française."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "L'application est-elle vraiment gratuite ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain."
+            }
+          }
+        ]
+      }
+    </script>
     <!--
       CSP stricte adaptée au build single-file (vite-plugin-singlefile) :
       - script-src 'unsafe-inline' est OBLIGATOIRE car tout le JS est inliné dans index.html.

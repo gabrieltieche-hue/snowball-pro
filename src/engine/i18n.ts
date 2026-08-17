@@ -76,6 +76,14 @@ const EN: Record<string, string> = {
     "Reset to default settings? Your simulations and snapshots in this workspace will be erased.",
   Réinitialiser: "Reset",
   "Tout réinitialiser": "Reset everything",
+  // ─── Correction d'erreurs (refonte header) ─────────────────────────────────
+  "Problèmes à corriger": "Issues to fix",
+  "Corriger automatiquement": "Fix automatically",
+  Corriger: "Fix",
+  "{n} erreur à corriger": "{n} error to fix",
+  "{n} erreurs à corriger": "{n} errors to fix",
+  "{n} avertissement à corriger": "{n} warning to fix",
+  "{n} avertissements à corriger": "{n} warnings to fix",
   // ─── Partage (boutons réseaux — v6.13.0) ───────────────────────────────────
   Partager: "Share",
   "Partager sur X (Twitter)": "Share on X (Twitter)",
@@ -1043,6 +1051,52 @@ const EN: Record<string, string> = {
     "Real numbers, not promises: every figure on this page is computed live by the engine, on the real MSCI World 1970-2025 returns — crashes included, French 2026 taxation.",
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
+  // ─── Landing v6.18 : tableau honnête + objectif inversé + changelog ───────
+  "Comment on se compare": "How we compare",
+  Comparaison: "Comparison",
+  "Le tableau honnête + l'objectif inversé": "The honest comparison table + the reverse goal",
+  "Un tableau compare franchement Snowball Pro à ProjectionLab, Finary et les simulateurs SEO (fiscalité FR, historique réel, Monte Carlo — chaque case se vérifie), une démo « Je veux 1 M€ → combien par mois ? » calcule votre épargne en direct avec le vrai solveur, le FAQ passe en schema FAQPage pour les AI answers, et les « Dernières éditions » renvoient désormais vers une page changelog complète.":
+    "A table honestly compares Snowball Pro with ProjectionLab, Finary and SEO simulators (French tax rules, real history, Monte Carlo — every cell can be checked), a “I want €1M → how much per month?” demo computes your savings live with the real solver, the FAQ gets a FAQPage schema for AI answers, and “Latest releases” now points to a full changelog page.",
+  "Le tableau honnête": "The honest comparison table",
+  "Ni pub, ni coup marketing : ce que chaque outil fait vraiment, vérifié en août 2026. Chaque case se vérifie — les nôtres, dans le code.":
+    "No ads, no marketing stunt: what each tool actually does, verified in August 2026. Every cell can be checked — ours, in the code.",
+  "Ce que l'outil fait": "What the tool does",
+  "Simulateurs SEO FR": "French SEO simulators",
+  "Fiscalité française (PEA, AV, PER)": "French taxation (PEA, AV, PER)",
+  "100 ans d'historique réel": "100 years of real history",
+  "Monte Carlo — l'incertitude": "Monte Carlo — uncertainty",
+  "Décumulation (retraite)": "Decumulation (retirement)",
+  "Gratuit, sans inscription": "Free, no sign-up",
+  "Données 100 % sur votre appareil": "100% of your data on your device",
+  "100 % US": "100% US",
+  bases: "basic",
+  simplifiée: "simplified",
+  "10 000 scénarios": "10,000 scenarios",
+  "2 000": "2,000",
+  partielle: "partial",
+  freemium: "freemium",
+  partiel: "partial",
+  "selon l'outil": "varies by tool",
+  vous: "you",
+  "Légende :": "Legend:",
+  oui: "yes",
+  "partiel — à vérifier": "partial — to verify",
+  non: "no",
+  "Vérifié le 17 août 2026 sur les pages publiques de chaque outil — les offres évoluent. ProjectionLab est un excellent produit, mais 100 % fiscalité US ; Finary agrège votre patrimoine, il ne simule pas l'avenir ; les simulateurs SEO supposent un rendement fixe. C'est exactement ce que nous ne faisons pas.":
+    "Verified on 17 August 2026 from each tool's public pages — offers change. ProjectionLab is an excellent product, but it's 100% US taxation; Finary aggregates your wealth, it doesn't simulate the future; SEO simulators assume a fixed return. That's exactly what we don't do.",
+  "Nos comparatifs détaillés": "Our detailed comparisons",
+  "Je veux 1 M€ → combien par mois ?": "I want €1M → how much per month?",
+  "Dites-nous votre objectif et votre horizon : le moteur calcule l'épargne mensuelle nécessaire, sur le rendement réel composé du MSCI World — krachs inclus.":
+    "Tell us your goal and your horizon: the engine computes the required monthly savings, on the real compounded MSCI World return — crashes included.",
+  "Horizon (ans)": "Horizon (years)",
+  "à épargner chaque mois": "to save each month",
+  "Calcul brut avant fiscalité et frais — dans l'app, votre enveloppe (CTO, PEA, AV, PER) et les règles françaises s'appliquent au résultat.":
+    "Gross calculation before tax and fees — in the app, your envelope (CTO, PEA, AV, PER) and French rules apply to the result.",
+  "Repartir de cette simulation": "Start from this simulation",
+  "Ouvrir l'onglet « Combien investir ? »": "Open the “How much to invest?” tab",
+  "Toutes les versions": "All versions",
+  "Dernières évolutions": "Latest releases",
+  Changelog: "Changelog",
   "Simulation par défaut — démo réelle": "Default simulation — real demo",
   "d'historique réel — S&P 500 1926-1969 + MSCI World 1970-2025":
     "of real history — S&P 500 1926-1969 + MSCI World 1970-2025",
@@ -1133,8 +1187,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.17.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.17.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.18.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.18.0 · 100% local data · Made with real returns, not promises.",
   "La bande « taux fixe » sous le héro": "The “fixed rate” band under the hero",
   "Snowball Pro se démarque des simulateurs qui supposent un rendement fixe : sous le héro, une bande rappelle notre méthode — 100 ans de vraie histoire rejouée, krachs inclus, sans citer le moindre taux en dur.":
     "Snowball Pro now stands apart from simulators that assume a fixed return: right under the hero, a band states our method — 100 years of real history replayed, crashes included, without quoting a single hardcoded rate.",

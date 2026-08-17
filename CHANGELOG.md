@@ -4,6 +4,23 @@
 
 ---
 
+## v6.18.0 — Landing : tableau honnête vs ProjectionLab/Finary/SEO, démo « objectif inversé », FAQ schema, page changelog
+
+Quatrième vague de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`) : les chantiers **n°2 (comparaison), n°4 (objectif inversé), n°8 (FAQ schema) et n°9 (dernières éditions + changelog)**. La bande v6.17.0 attaquait le cluster taux fixe ; cette version apporte la preuve par les faits.
+
+### 🔄 Changements
+
+- **Section « Le tableau honnête » (1.4 + 4.2)** — tableau 4 colonnes × 6 critères (fiscalité FR, 100 ans d'historique, Monte Carlo, décumulation, gratuité, données 100 % locales) opposant Snowball Pro à ProjectionLab (100 % fiscalité US), Finary (agrégateur, pas de moteur de simulation) et les simulateurs SEO FR (rendement fixe). Cases honnêtes ✅/⚠/✕ avec légende explicite « partiel — à vérifier », note de vérification datée (17/08/2026), et maillage interne vers les 4 comparatifs détaillés `/alternatives/`. Aucun ✕ inventé : chaque ⚠ est assumé.
+- **Démo « objectif inversé » (5.1)** — « Je veux 1 M€ → combien par mois ? » : deux curseurs réels (Objectif 100 k€–5 M€, Horizon 5–40 ans) branchés sur le VRAI solveur de l'app (`solveGoal`, rendement composé du scénario Central), jauge de difficulté, note honnête « calcul brut avant fiscalité et frais », et CTA **« Repartir de cette simulation »** qui écrit un deep-link `#s=…` — l'app s'ouvre avec l'objectif pré-chargé dans l'onglet « Combien investir ? » (vérifié e2e : objectif 1 000 000 € / 20 ans dans le curseur).
+- **FAQ schema JSON-LD (4.1)** — bloc `FAQPage` dans `index.html` avec les 8 questions de la FAQ de la landing, réponses verbatim : le contenu devient citable par les AI answers (Google SGE, ChatGPT…).
+- **« Dernières éditions » réduit + page changelog (2.4)** — la section passe de 13 à 3 cartes (4 avec la présente version), lien « Toutes les versions » vers une nouvelle page statique `public/changelog.html` générée depuis le CHANGELOG (51 versions, SEO-friendly, `llms.txt` + `sitemap.xml` + footer mis à jour).
+- **i18n** — ~50 nouvelles clés FR→EN (comparaison, objectif, changelog, libellés de légende) ; `aria-label` de la section « Dernières évolutions » traduit (auto-revue).
+- **Tests** (`src/__tests__/components.test.tsx`) : +3 — tableau honnête (3 concurrents cités, critères, maillage `/alternatives/`), objectif inversé (montant = `solveGoal`, CTA `#s=` décodable avec l'objectif), dernières éditions ≤ 4 + lien changelog — **418/418**.
+- Gate : typecheck ✓ lint ✓ **418/418 tests** ✓ format ✓ build ✓ (détecteur impeccable : 0 finding ; binaire natif `lightningcss-darwin-x64` réparé dans node_modules, évincé par iCloud).
+- Version 6.17.0 → **6.18.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.18.0`, footer landing v6.18.0, « Dernières éditions » v6.18.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.17.0 — Landing : la bande « attaque du cluster taux fixe » sous le héro
 
 Premier chantier de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`, ordre de bataille n°1). Juste sous le héro, une bande plein-largeur oppose les simulateurs SEO français qui supposent un rendement fixe à la méthode Snowball Pro : 100 ans de vraie histoire rejouée, krachs inclus. **Décision utilisateur : aucun taux en dur** — la promesse porte sur la méthode, pas sur un chiffre (« Les autres simulateurs supposent un rendement fixe. Nous, on rejoue 100 ans de vraie histoire, krachs inclus. »). « Aléatoire » a été écarté : factuellement faux (le modèle concurrent est un taux fixe supposé) et plus risqué juridiquement. **409 tests**, gate 100 % vert, vérifié en navigateur réel (FR + EN, 1440/390/320 px, 0 overflow).

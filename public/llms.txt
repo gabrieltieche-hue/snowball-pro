@@ -33,6 +33,7 @@
 - [Alternative — Networthify](https://snowball-pro.vercel.app/alternatives/networthify.html)
 - [Alternative — Quantalys](https://snowball-pro.vercel.app/alternatives/quantalys.html)
 - [Pricing — 100 % gratuit](https://snowball-pro.vercel.app/pricing.html)
+- [Changelog — toutes les versions](https://snowball-pro.vercel.app/changelog.html)
 
 ## FAQ
 

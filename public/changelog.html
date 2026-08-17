@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Changelog — toutes les versions de Snowball Pro</title>
+    <meta
+      name="description"
+      content="L'historique complet des versions de Snowball Pro : simulateur patrimonial français gratuit (PEA, assurance vie, PER), livré chaque semaine — une preuve vérifiable que le produit est vivant."
+    />
+    <link rel="canonical" href="https://snowball-pro.vercel.app/changelog.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://snowball-pro.vercel.app/changelog.html" />
+    <meta property="og:title" content="Changelog — toutes les versions de Snowball Pro" />
+    <meta
+      property="og:description"
+      content="Chaque entrée correspond à une version réellement livrée et vérifiable : simulateur, fiscalité française, Monte Carlo, rente, landing, distribution."
+    />
+    <meta property="og:image" content="https://snowball-pro.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f5f2eb;
+        color: #1c1917;
+        line-height: 1.65;
+        font-size: 16px;
+      }
+      ::selection {
+        background: rgba(184, 150, 15, 0.25);
+      }
+      .site-header {
+        background: rgba(245, 242, 235, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(28, 25, 23, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .site-header-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .brand-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-family: "Outfit", sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        font-size: 17px;
+        line-height: 1.1;
+      }
+      .brand-name em {
+        font-style: normal;
+        color: #b8960f;
+      }
+      .brand-tag {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #78716c;
+      }
+      .header-link {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1c1917;
+        text-decoration: none;
+        border: 1px solid rgba(28, 25, 23, 0.15);
+        border-radius: 10px;
+        padding: 7px 14px;
+        transition: background 0.15s ease;
+        white-space: nowrap;
+      }
+      .header-link:hover {
+        background: rgba(28, 25, 23, 0.05);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 20px 24px;
+      }
+      .article-kicker {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #8a720c;
+        background: rgba(184, 150, 15, 0.12);
+        border: 1px solid rgba(184, 150, 15, 0.25);
+        border-radius: 999px;
+        padding: 5px 12px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-family: "Outfit", sans-serif;
+        font-size: 32px;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
+        margin-bottom: 14px;
+      }
+      .article-intro {
+        font-size: 17px;
+        color: #57534e;
+        margin-bottom: 28px;
+      }
+      .article-intro strong {
+        color: #1c1917;
+      }
+      p {
+        margin-bottom: 14px;
+      }
+      a {
+        color: #a17d0c;
+        text-decoration-color: rgba(161, 125, 12, 0.35);
+        text-underline-offset: 3px;
+      }
+      .version-item {
+        background: #fff;
+        border: 1px solid rgba(28, 25, 23, 0.1);
+        border-left: 3px solid #b8960f;
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 12px;
+      }
+      .version-badge {
+        display: inline-block;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #8a720c;
+        background: rgba(184, 150, 15, 0.12);
+        border: 1px solid rgba(184, 150, 15, 0.25);
+        border-radius: 999px;
+        padding: 2px 9px;
+        margin-bottom: 8px;
+      }
+      .version-title {
+        font-family: "Outfit", sans-serif;
+        font-size: 16px;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .version-summary {
+        font-size: 13.5px;
+        color: #57534e;
+        margin-bottom: 0;
+      }
+      .cta-card {
+        background: linear-gradient(135deg, #1c1917, #2b2620 60%, #3a332b);
+        border-radius: 18px;
+        padding: 30px 26px;
+        margin: 40px 0 28px;
+        color: #fff;
+        text-align: center;
+      }
+      .cta-card h2 {
+        margin: 0 0 8px;
+        color: #fff;
+        font-size: 22px;
+        font-family: "Outfit", sans-serif;
+      }
+      .cta-card p {
+        color: #d6d0c4;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #e8d5a3, #d4af37 55%, #b8960f);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        text-decoration: none;
+        border-radius: 12px;
+        padding: 13px 22px;
+        box-shadow: 0 8px 20px rgba(184, 150, 15, 0.35);
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease;
+      }
+      .cta-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(184, 150, 15, 0.45);
+      }
+      .cta-caption {
+        font-size: 11.5px;
+        color: #a8a29e;
+        margin-top: 14px;
+        margin-bottom: 0;
+      }
+      .site-footer {
+        max-width: 760px;
+        margin: 40px auto 0;
+        padding: 24px 20px 40px;
+        border-top: 1px solid rgba(28, 25, 23, 0.1);
+        font-size: 12px;
+        color: #78716c;
+      }
+      .site-footer p {
+        margin-bottom: 8px;
+      }
+      @media (max-width: 560px) {
+        h1 {
+          font-size: 25px;
+        }
+        .article-intro {
+          font-size: 15.5px;
+        }
+        .version-item {
+          padding: 14px 15px;
+        }
+      }
+    </style>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.goatcounter.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Changelog — toutes les versions de Snowball Pro",
+        "description": "L'historique complet des versions de Snowball Pro, livré chaque semaine : chaque entrée est une preuve vérifiable que le produit est vivant.",
+        "inLanguage": "fr-FR",
+        "datePublished": "2026-08-17",
+        "publisher": { "@type": "Organization", "name": "Snowball Pro" }
+      }
+    </script>
+    <script
+      data-goatcounter="https://gabriel322jsj222.goatcounter.com/count"
+      data-goatcounter-settings='{"allow_local": false}'
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="brand" href="https://snowball-pro.vercel.app/" title="Snowball Pro — Simulateur patrimonial">
+          <span class="brand-logo">SP</span>
+          <span>
+            <span class="brand-name">SNOWBALL <em>PRO</em></span>
+            <span class="brand-tag" style="display: block">Simulateur patrimonial</span>
+          </span>
+        </a>
+        <a class="header-link" href="https://snowball-pro.vercel.app/">Ouvrir l'application</a>
+      </div>
+    </header>
+
+    <main>
+      <article>
+        <p class="article-kicker">Changelog · preuve de vie</p>
+        <h1>Toutes les versions de Snowball Pro</h1>
+        <p class="article-intro">
+          Une livraison par semaine, <strong>vérifiable</strong> : chaque entrée ci-dessous correspond à une version
+          réellement publiée du produit. Rien n'est inventé — c'est la preuve la plus simple que Snowball Pro est
+          vivant.
+        </p>
+
+        <div class="version-item">
+          <span class="version-badge">v6.18.0</span>
+          <h2 class="version-title">
+            Landing : tableau honnête vs ProjectionLab/Finary/SEO, démo « objectif inversé », FAQ schema, page changelog
+          </h2>
+          <p class="version-summary">
+            Quatrième vague de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`) : les chantiers
+            <strong
+              >n°2 (comparaison), n°4 (objectif inversé), n°8 (FAQ schema) et n°9 (dernières éditions +
+              changelog)</strong
+            >. La bande v6.17.0 attaquait le cluster taux fixe ; cette version apporte la preuve par les faits.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.17.0</span>
+          <h2 class="version-title">Landing : la bande « attaque du cluster taux fixe » sous le héro</h2>
+          <p class="version-summary">
+            Premier chantier de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`, ordre de bataille n°1).
+            Juste sous le héro, une bande plein-largeur oppose les simulateurs SEO français qui supposent un rendement
+            fixe à la méthode Snowball Pro : 100 ans de vraie histoire rejouée, krachs inclus.
+            <strong>Décision utilisateur : aucun taux en dur</strong> — la promesse porte sur la méthode, pas sur un
+            chiffre (« Les autres simulateurs supposent un rendement fixe. Nous, on rejoue 100 ans de vraie histoire,
+            krachs inclus. »). « Aléatoire » a été écarté : factuellement faux (le modèle concurrent est un taux fixe
+            supposé) et plus risqué juridiquement. <strong>409 tests</strong>, gate 100 % vert, vérifié en navigateur
+            réel (FR + EN, 1440/390/320 px, 0 overflow).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.16.0</span>
+          <h2 class="version-title">
+            Onboarding guidé : tutoriel non-skippable + questionnaire « Nouvelle simulation » + bibliothèque multi-sims
+          </h2>
+          <p class="version-summary">
+            Gros chantier d'activation pour les nouveaux utilisateurs (notamment ceux qui ne comprennent rien à la
+            finance ou à internet). À la première visite, l'app affiche un
+            <strong>tutoriel non-skippable en 5 écrans</strong> qui présente simplement l'outil, puis un bouton
+            <strong>« Lancer ma première simulation »</strong> ouvre un <strong>questionnaire guidé</strong> (une
+            question par écran, barre de progression) qui construit la simulation à la place d'une prise en main des
+            réglages. Le questionnaire adapte ses questions en direct : capital en <strong>Oui/Non</strong> (la
+            sous-question montant n'apparaît que si Oui), projet en <strong>2 parties</strong> (objectif → durée avec
+            l'horizon conseillé pré-sélectionné), enveloppe avec <strong>⭐ RECOMMANDÉ dynamique</strong> (calculé à
+            partir des réponses précédentes, explication fiscale en une phrase), âge d'arrêt de travail
+            <strong>conditionnel</strong> (retraite ET liberté financière), puis <strong>renommage final</strong> avec
+            nom par défaut intelligent et <strong>snapshot auto-créé</strong>. Le bandeau « Commencez ici » (QuickStart)
+            est <strong>supprimé</strong> — remplacé par ce parcours. Un bouton
+            <strong>« Nouvelle simulation »</strong> (dans l'ActionBar) relance le questionnaire vierge, avec un
+            dialogue <strong>« Sauvegarder et créer / Créer sans sauvegarder / Annuler »</strong> si la simulation en
+            cours a été modifiée. Enfin, un <strong>vrai onglet « Mes simulations »</strong> (bibliothèque : ouvrir,
+            renommer inline, supprimer avec double-clic de confirmation) et les réglages sont
+            <strong>repliés par défaut</strong> derrière un rail « Déplier les réglages avancés » (le mode
+            Débutant/Avancé et tout l'existant restent accessibles). <strong>408 tests</strong>, gate 100 % vert,
+            parcours validé en navigateur réel de bout en bout.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.15.0</span>
+          <h2 class="version-title">
+            Mobile 100 % : résultat d'abord, zoom iOS corrigé, zones tactiles + socle app iOS (Capacitor)
+          </h2>
+          <p class="version-summary">
+            Chantier mobile complet, mesuré en navigateur réel (Playwright, 320 → 430 px). Sur téléphone, l'app respecte
+            enfin la promesse produit : <strong>le résultat d'abord</strong> — les onglets et le héro passent AVANT les
+            réglages (la sidebar les suit), le bandeau « Commencez ici » passe de ~700 px à <strong>275 px</strong> (3
+            cartes en défilement snap), les champs de saisie montent à <strong>16 px sur mobile</strong> (plus de zoom
+            automatique iOS au focus), les boutons de l'en-tête gagnent des
+            <strong>zones tactiles confortables</strong>, et l'app gère les
+            <strong>zones de sécurité iPhone</strong> (encoche, barre d'accueil) + les meta PWA iOS (« Ajouter à l'écran
+            d'accueil »). En parallèle, le <strong>socle d'une future app iOS</strong> est posé (Capacitor 8, projet
+            Xcode, icône 1024², splash sombre, redirection native, workflow CI, politique de confidentialité, guide de
+            soumission) — la soumission App Store reste en attente à la demande de l'utilisateur.
+            <strong>401 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.14.0</span>
+          <h2 class="version-title">
+            Distribution : 4 pages alternatives + page Tarifs, footer landing, guides autonomes
+          </h2>
+          <p class="version-summary">
+            Suite de la brique distribution (v6.13.0) : le canal SEO s'étoffe avec
+            <strong>4 comparatifs honnêtes</strong> face aux outils que les internautes français tapent déjà (Portfolio
+            Visualizer, FireCalc, Networthify, Quantalys), une <strong>page Tarifs « 100 % gratuit »</strong>, et l'app
+            pointe enfin vers ses pages statiques (rangée « Guides et comparatifs » dans le pied de page de la landing).
+            Les CTA deep-link `#s=…` de toutes les pages publiques sont désormais
+            <strong>protégés par un test de régression</strong> : un payload indécodable casserait la suite plutôt que
+            d'ouvrir l'app avec les défauts en silence.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.13.1</span>
+          <h2 class="version-title">
+            Correctifs : panneaux expérimentaux retirés avant publication, onglets nets sur mobile
+          </h2>
+          <p class="version-summary">
+            Suite à la demande utilisateur (les panneaux « Et si vous changiez d'enveloppe ? » et « Quel levier compte
+            le plus ? » jugés hors périmètre), les deux fonctionnalités expérimentales —
+            <strong>jamais publiées</strong> — ont été retirées proprement du code avant le premier déploiement de la
+            v6.13. Le reste de la release (partage, guides SEO, llms.txt) et le correctif mobile sont déployés.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.13.0</span>
+          <h2 class="version-title">
+            Distribution : partage en un clic (X, WhatsApp, LinkedIn), rapport PDF signé et 3 guides SEO long-tail
+          </h2>
+          <p class="version-summary">
+            Brique « distribution » de la stratégie (canal SEO + boucle virale) : le produit est prêt depuis longtemps,
+            c'est la visibilité qui manque. Trois leviers techniques implémentés : (1)
+            <strong>bouton « Partager » visible</strong> dans l'en-tête — X (Twitter), WhatsApp, LinkedIn et copie du
+            lien, chaque lien embarque le scénario pré-rempli (`#s=…` via `buildShareUrl`) + un
+            <strong>UTM par canal</strong> (`utm_source=partage&amp;utm_medium=x|whatsapp|linkedin|copie`) pour mesurer
+            chaque source dans GoatCounter ; (2) <strong>rapport PDF signé</strong> — pied de rapport « Créé avec
+            Snowball Pro » + URL du site + <strong>lien du scénario partageable</strong> : chaque rapport imprimé
+            devient une publicité ; (3) <strong>3 pages guides SEO</strong> statiques (`public/guides/`) ciblant les
+            requêtes long-tail françaises — « simulateur PEA », « PEA ou assurance vie », « calcul intérêts composés » —
+            chacune avec données structurées (Article + FAQPage), CTA « Simulez votre scénario » en
+            <strong>lien profond pré-rempli</strong> et GoatCounter. Sitemap + llms.txt mis à jour.
+            <strong>402 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.12.0</span>
+          <h2 class="version-title">L'application en anglais : un bouton FR/EN traduit toute l'app 🇬🇧</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« je veux ajouter un bouton sur le site pour traduire dans plusieurs langues et
+            rendre accessible à plus de gens. On met juste l'anglais. »_ Un bouton FR/EN (en-tête de l'app
+            <strong>et</strong> de la landing) bascule l'intégralité de l'interface en anglais : simulateur, Monte
+            Carlo, rente &amp; retraite, objectif, comparaison, sidebar, graphiques, rapport PDF, landing et écrans de
+            compte. Le formatage des montants suit la langue (€1,234.56 / 1,234,567.89 € au lieu de 1 234,56 € / 1 234
+            567,89 €), la préférence est persistée (`snowball_v5_lang`), et la langue du navigateur sert de défaut au
+            premier passage. Le français reste la langue par défaut et l'architecture est prête pour d'autres langues.
+            <strong>385 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.11.2</span>
+          <h2 class="version-title">
+            Panneau « Votre capital en détail » : échelles libellées sur chaque valeur + panneau resserré
+          </h2>
+          <p class="version-summary">
+            Retour utilisateur : _« c'est trop étendu vers le bas, on comprend pas, c'est pas appliqué, je comprends pas
+            ! sur le compte en 2045 / en euros d'aujourd'hui »_. La légende d'échelle partagée de l'en-tête (v6.9.0) ne
+            rattachait pas les pastilles aux chiffres — elle est <strong>supprimée</strong> : chaque valeur porte
+            désormais SON libellé (« 1,31 M€ sur le compte en 2045 » / « 864 713 € en euros d'aujourd'hui »), qui passe
+            à la ligne (flex-wrap) en colonne étroite au lieu de tronquer. Le panneau est resserré verticalement
+            (padding p-4/p-5, header mb-3, marges internes réduites) et les grands chiffres passent en text-lg/xl
+            (taille augmentée, comme suggéré). <strong>385 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.11.1</span>
+          <h2 class="version-title">Favicon : une vraie icône .ico pour Google</h2>
+          <p class="version-summary">
+            L'app n'avait qu'une icône PNG haute résolution : Google exige un `favicon.ico` (16/32/48 px) pour afficher
+            une icône dans les résultats de recherche. Ajout de `public/favicon.ico` (3 tailles embarquées) et de son
+            lien dans `index.html` (PNG 192 px conservé pour les écrans haute densité). <strong>373 tests</strong>, gate
+            100 % vert, déployé.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.11.0</span>
+          <h2 class="version-title">Inflation : l'hypothèse 2,1 % (cible BCE) explicitée, médiane 2,1 %</h2>
+          <p class="version-summary">
+            Retour utilisateur sur la véracité des trois taux (10,07 → 8,22 → 5,99) : audit complet — math interne
+            vérifiée au centième (moyenne arithmétique 10,0655 %, composé 8,2196 %, réel Fisher 5,9938 %), série MSCI
+            World Net EUR 1970-2025 recoupée année par année contre les rendements officiels USD convertis au change
+            EUR/USD. Constat : le 5,99 % utilisait une hypothèse d'inflation forfaitaire 2,1 %, inférieure à la moyenne
+            réelle 1970-2025 (4,05 %, INSEE). Analyse médiane :
+            <strong>la médiane de la période est exactement 2,10 %</strong> — 2,1 % est donc l'hypothèse la plus
+            naturelle (et prudente vs 1,87 % de moyenne depuis 1986) : <strong>on la garde</strong>, et on l'explique
+            dans l'UI. <strong>373 tests</strong>, gate 100 % vert, vérifié en navigateur réel.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.10.0</span>
+          <h2 class="version-title">
+            Graphiques : la valeur finale lisible sans hover, palette unifiée, légendes en chips
+          </h2>
+          <p class="version-summary">
+            Suite de v6.9.0 — <strong>release cumulée</strong> : le panneau « Votre capital en détail » et ce lot
+            partent ensemble (v6.9.0 n'ayant pas encore été livré). La courbe « Projection de votre capital » ne livrait
+            sa conclusion qu'au survol : la valeur finale de chaque série (épargné, gains, impôts) s'affiche désormais
+            <strong>en bout de tracé</strong>, sans hover, avec un point or sur « Gains ». Au passage, unification du
+            vocabulaire visuel des graphiques : une seule palette partagée avec le camembert, légendes en chips, axes et
+            infobulles harmonisés sur tous les onglets. <strong>372 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.9.0</span>
+          <h2 class="version-title">
+            Synthèse : un panneau « Votre capital en détail » à la place des 4 cartes flottantes
+          </h2>
+          <p class="version-summary">
+            Retour utilisateur : _« ça ne s'intègre pas très bien au reste du truc — c'est entre le patrimoine estimé et
+            le graphique »_ (bundles /process + /ui-ux, diagnostic impeccable + APEX -axv). Les 4 cartes de
+            `SummaryStats` étaient le <strong>seul bloc de l'onglet sans titre ni conteneur</strong> — posé entre deux
+            grandes cartes glass titrées (héro et graphique), il se lisait comme un corps étranger.
+            <strong>372 tests</strong>, gate 100 % vert, vérifié en navigateur réel (desktop + mobile).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.8.2</span>
+          <h2 class="version-title">Landing : un seul rythme vertical (le « trou » en moins, partout)</h2>
+          <p class="version-summary">
+            Suite directe du retour _« supprime un peu ce trou au-dessus »_ : après la suppression de la bande vide sous
+            l'en-tête (héro `pt-20` → `pt-14`, colonnes alignées en haut au lieu du centrage vertical qui poussait la
+            colonne la plus courte vers le bas), uniformisation de <strong>toute</strong> la landing sur une seule
+            échelle verticale. <strong>369 tests</strong>, gate 100 % vert, vérifié en navigateur réel (mesures DOM
+            Playwright, desktop + mobile).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.8.1</span>
+          <h2 class="version-title">Héro : la question du lecteur, avec les mots du lecteur</h2>
+          <p class="version-summary">
+            Deux retours utilisateur successifs : _« je trouve qu'on comprend pas trop ça non ? »_, puis _« c mieux mais
+            c toujours moyen, pas très clair, ça sonne mal »_. Diagnostic en profondeur (audit `clarify`) : ① « Combien
+            votre épargne peut-elle <strong>devenir</strong> ? » — « devenir » prend « que/quoi », pas « combien » : une
+            quantité se dit avec <strong>valoir</strong> ; ② « vraiment » = bouche-trou qui s'ajoute à « vraie histoire
+            boursière » et « Des chiffres réels » (trois affirmations de vérité dans le même bloc, ton défensif) ; ③ le
+            registre « mystère magique » contredit la promesse de la marque (« des chiffres réels, pas des promesses »)
+            ; ④ la question sans horizon ne dit pas _quand_ — alors que la démo affiche exactement « 25 ans ». Le héro
+            demande désormais « Combien peut valoir votre épargne dans 25 ans ? » (la démo à droite répond à cette
+            question précise) et le sous-titre définit le terme de marque en une apposition : « Votre nombre magique,
+            c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En
+            30 secondes, sans inscription, sur votre appareil. » <strong>369 tests</strong>, gate 100 % vert, vérifié en
+            navigateur réel (desktop + mobile).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.8.0</span>
+          <h2 class="version-title">Activation « Commencez ici » + CRO landing + hiérarchie textuelle</h2>
+          <p class="version-summary">
+            Passage `/full` (bundles business + research + ui-ux + process) : recherche marché réelle, audit CRO de la
+            landing, revue du design system, implémentation TDD + revue adverse. Quatre livrables, zéro changement
+            moteur — <strong>369 tests</strong>, gate 100 % vert, vérifié en navigateur réel.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.7.2</span>
+          <h2 class="version-title">« Euros d'aujourd'hui » décoché par défaut (la valeur du compte d'abord)</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« je veux que cette option NE SOIT PAS COCHÉE PAR DÉFAUT ! Met en avant le pouvoir
+            d'achat — la valeur sur le compte reste affichée partout »_. L'affichage démarre à nouveau sur les
+            <strong>euros courants</strong> : le chiffre principal est ce qui sera réellement sur le compte. Le moteur
+            calcule TOUJOURS les deux échelles — le toggle « Euros d'aujourd'hui » reste là pour mettre le pouvoir
+            d'achat en avant, et la double échelle (`DualAmount`) continue d'afficher les deux montants partout.
+            <strong>361 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.7.1</span>
+          <h2 class="version-title">Réglages repliables : rail d'icônes latéral style ChatGPT</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« je souhaite pouvoir vraiment bien replier le menu des réglages — un vrai repli sur
+            le côté avec des petites icônes pour les catégories, un truc style ChatGPT »_. Le repli v6.2 (résumé
+            compact) devient un <strong>vrai rail latéral de 76 px</strong> : la grille se resserre (380 px → 76 px,
+            transition `grid-template-columns` animée), le panneau se rétracte en une colonne d'icônes sticky et le
+            contenu gagne ~300 px. Zéro changement moteur — <strong>361 tests</strong>, gate 100 % vert, vérifié en
+            navigateur réel (Playwright : layout, peinture des tooltips, sticky, mobile).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.7.0</span>
+          <h2 class="version-title">Objectif aligné sur le scénario Central + Rapport PDF patrimonial de synthèse</h2>
+          <p class="version-summary">
+            Deux idées de la feuille de route : (1) la calculatrice « Combien investir ? » gardait un défaut
+            <strong>10,07 %/an</strong> (synchro OFF) alors que l'app applique par défaut le scénario
+            <strong>Central 8,22 %/an</strong> — le « fix cohérence » promis dans MEMORY (piste laissée v6.5.2) ; (2)
+            l'export PDF, jusque-là `window.print()` brut, devient un
+            <strong>vrai rapport patrimonial de synthèse</strong> (PISTES V6.1 — idée 2 validée).
+            <strong>361 tests</strong>, gate 100 % vert, vérifié en navigateur réel (preview + Playwright au format A4).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.6.1</span>
+          <h2 class="version-title">
+            Titres uniformes : « Réglages » et « Votre patrimoine estimé » sur l'anatomie SectionHeader
+          </h2>
+          <p class="version-summary">
+            Demande utilisateur : _« ces 2 titres ne sont pas à la même taille que les autres, ils respectent pas le
+            style »_ — les titres « RÉGLAGES » (en-tête de la sidebar) et « VOTRE PATRIMOINE ESTIMÉ » (héro de l'onglet
+            Projection) échappaient à l'anatomie de titre uniforme (v5.6.4) avec un mini-label 10 px muet. Correction :
+            migration des deux titres sur le composant <strong>`SectionHeader` niveau `card`</strong> — barre dorée `w-1
+            h-5` + icône lucide 16 px + titre `font-extrabold uppercase tracking-[0.08em]` 13 px (14 px ≥ sm), le même
+            rythme que « PROJECTION DE VOTRE CAPITAL » / « STATISTIQUES CLÉS ». Zéro changement moteur —
+            <strong>358 tests</strong>, gate 100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.6.0</span>
+          <h2 class="version-title">Refonte de la landing : démo interactive du héro + méthodologie clarifiée</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« fait une refonte de la landing page »_ puis _« C TOUT INVERSE, IN COMPREND RIEN, C
+            MOCHE »_ sur la section Méthodologie. Refonte complète de la landing : le héro devient une
+            <strong>démo interactive exécutée par le vrai moteur</strong> — bascule Prudent / Central / Optimiste, la
+            courbe se redessine et le « nombre magique » (capital final) se recalcule en direct avec la décomposition
+            épargné / croissance. La section Méthodologie est réordonnée selon le langage canonique de l'app (échelle
+            <strong>Brut → Composé → Réel</strong>, chaque étape retire une seule chose) et le SEO est en place (données
+            structurées, canonical, sitemap, robots, vérification Google, GoatCounter). Bump 6.5.2 →
+            <strong>6.6.0</strong>. Zéro changement moteur (ancrages dorés intacts) — <strong>358 tests</strong>, gate
+            100 % vert.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.5.2</span>
+          <h2 class="version-title">
+            Clarté des taux : la chaîne brut → net de frais → réel est enfin visible (8,22 → 7,95 → 5,73)
+          </h2>
+          <p class="version-summary">
+            Demande utilisateur : _« pourquoi quand je mets 8,22 %/an, ça me met 8 % et 5,7 % net ??? je crois que les
+            rendements ne sont pas synchronisés, tout est différent partout »_. Audit moteur + vérification chiffrée :
+            <strong>aucune désynchronisation des calculs</strong> — le XIRR 7,95 % = scénario 8,22 %/an brut − 0,25 %/an
+            de frais (sans frais, le XIRR = 8,22 % pile, prouvé), et le réel 5,73 % = (1 + 7,95 %) ÷ (1 + 2,1 %) − 1.
+            Mais l'<strong>affichage était trompeur</strong> : la carte « Rendement / an » disait « brut » alors que le
+            XIRR est net de frais, les taux étaient arrondis à 1 décimale (« 8,0 % » pour 7,95), le taux appliqué (8,22
+            %/an brut) n'apparaissait nulle part dans les KPIs, et l'insight comparait au 10,07 % arithmétique
+            (référence périmée depuis v6.4). Bump 6.5.1 → <strong>6.5.2</strong>. Zéro changement moteur (ancrages dorés
+            intacts).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.5.1</span>
+          <h2 class="version-title">Scénario de rendement : intégration fluide dans la sidebar</h2>
+          <p class="version-summary">
+            Retour utilisateur : _« cette nouvelle partie ne s'intègre pas très bien… supprime la sorte de trait entre
+            durée et cette partie »_. Le sélecteur prudent / central / optimiste (déjà déplacé dans « Votre épargne »)
+            s'intègre désormais naturellement à la section, sans rupture visuelle.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.5.0</span>
+          <h2 class="version-title">Audit honnêteté : les 30 points vérifiés et corrigés</h2>
+          <p class="version-summary">
+            Audit systématique des 30 points d'honnêteté (moteur, fiscalité, affichage) — chaque correction est couverte
+            par un test ou une vérification navigateur. Deux nouveautés produit notables : un
+            <strong>mode Débutant / Avancé</strong> (les notions techniques — XIRR, PFU, TMI, Fisher, Pástor–Stambaugh,
+            Guyton–Klinger — sont masquées par défaut) et une
+            <strong>validation de cohérence âge / durée / retraite</strong>. <strong>353 tests</strong>, gate 100 %
+            vert, vérifié en navigateur réel (desktop + mobile, zéro erreur console).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.4.1</span>
+          <h2 class="version-title">Scénario de rendement dans les réglages : le résultat d'abord</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« le Scénario de rendement gâche la vue, mets-le dans les réglages, dans Votre
+            épargne »_. Le sélecteur prudent / central / optimiste quitte le haut de l'onglet Projection et rejoint la
+            section <strong>« Votre épargne »</strong> de la sidebar, sous la durée — le héro ouvre désormais la vue
+            sans écran de réglages. Zéro changement moteur : seule la couche d'affichage est déplacée.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.4.0</span>
+          <h2 class="version-title">
+            Honnêteté des hypothèses : frais réalistes, projection médiane, rente nette, profil de risque
+          </h2>
+          <p class="version-summary">
+            Checklist produit de l'utilisateur (« corrections prioritaires », 10 sections) passée au crible du moteur,
+            puis implémentée en 3 paquets : (1) <strong>honnêteté des hypothèses</strong> — plus jamais 0 % de frais par
+            défaut, projection centrale sur la médiane historique, Monte Carlo en euros réels ; (2)
+            <strong>rente nette + objectif inversé robuste</strong> — le décaissement applique enfin la fiscalité des
+            retraits et les frais de gestion, et l'objectif inversé calcule le versement pour P10/P50/P90 ; (3)
+            <strong>profil utilisateur</strong> — âge, pensions, dépenses, tolérance au risque et alerte « plan trop
+            risqué ». <strong>Changement de paradigme moteur</strong> : la projection par défaut passe de la moyenne
+            arithmétique (10,07 %) au rendement géométrique composé (8,22 %) — le chiffre honnête (733 k€ → 519 k€ sur
+            le scénario par défaut). <strong>327 tests</strong>, gate 100 % vert, vérifié en navigateur réel (desktop +
+            mobile, zéro erreur console).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.3.0</span>
+          <h2 class="version-title">
+            Passe d'harmonisation design system : les couleurs parlent enfin le même langage
+          </h2>
+          <p class="version-summary">
+            Suite d'un audit externe (50 détections, généré depuis des captures d'une version ≤ v6.1) : vérification
+            visuelle en navigateur réel (phase B) puis correction des incohérences confirmées (phase A). L'audit
+            contenait ~40 % de points déjà corrigés en v6.2 et quelques affirmations fausses (éliminées par mesure) ; le
+            noyau restant — couleurs hors charte, rouge sémantique mal utilisé, alignements — est traité ici.
+            <strong>Zéro changement moteur</strong> : uniquement la couche d'affichage. <strong>308 tests</strong>, gate
+            100 % vert, vérifié en navigateur réel (desktop 1440 + mobile 390, clair + sombre).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.2.0</span>
+          <h2 class="version-title">Nettoyage UI P0+P1 : fin du « tout au même poids »</h2>
+          <p class="version-summary">
+            Suite à la critique UX (hiérarchie visuelle, répétitions), chantier d'organisation de l'information sur
+            l'onglet Rente + respiration de la sidebar + hiérarchie typographique. Zéro changement moteur : uniquement
+            la présentation. <strong>308 tests</strong>, gate 100 % vert, vérifié en navigateur réel (desktop 1440 +
+            mobile 375, clair + sombre, clavier).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.1.0</span>
+          <h2 class="version-title">Landing page + comptes locaux : l'app a une porte d'entrée</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« Je veux créer une landing page de présentation de l'app, un système de création de
+            compte et de login, et tout le tralala. »_ Deux gros morceaux : une
+            <strong>landing de persuasion</strong> (mode impeccable) qui prouve la valeur avec une
+            <strong>démo exécutée par le vrai moteur</strong>, et un
+            <strong>système de comptes 100 % local</strong> (inscription, connexion, session persistée, changement de
+            mot de passe, suppression du compte) avec isolation des données par compte. Deux idées v6.1 de l'utilisateur
+            (onglet « Retraite par objectif », rapport PDF) enregistrées dans MEMORY.md pour plus tard.
+            <strong>308 tests</strong>, gate 100 % vert, vérifié en navigateur réel. Bump 6.0.0 →
+            <strong>6.1.0</strong>. Pas de déploiement Vercel (validation utilisateur requise).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v6.0.0</span>
+          <h2 class="version-title">
+            Refonte de la hiérarchie : le résultat d'abord (héro, entonnoir, onglets orientés besoin)
+          </h2>
+          <p class="version-summary">
+            Plan v6 validé avec l'utilisateur (synthèse de 3 avis UX externes + audit interne) : le problème n'était pas
+            le moteur mais la <strong>hiérarchie de l'information</strong> — trop de contenu au même niveau, l'insight
+            clé noyé en bas. Zéro changement moteur dans cette couche : uniquement la présentation. Rien n'est supprimé
+            : tout est déplacé derrière des couches.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.7.2</span>
+          <h2 class="version-title">Formule de Fisher explicitée : pourquoi 5,99 % et pas 8,22 − 2,1 = 6,12 %</h2>
+          <p class="version-summary">
+            Demande utilisateur : _« quand je fais 8,22 − 2,1 j'arrive à 6,12 ! d'où vient ce 5,99 ? »_ — le piège
+            classique : la soustraction simple est une approximation, la réalité est multiplicative (formule de Fisher).
+            L'app l'explique désormais aux endroits où le chiffre apparaît. Bump 5.7.1 → <strong>5.7.2</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.7.1</span>
+          <h2 class="version-title">
+            Clarté des rendements : l'échelle 10,07 % → 8,22 % → 5,99 % enfin expliquée (plus de « double déduction »
+            apparente)
+          </h2>
+          <p class="version-summary">
+            Demande utilisateur : _« je vois des taux de rendement différents absolument partout, ça me fait très peur…
+            je veux que l'utilisateur comprenne pourquoi on passe du 10 % par an à 5,99 % »_. Audit moteur + recherche :
+            <strong>aucune double déduction dans le moteur</strong> — le problème était pédagogique. Trois taux
+            coexistaient sans le chaînon manquant : la moyenne ARITHMÉTIQUE (10,07 %, appliquée par la courbe lissée) et
+            le rendement RÉEL (5,99 %) étaient affichés, mais la moyenne GÉOMÉTRIQUE (8,22 %, krachs inclus) — l'étape
+            qui explique la baisse — ne l'était jamais. Bump 5.7.0 → <strong>5.7.1</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.7.0</span>
+          <h2 class="version-title">
+            Overhaul UI/UX : en-tête global, onglets à icônes, cartes héro, design system affiné
+          </h2>
+          <p class="version-summary">
+            Demande utilisateur : _« Améliore drastiquement l'interface et l'UI, l'UX, et tout ça… GO DEEPER »_. Refonte
+            complète de la couche d'affichage (zéro changement moteur) : hiérarchie, motion, micro-interactions,
+            cohérence — l'identité or/ivoire devient plus affirmée et l'app gagne un vrai squelette d'en-tête. Bump
+            5.6.4 → <strong>5.7.0</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.6.4</span>
+          <h2 class="version-title">
+            Titres de section UNIFORMES sur tout le site : « Vos impôts » proportionné à « Statistiques clés »
+          </h2>
+          <p class="version-summary">
+            Demande utilisateur : _« le titre de la partie des impôts doit être mieux proportionné par rapport aux
+            statistiques clés… que tout soit uniforme sur le site, sublime, joli et cohérent »_. Avant, chaque carte et
+            chaque graphique utilisaient son propre style de titre (10 px gris muet, `text-sm font-bold`, emoji 📈📊…) à
+            côté de titres de section en extrabold — hiérarchie visuelle déséquilibrée. Bump 5.6.3 →
+            <strong>5.6.4</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.6.3</span>
+          <h2 class="version-title">
+            Audit complet qualité-UX-logique : virgule française partout, cohérence des chiffres, saisies bornées
+          </h2>
+          <p class="version-summary">
+            Audit complet (navigateur réel + lecture moteur) : 8 constats corrigés + chasse aux virgules décimales
+            anglaises résiduelles. Bump 5.6.1 → <strong>5.6.3</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.6.0</span>
+          <h2 class="version-title">
+            Courbe lissée du Simulateur + scénario « Partir en période difficile » (krach paramétrable)
+          </h2>
+          <p class="version-summary">
+            Deux demandes utilisateur fusionnées : (1) _« un truc linéaire, pas une courbe aléatoire »_ — le Simulateur
+            affichait les zigzags réels de l'historique ; (2) pouvoir tester _« et si le départ à la retraite tombait en
+            pleine crise ? »_ au moment et à l'intensité de son choix, au lieu des seules fenêtres historiques fixes.
+            Bump 5.5.1 → <strong>5.6.0</strong>.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.5.1</span>
+          <h2 class="version-title">
+            Fiabilité &amp; sûreté des estimations : incertitude des paramètres, 100 ans d'histoire, inflation
+            stochastique, garde-fous et stress tests
+          </h2>
+          <p class="version-summary">
+            Suite directe de la question utilisateur _« Pourquoi P50 = 2,67 M€ et P90 = 10,88 M€ ? (4× d'écart) »_ —
+            l'écart est mathématiquement correct (volatilité réelle × √durée, rééchantillonnage par blocs), mais le
+            modèle traitait la moyenne 10,07 % et l'inflation 2,1 % comme des <strong>vérités connues</strong>, ce qui
+            rendait les percentiles et le « 95,8 % de survie » <strong>trop confiants</strong>. Deux volets :
+            <strong>honnêteté du modèle</strong> (fiabilité) et <strong>robustesse du plan</strong> (sûreté). Les 4
+            options sont <strong>ON par défaut</strong> — chacune reste désactivable dans l'UI pour comparer.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.5.0</span>
+          <h2 class="version-title">
+            Option A : plus de « taux défini » ni de crise simulée — l'historique réel du MSCI World partout
+          </h2>
+          <p class="version-summary">
+            Suite directe de la demande « Monte Carlo et Rente rejouent TOUJOURS l'historique réel » : l'app devient
+            <strong>100 % données réelles</strong>. Le mode « Taux défini », le curseur de rendement, la volatilité et
+            la crise synthétique sont supprimés — le Simulateur, Monte Carlo et la Rente rejouent tous les rendements
+            réels du MSCI World 1970-2025 (krachs réels de 2000, 2008, 2022… et bull markets réels inclus).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.4.1</span>
+          <h2 class="version-title">
+            Rendement BRUT par défaut : 10,07 %/an (moyenne MSCI World) + clarté pédagogique
+          </h2>
+          <p class="version-summary">
+            À la demande de l'utilisateur, l'app rend explicite le point le plus source de confusion :
+            <strong>le rendement saisi est TOUJOURS brut</strong> (avant inflation — l'inflation est déduite séparément
+            par le moteur, jamais saisie nette sous peine de double déduction).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.4.0</span>
+          <h2 class="version-title">Suppression du rendement des dividendes (MSCI World capitalisant)</h2>
+          <p class="version-summary">
+            Le curseur « Rendement des dividendes » est <strong>supprimé</strong> : l'indice MSCI World est un indice
+            <strong>capitalisant</strong> (les dividendes sont réinvestis dans l'indice, rendement total) — un rendement
+            de dividendes séparé additionné par-dessus les rendements historiques
+            <strong>comptait les dividendes deux fois</strong> et sur-taxait. Nettoyage complet :
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.3.1</span>
+          <h2 class="version-title">
+            Correction figure MSCI World : 10,62 % → 10,07 %/an (moyenne réellement calculée)
+          </h2>
+          <p class="version-summary">
+            La carte « Historique » affichait une valeur codée en dur (10,62 %/an) qui ne correspondait pas à la série
+            réellement rejouée. Correctif : la moyenne arithmétique est désormais <strong>calculée</strong> sur la série
+            EUR 1970–2025 (<strong>≈ 10,07 %/an brut</strong>) ; le rendement net d'inflation reste la référence
+            communiquée (8,22 %/an). Bump v5.3.1 partout (package.json, sw.js `CACHE_VERSION`, CHANGELOG).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.3.0</span>
+          <h2 class="version-title">
+            « Comment évolue la bourse ? » simplifié : 2 modes, MSCI World seul, « Aléatoire » supprimé
+          </h2>
+          <p class="version-summary">
+            La section demandait le rendement annuel dans « Votre épargne », puis reposait la même question (« Constante
+            ») : contradiction redondante. Ménage UX — il reste <strong>2 modes clairs</strong> : « Taux défini »
+            (reprend le rendement annuel saisi ci-dessus) et « Historique » (réel, MSCI World uniquement). Le mode «
+            Aléatoire » (gaussien ± volatilité) est retiré de l'interface ; le moteur conserve sa logique `random` en
+            interne pour Monte Carlo.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.2.4</span>
+          <h2 class="version-title">
+            PEA : l'imposition suit enfin la durée de détention + paramètres avancés nettoyés
+          </h2>
+          <p class="version-summary">
+            Correction de 3 problèmes signalés : le curseur « Années de détention du PEA » ne changeait AUCUN chiffre et
+            le taux réduit (17,2 %) s'appliquait même pour un PEA détenu moins de 5 ans ; le réglage « Fiscalité en
+            couple » apparaissait sur tous les comptes au lieu du seul PEA ; les paramètres avancés affichaient 3 modes
+            d'inflation superflus (dont un qui chevauchait le libellé « Inflation annuelle » sur desktop).
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.2.3</span>
+          <h2 class="version-title">
+            Audit profond v3 : la Rente applique enfin le krach + unités verrouillées partout
+          </h2>
+          <p class="version-summary">
+            Audit moteur et UI en profondeur (lecture des 13 modules engine + composants, croisement des unités, revue
+            adverse) : 1 bug moteur qui faussait la Rente, 1 KPI déconnecté de la simulation, et 3 écrans qui
+            mélangeaient encore les unités.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.2.2</span>
+          <h2 class="version-title">Audit moteur v2 : 10 bugs corrigés, Rente asynchrone, a11y des graphiques</h2>
+          <p class="version-summary">
+            Deuxième passe d'audit en profondeur (test moteur + runtime Playwright + revue adverse) : corrections
+            moteur, performance, accessibilité — et un fix bloquant de chaîne de build.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.2.1</span>
+          <h2 class="version-title">Exports groupés + échelle « euros d'aujourd'hui » cohérente partout</h2>
+          <p class="version-summary">
+            Audit utilisateur : les 4 écrans qui affichaient des montants ne racontaient pas la même histoire selon le
+            toggle « euros d'aujourd'hui ». Aucun changement de logique moteur — uniquement la couche d'affichage.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.2.0</span>
+          <h2 class="version-title">Audit UI/UX : contraste WCAG AA, accessibilité, lisibilité, mobile</h2>
+          <p class="version-summary">
+            Correction intégrale du rapport d'audit UI/UX (2 critiques, 8 importants, 10 moyens) — aucun changement de
+            logique moteur, uniquement la couche visuelle et l'accessibilité.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.1.3</span>
+          <h2 class="version-title">Suppression du « Millésime fiscal » + fiscalité TMI/barème</h2>
+          <p class="version-summary">
+            - <strong>Suppression du réglage « Millésime fiscal »</strong> : le curseur 2020–2032 ne changeait AUCUN
+            calcul — le moteur (`taxes.ts`) utilise des constantes fixes (17,2 % cotisations, 12,8 % IR, abattements AV
+            4 600/9 200 €) qui ne lisent
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.1.2</span>
+          <h2 class="version-title">Suppression « Mois de début » + corrections release</h2>
+          <p class="version-summary">
+            - <strong>Suppression du réglage « Mois de début »</strong> : le champ `startMonth` ne servait qu'à décaler
+            les dates affichées (valeur par défaut = janvier). Retiré de `SimulationInputs`, de la migration v4→v5, de
+            `NUMERIC_KEYS`, du moteur
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.1.1</span>
+          <h2 class="version-title">Durcissement sécurité (audit complet)</h2>
+          <p class="version-summary">
+            - <strong>Dépendances</strong> : `vite` 7.2.4 → 7.3.6 — élimine les 5 advisories connus (dont 3 High :
+            bypass `server.fs.deny`, lecture de fichiers arbitraires via le WebSocket du dev server, path traversal
+            Windows). `npm audit` = 0 vuln.
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.1.0</span>
+          <h2 class="version-title">Réintroduction des fonctionnalités v4.1 (Comparaison, Undo/Redo, Snapshots)</h2>
+          <p class="version-summary">
+            - <strong>Comparaison A/B</strong> : mode comparateur restauré — bouton « Comparer » dans l'ActionBar,
+            bannière « Mode Comparaison actif », panneau éditant le Scénario B (A figé au lancement), graphique comparé
+            A vs B, résumé 3 cartes (A, B, écart +/–), tableau comparatif annuel. Les autres onglets
+          </p>
+        </div>
+        <div class="version-item">
+          <span class="version-badge">v5.0</span>
+          <h2 class="version-title">Architecture &amp; Stack Technique</h2>
+          <p class="version-summary">
+            - <strong>Framework :</strong> React 19.2 avec StrictMode + TypeScript 5.9 (strict) -
+            <strong>Bundler :</strong> Vite 7.2 + plugin `vite-plugin-singlefile` (tout inline dans un unique
+            `index.html`) - <strong>CSS :</strong> Tailwind CSS v4.1 via `@tailwindcss/vite` + variables CSS (thème doré
+            `#d4af37`)
+          </p>
+        </div>
+
+        <div class="cta-card">
+          <h2>Essayez — c'est gratuit et sans inscription</h2>
+          <p>Scénario pré-rempli : 100 000 € + 1 500 €/mois sur 20 ans en PEA — ajustez-le librement.</p>
+          <a
+            class="cta-button"
+            href="https://snowball-pro.vercel.app/#s=eyJjYXBpdGFsSW5pdGlhbCI6MTAwMDAwLCJtb250aGx5UGF5bWVudCI6MTUwMCwiZHVyYXRpb24iOjIwLCJlbnZlbG9wZSI6InBlYSIsInBlYVllYXJzSGVsZCI6NX0"
+          >
+            Lancer la simulation →
+          </a>
+          <p class="cta-caption">Gratuit · Sans inscription · Vos données ne quittent pas votre navigateur</p>
+        </div>
+
+        <h2 style="font-family: Outfit, sans-serif; font-size: 21px; margin: 36px 0 12px">Guides et comparatifs</h2>
+        <ul style="margin: 0 0 16px 22px">
+          <li><a href="/guides/simulateur-pea.html">Guide : le simulateur PEA complet</a></li>
+          <li><a href="/guides/pea-ou-assurance-vie.html">Guide : PEA ou assurance vie ?</a></li>
+          <li><a href="/guides/calcul-interets-composes.html">Guide : le calcul des intérêts composés</a></li>
+          <li>
+            <a href="/alternatives/portfolio-visualizer.html">Portfolio Visualizer : l'alternative backtesting</a>
+          </li>
+          <li><a href="/alternatives/firecalc.html">FireCalc : l'alternative pour la retraite (règle des 4 %)</a></li>
+          <li><a href="/alternatives/networthify.html">Networthify : l'alternative pour l'objectif d'épargne</a></li>
+          <li><a href="/alternatives/quantalys.html">Quantalys : l'alternative pour l'analyse de portefeuille</a></li>
+          <li><a href="/pricing.html">Tarifs : 100 % gratuit</a></li>
+        </ul>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>Snowball Pro</strong> — simulateur patrimonial français gratuit : PEA, assurance vie, PER,
+        compte-titres, rente et retraite.
+      </p>
+      <p>
+        Simulation indicative et non contractuelle — ne constitue pas un conseil financier. Les performances passées ne
+        préjugent pas des performances futures.
+      </p>
+      <p>
+        <a href="https://snowball-pro.vercel.app/">Ouvrir l'application</a> · <a href="/sitemap.xml">Sitemap</a> ·
+        <a href="/changelog.html">Changelog</a>
+      </p>
+    </footer>
+  </body>
+</html>

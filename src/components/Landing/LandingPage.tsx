@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowRight,
   Banknote,
@@ -18,9 +19,11 @@ import {
   Sun,
   Target,
   TrendingUp,
+  X,
 } from "lucide-react"
 import { cn } from "../../utils/cn"
 import { navigateTo } from "../../router"
+import { encodeInputsForUrl } from "../../utils/urlState"
 import { loadInitialDarkMode, persistThemeClass } from "../../utils/theme"
 import {
   fmtTaxPercent,
@@ -29,9 +32,11 @@ import {
   parseStoredInputs,
   pfuRate,
   runSimulation,
+  solveGoal,
 } from "../../engine"
 import { useLang } from "../../i18n"
-import type { EnvelopeType, ReturnScenario, YearRow } from "../../types"
+import type { EnvelopeType, GoalDifficulty, ReturnScenario, YearRow } from "../../types"
+import { SliderInput } from "../shared/SliderInput"
 import { QUICKSTART_PROFILES } from "../../utils/quickStart"
 import { Brand } from "./Brand"
 import { HeroChart } from "./HeroChart"
@@ -139,6 +144,32 @@ function FeatureCard({
       <h3 className="font-display font-bold text-[15px] text-text mb-2">{tr(title)}</h3>
       <p className="text-xs text-text-muted leading-relaxed">{children}</p>
     </article>
+  )
+}
+
+/** Cellule du tableau honnête : ✅ (vert), ⚠ (rouge doux, partiel), ✕ (gris). */
+function CompareCellView({ cell }: { cell: CompareCell }) {
+  const { tr } = useLang()
+  const nuance = cell.text && <span className="text-[10px] text-text-muted">{tr(cell.text)}</span>
+  if (cell.kind === "yes")
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Check size={13} style={{ color: "var(--color-success)" }} aria-hidden />
+        {nuance}
+      </span>
+    )
+  if (cell.kind === "partial")
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <AlertTriangle size={13} style={{ color: "var(--color-danger-light)" }} aria-hidden />
+        {nuance}
+      </span>
+    )
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <X size={13} className="text-text-dim/60" aria-hidden />
+      {nuance}
+    </span>
   )
 }
 
@@ -391,7 +422,7 @@ const NAV = [
   { href: "#faq", label: "FAQ" },
 ]
 
-/** Pages statiques SEO (guides, comparatifs, tarifs) — distribution. */
+/** Pages statiques SEO (guides, comparatifs, tarifs, changelog) — distribution. */
 const GUIDES_LINKS = [
   { href: "/guides/simulateur-pea.html", label: "Simulateur PEA" },
   { href: "/guides/pea-ou-assurance-vie.html", label: "PEA ou assurance vie" },
@@ -401,10 +432,80 @@ const GUIDES_LINKS = [
   { href: "/alternatives/networthify.html", label: "Networthify" },
   { href: "/alternatives/quantalys.html", label: "Quantalys" },
   { href: "/pricing.html", label: "Tarifs" },
+  { href: "/changelog.html", label: "Changelog" },
 ]
+
+/** Comparatifs détaillés — maillage interne (chantier 4.2). */
+const ALTERNATIVES_LINKS = [
+  { href: "/alternatives/portfolio-visualizer.html", label: "Portfolio Visualizer" },
+  { href: "/alternatives/firecalc.html", label: "FireCalc" },
+  { href: "/alternatives/networthify.html", label: "Networthify" },
+  { href: "/alternatives/quantalys.html", label: "Quantalys" },
+]
+
+/** Cellule du tableau honnête : ✅ / ⚠ (partiel, à vérifier) / ✕. */
+type CompareCell = { kind: "yes" | "no" | "partial"; text?: string }
+
+/**
+ * Tableau honnête (1.4 + 4.2) — établi à partir du résumé concurrentiel
+ * (competitor-profiles/_summary.md, vérifié le 17/08/2026). Chaque case est
+ * soit vérifiable dans le code (Snowball Pro), soit sur la page publique de
+ * l'outil. ⚠ = partiel / à vérifier, jamais de ✕ inventé.
+ */
+const COMPARE_COLS = ["Snowball Pro", "ProjectionLab", "Finary", "Simulateurs SEO FR"] as const
+
+const COMPARE_ROWS: { label: string; cells: [CompareCell, CompareCell, CompareCell, CompareCell] }[] = [
+  {
+    label: "Fiscalité française (PEA, AV, PER)",
+    cells: [
+      { kind: "yes" },
+      { kind: "no", text: "100 % US" },
+      { kind: "partial", text: "bases" },
+      { kind: "partial", text: "simplifiée" },
+    ],
+  },
+  {
+    label: "100 ans d'historique réel",
+    cells: [{ kind: "yes" }, { kind: "yes" }, { kind: "no" }, { kind: "no" }],
+  },
+  {
+    label: "Monte Carlo — l'incertitude",
+    cells: [{ kind: "yes", text: "10 000 scénarios" }, { kind: "yes", text: "2 000" }, { kind: "no" }, { kind: "no" }],
+  },
+  {
+    label: "Décumulation (retraite)",
+    cells: [{ kind: "yes" }, { kind: "partial", text: "partielle" }, { kind: "no" }, { kind: "no" }],
+  },
+  {
+    label: "Gratuit, sans inscription",
+    cells: [{ kind: "yes" }, { kind: "partial", text: "freemium" }, { kind: "yes" }, { kind: "yes" }],
+  },
+  {
+    label: "Données 100 % sur votre appareil",
+    cells: [
+      { kind: "yes" },
+      { kind: "partial", text: "partiel" },
+      { kind: "no" },
+      { kind: "partial", text: "selon l'outil" },
+    ],
+  },
+]
+
+/** Libellés de difficulté du solveur d'objectif — mêmes chaînes que l'app. */
+const GOAL_DIFFICULTY_META: Record<GoalDifficulty, { label: string; color: string }> = {
+  easy: { label: "Atteignable (livrets, obligations)", color: "var(--color-success)" },
+  moderate: { label: "Marché actions diversifié", color: "var(--color-primary)" },
+  ambitious: { label: "Très ambitieux", color: "var(--color-danger)" },
+  impossible: { label: "Objectif irréaliste", color: "var(--color-danger)" },
+}
 
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.18.0",
+    title: "Le tableau honnête + l'objectif inversé",
+    text: "Un tableau compare franchement Snowball Pro à ProjectionLab, Finary et les simulateurs SEO (fiscalité FR, historique réel, Monte Carlo — chaque case se vérifie), une démo « Je veux 1 M€ → combien par mois ? » calcule votre épargne en direct avec le vrai solveur, le FAQ passe en schema FAQPage pour les AI answers, et les « Dernières éditions » renvoient désormais vers une page changelog complète.",
+  },
   {
     version: "v6.17.0",
     title: "La bande « taux fixe » sous le héro",
@@ -420,56 +521,6 @@ const UPDATES = [
     title: "4 pages alternatives + page tarifs",
     text: "Quatre comparatifs honnêtes (Portfolio Visualizer, FireCalc, Networthify, Quantalys) et une page Tarifs « 100 % gratuit » — indexées au sitemap, dans llms.txt et liées depuis le pied de page de la landing.",
   },
-  {
-    version: "v6.13.1",
-    title: "Onglets nets sur mobile",
-    text: "Correction mobile : les onglets du simulateur ne débordent plus de l'écran sur téléphone — « Robustesse de votre plan » passe proprement à la ligne au lieu de déborder, même à 320 px.",
-  },
-  {
-    version: "v6.13.0",
-    title: "Partagez votre simulation en un clic",
-    text: "Boutons de partage X, WhatsApp et LinkedIn avec votre scénario pré-rempli dans le lien (UTM par canal pour mesurer chaque source), pied de rapport PDF « Créé avec Snowball Pro » + lien du scénario, et 3 guides SEO qui arrivent de Google : simulateur PEA, PEA ou assurance vie, intérêts composés.",
-  },
-  {
-    version: "v6.12.0",
-    title: "L'application en anglais 🇬🇧",
-    text: "Un bouton FR/EN (en-tête de l'app et de la landing) traduit toute l'application en anglais : simulateur, Monte Carlo, rente, objectif, rapport PDF et landing — avec le formatage des montants adapté (€1,234.56 au lieu de 1 234,56 €).",
-  },
-  {
-    version: "v6.11.2",
-    title: "Capital en détail, clarifié",
-    text: "Le panneau « Votre capital en détail » est resserré (grands chiffres en text-lg/xl) et chaque montant porte son échelle : « sur le compte en 2050 » et « en euros d'aujourd'hui » sont écrits sur chaque valeur — fini la légende à décoder.",
-  },
-  {
-    version: "v6.11.1",
-    title: "Icône Google",
-    text: "Une vraie favicon .ico (16/32/48 px) : l'application affiche son icône dans les résultats de recherche Google, les favoris et les onglets.",
-  },
-  {
-    version: "v6.11.0",
-    title: "L'inflation, sans détour",
-    text: "L'hypothèse d'inflation 2,1 %/an (cible BCE) est explicitée face à la moyenne réelle 1970-2025 (4,0 %) — et la médiane de la période tombe justement sur 2,1 %. Nouvelle entrée FAQ : pourquoi 2,1 % et pas la moyenne ?",
-  },
-  {
-    version: "v6.10.0",
-    title: "Graphiques lus d'un coup d'œil",
-    text: "La valeur finale de chaque courbe s'affiche en bout de tracé, sans survol — avec un point or sur les gains. Palette unifiée entre camembert et courbes, légendes en chips, axes et infobulles harmonisés.",
-  },
-  {
-    version: "v6.9.0",
-    title: "Capital en détail",
-    text: "Les 4 cartes de synthèse deviennent un panneau titré « Votre capital en détail » : colonnes séparées, gains de la bourse en or, une seule légende d'échelle — le bloc s'intègre enfin entre le héro et le graphique.",
-  },
-  {
-    version: "v6.8.2",
-    title: "Rythme uniformisé",
-    text: "Espacements verticaux harmonisés sur une seule échelle — moins d'air entre les sections, héro et colonnes alignés en haut, même respiration sur tous les écrans.",
-  },
-  {
-    version: "v6.8.0",
-    title: "Commencez ici",
-    text: "Trois profils de départ prêts à l'emploi à l'ouverture de l'app (capital calculé par le moteur, appliqué en un clic) et CTA mobile permanent sur la landing.",
-  },
 ]
 
 export function LandingPage() {
@@ -478,6 +529,10 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   // Scénario actif de la démo interactive : le héro devient un vrai simulateur.
   const [heroScenario, setHeroScenario] = useState<ReturnScenario>("central")
+  // Démo « objectif inversé » (5.1) : objectif + horizon réglables, le solveur
+  // de l'app (solveGoal) calcule l'épargne mensuelle en direct.
+  const [goalTarget, setGoalTarget] = useState(1_000_000)
+  const [goalDuration, setGoalDuration] = useState(20)
   // CRO v6.8 — CTA sticky mobile : apparu après un scroll de 480 px (rendu en
   // bas de page). Le masquage ≥ sm est purement CSS (md:hidden) : jsdom n'a
   // pas de matchMedia, la logique ici ne dépend que du scroll.
@@ -533,6 +588,16 @@ export function LandingPage() {
   const heroInvested = heroLast.investedNom
   const heroGrowth = Math.max(0, heroLast.nominal - heroInvested)
 
+  // Objectif inversé : même solveur que l'onglet « Combien investir ? » de
+  // l'app, sur le rendement composé réel (scénario Central) — zéro épargne de
+  // départ, la démo répond à « combien par mois ? ».
+  const goalRes = useMemo(
+    () => solveGoal({ ...base, goalTarget, goalDuration, goalCapital: 0, goalAnnualReturn: rates.central }),
+    [base, rates, goalTarget, goalDuration],
+  )
+  const goalPmt = goalRes.pmtPerMonth ?? 0
+  const goalMeta = GOAL_DIFFICULTY_META[goalRes.difficulty]
+
   const scenarios = useMemo(
     () => SCENARIO_ORDER.map(s => ({ scenario: s, last: heroRows[s][heroRows[s].length - 1] })),
     [heroRows],
@@ -569,6 +634,19 @@ export function LandingPage() {
   }
 
   const launch = () => navigateTo("app")
+
+  // « Repartir de cette simulation » : écrit un hash #s=… (deep-link v6) qui
+  // route vers l'app AVEC les réglages d'objectif de la démo — parseHash
+  // traite #s= comme la vue app, loadInitialInputs lit l'état partagé.
+  const launchFromGoal = () => {
+    window.location.hash = encodeInputsForUrl({
+      ...base,
+      goalTarget,
+      goalDuration,
+      goalCapital: 0,
+      goalAnnualReturn: rates.central,
+    })
+  }
 
   return (
     <div className="min-h-screen bg-surface text-text">
@@ -901,6 +979,106 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── Comparaison honnête (1.4 + 4.2) : le tableau vs les vrais
+          concurrents + maillage interne vers les comparatifs détaillés. Les
+          cases viennent du résumé concurrentiel (competitor-profiles/) —
+          ⚠ = partiel / à vérifier, jamais de ✕ inventé. */}
+      <section
+        id="comparaison"
+        aria-label={tr("Comment on se compare")}
+        className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+      >
+        <Reveal>
+          <SectionTitle
+            eyebrow="Comparaison"
+            title="Le tableau honnête"
+            sub="Ni pub, ni coup marketing : ce que chaque outil fait vraiment, vérifié en août 2026. Chaque case se vérifie — les nôtres, dans le code."
+          />
+        </Reveal>
+        <Reveal>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[720px] border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted pb-3 pr-4">
+                    {tr("Ce que l'outil fait")}
+                  </th>
+                  {COMPARE_COLS.map((name, i) => (
+                    <th key={name} className="pb-3 px-3 text-left">
+                      <span
+                        className={cn(
+                          "text-[11px] font-extrabold uppercase tracking-[0.12em]",
+                          i === 0 ? "text-primary" : "text-text",
+                        )}
+                      >
+                        {tr(name)}
+                      </span>
+                      {i === 0 && (
+                        <span className="ml-1.5 text-[8px] font-bold uppercase tracking-[0.12em] text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded align-middle">
+                          {tr("vous")}
+                        </span>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE_ROWS.map(row => (
+                  <tr key={row.label} className="border-t border-border/60">
+                    <th scope="row" className="text-left text-[11.5px] font-bold text-text py-3 pr-4 leading-snug">
+                      {tr(row.label)}
+                    </th>
+                    {row.cells.map((cell, i) => (
+                      <td key={i} className={cn("px-3 py-3", i === 0 && "bg-primary/5")}>
+                        <CompareCellView cell={cell} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-[10px] text-text-dim leading-relaxed">
+            {tr("Légende :")}{" "}
+            <span className="inline-flex items-center gap-1 mr-3">
+              <Check size={11} style={{ color: "var(--color-success)" }} aria-hidden /> {tr("oui")}
+            </span>
+            <span className="inline-flex items-center gap-1 mr-3">
+              <AlertTriangle size={11} style={{ color: "var(--color-danger-light)" }} aria-hidden />{" "}
+              {tr("partiel — à vérifier")}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <X size={11} className="text-text-dim/60" aria-hidden /> {tr("non")}
+            </span>
+          </p>
+        </Reveal>
+        <Reveal delay={0.08}>
+          <p className="text-[11px] text-text-muted leading-relaxed max-w-3xl mx-auto text-center mt-8">
+            {tr(
+              "Vérifié le 17 août 2026 sur les pages publiques de chaque outil — les offres évoluent. ProjectionLab est un excellent produit, mais 100 % fiscalité US ; Finary agrège votre patrimoine, il ne simule pas l'avenir ; les simulateurs SEO supposent un rendement fixe. C'est exactement ce que nous ne faisons pas.",
+            )}
+          </p>
+        </Reveal>
+        <Reveal delay={0.12}>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
+              {tr("Nos comparatifs détaillés")}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {ALTERNATIVES_LINKS.map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-1.5 rounded-xl glass px-3.5 py-2 text-[11px] font-bold text-text hover:bg-glass-hover transition-colors"
+                >
+                  {tr(link.label)} <ArrowRight size={11} className="text-primary" aria-hidden />
+                </a>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ── Enveloppes ──────────────────────────────────────────────────── */}
       <section id="enveloppes" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <Reveal>
@@ -1094,6 +1272,89 @@ export function LandingPage() {
         </Reveal>
       </section>
 
+      {/* ── Objectif inversé (5.1) : le solveur de l'app branché sur la
+          landing. Curseurs réels (Objectif / Horizon), résultat calculé en
+          direct par solveGoal — et CTA « Repartir de cette simulation » qui
+          écrit un deep-link #s=… décodable par l'app. */}
+      <section
+        id="objectif"
+        aria-label={tr("Objectif inversé")}
+        className="border-t border-border/70 bg-glass/30 scroll-mt-20"
+      >
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+          <Reveal>
+            <SectionTitle
+              eyebrow="Objectif inversé"
+              title="Je veux 1 M€ → combien par mois ?"
+              sub="Dites-nous votre objectif et votre horizon : le moteur calcule l'épargne mensuelle nécessaire, sur le rendement réel composé du MSCI World — krachs inclus."
+            />
+          </Reveal>
+          <Reveal>
+            <div className="glass-gold rounded-3xl p-5 sm:p-8 shadow-premium-lg grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+              <div>
+                <SliderInput
+                  label={tr("Objectif (€)")}
+                  id="landing-goal-target"
+                  value={goalTarget}
+                  min={100000}
+                  max={5000000}
+                  step={25000}
+                  color="var(--color-primary)"
+                  onChange={setGoalTarget}
+                />
+                <SliderInput
+                  label={tr("Horizon (ans)")}
+                  id="landing-goal-duration"
+                  value={goalDuration}
+                  min={5}
+                  max={40}
+                  step={1}
+                  color="var(--color-primary)"
+                  onChange={setGoalDuration}
+                />
+              </div>
+              <div className="text-center lg:text-left">
+                <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
+                  {tr("à épargner chaque mois")}
+                </p>
+                <p className="font-display text-5xl sm:text-6xl font-extrabold tracking-tight text-primary mono leading-none">
+                  {fmtCurrency(goalPmt)}
+                  <span className="text-2xl font-bold text-text-muted"> /{tr("mois")}</span>
+                </p>
+                <p
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold border border-border/60 bg-surface/50"
+                  style={{ color: goalMeta.color }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: goalMeta.color }} aria-hidden />
+                  {tr(goalMeta.label)}
+                </p>
+                <p className="mt-4 text-[10.5px] text-text-dim leading-relaxed">
+                  {tr(
+                    "Calcul brut avant fiscalité et frais — dans l'app, votre enveloppe (CTO, PEA, AV, PER) et les règles françaises s'appliquent au résultat.",
+                  )}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3 justify-center lg:justify-start">
+                  <button
+                    type="button"
+                    onClick={launchFromGoal}
+                    className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-3 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+                  >
+                    {tr("Repartir de cette simulation")} <ArrowRight size={14} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={launch}
+                    className="inline-flex items-center gap-2 rounded-2xl glass px-5 py-3 text-[13px] font-bold text-text hover:bg-glass-hover transition-colors"
+                  >
+                    {tr("Ouvrir l'onglet « Combien investir ? »")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
@@ -1192,14 +1453,14 @@ export function LandingPage() {
       </section>
 
       {/* ── Dernières éditions (CHANGELOG réel) ──────────────────────────── */}
-      <section aria-label="Dernières évolutions" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+      <section aria-label={tr("Dernières évolutions")} className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
         <Reveal>
           <div className="flex items-center gap-2 justify-center mb-6">
             <History size={13} className="text-primary" aria-hidden />
             <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">{tr("Dernières éditions")}</p>
           </div>
         </Reveal>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-5xl mx-auto">
           {UPDATES.map((u, i) => (
             <Reveal key={u.version} delay={i * 0.07}>
               <article className="glass rounded-2xl p-4 card-interactive">
@@ -1211,6 +1472,14 @@ export function LandingPage() {
               </article>
             </Reveal>
           ))}
+        </div>
+        <div className="mt-8 text-center">
+          <a
+            href="/changelog.html"
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline transition-colors"
+          >
+            {tr("Toutes les versions")} <ArrowRight size={12} aria-hidden />
+          </a>
         </div>
       </section>
 
