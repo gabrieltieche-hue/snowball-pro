@@ -188,6 +188,10 @@ afterEach(() => {
  * (gros consommateurs CPU) : on laisse une marge confortable au timeout. */
 const APP_TIMEOUT = 30_000
 
+// Refonte header : les actions secondaires (Exporter, Partager…) vivent dans
+// le menu « ⋯ » — helper pour l'ouvrir, utilisé par les tests concernés.
+const openMoreMenu = () => fireEvent.click(screen.getByRole("button", { name: "Autres actions" }))
+
 describe("undo / redo — historique des modifications", () => {
   it(
     "annule puis rétablit une modification de curseur",
@@ -220,6 +224,76 @@ describe("undo / redo — historique des modifications", () => {
       render(<App />)
       expect(screen.getByRole("button", { name: "Annuler la dernière modification" })).toBeDisabled()
       expect(screen.getByRole("button", { name: "Rétablir la modification annulée" })).toBeDisabled()
+    },
+    APP_TIMEOUT,
+  )
+})
+
+describe("avertissement du header — icône ⚠ + « Corriger l'erreur » (refonte)", () => {
+  it(
+    "l'icône ⚠ remplace le badge texte : présente par défaut (avertissement de cohérence), sans libellé",
+    () => {
+      render(<App />)
+      // Par défaut, l'avertissement de cohérence âge/durée/retraite existe
+      // (30 + 25 = 55 < retraite 62) → l'icône est là avec un nom accessible.
+      expect(screen.getByRole("button", { name: "1 avertissement à corriger" })).toBeInTheDocument()
+      // Le libellé « 1 avertissement » a disparu du header (icône seule).
+      expect(screen.queryByText(/1 avertissement/)).not.toBeInTheDocument()
+    },
+    APP_TIMEOUT,
+  )
+
+  it(
+    "le popover explique le problème ; cliquer la ligne amène au champ fautif",
+    async () => {
+      render(<App />)
+      fireEvent.click(screen.getByRole("button", { name: "1 avertissement à corriger" }))
+      // Le popover dit simplement ce que c'est.
+      expect(screen.getByText(/La projection s'arrête à 55 ans/i)).toBeInTheDocument()
+      // Cliquer la ligne du problème ouvre la section et focus le champ
+      // (l'ouverture et le focus passent par un double rAF → waitFor).
+      fireEvent.click(screen.getByRole("button", { name: /La projection s'arrête à 55 ans/i }))
+      await waitFor(() => expect(document.getElementById("age-retirement")).toHaveFocus())
+    },
+    APP_TIMEOUT,
+  )
+
+  it(
+    "« Corriger automatiquement » corrige tout seul : durée alignée sur la retraite, icône ⚠ disparue",
+    () => {
+      render(<App />)
+      fireEvent.click(screen.getByRole("button", { name: "1 avertissement à corriger" }))
+      fireEvent.click(screen.getByRole("button", { name: /Corriger automatiquement/i }))
+      // 62 (retraite) − 30 (âge actuel) = 32 ans de projection : plus aucune
+      // anomalie → l'icône ⚠ n'est plus rendue.
+      expect(screen.getByRole("slider", { name: "Durée (années)" })).toHaveValue("32")
+      expect(screen.queryByRole("button", { name: /à corriger/i })).not.toBeInTheDocument()
+    },
+    APP_TIMEOUT,
+  )
+
+  it(
+    "en cas d'erreur, « Corriger automatiquement » recale la retraite sur l'horizon projeté",
+    () => {
+      render(<App />)
+      // Ouvre « Votre profil » pour atteindre le curseur « Âge de départ à la
+      // retraite » (section repliée par défaut).
+      fireEvent.click(screen.getByRole("button", { name: /votre profil/i }))
+      // 25 < 30 (âge actuel) → erreur « antérieur à l'âge actuel ».
+      fireEvent.change(screen.getByRole("slider", { name: "Âge de départ à la retraite" }), {
+        target: { value: "25" },
+      })
+      expect(screen.getByRole("button", { name: "1 erreur à corriger" })).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole("button", { name: "1 erreur à corriger" }))
+      expect(screen.getByText(/antérieur à l'âge actuel/i)).toBeInTheDocument()
+      // En cas d'erreur, le bandeau sous le header affiche lui aussi un bouton
+      // « Corriger automatiquement » → on vise celui du popover (dialog).
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /Corriger automatiquement/i }))
+      // Retraite recalée à la fin de la projection (30 + 25 = 55) : plus
+      // aucune anomalie → l'icône ⚠ n'est plus rendue.
+      expect(screen.getByRole("slider", { name: "Âge de départ à la retraite" })).toHaveValue("55")
+      expect(screen.queryByRole("button", { name: /à corriger/i })).not.toBeInTheDocument()
     },
     APP_TIMEOUT,
   )
@@ -581,14 +655,18 @@ describe("P0-2 — libellé PER : pas d'abattement de 10 % inventé (audit v6)",
 })
 
 describe("menu Export — toutes les fonctionnalités d'export dans un bouton", () => {
-  it("ouvre un popup avec CSV, JSON et Rapport PDF au clic", () => {
+  it("ouvre le sous-panneau Export avec CSV, JSON et Rapport PDF au clic", () => {
     render(<App />)
-    // Un seul bouton « Exporter », les trois formats n'existent pas avant
-    // l'ouverture du menu.
-    expect(screen.getByRole("button", { name: /exporter/i })).toBeInTheDocument()
+    // Refonte header : « Exporter » vit dans le menu « ⋯ » — aucun bouton
+    // dédié au premier niveau, les trois formats n'existent pas avant
+    // l'ouverture du menu puis du sous-panneau.
+    expect(screen.queryByRole("button", { name: /exporter/i })).not.toBeInTheDocument()
+
+    openMoreMenu()
+    expect(screen.getByRole("menuitem", { name: /exporter/i })).toBeInTheDocument()
     expect(screen.queryByRole("menuitem", { name: /export json/i })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+    fireEvent.click(screen.getByRole("menuitem", { name: /exporter/i }))
 
     expect(screen.getByRole("menuitem", { name: /export csv/i })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /export json/i })).toBeInTheDocument()
@@ -597,7 +675,8 @@ describe("menu Export — toutes les fonctionnalités d'export dans un bouton", 
 
   it("se ferme au clic extérieur (aucune option piégée)", () => {
     render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /exporter/i }))
     expect(screen.getByRole("menuitem", { name: /export csv/i })).toBeInTheDocument()
 
     // Clic hors du menu → fermeture (le composant écoute mousedown natif)
@@ -618,7 +697,8 @@ describe("rapport patrimonial PDF (PISTES V6.1 — idée 2)", () => {
     const printSpy = vi.fn()
     Object.defineProperty(window, "print", { value: printSpy, configurable: true, writable: true })
     render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /exporter/i }))
     fireEvent.click(screen.getByRole("menuitem", { name: /rapport pdf/i }))
 
     // Le rapport doit être rendu avant d'ouvrir le dialogue d'impression.
@@ -652,8 +732,9 @@ describe("export CSV", () => {
       render(<App />)
       // fireEvent (comme pour undo/redo) : userEvent attend une géométrie DOM
       // réelle absente de jsdom et expirait sur les boutons de l'ActionBar.
-      // Le CSV est désormais caché derrière le menu Export (un seul bouton).
-      fireEvent.click(screen.getByRole("button", { name: /exporter/i }))
+      // Le CSV est désormais caché derrière le menu « ⋯ » → sous-panneau Export.
+      openMoreMenu()
+      fireEvent.click(screen.getByRole("menuitem", { name: /exporter/i }))
       fireEvent.click(screen.getByRole("menuitem", { name: /export csv/i }))
 
       expect(createObjectURL).toHaveBeenCalledTimes(1)
@@ -1625,13 +1706,14 @@ describe("i18n — bascule de langue", () => {
   })
 })
 
-describe("v6.13 — partage visible (boucle virale) : X, WhatsApp, LinkedIn, copie", () => {
-  it("ouvre le panneau Partager avec les 4 canaux au clic", () => {
+describe("v6.13 — partage (boucle virale) : X, WhatsApp, LinkedIn, copie", () => {
+  it("ouvre le sous-panneau Partager avec les 4 canaux au clic", () => {
     render(<App />)
-    const shareButton = screen.getByRole("button", { name: /partager/i })
     expect(screen.queryByRole("menuitem", { name: /partager sur x/i })).not.toBeInTheDocument()
 
-    fireEvent.click(shareButton)
+    // Refonte header : Partager vit dans le menu « ⋯ ».
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /partager/i }))
 
     expect(screen.getByRole("menuitem", { name: /partager sur x \(twitter\)/i })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /partager sur whatsapp/i })).toBeInTheDocument()
@@ -1641,7 +1723,8 @@ describe("v6.13 — partage visible (boucle virale) : X, WhatsApp, LinkedIn, cop
 
   it("embarque le scénario pré-rempli (#s=…) et l'UTM de canal dans chaque lien", () => {
     render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /partager/i }))
 
     const xLink = screen.getByRole("menuitem", { name: /partager sur x \(twitter\)/i }) as HTMLAnchorElement
     expect(xLink.href).toContain("https://twitter.com/intent/tweet?text=")
@@ -1677,7 +1760,8 @@ describe("v6.13 — partage visible (boucle virale) : X, WhatsApp, LinkedIn, cop
     // que si window.isSecureContext est vrai (urlState.ts en dépend).
     Object.defineProperty(window, "isSecureContext", { value: true, configurable: true })
     render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /partager/i }))
 
     fireEvent.click(screen.getByRole("menuitem", { name: /copier le lien/i }))
 
@@ -1690,7 +1774,8 @@ describe("v6.13 — partage visible (boucle virale) : X, WhatsApp, LinkedIn, cop
 
   it("se ferme au clic extérieur", () => {
     render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: /partager/i }))
+    openMoreMenu()
+    fireEvent.click(screen.getByRole("menuitem", { name: /partager/i }))
     expect(screen.getByRole("menuitem", { name: /copier le lien/i })).toBeInTheDocument()
 
     fireEvent.mouseDown(document.body)

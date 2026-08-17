@@ -20,6 +20,8 @@ import {
   serializeInputs,
   v4SettingsToInputs,
   validateInputs,
+  autoFixValidationErrors,
+  type ValidationError,
 } from "./engine"
 import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
 import type { WizardAnswers } from "./engine"
@@ -34,6 +36,7 @@ import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
 import { loadTutorialVisible, saveTutorialDone } from "./utils/onboarding"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { readSharedState, writeSharedState } from "./utils/urlState"
+import { TAB_FIELD } from "./utils/validationTargets"
 import { AccountMenu } from "./components/Auth/AccountMenu"
 import { SaveSimulationDialog } from "./components/Onboarding/SaveSimulationDialog"
 import { ActionBar } from "./components/Layout/ActionBar"
@@ -163,6 +166,19 @@ function AppShell({ scope }: { scope: string | null }) {
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
   const history = useHistory()
 
+  // « Corriger l'erreur » (refonte header) : le header (icône ⚠) ou le bandeau
+  // demandent d'amener l'utilisateur au champ fautif. Pour un champ d'onglet
+  // (objectif, rente) on change d'onglet ; sinon on relaie le focus à la
+  // sidebar (révéler la section + focus l'input) via focusRequest.
+  const [focusRequest, setFocusRequest] = useState<{ field: keyof SimulationInputs; nonce: number } | null>(null)
+  const handleFixError = useCallback((field: ValidationError["field"]) => {
+    const tab = TAB_FIELD[field]
+    if (tab) {
+      setActiveTab(tab)
+      return
+    }
+    setFocusRequest({ field, nonce: Date.now() })
+  }, [])
   const inputsRef = useRef(inputs)
   const inputsBRef = useRef(inputsB)
   const comparingRef = useRef(comparing)
@@ -228,6 +244,15 @@ function AppShell({ scope }: { scope: string | null }) {
     },
     [applyPatch],
   )
+
+  // « Corriger automatiquement » (refonte header) : corrige TOUTES les
+  // anomalies de validation d'un coup (bornes + cohérence âge/durée/
+  // retraite) — l'utilisateur n'a rien à toucher. Le patch passe par
+  // updateInputs : annulable (⌘Z) et appliqué au scénario actif (A ou B).
+  const handleAutoFix = useCallback(() => {
+    const patch = autoFixValidationErrors(activeInputs)
+    if (Object.keys(patch).length > 0) updateInputs(patch)
+  }, [activeInputs, updateInputs])
 
   const handleUndo = useCallback(() => {
     const result = history.undo()
@@ -652,6 +677,8 @@ function AppShell({ scope }: { scope: string | null }) {
                 uiMode={uiMode}
                 onToggleUiMode={toggleUiMode}
                 onReset={handleResetSettings}
+                onFixError={handleFixError}
+                onAutoFix={handleAutoFix}
               />
             </div>
           </div>
@@ -684,6 +711,7 @@ function AppShell({ scope }: { scope: string | null }) {
                   uiMode={uiMode}
                   collapsed={sidebarCollapsed}
                   onToggleCollapsed={toggleSidebarCollapsed}
+                  focusRequest={focusRequest}
                 />
               </ErrorBoundary>
             </div>
@@ -724,6 +752,13 @@ function AppShell({ scope }: { scope: string | null }) {
                     )}
                     {tr("). Corrigez-les pour une simulation fiable.")}
                   </span>
+                  <button
+                    type="button"
+                    onClick={handleAutoFix}
+                    className="shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-bold bg-danger/15 border border-danger/40 text-danger hover:bg-danger/25 transition-colors"
+                  >
+                    {tr("Corriger automatiquement")}
+                  </button>
                 </div>
               )}
               {comparing && <ComparisonBar onExit={toggleComparing} />}

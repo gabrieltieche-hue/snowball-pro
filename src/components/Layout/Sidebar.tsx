@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { motion } from "framer-motion"
 import {
@@ -26,6 +26,7 @@ import { SegmentedControl } from "../shared/SegmentedControl"
 import { SliderInput } from "../shared/SliderInput"
 import { Toggle } from "../shared/Toggle"
 import { cn } from "../../utils/cn"
+import { FIELD_INPUT_ID, FIELD_SECTION } from "../../utils/validationTargets"
 import { getHistoricalDataset, getTaxRules, pfuRate, validateInputs } from "../../engine"
 import { useLang } from "../../i18n"
 import type { ValidationError } from "../../engine"
@@ -84,6 +85,13 @@ interface SidebarProps {
    */
   collapsed: boolean
   onToggleCollapsed: () => void
+  /**
+   * « Corriger l'erreur » (refonte header) : quand App le pose, la sidebar
+   * ouvre la section du champ, déplie le rail si besoin, scrolle jusqu'au
+   * champ et le met au focus. `nonce` force la réaction même pour un même
+   * champ demandé deux fois de suite.
+   */
+  focusRequest?: { field: keyof SimulationInputs; nonce: number } | null
 }
 
 export function Sidebar({
@@ -98,6 +106,7 @@ export function Sidebar({
   uiMode = "debutant",
   collapsed,
   onToggleCollapsed,
+  focusRequest,
 }: SidebarProps) {
   const { tr, fmtCurrency, fmtDecimal, fmtTaxPercent } = useLang()
   const lastRow = rows[rows.length - 1]
@@ -131,6 +140,42 @@ export function Sidebar({
   // Ouverture des sections, pilotée par Sidebar (cf. DEFAULT_OPEN).
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(DEFAULT_OPEN)
   const toggleSection = (id: SectionId) => setOpenSections(s => ({ ...s, [id]: !s[id] }))
+
+  // « Corriger l'erreur » : la demande vient du header (icône ⚠) ou du bandeau
+  // d'erreur. On réutilise le geste de revealSection (ouvrir + déplier +
+  // scroller) en ciblant l'input du champ lui-même quand il en a un.
+  useEffect(() => {
+    if (!focusRequest) return
+    const { field } = focusRequest
+    const section = FIELD_SECTION[field]
+    if (!section) return
+    setOpenSections(s => ({ ...s, [section]: true }))
+    if (collapsed) onToggleCollapsed()
+    // double rAF : laisser l'ouverture de section se rendre avant de mesurer
+    // la position ; try/catch : jsdom n'implémente pas scrollIntoView.
+    const raf: (cb: () => void) => void =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (cb: () => void) => window.setTimeout(cb, 16)
+    raf(() => {
+      raf(() => {
+        const inputId = FIELD_INPUT_ID[field]
+        const target = inputId
+          ? document.getElementById(inputId)
+          : document.getElementById(`sidebar-section-${section}`)
+        if (!target) return
+        if (typeof target.scrollIntoView === "function") {
+          try {
+            const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+            target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" })
+          } catch {
+            /* jsdom : scrollIntoView non implémenté */
+          }
+        }
+        if (typeof target.focus === "function") target.focus({ preventScroll: true })
+      })
+    })
+  }, [focusRequest, collapsed, onToggleCollapsed])
 
   // Rail replié : cliquer l'icône d'une catégorie déplie la sidebar ET ouvre
   // la section, puis l'amène dans la vue (même geste qu'une navigation

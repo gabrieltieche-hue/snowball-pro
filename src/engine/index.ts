@@ -44,7 +44,13 @@ export {
   solveGoalMonteCarloAsync,
   compareScenarios,
 } from "./kpis"
-export { validateInputs, sanitizeInputs, RECOMMENDED_RETURN_MIN, RECOMMENDED_RETURN_MAX } from "./validation"
+export {
+  validateInputs,
+  sanitizeInputs,
+  autoFixValidationErrors,
+  RECOMMENDED_RETURN_MIN,
+  RECOMMENDED_RETURN_MAX,
+} from "./validation"
 export type { ValidationError } from "./validation"
 export { createHistory, pushHistory, undoHistory, redoHistory, HISTORY_LIMIT } from "./history"
 export type { HistoryStack, HistoryScenario } from "./history"

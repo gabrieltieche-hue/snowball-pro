@@ -1229,8 +1229,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.20.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.20.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.21.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.21.0 · 100% local data · Made with real returns, not promises.",
   "La bande « taux fixe » sous le héro": "The “fixed rate” band under the hero",
   "Snowball Pro se démarque des simulateurs qui supposent un rendement fixe : sous le héro, une bande rappelle notre méthode — 100 ans de vraie histoire rejouée, krachs inclus, sans citer le moindre taux en dur.":
     "Snowball Pro now stands apart from simulators that assume a fixed return: right under the hero, a band states our method — 100 years of real history replayed, crashes included, without quoting a single hardcoded rate.",

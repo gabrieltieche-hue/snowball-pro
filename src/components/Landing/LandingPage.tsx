@@ -534,14 +534,14 @@ const MANIFESTO = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.21.0",
+    title: "Header épuré : un CTA + l'erreur se corrige seule",
+    text: "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.",
+  },
+  {
     version: "v6.20.0",
     title: "Vos 100 € face aux krachs",
     text: "Nouvelle section signature : choisissez 2000, 2008 ou 2022 et regardez 100 € investis plonger puis revenir — sur le vrai MSCI World, rejoué année par année (2008 : −37 %, retour en 2012 ; 2000 : la décennie perdue, retour en 2013). S'y ajoute le manifeste « Ce que nous ne faisons pas » : pas de rendement garanti, pas de conseil, pas de vente de données, pas de compte obligatoire, pas de pub.",
-  },
-  {
-    version: "v6.19.0",
-    title: "Header épuré : un CTA + l'erreur se corrige seule",
-    text: "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.",
   },
   {
     version: "v6.18.0",

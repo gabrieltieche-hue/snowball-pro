@@ -4,6 +4,24 @@
 
 ---
 
+## SESSION — 2026-08-17 (v6.21.0 : Header épuré — un seul CTA + l'avertissement corrige tout seul)
+
+### Résumé
+
+Mini-refonte du header validée par l'utilisateur (« IL Y A TROP DE BOUTONS ! ») : 9 → 6 contrôles, hiérarchie à 3 niveaux. Mode inline APEX + bundles process/ui-ux (TDD rouge/vert, auto-revue adverse), **425 tests**, gate 100 % vert, vérifié en navigateur réel (popover mobile, auto-fix, undo). **Collision de version résolue** : la release krachs de l'autre agent a pris **v6.20.0** → cette release est **v6.21.0** (les entrées v6.19.0 fantômes — version jamais publiée — ont été renumérotées en v6.21.0 dans CHANGELOG, changelog.html, UPDATES et MEMORY).
+
+### Décisions
+
+- **Un seul CTA doré** : « Nouvelle simulation » unique bouton or (Exporter perd sa couleur), légèrement agrandi. Annuler/Rétablir en icônes seules (aria-labels conservés → tests intacts).
+- **Menu « ⋯ » en panneaux** : Exporter, Partager (sous-panneaux avec ← Retour, pattern menu compte), FR/EN, Comparer, Mode, Réinitialiser. **Le thème Sombre/Clair reste visible** dans le header (décision utilisateur).
+- **⚠ actionnable** : badge « 1 avertissement » → icône ⚠ (ambre/rouge selon sévérité), popover expliquant chaque problème (ligne cliquable) + bouton **« Corriger automatiquement »**.
+- **Auto-fix moteur** : `autoFixValidationErrors` (engine/validation.ts) clamp des bornes + cohérence âge/durée/retraite ; appliqué en **UN patch annulable** (⌘Z restaure tout). Bandeau d'erreur : bouton « Corriger automatiquement » aussi.
+- **Navigation vers l'erreur** : `validationTargets.ts` (mapping champ → section/onglet exhaustif) + prop `focusRequest` de la Sidebar (révéler la section + focus du champ).
+- **Checkout partagé (concurrence)** : l'autre agent a pris **v6.20.0** (release krachs) pendant que mon changement était en cours. Staging chirurgical : je ne commit que MES fichiers (App/ActionBar/ExportMenu/ShareMenu/Sidebar/validation.ts/index.ts, validationTargets.*, tests auto-fix) + la cérémonie v6.21.0. JAMAIS commités : les fichiers perso de l'utilisateur (`IDEES-AMELIORATIONS-LANDING.md`, `competitor-profiles/`, `docs/DATA-ROADMAP.md`, `package-lock 2.json`).
+- **Release v6.21.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.21.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.21.0 — les entrées v6.19.0 fantômes de la release krachs renumérotées, bump v6.20.0 corrigé en 6.18.0 → 6.20.0), MEMORY (cette entrée), commit + `vercel --prod` — **uniquement le changement de cette session**.
+
+---
+
 ## SESSION — 2026-08-17 (v6.20.0 : Landing — replay des krachs 2000/2008/2022 + manifeste « Ce que nous ne faisons pas »)
 
 ### Résumé
@@ -15,25 +33,8 @@ Cinquième vague de la feuille de route `IDEES-AMELIORATIONS-LANDING.md` : chant
 - **Replay des krachs (3.2)** : section « Vos 100 € face aux krachs » après les Chiffres clés. Sélecteur 2000/2008/2022 (même pattern radiogroup que la démo du héro), courbe SVG custom (`CrashChart.tsx`, tracé or + aire dégradée + baseline « 100 € » pointillés, dessin animé `pathLength` keyé par année — en test le mock framer-motion rend le tracé statique). **Tous les chiffres dérivés du moteur** : nouvelle fonction pure `replayCrashFrom(startYear)` dans `historical.ts` (100 € investis début d'année, valeur fin d'année, MSCI World Net Return EUR) → creux, baisse max, retour à l'équilibre. Histoires réelles vérifiées : 2008 −37,3 % / retour 2012 ; 2000 double krach −45,8 % / retour 2013 (« la décennie perdue ») ; 2022 −12,9 % / retour 2023. Exporté via le barrel `engine/index.ts`.
 - **Manifeste (5.2)** : 5 cartes « Pas de… » (rendement garanti, conseil, vente de données, compte obligatoire, pub) juste après la comparaison, icônes Ban rouge doux (inline styles sur les vars CSS), phrase de clôture + ancre `#comparaison`. Aucun chiffre : que des engagements.
 - **Auto-revue (findings corrigés)** : le nouveau SVG `role=img` cassait le test héro (`getByRole('img')` → `getAllByRole`) ; le « % » séparé du grand chiffre par un span cassait le matcher texte → matcher fonction ; lint : `!` interdits → helper `replay()` avec throw.
-- **Checkout partagé (concurrence)** : l'autre agent a réservé **v6.19.0** (refonte header, non commitée). Ma release est donc **v6.20.0**. Staging chirurgical : `git add -p` sur les fichiers partagés (i18n.ts, engine/index.ts, components.test.tsx, CHANGELOG.md, MEMORY.md) pour ne prendre QUE mes hunks ; package.json/lock/sw.js stagés entiers (bump 6.18 → 6.20, son 6.19 intermédiaire subsumé) ; `changelog.html` régénéré (artefact généré, source CHANGELOG.md partagée). JAMAIS stagés : App.tsx, ActionBar/ExportMenu/ShareMenu/Sidebar, validation.ts, validationTargets.*.
+- **Checkout partagé (concurrence)** : l'autre agent avait réservé **v6.19.0** (refonte header, non commitée). Ma release est donc **v6.20.0**. Staging chirurgical : `git add -p` sur les fichiers partagés (i18n.ts, engine/index.ts, components.test.tsx, CHANGELOG.md, MEMORY.md) pour ne prendre QUE mes hunks ; package.json/lock/sw.js stagés entiers (bump 6.18 → 6.20, son 6.19 intermédiaire subsumé) ; `changelog.html` régénéré (artefact généré, source CHANGELOG.md partagée). JAMAIS stagés : App.tsx, ActionBar/ExportMenu/ShareMenu/Sidebar, validation.ts, validationTargets.*.
 - **Release v6.20.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.20.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.20.0), MEMORY (cette entrée), commit + `vercel --prod`.
-
----
-
-## SESSION — 2026-08-17 (v6.19.0 : Header épuré — un seul CTA + l'avertissement corrige tout seul)
-
-### Résumé
-
-Mini-refonte du header validée par l'utilisateur (« IL Y A TROP DE BOUTONS ! ») : 9 → 6 contrôles, hiérarchie à 3 niveaux. Mode inline APEX + bundles process/ui-ux (TDD rouge/vert, auto-revue adverse), **425 tests**, gate 100 % vert, vérifié en navigateur réel (popover mobile, auto-fix, undo).
-
-### Décisions
-
-- **Un seul CTA doré** : « Nouvelle simulation » unique bouton or (Exporter perd sa couleur), légèrement agrandi. Annuler/Rétablir en icônes seules (aria-labels conservés → tests intacts).
-- **Menu « ⋯ » en panneaux** : Exporter, Partager (sous-panneaux avec ← Retour, pattern menu compte), FR/EN, Comparer, Mode, Réinitialiser. **Le thème Sombre/Clair reste visible** dans le header (décision utilisateur).
-- **⚠ actionnable** : badge « 1 avertissement » → icône ⚠ (ambre/rouge selon sévérité), popover expliquant chaque problème (ligne cliquable) + bouton **« Corriger automatiquement »**.
-- **Auto-fix moteur** : `autoFixValidationErrors` (engine/validation.ts) clamp des bornes + cohérence âge/durée/retraite ; appliqué en **UN patch annulable** (⌘Z restaure tout). Bandeau d'erreur : bouton « Corriger automatiquement » aussi.
-- **Navigation vers l'erreur** : `validationTargets.ts` (mapping champ → section/onglet exhaustif) + prop `focusRequest` de la Sidebar (révéler la section + focus du champ).
-- **Release v6.19.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.19.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.19.0), MEMORY (cette entrée), commit + `vercel --prod` — **uniquement le changement de cette session** (travail landing de l'utilisateur non committé : `IDEES-AMELIORATIONS-LANDING.md`, `competitor-profiles/`, `docs/DATA-ROADMAP.md`, `package-lock 2.json` laissés intacts).
 
 ---
 

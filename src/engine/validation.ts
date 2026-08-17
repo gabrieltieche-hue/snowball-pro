@@ -209,6 +209,68 @@ export function validateInputs(inputs: SimulationInputs): ValidationError[] {
   return errors
 }
 
+/**
+ * « Corriger automatiquement » (refonte header) : corrige TOUTES les
+ * anomalies de validation d'un coup (bornes hors limites + cohérence
+ * âge/durée/retraite), sans que l'utilisateur ait à toucher aux champs.
+ *
+ * Renvoie un PATCH minimal — seuls les champs réellement fautifs sont
+ * modifiés ; `{}` si rien à corriger. L'app l'applique via updateInputs pour
+ * rester annulable (⌘Z) et respecter le scénario actif (A ou B). Les valeurs
+ * de correction sont alignées sur validateInputs / sanitizeInputs.
+ */
+export function autoFixValidationErrors(inputs: SimulationInputs): Partial<SimulationInputs> {
+  const patch: Partial<SimulationInputs> = {}
+
+  // Bornes des montants (clamp identique au calcul réel).
+  if (inputs.capitalInitial < 0 || inputs.capitalInitial > 100_000_000) {
+    patch.capitalInitial = clamp(inputs.capitalInitial, 0, 100_000_000)
+  }
+  if (inputs.monthlyPayment < 0 || inputs.monthlyPayment > 200_000) {
+    patch.monthlyPayment = clamp(inputs.monthlyPayment, 0, 200_000)
+  }
+  if (inputs.duration < 1 || inputs.duration > 80) {
+    patch.duration = clamp(inputs.duration, 1, 80)
+  }
+  if (inputs.inflation < -0.1 || inputs.inflation > 1) {
+    patch.inflation = clamp(inputs.inflation, -0.1, 1)
+  }
+  if (inputs.etfFees < 0 || inputs.brokerageFees < 0 || inputs.managementFees < 0) {
+    if (inputs.etfFees < 0) patch.etfFees = clamp(inputs.etfFees, 0, 0.5)
+    if (inputs.brokerageFees < 0) patch.brokerageFees = clamp(inputs.brokerageFees, 0, 0.5)
+    if (inputs.managementFees < 0) patch.managementFees = clamp(inputs.managementFees, 0, 0.5)
+  }
+  if (inputs.tmi < 0 || inputs.tmi > 0.45) {
+    patch.tmi = clamp(inputs.tmi, 0, 0.45)
+  }
+  if (inputs.ctoTaxMode !== "pfu" && inputs.ctoTaxMode !== "bareme") {
+    patch.ctoTaxMode = "pfu"
+  }
+  if (inputs.goalTarget <= 0) {
+    patch.goalTarget = 1
+  }
+  if (inputs.mcRuns < 100 || inputs.mcRuns > 10000) {
+    patch.mcRuns = Math.round(clamp(inputs.mcRuns, 100, 10000))
+  }
+  if (inputs.retirementYears < 1 || inputs.retirementYears > 60) {
+    patch.retirementYears = Math.round(clamp(inputs.retirementYears, 1, 60))
+  }
+
+  // Cohérence âge / durée / retraite : la projection doit couvrir la retraite.
+  const ageAtEnd = inputs.ageNow + inputs.duration
+  if (inputs.ageRetirement < inputs.ageNow) {
+    // Erreur : la rente démarrerait avant aujourd'hui → la retraite suit
+    // l'horizon projeté (bornée par le curseur à 100 ans).
+    patch.ageRetirement = Math.min(inputs.ageNow + inputs.duration, 100)
+  } else if (ageAtEnd !== inputs.ageRetirement) {
+    // La projection s'arrête avant (ou dépasse) la retraite → on aligne la
+    // durée sur l'horizon retraite.
+    patch.duration = clamp(inputs.ageRetirement - inputs.ageNow, 1, 80)
+  }
+
+  return patch
+}
+
 export function sanitizeInputs(inputs: SimulationInputs): SimulationInputs {
   return {
     ...inputs,

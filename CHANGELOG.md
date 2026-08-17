@@ -4,22 +4,7 @@
 
 ---
 
-## v6.20.0 — Landing : replay des krachs (2000/2008/2022) + manifeste « Ce que nous ne faisons pas »
-
-Cinquième vague de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`) : les chantiers **n°5 (manifeste 5.2)** et **n°7 (replay des krachs 3.2 — l'élément signature)**. Après l'attaque (1.2), la preuve (2) et l'objectif inversé (4), place à l'émotion — « 2008, votre épargne perd 37 %… puis elle revient » — et à l'honnêteté par le refus.
-
-### 🔄 Changements
-
-- **Replay des krachs (3.2)** — nouvelle section signature « Vos 100 € face aux krachs » : sélecteur 2000/2008/2022 (radiogroup), courbe SVG animée (tracé or + aire dégradée, baseline « 100 € » en pointillés, dessin `pathLength` à chaque bascule) et chiffres **100 % dérivés du moteur** via la nouvelle fonction pure `replayCrashFrom` (`historical.ts`) : 100 € investis début d'année, valeur fin d'année sur le MSCI World Net Return EUR réel (dividendes nets réinvestis). Histoires réelles : **2008 −37,3 % (creux fin 2008), retour à l'équilibre en 2012** ; **2000 la décennie perdue — double krach (2000-02 puis 2008), creux à −45,8 %, retour seulement en 2013** ; **2022 −12,9 %, retour dès 2023**. Aucun chiffre en dur (tout passe par le moteur).
-- **Manifeste « Ce que nous ne faisons pas » (5.2)** — nouvelle section juste après le tableau honnête : 5 refus assumés (rendement garanti, conseil en investissement, vente de données, compte obligatoire, publicité) en cartes ⚠ rouge doux, phrase de clôture « vérifiable dans le code » + ancre « Revoir le tableau honnête » → `#comparaison`. L'envers de l'attaque 1.2 — aucun simulateur français n'ose l'écrire.
-- **i18n** — ~25 nouvelles clés FR→EN (replay + manifeste + légendes) ; `aria-label` des deux sections traduits.
-- **Tests** — +7 : 5 pour `replayCrashFrom` (2008/2000/2022 avec les valeurs exactes de la série, hors-bornes → null, cohérence interne produit), 2 composants (replay : chiffres du moteur + bascule 2000, manifeste : 5 refus + ancre). Test héro adapté (deux SVG `role=img` désormais).
-- Gate : typecheck ✓ lint ✓ tests ✓ format ✓ build ✓ (détecteur impeccable : 0 finding), vérifié en navigateur réel (FR + EN, 1440/390/320 px).
-- Version 6.19.0 → **6.20.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.20.0`, footer landing v6.20.0, « Dernières éditions » v6.20.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
-
----
-
-## v6.19.0 — Header épuré : un seul CTA doré + l'avertissement corrige tout seul
+## v6.21.0 — Header épuré : un seul CTA doré + l'avertissement corrige tout seul
 
 Mini-refonte du header validée par l'utilisateur (« IL Y A TROP DE BOUTONS ! ») : le CTA **« Nouvelle simulation »** était noyé entre deux boutons dorés (lui et « Exporter »), et le badge « 1 avertissement » ne disait pas où était le problème. Le header passe de **9 à 6 contrôles** avec 3 niveaux hiérarchiques clairs, et l'avertissement devient actionnable — il s'explique au clic et se corrige **tout seul**. Mode inline APEX + bundles process/ui-ux (TDD rouge/vert, auto-revue adverse), **425 tests**, gate 100 % vert, vérifié en navigateur réel.
 
@@ -32,7 +17,22 @@ Mini-refonte du header validée par l'utilisateur (« IL Y A TROP DE BOUTONS ! �
 - **i18n** — nouvelles clés FR→EN (popover « Problèmes à corriger », boutons, panneaux Export/Partager).
 - **Tests** — +7 : mapping champ→destination exhaustif (validationTargets), auto-fix moteur (clamp + cohérence), composants (popover ⚠, navigation/focus, auto-fix + undo) — **425/425**.
 - Gate : typecheck ✓ lint ✓ **425/425 tests** ✓ format ✓ build ✓ (single-file 1,28 Mo ; binaires natifs `@tailwindcss/oxide` + `lightningcss` réparés dans node_modules, stubs iCloud) ; vérifié en navigateur réel : popover mobile sans débordement (correctif centrage), auto-fix durée 25 → 32, ⚠ disparu, Annuler activé.
-- Version 6.18.0 → **6.19.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.19.0`, footer landing v6.19.0, « Dernières éditions » v6.19.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+- Version 6.20.0 → **6.21.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.21.0`, footer landing v6.21.0, « Dernières éditions » v6.21.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
+## v6.20.0 — Landing : replay des krachs (2000/2008/2022) + manifeste « Ce que nous ne faisons pas »
+
+Cinquième vague de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`) : les chantiers **n°5 (manifeste 5.2)** et **n°7 (replay des krachs 3.2 — l'élément signature)**. Après l'attaque (1.2), la preuve (2) et l'objectif inversé (4), place à l'émotion — « 2008, votre épargne perd 37 %… puis elle revient » — et à l'honnêteté par le refus.
+
+### 🔄 Changements
+
+- **Replay des krachs (3.2)** — nouvelle section signature « Vos 100 € face aux krachs » : sélecteur 2000/2008/2022 (radiogroup), courbe SVG animée (tracé or + aire dégradée, baseline « 100 € » en pointillés, dessin `pathLength` à chaque bascule) et chiffres **100 % dérivés du moteur** via la nouvelle fonction pure `replayCrashFrom` (`historical.ts`) : 100 € investis début d'année, valeur fin d'année sur le MSCI World Net Return EUR réel (dividendes nets réinvestis). Histoires réelles : **2008 −37,3 % (creux fin 2008), retour à l'équilibre en 2012** ; **2000 la décennie perdue — double krach (2000-02 puis 2008), creux à −45,8 %, retour seulement en 2013** ; **2022 −12,9 %, retour dès 2023**. Aucun chiffre en dur (tout passe par le moteur).
+- **Manifeste « Ce que nous ne faisons pas » (5.2)** — nouvelle section juste après le tableau honnête : 5 refus assumés (rendement garanti, conseil en investissement, vente de données, compte obligatoire, publicité) en cartes ⚠ rouge doux, phrase de clôture « vérifiable dans le code » + ancre « Revoir le tableau honnête » → `#comparaison`. L'envers de l'attaque 1.2 — aucun simulateur français n'ose l'écrire.
+- **i18n** — ~25 nouvelles clés FR→EN (replay + manifeste + légendes) ; `aria-label` des deux sections traduits.
+- **Tests** — +7 : 5 pour `replayCrashFrom` (2008/2000/2022 avec les valeurs exactes de la série, hors-bornes → null, cohérence interne produit), 2 composants (replay : chiffres du moteur + bascule 2000, manifeste : 5 refus + ancre). Test héro adapté (deux SVG `role=img` désormais).
+- Gate : typecheck ✓ lint ✓ tests ✓ format ✓ build ✓ (détecteur impeccable : 0 finding), vérifié en navigateur réel (FR + EN, 1440/390/320 px).
+- Version 6.18.0 → **6.20.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.20.0`, footer landing v6.20.0, « Dernières éditions » v6.20.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
 
 ---
 
