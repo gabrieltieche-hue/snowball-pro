@@ -83,6 +83,8 @@ export {
   FRENCH_INFLATION_1970_2025,
   EXTENDED_WORLD_RETURNS,
   EXTENDED_WORLD_START_YEAR,
+  replayCrashFrom,
 } from "./historical"
+export type { CrashReplay } from "./historical"
 export { sampleRegime, applyRegime, effectiveSampleSize } from "./reliability"
 export type { RegimeParams } from "./reliability"

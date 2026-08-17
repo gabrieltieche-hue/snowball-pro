@@ -26,12 +26,14 @@ import {
   solveGoal,
   validateInputs,
   sanitizeInputs,
+  autoFixValidationErrors,
   runDecumulation,
   runDecumulationAsync,
   v4SettingsToInputs,
   parseStoredInputs,
   DEFAULT_INPUTS,
   getHistoricalDataset,
+  replayCrashFrom,
   createHistory,
   pushHistory,
   undoHistory,
@@ -559,6 +561,57 @@ describe("getHistoricalDataset", () => {
   })
 })
 
+describe("replayCrashFrom — le replay des krachs (3.2), série MSCI World EUR réelle", () => {
+  // Le projet interdit les non-null assertions : on sort en throw si la
+  // série ne couvre pas l'année (ne devrait jamais arriver pour 2000/2008/2022).
+  const replay = (year: number) => {
+    const r = replayCrashFrom(year)
+    if (!r) throw new Error(`replayCrashFrom(${year}) devrait exister`)
+    return r
+  }
+
+  it("2008 : 100 € → 62,71 € fin 2008 (−37,3 %), retour à l'équilibre en 2012", () => {
+    const r = replay(2008)
+    expect(r.startYear).toBe(2008)
+    expect(r.endYear).toBe(2025)
+    expect(r.troughYear).toBe(2008) // le creux est fin 2008, la série remonte ensuite
+    expect(r.maxDrawdown).toBeCloseTo(0.3729, 3) // 100 × (1 − 0,3729) = 62,71
+    expect(r.recoveryYear).toBe(2012) // 62,71 → 78,75 → 93,82 → 91,30 → 103,94
+    expect(r.values[0]?.year).toBe(2008)
+    expect(r.values[0]?.value).toBeCloseTo(62.71, 2)
+    expect(r.finalValue).toBeGreaterThan(400) // 100 € → ~478 € fin 2025
+  })
+
+  it("2000 : la décennie perdue — deux krachs (2000-02 puis 2008), creux à −45,8 %, retour seulement en 2013", () => {
+    const r = replay(2000)
+    expect(r.troughYear).toBe(2008) // le double krach creuse un nouveau plancher en 2008
+    expect(r.maxDrawdown).toBeCloseTo(0.4581, 3) // 100 × 0,9374 × 0,8782 × 0,6733 × … × 0,6271
+    expect(r.recoveryYear).toBe(2013) // 13 ans pour revenir à l'équilibre
+    expect(r.values.length).toBe(26) // 2000 → 2025, une valeur par année
+  })
+
+  it("2022 : −12,9 % puis retour dès 2023", () => {
+    const r = replay(2022)
+    expect(r.maxDrawdown).toBeCloseTo(0.1287, 3)
+    expect(r.troughYear).toBe(2022)
+    expect(r.recoveryYear).toBe(2023)
+  })
+
+  it("renvoie null hors de la série (avant 1970 ou après 2025)", () => {
+    expect(replayCrashFrom(1969)).toBeNull()
+    expect(replayCrashFrom(2026)).toBeNull()
+    expect(replayCrashFrom(1970)).not.toBeNull()
+  })
+
+  it("les valeurs sont cohérentes avec la série source (aucun chiffre inventé)", () => {
+    const r = replay(2022)
+    // 100 × 0,8713 (2022) × 1,1946 (2023) × 1,2633 (2024) × 1,0639 (2025)
+    const expected = 100 * 0.8713 * 1.1946 * 1.2633 * 1.0639
+    expect(r.finalValue).toBeCloseTo(expected, 6)
+    expect(r.values.map(v => v.year)).toEqual([2022, 2023, 2024, 2025])
+  })
+})
+
 describe("computeKPIs", () => {
   const baseInputs: SimulationInputs = {
     ...DEFAULT_INPUTS,
@@ -852,6 +905,60 @@ describe("sanitizeInputs", () => {
     // Durée de la rente bornée (audit v6) : une valeur aberrante partagée via
     // un lien (ex. 120 000) est ramenée à la borne haute du curseur (60 ans).
     expect(safe.retirementYears).toBe(60)
+  })
+})
+
+describe("autoFixValidationErrors — « Corriger automatiquement »", () => {
+  // Base sans aucune anomalie de cohérence (30 + 25 = retraite 55).
+  const base: SimulationInputs = { ...DEFAULT_INPUTS, ageNow: 30, duration: 25, ageRetirement: 55 }
+
+  it("ne modifie rien quand tout est valide", () => {
+    expect(validateInputs(base)).toHaveLength(0)
+    expect(autoFixValidationErrors(base)).toEqual({})
+  })
+
+  it("clamp les bornes hors limites au montant du calcul réel", () => {
+    const fix = autoFixValidationErrors({
+      ...base,
+      capitalInitial: -5000,
+      monthlyPayment: 300_000,
+      inflation: 1.5,
+      tmi: 0.8,
+      mcRuns: 50,
+      retirementYears: 0,
+    })
+    expect(fix.capitalInitial).toBe(0)
+    expect(fix.monthlyPayment).toBe(200_000)
+    expect(fix.inflation).toBe(1)
+    expect(fix.tmi).toBe(0.45)
+    expect(fix.mcRuns).toBe(100)
+    expect(fix.retirementYears).toBe(1)
+    // Une fois le patch appliqué, plus aucune anomalie.
+    expect(validateInputs({ ...base, ...fix })).toHaveLength(0)
+  })
+
+  it("allonge la durée quand la projection s'arrête avant la retraite", () => {
+    const fix = autoFixValidationErrors({ ...base, duration: 10 })
+    expect(fix.duration).toBe(25) // 55 − 30
+    expect(validateInputs({ ...base, ...fix })).toHaveLength(0)
+  })
+
+  it("réduit la durée quand la projection dépasse la retraite", () => {
+    const fix = autoFixValidationErrors({ ...base, duration: 40 })
+    expect(fix.duration).toBe(25)
+    expect(validateInputs({ ...base, ...fix })).toHaveLength(0)
+  })
+
+  it("recale la retraite sur l'horizon projeté quand elle est antérieure à l'âge actuel", () => {
+    const fix = autoFixValidationErrors({ ...base, ageRetirement: 20 })
+    expect(fix.ageRetirement).toBe(55) // 30 + 25
+    expect(validateInputs({ ...base, ...fix })).toHaveLength(0)
+  })
+
+  it("corrige un mode fiscal CTO invalide (lien partagé malformé)", () => {
+    const fix = autoFixValidationErrors({ ...base, ctoTaxMode: "invalide" as SimulationInputs["ctoTaxMode"] })
+    expect(fix.ctoTaxMode).toBe("pfu")
+    expect(validateInputs({ ...base, ...fix })).toHaveLength(0)
   })
 })
 

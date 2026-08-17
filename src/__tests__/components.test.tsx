@@ -33,6 +33,7 @@ import {
   fmtCurrency,
   getHistoricalDataset,
   parseStoredInputs,
+  replayCrashFrom,
   runSimulation,
   runDecumulation,
   buildTerminalHistogram,
@@ -1067,8 +1068,9 @@ describe("v6.1 — landing page", () => {
     // Coupe typographique en 2 lignes (spans block) : le nom accessible vient de l'aria-label.
     expect(screen.getByRole("heading", { name: /combien peut valoir votre épargne dans 25 ans/i })).toBeInTheDocument()
     expect(screen.getByText(/votre nombre magique, c'est le capital final/i)).toBeInTheDocument()
-    // La démo du héro exécute le vrai moteur (aria-label du graphique SVG)
-    expect(screen.getByRole("img")).toBeInTheDocument()
+    // La démo du héro exécute le vrai moteur (aria-label du graphique SVG) —
+    // getAllByRole : le replay des krachs (v6.19) ajoute un second SVG role=img.
+    expect(screen.getAllByRole("img").length).toBeGreaterThan(0)
     // Sections fonctionnalités + méthodologie + FAQ
     expect(screen.getByText("Quatre onglets, une question : où va votre argent ?")).toBeInTheDocument()
     expect(screen.getByText("Pourquoi 10,07 % → 5,99 % ?")).toBeInTheDocument()
@@ -1144,6 +1146,46 @@ describe("v6.1 — landing page", () => {
     expect(cards.length).toBeLessThanOrEqual(4)
     const link = within(section).getByRole("link", { name: /toutes les versions/i })
     expect(link).toHaveAttribute("href", "/changelog.html")
+  })
+
+  it("replay des krachs : 2000/2008/2022 rejoués avec les vrais chiffres du moteur (3.2)", () => {
+    render(<LandingPage />)
+    const section = screen.getByRole("region", { name: /vos 100 € face aux krachs/i })
+    // Les trois krachs sont rejouables.
+    expect(within(section).getByRole("radio", { name: /2000/i })).toBeInTheDocument()
+    expect(within(section).getByRole("radio", { name: /2008/i })).toBeInTheDocument()
+    expect(within(section).getByRole("radio", { name: /2022/i })).toBeInTheDocument()
+    // Défaut 2008 : les chiffres viennent du VRAI moteur — −37 %, retour en 2012.
+    // (matcher fonction : le « % » vit dans un span séparé du grand chiffre).
+    const replay = (year: number) => {
+      const r = replayCrashFrom(year)
+      if (!r) throw new Error(`replay ${year} devrait exister`)
+      return r
+    }
+    const r2008 = replay(2008)
+    const hasPct = (pct: number) => (content: string) => content.includes(`−${pct}`)
+    expect(within(section).getByText(hasPct(Math.round(r2008.maxDrawdown * 100)))).toBeInTheDocument()
+    expect(within(section).getByText(new RegExp(`revenu à 100 € en ${r2008.recoveryYear}`, "i"))).toBeInTheDocument()
+    // Bascule sur 2000 : les chiffres suivent le moteur (creux 2008, retour 2013).
+    fireEvent.click(within(section).getByRole("radio", { name: /2000/i }))
+    const r2000 = replay(2000)
+    expect(within(section).getByText(hasPct(Math.round(r2000.maxDrawdown * 100)))).toBeInTheDocument()
+    expect(within(section).getByText(new RegExp(`revenu à 100 € en ${r2000.recoveryYear}`, "i"))).toBeInTheDocument()
+  })
+
+  it("manifeste : les 5 « nous ne faisons pas » + ancre vers le tableau honnête (5.2)", () => {
+    render(<LandingPage />)
+    expect(screen.getByRole("heading", { name: "Ce que nous ne faisons pas" })).toBeInTheDocument()
+    for (const refus of [
+      "Pas de rendement garanti",
+      "Pas de conseil en investissement",
+      "Pas de vente de données",
+      "Pas de compte obligatoire",
+      "Pas de publicité",
+    ]) {
+      expect(screen.getByText(refus)).toBeInTheDocument()
+    }
+    expect(screen.getByRole("link", { name: /revoir le tableau honnête/i })).toHaveAttribute("href", "#comparaison")
   })
 
   it("déplie la FAQ au clic", () => {

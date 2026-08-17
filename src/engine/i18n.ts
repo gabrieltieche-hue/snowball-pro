@@ -1051,6 +1051,10 @@ const EN: Record<string, string> = {
     "Real numbers, not promises: every figure on this page is computed live by the engine, on the real MSCI World 1970-2025 returns — crashes included, French 2026 taxation.",
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
+  // ─── Landing v6.19 : header épuré + correction automatique ──────────────
+  "Header épuré : un CTA + l'erreur se corrige seule": "Clean header: one CTA + errors fix themselves",
+  "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.":
+    "The simulator breathes: a single golden button (“New simulation”), secondary actions tucked into “⋯” (the Dark/Light theme stays one click away), and the ⚠ warning is now actionable — one click explains it simply, and “Fix automatically” fixes everything by itself (bounds + age/duration/retirement coherence), with Undo ⌘Z to step back.",
   // ─── Landing v6.18 : tableau honnête + objectif inversé + changelog ───────
   "Comment on se compare": "How we compare",
   Comparaison: "Comparison",
@@ -1097,6 +1101,44 @@ const EN: Record<string, string> = {
   "Toutes les versions": "All versions",
   "Dernières évolutions": "Latest releases",
   Changelog: "Changelog",
+  // ─── Landing v6.19 : replay des krachs (3.2) + manifeste (5.2) ────────────
+  "Vos 100 € face aux krachs": "Your €100 against the crashes",
+  "Nouvelle section signature : choisissez 2000, 2008 ou 2022 et regardez 100 € investis plonger puis revenir — sur le vrai MSCI World, rejoué année par année (2008 : −37 %, retour en 2012 ; 2000 : la décennie perdue, retour en 2013). S'y ajoute le manifeste « Ce que nous ne faisons pas » : pas de rendement garanti, pas de conseil, pas de vente de données, pas de compte obligatoire, pas de pub.":
+    "New signature section: pick 2000, 2008 or 2022 and watch €100 invested crash and recover — on the real MSCI World, replayed year by year (2008: −37%, back in 2012; 2000: the lost decade, back in 2013). Plus the “What we don't do” manifesto: no guaranteed returns, no advice, no data selling, no mandatory account, no ads.",
+  "Histoire réelle": "Real history",
+  "Choisissez une année de départ : c'est le vrai MSCI World, rejoué année par année, dividendes réinvestis. Personne ne vous montre ça — parce qu'il faut l'assumer.":
+    "Pick a starting year: it's the real MSCI World, replayed year by year, dividends reinvested. Nobody shows you this — because it takes guts.",
+  "Année de départ du replay": "Replay start year",
+  "au pire, votre épargne": "at worst, your savings",
+  "100 € → {value} € en {year}": "€100 → {value} € in {year}",
+  "revenu à 100 € en {year}": "back to €100 in {year}",
+  "et {value} € fin {year}": "and {value} € at the end of {year}",
+  "Courbe : la valeur de 100 € investis en {year}": "Chart: the value of €100 invested in {year}",
+  "Replay indisponible pour cette année.": "Replay unavailable for this year.",
+  "100 € investis en début d'année · MSCI World Net Return EUR, dividendes nets réinvestis · avant frais, fiscalité et versements supplémentaires.":
+    "€100 invested at the start of the year · MSCI World Net Return EUR, net dividends reinvested · before fees, tax and additional contributions.",
+  Manifeste: "Manifesto",
+  "Ce que nous ne faisons pas": "What we don't do",
+  "L'envers de la promesse. Aucun simulateur français n'ose l'écrire — voici notre liste, vérifiable dans le code.":
+    "The flip side of the promise. No French simulator dares to write it — here is our list, verifiable in the code.",
+  "Pas de rendement garanti": "No guaranteed returns",
+  "Nul ne peut promettre un rendement. Si un outil vous en promet un, il ment — nous, on rejoue l'histoire réelle, krachs inclus.":
+    "Nobody can promise a return. If a tool promises you one, it's lying — we replay real history, crashes included.",
+  "Pas de conseil en investissement": "No investment advice",
+  "Un simulateur pédagogique, pas un conseiller : aucune recommandation personnalisée, aucun produit poussé, aucune pression.":
+    "An educational simulator, not an advisor: no personalized recommendations, no product pushed, no pressure.",
+  "Pas de vente de données": "No data selling",
+  "Tout est calculé sur votre appareil. Il n'y a aucune donnée à vendre — et aucun serveur pour la recevoir.":
+    "Everything is computed on your device. There is no data to sell — and no server to receive it.",
+  "Pas de compte obligatoire": "No mandatory account",
+  "Ni compte, ni email, ni carte bancaire : tout fonctionne sans inscription, aujourd'hui comme demain.":
+    "No account, no email, no credit card: everything works without signing up, today and tomorrow.",
+  "Pas de publicité": "No advertising",
+  "Aucune pub, aucun sponsor, aucun lien affilié. Rien n'est sponsorisé ici — même pas cette ligne.":
+    "No ads, no sponsors, no affiliate links. Nothing here is sponsored — not even this line.",
+  "Ce que les autres font pour gagner de l'argent, nous ne le faisons pas — et c'est vérifiable : chaque chiffre de ce site est calculé par le moteur, sur votre appareil.":
+    "What others do to make money, we don't — and it's verifiable: every figure on this site is computed by the engine, on your device.",
+  "Revoir le tableau honnête": "See the honest comparison again",
   "Simulation par défaut — démo réelle": "Default simulation — real demo",
   "d'historique réel — S&P 500 1926-1969 + MSCI World 1970-2025":
     "of real history — S&P 500 1926-1969 + MSCI World 1970-2025",
@@ -1187,8 +1229,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.18.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.18.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.20.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.20.0 · 100% local data · Made with real returns, not promises.",
   "La bande « taux fixe » sous le héro": "The “fixed rate” band under the hero",
   "Snowball Pro se démarque des simulateurs qui supposent un rendement fixe : sous le héro, une bande rappelle notre méthode — 100 ans de vraie histoire rejouée, krachs inclus, sans citer le moindre taux en dur.":
     "Snowball Pro now stands apart from simulators that assume a fixed return: right under the hero, a band states our method — 100 years of real history replayed, crashes included, without quoting a single hardcoded rate.",

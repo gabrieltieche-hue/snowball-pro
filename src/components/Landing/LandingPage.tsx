@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowRight,
+  Ban,
   Banknote,
   Check,
   ChevronDown,
@@ -31,6 +32,7 @@ import {
   getTaxRules,
   parseStoredInputs,
   pfuRate,
+  replayCrashFrom,
   runSimulation,
   solveGoal,
 } from "../../engine"
@@ -39,6 +41,7 @@ import type { EnvelopeType, GoalDifficulty, ReturnScenario, YearRow } from "../.
 import { SliderInput } from "../shared/SliderInput"
 import { QUICKSTART_PROFILES } from "../../utils/quickStart"
 import { Brand } from "./Brand"
+import { CrashChart } from "./CrashChart"
 import { HeroChart } from "./HeroChart"
 
 // ─── Hooks maison (framer-motion est mocké en test : on n'utilise pas useInView) ──
@@ -499,8 +502,47 @@ const GOAL_DIFFICULTY_META: Record<GoalDifficulty, { label: string; color: strin
   impossible: { label: "Objectif irréaliste", color: "var(--color-danger)" },
 }
 
+/** Les trois krachs rejouables (3.2) — années de départ du replay. */
+const CRASH_YEARS = [2000, 2008, 2022] as const
+type CrashYear = (typeof CRASH_YEARS)[number]
+
+/** Manifeste « Ce que nous ne faisons pas » (5.2) — les 5 refus, l'envers de
+ *  l'attaque 1.2. Aucun chiffre : que des engagements vérifiables. */
+const MANIFESTO = [
+  {
+    title: "Pas de rendement garanti",
+    text: "Nul ne peut promettre un rendement. Si un outil vous en promet un, il ment — nous, on rejoue l'histoire réelle, krachs inclus.",
+  },
+  {
+    title: "Pas de conseil en investissement",
+    text: "Un simulateur pédagogique, pas un conseiller : aucune recommandation personnalisée, aucun produit poussé, aucune pression.",
+  },
+  {
+    title: "Pas de vente de données",
+    text: "Tout est calculé sur votre appareil. Il n'y a aucune donnée à vendre — et aucun serveur pour la recevoir.",
+  },
+  {
+    title: "Pas de compte obligatoire",
+    text: "Ni compte, ni email, ni carte bancaire : tout fonctionne sans inscription, aujourd'hui comme demain.",
+  },
+  {
+    title: "Pas de publicité",
+    text: "Aucune pub, aucun sponsor, aucun lien affilié. Rien n'est sponsorisé ici — même pas cette ligne.",
+  },
+]
+
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.20.0",
+    title: "Vos 100 € face aux krachs",
+    text: "Nouvelle section signature : choisissez 2000, 2008 ou 2022 et regardez 100 € investis plonger puis revenir — sur le vrai MSCI World, rejoué année par année (2008 : −37 %, retour en 2012 ; 2000 : la décennie perdue, retour en 2013). S'y ajoute le manifeste « Ce que nous ne faisons pas » : pas de rendement garanti, pas de conseil, pas de vente de données, pas de compte obligatoire, pas de pub.",
+  },
+  {
+    version: "v6.19.0",
+    title: "Header épuré : un CTA + l'erreur se corrige seule",
+    text: "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.",
+  },
   {
     version: "v6.18.0",
     title: "Le tableau honnête + l'objectif inversé",
@@ -533,6 +575,9 @@ export function LandingPage() {
   // de l'app (solveGoal) calcule l'épargne mensuelle en direct.
   const [goalTarget, setGoalTarget] = useState(1_000_000)
   const [goalDuration, setGoalDuration] = useState(20)
+  // Replay des krachs (3.2) : année de départ active (défaut 2008, le grand
+  // plongeon — la bascule 2000/2008/2022 rejoue le vrai MSCI World).
+  const [crashYear, setCrashYear] = useState<CrashYear>(2008)
   // CRO v6.8 — CTA sticky mobile : apparu après un scroll de 480 px (rendu en
   // bas de page). Le masquage ≥ sm est purement CSS (md:hidden) : jsdom n'a
   // pas de matchMedia, la logique ici ne dépend que du scroll.
@@ -597,6 +642,13 @@ export function LandingPage() {
   )
   const goalPmt = goalRes.pmtPerMonth ?? 0
   const goalMeta = GOAL_DIFFICULTY_META[goalRes.difficulty]
+
+  // Replay des krachs : chiffres TOUJOURS dérivés du moteur (jamais en dur).
+  const crash = useMemo(() => replayCrashFrom(crashYear), [crashYear])
+  const crashDrawdownPct = Math.round((crash?.maxDrawdown ?? 0) * 100)
+  const crashTroughValue = crash?.values.find(v => v.year === crash.troughYear)?.value
+  const fmt2 = (v: number | undefined) =>
+    v === undefined ? "—" : v.toLocaleString(locale, { maximumFractionDigits: 2 })
 
   const scenarios = useMemo(
     () => SCENARIO_ORDER.map(s => ({ scenario: s, last: heroRows[s][heroRows[s].length - 1] })),
@@ -879,6 +931,98 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── Replay des krachs (3.2) — l'élément signature. 2000 / 2008 /
+          2022 rejoués avec le VRAI MSCI World EUR (replayCrashFrom) : le
+          creux, la baisse maximale et le retour à l'équilibre sont dérivés
+          de la série — aucun chiffre en dur. */}
+      <section
+        id="krachs"
+        aria-label={tr("Vos 100 € face aux krachs")}
+        className="border-t border-border/70 bg-glass/30 scroll-mt-20"
+      >
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+          <Reveal>
+            <SectionTitle
+              eyebrow="Histoire réelle"
+              title="Vos 100 € face aux krachs"
+              sub="Choisissez une année de départ : c'est le vrai MSCI World, rejoué année par année, dividendes réinvestis. Personne ne vous montre ça — parce qu'il faut l'assumer."
+            />
+          </Reveal>
+          <Reveal>
+            <div className="glass-gold rounded-3xl p-5 sm:p-8 shadow-premium-lg">
+              {/* Sélecteur d'année (radiogroup, comme la démo du héro). */}
+              <div
+                role="radiogroup"
+                aria-label={tr("Année de départ du replay")}
+                className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-surface-50/70 border border-border max-w-xs mx-auto mb-8"
+              >
+                {CRASH_YEARS.map(year => {
+                  const active = crashYear === year
+                  return (
+                    <button
+                      key={year}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setCrashYear(year)}
+                      className={cn(
+                        "rounded-xl px-3 py-2 text-center text-[11px] font-extrabold mono transition-all duration-200",
+                        active
+                          ? "bg-primary btn-gold-text shadow-gold"
+                          : "text-text-muted hover:text-text hover:bg-glass-hover",
+                      )}
+                    >
+                      {year}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 items-center">
+                {/* Colonne chiffres — le creux + le retour, moteur réel. */}
+                <div className="text-center md:text-left">
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
+                    {tr("au pire, votre épargne")}
+                  </p>
+                  <p className="font-display text-5xl sm:text-6xl font-extrabold tracking-tight text-primary mono leading-none">
+                    −{crashDrawdownPct} <span className="text-2xl font-bold text-text-muted">%</span>
+                  </p>
+                  <p className="mt-2 text-[11px] text-text-muted">
+                    {tr("100 € → {value} € en {year}", {
+                      value: fmt2(crashTroughValue),
+                      year: crash?.troughYear ?? "",
+                    })}
+                  </p>
+                  {crash?.recoveryYear && (
+                    <p className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold border border-border/60 bg-surface/50 text-text">
+                      <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
+                      {tr("revenu à 100 € en {year}", { year: crash.recoveryYear })}
+                    </p>
+                  )}
+                  <p className="mt-4 text-[10.5px] text-text-dim">
+                    {tr("et {value} € fin {year}", { value: fmt2(crash?.finalValue), year: crash?.endYear ?? "" })}
+                  </p>
+                </div>
+
+                {/* Colonne courbe — le replay animé (moteur réel). */}
+                <div>
+                  {crash ? (
+                    <CrashChart key={crashYear} replay={crash} />
+                  ) : (
+                    <p className="text-xs text-text-muted">{tr("Replay indisponible pour cette année.")}</p>
+                  )}
+                  <p className="text-[9.5px] text-text-dim mt-3 leading-relaxed">
+                    {tr(
+                      "100 € investis en début d'année · MSCI World Net Return EUR, dividendes nets réinvestis · avant frais, fiscalité et versements supplémentaires.",
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── Fonctionnalités ─────────────────────────────────────────────── */}
       <section id="fonctionnalites" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
         <Reveal>
@@ -1075,6 +1219,57 @@ export function LandingPage() {
                 </a>
               ))}
             </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ── Manifeste « Ce que nous ne faisons pas » (5.2) — l'envers de
+          l'attaque 1.2, juste après le tableau honnête : la preuve par
+          l'honnêteté. Aucun simulateur français n'ose l'écrire. */}
+      <section
+        id="manifeste"
+        aria-label={tr("Ce que nous ne faisons pas")}
+        className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+      >
+        <Reveal>
+          <SectionTitle
+            eyebrow="Manifeste"
+            title="Ce que nous ne faisons pas"
+            sub="L'envers de la promesse. Aucun simulateur français n'ose l'écrire — voici notre liste, vérifiable dans le code."
+          />
+        </Reveal>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
+          {MANIFESTO.map((item, i) => (
+            <Reveal key={item.title} delay={i * 0.07}>
+              <article className="glass rounded-3xl p-6 card-interactive h-full">
+                <div
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 border"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-danger) 10%, transparent)",
+                    borderColor: "color-mix(in srgb, var(--color-danger) 28%, transparent)",
+                  }}
+                >
+                  <Ban size={19} style={{ color: "var(--color-danger)" }} aria-hidden />
+                </div>
+                <h3 className="font-display font-bold text-[15px] text-text mb-2">{tr(item.title)}</h3>
+                <p className="text-xs text-text-muted leading-relaxed">{tr(item.text)}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal delay={0.15}>
+          <p className="text-center text-[11.5px] text-text-muted mt-8 max-w-2xl mx-auto leading-relaxed">
+            {tr(
+              "Ce que les autres font pour gagner de l'argent, nous ne le faisons pas — et c'est vérifiable : chaque chiffre de ce site est calculé par le moteur, sur votre appareil.",
+            )}
+          </p>
+          <div className="text-center mt-4">
+            <a
+              href="#comparaison"
+              className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-primary hover:underline transition-colors"
+            >
+              {tr("Revoir le tableau honnête")} <ArrowRight size={12} aria-hidden />
+            </a>
           </div>
         </Reveal>
       </section>
@@ -1461,7 +1656,7 @@ export function LandingPage() {
           </div>
         </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-5xl mx-auto">
-          {UPDATES.map((u, i) => (
+          {UPDATES.slice(0, 4).map((u, i) => (
             <Reveal key={u.version} delay={i * 0.07}>
               <article className="glass rounded-2xl p-4 card-interactive">
                 <span className="mono text-[9.5px] font-bold text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg">

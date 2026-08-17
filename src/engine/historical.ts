@@ -223,3 +223,62 @@ export function sampleBlocks(
   }
   return out
 }
+
+// ─── Replay des krachs (3.2) ──────────────────────────────────────────────────
+// « 2008, votre épargne perd 37 %… puis elle revient » — le replay rejoue le
+// MSCI World EUR réel à partir d'une année : 100 € investis début d'année,
+// valeur fin d'année par fin d'année (dividendes nets réinvestis). Aucun
+// chiffre inventé : creux, baisse maximale et retour à l'équilibre sont
+// dérivés de la série source (même dataset que le moteur de simulation).
+
+export interface CrashReplay {
+  startYear: number
+  /** Dernière année disponible dans la série (2025). */
+  endYear: number
+  /** Valeur de 100 € investis, une entrée par année — fin d'année (année de
+   * départ incluse : le rendement de l'année de départ s'applique). */
+  values: { year: number; value: number }[]
+  /** Plus forte baisse par rapport au point de départ (fraction 0..1). */
+  maxDrawdown: number
+  /** Année où la valeur est minimale (le creux du krach). */
+  troughYear: number
+  /** Première année où la valeur repasse à ≥ 100 (null si jamais). */
+  recoveryYear: number | null
+  /** Valeur finale (dernière année disponible). */
+  finalValue: number
+}
+
+/** Rejoue le MSCI World réel à partir d'une année. Retourne null hors série
+ * (avant 1970 ou après 2025). Le point de départ est TOUJOURS 100 € — le
+ * replay raconte « que devient 100 € investis cette année-là ? ». */
+export function replayCrashFrom(startYear: number): CrashReplay | null {
+  const returns = RETURNS["msci-world"]
+  const baseYear = DATASET_START["msci-world"]
+  const idx = startYear - baseYear
+  if (idx < 0 || idx >= returns.length) return null
+  let value = 100
+  let min = value
+  let troughYear = startYear
+  let recoveryYear: number | null = null
+  const values: { year: number; value: number }[] = []
+  for (let i = idx; i < returns.length; i += 1) {
+    value *= 1 + (returns[i] ?? 0)
+    const year = baseYear + i
+    values.push({ year, value })
+    if (value < min) {
+      min = value
+      troughYear = year
+    }
+    if (recoveryYear === null && value >= 100) recoveryYear = year
+  }
+  const last = values[values.length - 1]
+  return {
+    startYear,
+    endYear: last?.year ?? startYear,
+    values,
+    maxDrawdown: 1 - min / 100,
+    troughYear,
+    recoveryYear,
+    finalValue: last?.value ?? 100,
+  }
+}

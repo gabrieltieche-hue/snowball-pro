@@ -13,7 +13,7 @@
  */
 // ⚠️ À faire correspondre à chaque release (cf. version dans package.json) :
 // sans bump, une ancienne version servie en cache peut survivre aux déploiements.
-const CACHE_VERSION = "snowball-pro-v6.18.0"
+const CACHE_VERSION = "snowball-pro-v6.20.0"
 const PRECACHE_URLS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"]
 
 self.addEventListener("install", event => {
