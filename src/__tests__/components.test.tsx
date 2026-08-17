@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import "@testing-library/jest-dom/vitest"
 import App from "../App"
@@ -28,6 +28,7 @@ import { Shield } from "lucide-react"
 import {
   DEFAULT_INPUTS,
   computeKPIs,
+  createSnapshot,
   fmtCompact,
   fmtCurrency,
   runSimulation,
@@ -36,7 +37,6 @@ import {
   solveGoal,
 } from "../engine"
 import { encodeInputsForUrl, decodeInputsFromUrl } from "../utils/urlState"
-import { QUICKSTART_PROFILES } from "../utils/quickStart"
 import { LangProvider, useLang } from "../i18n"
 import { LanguageToggle } from "../components/shared/LanguageToggle"
 
@@ -166,6 +166,11 @@ beforeEach(() => {
   // v6.1 : la session est un cache module-level (useSyncExternalStore) — il
   // faut l'invalider entre les tests pour ne pas hériter d'une session.
   resetSessionStoreForTests()
+  // v7 : par défaut, les tests App considèrent le tutoriel terminé et la
+  // sidebar DÉPLIÉE (les réglages restent le chemin principal des tests
+  // existants) — les tests d'onboarding retirent ces clés explicitement.
+  localStorage.setItem("snowball_v5_tutorial_done", "1")
+  localStorage.setItem("snowball_v62_sidebar_collapsed", "0")
 })
 
 afterEach(() => {
@@ -530,7 +535,7 @@ describe("Sidebar repliée — rail d'icônes style ChatGPT (v6.2)", () => {
 
       // Repli → le panneau devient un rail d'icônes (une par catégorie), le
       // contenu disparaît, l'état persiste en localStorage.
-      fireEvent.click(screen.getByRole("button", { name: "Replier les réglages" }))
+      fireEvent.click(screen.getByRole("button", { name: "Replier les réglages avancés" }))
       expect(screen.getByRole("button", { name: "Votre épargne" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Votre profil" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Sauvegarder un snapshot" })).toBeInTheDocument()
@@ -541,7 +546,7 @@ describe("Sidebar repliée — rail d'icônes style ChatGPT (v6.2)", () => {
       // ciblée est ouverte (son curseur est présent), comme une navigation.
       fireEvent.click(screen.getByRole("button", { name: "Votre profil" }))
       expect(screen.getByRole("slider", { name: "Âge actuel" })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: "Replier les réglages" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Replier les réglages avancés" })).toBeInTheDocument()
       // « Votre épargne » restait ouverte (l'état des sections est préservé).
       expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toBeInTheDocument()
     },
@@ -1285,56 +1290,131 @@ describe("régression — stderr propre pendant les tests (audit v5.4.0)", () =>
   })
 })
 
-describe("v6.8 — QuickStart « Commencez ici » (activation)", () => {
-  it("propose les 3 profils à un nouveau visiteur, capital calculé par le moteur", () => {
+describe("v7 — onboarding : tutoriel non-skippable, questionnaire et bibliothèque", () => {
+  it("le vrai nouveau visiteur voit le tutoriel (aucun bouton fermer/skip) puis le questionnaire s'ouvre", () => {
+    localStorage.removeItem("snowball_v5_tutorial_done")
     render(<App />)
-    expect(screen.getByRole("region", { name: /commencez ici/i })).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: /utiliser ce profil/i }).length).toBe(3)
+    // Tutoriel visible, sans croix ni lien « passer » : seul « Suivant » existe.
+    expect(screen.getByRole("dialog", { name: /bienvenue — présentation de snowball pro/i })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /fermer/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Suivant" })).toBeInTheDocument()
 
-    // Résultat d'abord : le capital affiché est celui calculé par runSimulation
-    // (jamais codé en dur) — on le recalcule dans le test.
-    const last = runSimulation({ ...DEFAULT_INPUTS, ...QUICKSTART_PROFILES[0].patch }).at(-1)
-    const expected = fmtCurrency(last?.nominal ?? 0).replace(/[\u202F\u00A0]/g, " ")
-    const body = (document.body.textContent ?? "").replace(/[\u202F\u00A0]/g, " ")
-    expect(body).toContain(expected)
-    // Double échelle (philosophie app) : le pouvoir d'achat est aussi affiché.
-    const real = fmtCurrency(last?.real ?? 0).replace(/[\u202F\u00A0]/g, " ")
-    expect(body).toContain("€ d'aujourd'hui")
-    expect(body).toContain(real)
+    // 4 × Suivant → dernière slide (« C'est parti ! ») puis le CTA final.
+    for (let i = 0; i < 4; i += 1) fireEvent.click(screen.getByRole("button", { name: "Suivant" }))
+    expect(screen.getByRole("button", { name: "Lancer ma première simulation" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Lancer ma première simulation" }))
+
+    // Le questionnaire s'ouvre et le tutoriel ne reviendra plus jamais.
+    expect(screen.getByRole("dialog", { name: /nouvelle simulation — questionnaire guidé/i })).toBeInTheDocument()
+    expect(localStorage.getItem("snowball_v5_tutorial_done")).toBe("1")
   })
 
-  it("applique le profil au clic : réglages mis à jour, bandeau fermé et persisté", () => {
-    render(<App />)
-    fireEvent.click(screen.getAllByRole("button", { name: /utiliser ce profil/i })[0])
-
-    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("10000")
-    expect(screen.getByRole("slider", { name: "Épargne mensuelle (€)" })).toHaveValue("250")
-    expect(screen.getByRole("slider", { name: "Durée (années)" })).toHaveValue("40")
-    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
-    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
-  })
-
-  it("se ferme au clic sur X et persiste la fermeture", () => {
-    render(<App />)
-    fireEvent.click(screen.getByRole("button", { name: "Fermer les profils de départ" }))
-    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
-    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
-  })
-
-  it("disparaît dès la première modification d'un réglage", () => {
-    render(<App />)
-    fireEvent.change(screen.getByRole("slider", { name: "Capital de départ (€)" }), { target: { value: "15000" } })
-    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
-    expect(localStorage.getItem("snowball_v5_quickstart_dismissed")).toBe("1")
-  })
-
-  it("ne réapparaît pas pour un visiteur qui a déjà des réglages sauvegardés", () => {
-    // Un visiteur connu (réglages persistés) n'a pas besoin du bandeau.
+  it("le tutoriel ne s'affiche pas pour un visiteur qui a déjà des réglages", () => {
+    localStorage.removeItem("snowball_v5_tutorial_done")
     localStorage.setItem("snowball_v5_settings", JSON.stringify({ ...DEFAULT_INPUTS, capitalInitial: 42000 }))
     render(<App />)
-    expect(screen.queryByRole("region", { name: /commencez ici/i })).not.toBeInTheDocument()
-    // …et ses réglages sont bien chargés.
+    expect(screen.queryByRole("dialog", { name: /bienvenue — présentation/i })).not.toBeInTheDocument()
     expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("42000")
+  })
+
+  it("le tutoriel ne s'affiche pas pour un lien partagé #s=", () => {
+    localStorage.removeItem("snowball_v5_tutorial_done")
+    window.location.hash = `#${encodeInputsForUrl({ ...DEFAULT_INPUTS, capitalInitial: 75000 })}`
+    render(<App />)
+    expect(screen.queryByRole("dialog", { name: /bienvenue — présentation/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("75000")
+  })
+
+  it("le questionnaire complet crée la simulation nommée et met à jour l'app", () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle simulation" }))
+    const dialog = screen.getByRole("dialog", { name: /nouvelle simulation — questionnaire guidé/i })
+    const inDialog = within(dialog)
+
+    // 1. Âge
+    fireEvent.click(inDialog.getByRole("button", { name: /35 ans/ }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 2. Capital : Oui → le montant est demandé
+    fireEvent.click(inDialog.getByRole("button", { name: "Oui" }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    fireEvent.click(inDialog.getByRole("button", { name: /10\s*000\s*€/ }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 3. Épargne mensuelle
+    fireEvent.click(inDialog.getByRole("button", { name: /250,00\s*€/ }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 4. Projet → Retraite (fixe aussi la durée recommandée 35 ans)
+    fireEvent.click(inDialog.getByRole("button", { name: /Retraite\s*Préparer vos vieux jours/i }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 5. Durée déjà pré-remplie par la recommandation
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 6. Enveloppe → « Je ne sais pas » (recommandation auto → PEA à 35 ans)
+    fireEvent.click(inDialog.getByRole("button", { name: /je ne sais pas — recommandez-moi/i }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 7. Question retraite conditionnelle (projet = Retraite)
+    fireEvent.click(inDialog.getByRole("button", { name: /65 ans/ }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 8. Risque
+    fireEvent.click(inDialog.getByRole("button", { name: /Équilibré/i }))
+    fireEvent.click(inDialog.getByRole("button", { name: "Suivant" }))
+    // 9. Nom + résultat
+    fireEvent.change(inDialog.getByLabelText("Nom de la simulation"), { target: { value: "Ma retraite rêvée" } })
+    fireEvent.click(inDialog.getByRole("button", { name: "Voir mon résultat" }))
+
+    expect(screen.queryByRole("dialog", { name: /nouvelle simulation — questionnaire guidé/i })).not.toBeInTheDocument()
+    // Les réglages reflètent les réponses (la section « Votre profil » s'ouvre
+    // pour lire l'âge).
+    fireEvent.click(screen.getByRole("button", { name: "Votre profil" }))
+    expect(screen.getByRole("slider", { name: "Âge actuel" })).toHaveValue("35")
+    expect(screen.getByRole("slider", { name: "Capital de départ (€)" })).toHaveValue("10000")
+    expect(screen.getByRole("slider", { name: "Épargne mensuelle (€)" })).toHaveValue("250")
+    expect(screen.getByRole("slider", { name: "Durée (années)" })).toHaveValue("35")
+    // La simulation nommée apparaît dans la bibliothèque (et dans le panneau
+    // Snapshots de la sidebar — même liste).
+    fireEvent.click(screen.getByRole("tab", { name: /mes simulations/i }))
+    expect(screen.getAllByText("Ma retraite rêvée").length).toBeGreaterThan(0)
+    expect(screen.getByText("Simulation en cours")).toBeInTheDocument()
+  })
+
+  it("« Nouvelle simulation » propose de sauvegarder quand la simulation a été modifiée", () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole("slider", { name: "Capital de départ (€)" }), { target: { value: "15000" } })
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle simulation" }))
+    expect(screen.getByRole("dialog", { name: /sauvegarder la simulation en cours/i })).toBeInTheDocument()
+    // Créer sans sauvegarder → le questionnaire s'ouvre ; l'annuler ramène à l'app.
+    fireEvent.click(screen.getByRole("button", { name: "Créer sans sauvegarder" }))
+    expect(screen.getByRole("dialog", { name: /nouvelle simulation — questionnaire guidé/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Fermer le questionnaire" }))
+    expect(screen.queryByRole("dialog", { name: /nouvelle simulation — questionnaire guidé/i })).not.toBeInTheDocument()
+  })
+
+  it("l'onglet « Mes simulations » liste, renomme et supprime les simulations", () => {
+    const s1 = createSnapshot(
+      { ...DEFAULT_INPUTS, capitalInitial: 20000, duration: 20 },
+      runSimulation({ ...DEFAULT_INPUTS, capitalInitial: 20000, duration: 20 }),
+      "Retraite — 20 ans",
+    )
+    const s2 = createSnapshot(
+      { ...DEFAULT_INPUTS, monthlyPayment: 1000 },
+      runSimulation({ ...DEFAULT_INPUTS, monthlyPayment: 1000 }),
+      "Croissance",
+    )
+    localStorage.setItem("snowball_v5_snapshots", JSON.stringify([s1, s2]))
+    render(<App />)
+    fireEvent.click(screen.getByRole("tab", { name: /mes simulations/i }))
+    // Le nom apparaît aussi dans le panneau Snapshots de la sidebar (réglages avancés).
+    expect(screen.getAllByText("Retraite — 20 ans").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("Croissance").length).toBeGreaterThan(0)
+
+    // Renommer s2 (inline, Entrée valide).
+    fireEvent.click(screen.getByRole("button", { name: "Renommer Croissance" }))
+    fireEvent.change(screen.getByLabelText("Nom de la simulation"), { target: { value: "Mon projet" } })
+    fireEvent.keyDown(screen.getByLabelText("Nom de la simulation"), { key: "Enter" })
+    expect(screen.getAllByText("Mon projet").length).toBeGreaterThan(0)
+
+    // Supprimer s1 : deux clics (armement puis confirmation).
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer Retraite — 20 ans" }))
+    fireEvent.click(screen.getByRole("button", { name: "Confirmer la suppression de Retraite — 20 ans" }))
+    expect(screen.queryAllByText("Retraite — 20 ans")).toHaveLength(0)
   })
 })
 

@@ -9,10 +9,15 @@ export const SIDEBAR_COLLAPSED_KEY = "snowball_v62_sidebar_collapsed"
 
 export function loadSidebarCollapsed(): boolean {
   try {
-    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1"
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+    if (stored !== null) return stored === "1"
   } catch {
-    return false
+    /* localStorage indisponible */
   }
+  // v7 : les réglages passent au second plan — repliés par défaut, derrière
+  // « Réglages avancés » (un utilisateur qui avait explicitement déplié garde
+  // son choix via la valeur stockée « 0 »).
+  return true
 }
 
 export function saveSidebarCollapsed(collapsed: boolean): void {

@@ -52,10 +52,26 @@ export {
   createSnapshot,
   addSnapshot,
   removeSnapshot,
+  renameSnapshot,
   SNAPSHOT_LIMIT,
   SNAPSHOT_STORAGE_KEY,
   V41_STATE_KEY,
 } from "./snapshots"
+export {
+  AGE_CHOICES,
+  CAPITAL_CHOICES,
+  MONTHLY_CHOICES,
+  DURATION_CHOICES,
+  RETIREMENT_AGE_CHOICES,
+  PROJECT_DURATIONS,
+  PROJECT_LABELS,
+  recommendDuration,
+  recommendEnvelope,
+  asksRetirementAge,
+  buildSimulationFromAnswers,
+  defaultSimulationName,
+} from "./onboarding"
+export type { ProjectGoal, RiskLevel, WizardAnswers } from "./onboarding"
 export { mergeComparisonSeries } from "./comparison"
 export type { ComparisonSeriesRow } from "./comparison"
 export {

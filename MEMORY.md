@@ -4,6 +4,31 @@
 
 ---
 
+## SESSION — 2026-08-16 (v6.16.0 : Onboarding guidé — tutoriel non-skippable + questionnaire « Nouvelle simulation » + bibliothèque multi-sims)
+
+### Résumé
+
+Demande utilisateur : _« onboarding poussé avec un questionnaire pour guider les nouveaux qui n'y comprennent rien »_, puis idée : _« à la place des réglages, un système “lancer une (nouvelle) simulation” qui pose des questions »_. Livré en un seul chantier (mode inline APEX, TDD, 408 tests, gate 100 % vert, parcours validé en navigateur réel) :
+
+1. **Tutoriel non-skippable 5 écrans** (`Tutorial.tsx`) — uniquement pour le **vrai nouveau visiteur** (aucun réglage, pas de `#s=`, pas de données de compte), garde `snowball_v5_onboarded` ; un visiteur avec lien partagé déjà rempli passe direct.
+2. **Questionnaire wizard** (`SimulationWizard.tsx`) — 8 questions fixes + sous-questions conditionnelles, une par écran, barre de progression, retour, champ « Autre », halo or sur les recommandations : capital en **Oui/Non** (montant seulement si Oui), projet en **2 parties** (objectif → durée, + « Enrichissement personnel »), enveloppe avec **⭐ RECOMMANDÉ dynamique**, âge d'arrêt **conditionnel** (retraite + liberté financière), risque, **renommage final** avec nom par défaut intelligent.
+3. **Nouvelle simulation** : bouton dans l'ActionBar → relance le questionnaire **vierge** (le pré-remplissage a été refusé : nouvelle sim = nouveaux chiffres) ; dialogue **« Sauvegarder et créer / Créer sans sauvegarder / Annuler »** si la sim en cours est modifiée.
+4. **Onglet « Mes simulations »** (`SimulationsTab.tsx`) — vrai onglet : sim en cours + bibliothèque (ouvrir, renommer inline, supprimer par double-clic de confirmation 3,5 s).
+5. **Réglages au second plan** : sidebar repliée par défaut (rail « Déplier les réglages avancés »), QuickStart **supprimé**.
+6. **Release v6.16.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.16.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.16.0), MEMORY (cette entrée), commit + **`vercel --prod`**.
+
+### Décisions
+
+- **Non-skippable = vrai nouveau visiteur uniquement** : condition d'entrée stricte (pas de réglages existants, pas de `#s=`, pas de compte) — sinon un lien partagé rempli serait bloqué par un tutoriel inutile.
+- **Questionnaire vierge à chaque nouvelle sim** (pas de pré-remplissage) : l'utilisateur veut tester d'autres chiffres ; le formulaire doit partir de zéro, les recommandations ⭐ guident.
+- **⭐ dynamique plutôt que statique** : la recommandation d'enveloppe dépend de l'horizon du projet (ex. PEA recommandé pour 20 ans) — moteur pur `recommendEnvelope` + `buildInputsFromAnswers` testés.
+- **Réglages repliés, pas supprimés** : tout l'existant (épargne, compte, frais, profil, mode Débutant/Avancé) reste accessible derrière le rail « Réglages avancés » — le mode Débutant/Avancé existant est conservé.
+- **Snapshots réutilisés** : la bibliothèque « Mes simulations » s'appuie sur le moteur snapshots existant (`snapshotsStorage`) + nouveau `renameSnapshot` (limite 30) — pas de nouveau stockage parallèle.
+- **Suppression par double-clic armé** (1ᵉʳ clic arme la confirmation 3,5 s, 2ᵉ confirme) : évite un dialogue bloquant, reste couvert par test unitaire.
+- **TDD rouge/vert** : tests moteur écrits avant l'implémentation (`onboarding.ts`), puis composants ; le typecheck a attrapé des clés i18n dupliquées corrigées dans la foulée.
+
+---
+
 ## SESSION — 2026-08-16 (v6.15.0 : Mobile 100 % — résultat d'abord, zoom iOS corrigé, zones tactiles + socle app iOS Capacitor)
 
 ### Résumé

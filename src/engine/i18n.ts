@@ -1131,8 +1131,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.15.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.15.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.16.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.16.0 · 100% local data · Made with real returns, not promises.",
   "Onglets nets sur mobile": "Clean tabs on mobile",
   "Correction mobile : les onglets du simulateur ne débordent plus de l'écran sur téléphone — « Robustesse de votre plan » passe proprement à la ligne au lieu de déborder, même à 320 px.":
     "Mobile fix: the simulator tabs no longer overflow the screen on phones — “Plan robustness” now wraps cleanly instead of overflowing, even at 320px.",
@@ -1285,6 +1285,109 @@ const EN: Record<string, string> = {
   Networthify: "Networthify",
   Quantalys: "Quantalys",
   Tarifs: "Pricing",
+
+  // ─── Onboarding v7 : tutoriel + questionnaire « Nouvelle simulation » ──────
+  "Bienvenue — présentation de Snowball Pro": "Welcome — introduction to Snowball Pro",
+  "Bienvenue sur Snowball Pro": "Welcome to Snowball Pro",
+  "Votre épargne projetée dans l'avenir avec les vrais rendements de la bourse sur 100 ans — krachs compris. Des chiffres réels, expliqués simplement, sans promesse de rendement.":
+    "Your savings projected into the future with real stock market returns over 100 years — crashes included. Real figures, explained simply, with no return promises.",
+  "Un seul chiffre d'abord : votre nombre magique": "One number first: your magic number",
+  "Chaque simulation affiche d'abord le capital final de votre épargne — et son pouvoir d'achat en euros d'aujourd'hui. C'est le point de départ de tout le reste.":
+    "Each simulation first shows the final capital of your savings — and its purchasing power in today's euros. That's the starting point for everything else.",
+  "Quatre onglets pour tout comprendre": "Four tabs to understand everything",
+  "Projection : la courbe de votre épargne. Robustesse : votre plan résiste-t-il aux krachs ? Rente & Retraite : combien vivre de votre épargne. Combien investir : l'objectif inversé.":
+    "Projection: your savings curve. Robustness: does your plan survive crashes? Annuity & Retirement: how much to live on from your savings. How much to invest: the reverse goal.",
+  "Simple, gratuit, 100 % privé": "Simple, free, 100% private",
+  "Pas d'inscription obligatoire. Vos données ne quittent jamais votre appareil. L'app fonctionne hors-ligne, en français comme en anglais.":
+    "No account required. Your data never leaves your device. The app works offline, in French and English.",
+  "C'est parti !": "Let's go!",
+  "Quelques questions simples et Snowball Pro construit votre première simulation — rien à régler, tout est guidé.":
+    "A few simple questions and Snowball Pro builds your first simulation — nothing to set, everything is guided.",
+  "{current} sur {total}": "{current} of {total}",
+  "Lancer ma première simulation": "Launch my first simulation",
+  Suivant: "Next",
+  "Nouvelle simulation — questionnaire guidé": "New simulation — guided questionnaire",
+  "Question {current} sur {total}": "Question {current} of {total}",
+  "Fermer le questionnaire": "Close the questionnaire",
+  "Quel âge avez-vous ?": "How old are you?",
+  "Cela nous aide à estimer votre horizon.": "This helps us estimate your time horizon.",
+  Autre: "Other",
+  "Votre âge": "Your age",
+  "Avez-vous de l'argent épargné disponible pour investir ?": "Do you have savings available to invest?",
+  "Capital déjà constitué : livret, compte courant, assurance-vie…":
+    "Capital already built up: savings account, checking account, life insurance…",
+  Oui: "Yes",
+  "Non, je pars de zéro": "No, I'm starting from zero",
+  "Combien pouvez-vous investir dès maintenant ?": "How much can you invest right now?",
+  "Un ordre de grandeur suffit.": "A rough estimate is enough.",
+  "Autre montant": "Another amount",
+  "Montant à investir": "Amount to invest",
+  "Combien pouvez-vous épargner chaque mois ?": "How much can you save each month?",
+  "Ce que vous pouvez mettre de côté sans vous priver.": "What you can set aside without depriving yourself.",
+  "Pour quel projet souhaitez-vous investir ?": "What project do you want to invest for?",
+  "Le projet fixe un horizon conseillé — ajustable à l'étape suivante.":
+    "The project sets a recommended horizon — adjustable at the next step.",
+  Retraite: "Retirement",
+  "Préparer vos vieux jours (30-40 ans)": "Prepare for your later years (30-40 years)",
+  "Achat immobilier": "Real estate purchase",
+  "Constituer un apport (10 ans)": "Build a down payment (10 years)",
+  "Vivre de votre épargne (20 ans)": "Live off your savings (20 years)",
+  "Épargne de précaution": "Emergency savings",
+  "Un matelas de sécurité (5 ans)": "A safety cushion (5 years)",
+  "Enrichissement personnel": "Personal wealth growth",
+  "Faire grandir votre patrimoine (25 ans)": "Grow your wealth (25 years)",
+  "Je ne sais pas encore": "I don't know yet",
+  "L'app choisit une situation type (25 ans)": "The app picks a typical situation (25 years)",
+  "Pendant combien d'années ?": "Over how many years?",
+  "L'horizon conseillé pour votre projet est indiqué d'une étoile.":
+    "The recommended horizon for your project is marked with a star.",
+  "Où souhaitez-vous placer cet argent ?": "Where do you want to invest this money?",
+  "L'étoile marque la meilleure option pour votre horizon — « Je ne sais pas » laisse l'app choisir.":
+    "The star marks the best option for your horizon — “I don't know” lets the app choose.",
+  "Je ne sais pas — recommandez-moi": "I don't know — recommend me",
+  "L'app choisit la meilleure enveloppe pour votre horizon.": "The app picks the best wrapper for your horizon.",
+  "À quel âge voulez-vous arrêter de travailler ?": "At what age do you want to stop working?",
+  "L'app estime la durée pendant laquelle votre épargne devra vous faire vivre.":
+    "The app estimates how long your savings will need to support you.",
+  "Comment réagiriez-vous si votre épargne baissait temporairement ?":
+    "How would you react if your savings temporarily dropped?",
+  "Le marché monte et descend : votre confort face aux variations guide la projection.":
+    "The market goes up and down: your comfort with swings guides the projection.",
+  Tranquille: "Calm",
+  "Je préfère limiter les variations de mon épargne": "I prefer to limit swings in my savings",
+  "Un bon compromis entre sécurité et croissance": "A good balance between safety and growth",
+  "J'accepte des variations pour viser plus haut": "I accept swings to aim higher",
+  "Nommez votre simulation": "Name your simulation",
+  "Retrouvez-la plus tard dans l'onglet « Mes simulations ».": "Find it later in the “My simulations” tab.",
+  "Nom de la simulation": "Simulation name",
+  versement: "contribution",
+  "enveloppe recommandée": "recommended wrapper",
+  "Voir mon résultat": "See my result",
+  "Sauvegarder la simulation en cours ?": "Save the current simulation?",
+  "Votre simulation a été modifiée": "Your simulation has been modified",
+  "La sauvegarder avant d'en créer une nouvelle ? Elle restera dans « Mes simulations ».":
+    "Save it before creating a new one? It will remain in “My simulations”.",
+  "Sauvegarder et créer": "Save and create",
+  "Créer sans sauvegarder": "Create without saving",
+  "Mes simulations": "My simulations",
+  "Nouvelle simulation": "New simulation",
+  "Simulation en cours": "Current simulation",
+  "En cours": "In progress",
+  "Simulations sauvegardées": "Saved simulations",
+  "Aucune simulation sauvegardée": "No saved simulations",
+  "Lancez une nouvelle simulation : le questionnaire la construira et l'ajoutera ici automatiquement.":
+    "Start a new simulation: the questionnaire will build it and add it here automatically.",
+  "Lancer une nouvelle simulation": "Start a new simulation",
+  "Ouvrir cette simulation": "Open this simulation",
+  "Ouvrir {name}": "Open {name}",
+  Renommer: "Rename",
+  "Renommer {name}": "Rename {name}",
+  Supprimer: "Delete",
+  "Supprimer {name}": "Delete {name}",
+  "Enregistrer le nom": "Save the name",
+  "Réglages avancés": "Advanced settings",
+  "Déplier les réglages avancés": "Expand advanced settings",
+  "Replier les réglages avancés": "Collapse advanced settings",
 }
 
 /** Remplace les placeholders {x} d'un libellé. */

@@ -6,6 +6,7 @@ import {
   GraduationCap,
   MoreHorizontal,
   Moon,
+  Plus,
   Redo2,
   Sun,
   Undo2,
@@ -20,6 +21,8 @@ import { ShareMenu } from "./ShareMenu"
 import { LanguageToggle } from "../shared/LanguageToggle"
 
 interface ActionBarProps {
+  /** v7 : l'action principale — le questionnaire remplace la prééminence des réglages. */
+  onNewSimulation: () => void
   onExportCSV: () => void
   onExportJSON: () => void
   onPrint: () => void
@@ -50,6 +53,7 @@ const baseBtn =
  * réinitialiser) vivent dans le menu « ⋯ » — le header ne sature plus.
  */
 export function ActionBar({
+  onNewSimulation,
   onExportCSV,
   onExportJSON,
   onPrint,
@@ -100,6 +104,19 @@ export function ActionBar({
 
   return (
     <div className="flex gap-2 sm:gap-2.5 justify-end flex-wrap no-print items-center max-sm:justify-start">
+      {/* v7 — l'action principale de l'app : « Nouvelle simulation » ouvre le
+          questionnaire guidé (avec sauvegarde proposée si la simulation en
+          cours a été modifiée). */}
+      <button
+        type="button"
+        onClick={onNewSimulation}
+        className={cn(
+          baseBtn,
+          "bg-gradient-to-b from-primary-light via-primary to-primary-dark btn-gold-text shadow-gold hover:brightness-110",
+        )}
+      >
+        <Plus size={13} aria-hidden /> {tr("Nouvelle simulation")}
+      </button>
       {(errorCount > 0 || warningCount > 0) && (
         <span
           title={validationErrors.map(e => tr(e.message)).join(" · ")}

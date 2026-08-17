@@ -194,11 +194,11 @@ export function Sidebar({
           <button
             type="button"
             onClick={onToggleCollapsed}
-            aria-label={tr("Déplier les réglages")}
+            aria-label={tr("Déplier les réglages avancés")}
             className="group/rail hidden lg:flex relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-light via-primary to-primary-dark items-center justify-center shadow-gold shrink-0 hover:brightness-110 transition-[filter] mb-1"
           >
             <Settings2 size={18} className="btn-gold-text" aria-hidden />
-            <RailTip>{tr("Déplier les réglages")}</RailTip>
+            <RailTip>{tr("Déplier les réglages avancés")}</RailTip>
           </button>
 
           {/* Séparateur après la marque (desktop uniquement). */}
@@ -259,12 +259,12 @@ export function Sidebar({
           <button
             type="button"
             onClick={onToggleCollapsed}
-            aria-label={tr("Déplier les réglages")}
+            aria-label={tr("Déplier les réglages avancés")}
             className="group/rail relative w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 border border-border text-text-dim hover:text-text hover:border-primary/40 transition-all duration-200"
           >
             <ChevronRight size={17} className="lg:hidden" aria-hidden />
             <ChevronRight size={18} className="hidden lg:block" aria-hidden />
-            <RailTip>{tr("Déplier les réglages")}</RailTip>
+            <RailTip>{tr("Déplier les réglages avancés")}</RailTip>
           </button>
         </motion.div>
       ) : (
@@ -284,7 +284,7 @@ export function Sidebar({
           <SectionHeader
             level="card"
             icon={Settings2}
-            title={tr("Réglages")}
+            title={tr("Réglages avancés")}
             className="mb-6 items-center"
             trailing={
               <div className="flex items-center gap-2 shrink-0">
@@ -298,8 +298,8 @@ export function Sidebar({
                   onClick={onToggleCollapsed}
                   aria-expanded={!collapsed}
                   aria-controls="sidebar-settings"
-                  aria-label={collapsed ? tr("Déplier les réglages") : tr("Replier les réglages")}
-                  title={collapsed ? tr("Déplier les réglages") : tr("Replier les réglages")}
+                  aria-label={collapsed ? tr("Déplier les réglages avancés") : tr("Replier les réglages avancés")}
+                  title={collapsed ? tr("Déplier les réglages avancés") : tr("Replier les réglages avancés")}
                   className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-text-dim hover:text-text hover:border-primary/40 transition-colors"
                 >
                   {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}

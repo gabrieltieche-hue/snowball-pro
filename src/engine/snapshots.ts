@@ -1,6 +1,10 @@
 import type { SavedSnapshot, SimulationInputs, YearRow } from "../types"
 
-export const SNAPSHOT_LIMIT = 8
+// 30 (v7) : la limite basse de 8 était pensée pour des « captures » manuelles ;
+// depuis v7 la même liste sert de bibliothèque « Mes simulations » (chaque
+// simulation créée par le wizard y est ajoutée) — une limite de 8 ferait
+// disparaître silencieusement les plus anciennes.
+export const SNAPSHOT_LIMIT = 30
 export const SNAPSHOT_STORAGE_KEY = "snowball_v5_snapshots"
 export const V41_STATE_KEY = "snowball_pro_v41_state"
 
@@ -27,4 +31,10 @@ export function addSnapshot(list: SavedSnapshot[], snapshot: SavedSnapshot, limi
 
 export function removeSnapshot(list: SavedSnapshot[], id: string): SavedSnapshot[] {
   return list.filter(s => s.id !== id)
+}
+
+export function renameSnapshot(list: SavedSnapshot[], id: string, name: string): SavedSnapshot[] {
+  const trimmed = name.trim()
+  if (trimmed === "") return list
+  return list.map(s => (s.id === id ? { ...s, name: trimmed } : s))
 }

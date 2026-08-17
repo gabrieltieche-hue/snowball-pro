@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, Banknote, Dices, LineChart, Link2, Target, Wallet, X } from "lucide-react"
+import { AlertTriangle, Banknote, Dices, FolderOpen, LineChart, Link2, Target, Wallet, X } from "lucide-react"
 import {
   V4_SETTINGS_KEY,
   SETTINGS_KEY,
@@ -7,11 +7,13 @@ import {
   applyScenarioPatch,
   compareScenarios,
   createSnapshot,
+  buildSimulationFromAnswers,
   enterComparison,
   escapeCsvCell,
   exitComparison,
   parseStoredInputs,
   removeSnapshot,
+  renameSnapshot,
   DEFAULT_INPUTS,
   runDecumulationAsync,
   runSimulation,
@@ -20,6 +22,7 @@ import {
   validateInputs,
 } from "./engine"
 import type { DecumulationResult, SavedSnapshot, SimulationInputs } from "./types"
+import type { WizardAnswers } from "./engine"
 import { useHistory } from "./hooks/useHistory"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { useLang } from "./i18n"
@@ -28,14 +31,16 @@ import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
 import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
-import { loadQuickStartVisible, saveQuickStartDismissed } from "./utils/quickStart"
+import { loadTutorialVisible, saveTutorialDone } from "./utils/onboarding"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { readSharedState, writeSharedState } from "./utils/urlState"
 import { AccountMenu } from "./components/Auth/AccountMenu"
+import { SaveSimulationDialog } from "./components/Onboarding/SaveSimulationDialog"
 import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
-import { QuickStart } from "./components/Layout/QuickStart"
+import { SimulationWizard } from "./components/Onboarding/SimulationWizard"
+import { Tutorial } from "./components/Onboarding/Tutorial"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
@@ -45,6 +50,7 @@ import { GoalTab } from "./components/Tabs/GoalTab"
 import { MonteCarloPanel } from "./components/Tabs/MonteCarloPanel"
 import { RenteRetraiteTab } from "./components/Tabs/RenteRetraiteTab"
 import { SimulatorTab } from "./components/Tabs/SimulatorTab"
+import { SimulationsTab } from "./components/Tabs/SimulationsTab"
 
 // Libellés v6 orientés BESOIN utilisateur (avis 1 & 2) : on nomme ce que
 // l'onglet apporte, pas sa technique interne. Les ids restent inchangés
@@ -55,6 +61,7 @@ const TABS: TabDef[] = [
   { id: "montecarlo", label: "Robustesse de votre plan", icon: Dices },
   { id: "rente", label: "Rente & Retraite", icon: Banknote },
   { id: "goal", label: "Combien investir ?", icon: Target },
+  { id: "simulations", label: "Mes simulations", icon: FolderOpen },
 ]
 
 const LEGACY_SIDEBAR_KEY = "snowball_v5_sidebar"
@@ -127,11 +134,16 @@ function AppShell({ scope }: { scope: string | null }) {
       return next
     })
   }, [])
-  // Fermeture définitive du bandeau d'activation (clic X ou premier réglage).
-  const hideQuickStart = useCallback(() => {
-    setShowQuickStart(false)
-    saveQuickStartDismissed()
-  }, [])
+  // Tutoriel v7 : non-skippable pour le vrai nouveau visiteur (voir
+  // utils/onboarding.ts) — terminé une fois, il ne revient plus jamais.
+  const [showTutorial, setShowTutorial] = useState<boolean>(() => loadTutorialVisible(scope))
+  // Questionnaire « Nouvelle simulation » : ouvert par le tutoriel (premier
+  // run) ou par le bouton « Nouvelle simulation ». Réponses vierges à chaque
+  // ouverture (l'utilisateur veut peut-être tester d'autres chiffres).
+  const [showWizard, setShowWizard] = useState(false)
+  // Dialogue « sauvegarder avant de créer » : la simulation en cours a des
+  // changements non sauvegardés (dirty) → on propose de la figer (snapshot).
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [inputs, setInputs] = useState<SimulationInputs>(() => loadInitialInputs(scope))
   const [inputsB, setInputsB] = useState<SimulationInputs | null>(() => loadInitialInputsB(scope))
   const [comparing, setComparing] = useState(false)
@@ -149,20 +161,29 @@ function AppShell({ scope }: { scope: string | null }) {
   // complet de graphe à chaque changement de réglage), puis conservé.
   const [reportOpen, setReportOpen] = useState(false)
   const [sharedLinkLoaded, setSharedLinkLoaded] = useState<boolean>(() => readSharedState() !== null)
-  // Activation (v6.8) : bandeau « Commencez ici » proposé une seule fois aux
-  // nouveaux visiteurs (voir utils/quickStart.ts) — disparaît au premier
-  // réglage modifié ou au clic sur X, et ne revient jamais (clé persistée).
-  const [showQuickStart, setShowQuickStart] = useState<boolean>(() => loadQuickStartVisible(scope))
   const history = useHistory()
 
   const inputsRef = useRef(inputs)
   const inputsBRef = useRef(inputsB)
   const comparingRef = useRef(comparing)
-  const showQuickStartRef = useRef(showQuickStart)
   inputsRef.current = inputs
   inputsBRef.current = inputsB
   comparingRef.current = comparing
-  showQuickStartRef.current = showQuickStart
+
+  // Référence « engagée » des inputs (montage, chargement d'un snapshot, fin
+  // du wizard, sauvegarde, réinitialisation) : tant que les inputs en
+  // différent, la simulation en cours a des changements non sauvegardés.
+  const baselineRef = useRef<SimulationInputs | null>(null)
+  useEffect(() => {
+    if (baselineRef.current === null) baselineRef.current = inputs
+  }, [inputs])
+  // En mode comparaison, le scénario affiché (B) est un état temporaire :
+  // « Nouvelle simulation » demande TOUJOURS la sauvegarde pour ne jamais
+  // jeter silencieusement un scénario B édité.
+  const dirty = useMemo(
+    () => comparing || (baselineRef.current !== null && JSON.stringify(inputs) !== JSON.stringify(baselineRef.current)),
+    [inputs, comparing],
+  )
 
   const activeInputs = comparing && inputsB ? inputsB : inputs
   const rows = useMemo(() => runSimulation(activeInputs), [activeInputs])
@@ -197,30 +218,15 @@ function AppShell({ scope }: { scope: string | null }) {
   const updateInput = useCallback(
     <K extends keyof SimulationInputs>(key: K, value: SimulationInputs[K]) => {
       applyPatch({ [key]: value } as Partial<SimulationInputs>)
-      // La première interaction avec un réglage montre que le bandeau a fait
-      // son travail : on le ferme définitivement (comme un clic sur X).
-      if (showQuickStartRef.current) hideQuickStart()
     },
-    [applyPatch, hideQuickStart],
+    [applyPatch],
   )
 
   const updateInputs = useCallback(
     (partial: Partial<SimulationInputs>) => {
       applyPatch(partial)
-      if (showQuickStartRef.current) hideQuickStart()
     },
-    [applyPatch, hideQuickStart],
-  )
-
-  // Applique un profil du bandeau « Commencez ici » : les réglages, la
-  // fiscalité et la courbe se mettent à jour d'un coup (annulable, l'historique
-  // enregistre le patch comme n'importe quelle modification).
-  const handleApplyProfile = useCallback(
-    (patch: Partial<SimulationInputs>) => {
-      updateInputs(patch)
-      hideQuickStart()
-    },
-    [updateInputs, hideQuickStart],
+    [applyPatch],
   )
 
   const handleUndo = useCallback(() => {
@@ -259,14 +265,32 @@ function AppShell({ scope }: { scope: string | null }) {
       saveSnapshotsToStorage(next, scope)
       return next
     })
+    // L'état courant vient d'être figé : les changements sont désormais
+    // « engagés » (référence du scénario A — en comparaison, le dirty est
+    // déjà forcé par `comparing`).
+    baselineRef.current = inputsRef.current
   }, [activeInputs, rows, scope])
 
   const handleLoadSnapshot = useCallback(
     (id: string) => {
       const snapshot = snapshots.find(s => s.id === id)
-      if (snapshot) applyPatch(snapshot.inputs)
+      if (snapshot) {
+        applyPatch(snapshot.inputs)
+        baselineRef.current = snapshot.inputs
+      }
     },
     [snapshots, applyPatch],
+  )
+
+  const handleRenameSnapshot = useCallback(
+    (id: string, name: string) => {
+      setSnapshots(prev => {
+        const next = renameSnapshot(prev, id, name)
+        saveSnapshotsToStorage(next, scope)
+        return next
+      })
+    },
+    [scope],
   )
 
   const handleRemoveSnapshot = useCallback(
@@ -293,6 +317,7 @@ function AppShell({ scope }: { scope: string | null }) {
     }
     inputsRef.current = { ...DEFAULT_INPUTS }
     inputsBRef.current = null
+    baselineRef.current = { ...DEFAULT_INPUTS }
     setInputs({ ...DEFAULT_INPUTS })
     setInputsB(null)
     setComparing(false)
@@ -301,6 +326,64 @@ function AppShell({ scope }: { scope: string | null }) {
     setDecumResult(null)
     setDecumComputedFor("")
   }, [scope])
+
+  // Fin du tutoriel : marqué définitivement, puis le questionnaire s'ouvre.
+  const finishTutorial = useCallback(() => {
+    saveTutorialDone()
+    setShowTutorial(false)
+    setShowWizard(true)
+  }, [])
+
+  // « Nouvelle simulation » : dirty → proposer de figer l'état courant ; sinon
+  // le questionnaire s'ouvre directement (réponses vierges).
+  const openNewSimulation = useCallback(() => {
+    if (dirty) setSaveDialogOpen(true)
+    else setShowWizard(true)
+  }, [dirty])
+
+  const handleSaveAndCreate = useCallback(() => {
+    const snapshot = createSnapshot(activeInputs, rows)
+    setSnapshots(prev => {
+      const next = addSnapshot(prev, snapshot)
+      saveSnapshotsToStorage(next, scope)
+      return next
+    })
+    baselineRef.current = inputsRef.current
+    setSaveDialogOpen(false)
+    setShowWizard(true)
+  }, [activeInputs, rows, scope])
+
+  const handleDiscardAndCreate = useCallback(() => {
+    setSaveDialogOpen(false)
+    setShowWizard(true)
+  }, [])
+
+  // Fin du questionnaire : les réponses deviennent la simulation active ET une
+  // entrée de la bibliothèque « Mes simulations » (nom choisi par l'utilisateur).
+  const handleWizardComplete = useCallback(
+    (answers: WizardAnswers, name: string) => {
+      const nextInputs = buildSimulationFromAnswers(answers)
+      const snapshot = createSnapshot(nextInputs, runSimulation(nextInputs), name)
+      inputsRef.current = nextInputs
+      baselineRef.current = nextInputs
+      setInputs(nextInputs)
+      setSnapshots(prev => {
+        const next = addSnapshot(prev, snapshot)
+        saveSnapshotsToStorage(next, scope)
+        return next
+      })
+      if (comparingRef.current) {
+        const nextState = exitComparison({ A: nextInputs, B: inputsBRef.current })
+        inputsBRef.current = nextState.B
+        setInputsB(nextState.B)
+        setComparing(false)
+        setFrozenA(null)
+      }
+      setShowWizard(false)
+      setActiveTab("simulator")
+    },
+    [scope],
+  )
 
   useKeyboardShortcuts({
     onUndo: handleUndo,
@@ -552,6 +635,7 @@ function AppShell({ scope }: { scope: string | null }) {
             <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
               <AccountMenu />
               <ActionBar
+                onNewSimulation={openNewSimulation}
                 onExportCSV={exportCSV}
                 onExportJSON={exportJSON}
                 onPrint={handlePrint}
@@ -574,14 +658,6 @@ function AppShell({ scope }: { scope: string | null }) {
         </header>
 
         <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
-          {/* Activation v6.8 — « Commencez ici » : bandeau pleine largeur,
-              proposé une seule fois aux nouveaux visiteurs, fermé au clic X ou
-              au premier réglage modifié (voir utils/quickStart.ts). */}
-          {showQuickStart && (
-            <div className="mb-6">
-              <QuickStart onApply={handleApplyProfile} onDismiss={hideQuickStart} />
-            </div>
-          )}
           {/* La colonne réglages s'anime entre 380 px (déplié) et 72 px (rail
               d'icônes replié, style ChatGPT) — grid-template-columns est
               interpolable par le navigateur (Chrome/FF/Safari 16+). */}
@@ -704,6 +780,17 @@ function AppShell({ scope }: { scope: string | null }) {
                   {activeTab === "goal" && (
                     <GoalTab inputs={activeInputs} rows={rows} updateInput={updateInput} darkMode={darkMode} />
                   )}
+                  {activeTab === "simulations" && (
+                    <SimulationsTab
+                      inputs={activeInputs}
+                      rows={rows}
+                      snapshots={snapshots}
+                      onNewSimulation={openNewSimulation}
+                      onLoad={handleLoadSnapshot}
+                      onRename={handleRenameSnapshot}
+                      onRemove={handleRemoveSnapshot}
+                    />
+                  )}
                 </ErrorBoundary>
               </div>
             </main>
@@ -715,6 +802,18 @@ function AppShell({ scope }: { scope: string | null }) {
       {/* Rapport patrimonial imprimable — monté au premier clic « Rapport
           PDF », hors-écran à l'écran, seul visible à l'impression. */}
       {reportOpen && <PatrimonialReport rows={rows} inputs={activeInputs} />}
+      {/* Onboarding v7 : tutoriel (vrai nouveau visiteur) → questionnaire →
+          résultat. Le dialogue de sauvegarde précède le questionnaire quand la
+          simulation en cours a des changements non sauvegardés. */}
+      {showTutorial && <Tutorial onFinish={finishTutorial} />}
+      {showWizard && <SimulationWizard onCancel={() => setShowWizard(false)} onComplete={handleWizardComplete} />}
+      {saveDialogOpen && (
+        <SaveSimulationDialog
+          onSave={handleSaveAndCreate}
+          onDiscard={handleDiscardAndCreate}
+          onCancel={() => setSaveDialogOpen(false)}
+        />
+      )}
     </>
   )
 }

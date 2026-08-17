@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest"
 import {
+  recommendDuration,
+  recommendEnvelope,
+  buildSimulationFromAnswers,
+  defaultSimulationName,
+  renameSnapshot,
+} from "../engine"
+import {
   roundCent,
   clamp,
   monthlyRate,
@@ -1091,11 +1098,22 @@ describe("snapshots", () => {
 
   it("addSnapshot prepends and caps the list at SNAPSHOT_LIMIT", () => {
     let list: ReturnType<typeof createSnapshot>[] = []
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 40; i += 1) {
       list = addSnapshot(list, createSnapshot(DEFAULT_INPUTS, [], `S${i}`))
     }
     expect(list).toHaveLength(SNAPSHOT_LIMIT)
-    expect(list[0].name).toBe("S11")
+    expect(list[0].name).toBe("S39")
+  })
+
+  it("renameSnapshot renomme par id sans muter la liste (nom vide ignoré)", () => {
+    const a = createSnapshot(DEFAULT_INPUTS, [], "A")
+    const b = createSnapshot(DEFAULT_INPUTS, [], "B")
+    const list = addSnapshot(addSnapshot([], a), b)
+    const next = renameSnapshot(list, a.id, "  Renommée  ")
+    expect(next.find(s => s.id === a.id)?.name).toBe("Renommée")
+    expect(list.find(s => s.id === a.id)?.name).toBe("A")
+    expect(renameSnapshot(list, "inconnu", "X")).toEqual(list)
+    expect(renameSnapshot(list, a.id, "   ")).toEqual(list)
   })
 
   it("removeSnapshot deletes by id without mutating the input list", () => {
@@ -2311,5 +2329,105 @@ describe("régressions — audit v5.2.2 (cohérence des unités & effets réels)
       expect(fmtDecimal(12.5)).toBe("12,5")
       expect(fmtDecimal(12.5, 1, "en")).toBe("12.5")
     })
+  })
+})
+
+describe("v7 — onboarding : recommandations et construction de la simulation", () => {
+  it("recommendDuration renvoie la durée recommandée par projet (25 ans si aucun)", () => {
+    expect(recommendDuration("retraite")).toBe(35)
+    expect(recommendDuration("immobilier")).toBe(10)
+    expect(recommendDuration("liberte")).toBe(20)
+    expect(recommendDuration("precaution")).toBe(5)
+    expect(recommendDuration("enrichissement")).toBe(25)
+    expect(recommendDuration("aucune")).toBe(25)
+    expect(recommendDuration(null)).toBe(25)
+  })
+
+  it("recommendEnvelope conseille PEA pour un horizon long, AV pour un horizon court", () => {
+    expect(recommendEnvelope("retraite", 35)).toBe("pea")
+    expect(recommendEnvelope(null, 20)).toBe("pea")
+    expect(recommendEnvelope("immobilier", 10)).toBe("av")
+    expect(recommendEnvelope("precaution", 5)).toBe("av")
+    expect(recommendEnvelope(null, 15)).toBe("pea")
+    expect(recommendEnvelope(null, 14)).toBe("av")
+  })
+
+  it("buildSimulationFromAnswers mappe les réponses vers les inputs (défauts ailleurs)", () => {
+    const inputs = buildSimulationFromAnswers({
+      age: 35,
+      hasCapital: true,
+      capital: 12000,
+      monthly: 300,
+      project: "retraite",
+      duration: 35,
+      envelope: "auto",
+      retirementAge: 65,
+      risk: "equilibre",
+    })
+    expect(inputs.ageNow).toBe(35)
+    expect(inputs.capitalInitial).toBe(12000)
+    expect(inputs.monthlyPayment).toBe(300)
+    expect(inputs.duration).toBe(35)
+    expect(inputs.envelope).toBe("pea")
+    expect(inputs.ageRetirement).toBe(65)
+    expect(inputs.returnScenario).toBe("central")
+    expect(inputs.maxDrawdownTolerance).toBe(0.35)
+    expect(inputs.riskTolerance).toBe("equilibre")
+    // Le reste reste sur les défauts du moteur.
+    expect(inputs.historicalIndex).toBe(DEFAULT_INPUTS.historicalIndex)
+    expect(inputs.taxYear).toBe(DEFAULT_INPUTS.taxYear)
+  })
+
+  it("pas de capital → 0 € ; enveloppe explicite conservée ; risques mappés ; retraite non demandée", () => {
+    const noCapital = buildSimulationFromAnswers({
+      age: 25,
+      hasCapital: false,
+      capital: 0,
+      monthly: 100,
+      project: "precaution",
+      duration: 5,
+      envelope: "av",
+      retirementAge: null,
+      risk: "prudent",
+    })
+    expect(noCapital.capitalInitial).toBe(0)
+    expect(noCapital.envelope).toBe("av")
+    expect(noCapital.returnScenario).toBe("prudent")
+    expect(noCapital.maxDrawdownTolerance).toBe(0.2)
+
+    const audacieux = buildSimulationFromAnswers({
+      age: 45,
+      hasCapital: true,
+      capital: 50000,
+      monthly: 1000,
+      project: "liberte",
+      duration: 20,
+      envelope: "auto",
+      retirementAge: 62,
+      risk: "audacieux",
+    })
+    expect(audacieux.returnScenario).toBe("optimiste")
+    expect(audacieux.maxDrawdownTolerance).toBe(0.5)
+    expect(audacieux.envelope).toBe("pea")
+    // Un projet hors retraite/liberté ne garde PAS l'âge de retraite saisi.
+    const immobilier = buildSimulationFromAnswers({
+      age: 30,
+      hasCapital: true,
+      capital: 20000,
+      monthly: 500,
+      project: "immobilier",
+      duration: 10,
+      envelope: "auto",
+      retirementAge: 60,
+      risk: "equilibre",
+    })
+    expect(immobilier.ageRetirement).toBe(DEFAULT_INPUTS.ageRetirement)
+    expect(immobilier.envelope).toBe("av")
+  })
+
+  it("defaultSimulationName combine le libellé du projet et la durée", () => {
+    expect(defaultSimulationName({ project: "retraite", duration: 35 })).toBe("Retraite — 35 ans")
+    expect(defaultSimulationName({ project: "immobilier", duration: 10 })).toBe("Projet immobilier — 10 ans")
+    expect(defaultSimulationName({ project: null, duration: 25 })).toBe("Ma simulation — 25 ans")
   })
 })
