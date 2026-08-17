@@ -4,6 +4,21 @@
 
 ---
 
+## SESSION — 2026-08-17 (v6.17.0 : Landing — la bande « attaque du cluster taux fixe »)
+
+### Résumé
+
+Premier chantier de la feuille de route `IDEES-AMELIORATIONS-LANDING.md` (ordre de bataille n°1 : attaque du cluster taux fixe). Bande plein-largeur sous le héro : « Les autres simulateurs supposent un rendement fixe. Nous, on rejoue 100 ans de vraie histoire, krachs inclus. » — **sans aucun taux en dur** (décision utilisateur : ne pas citer « 5 % par an »). Mode inline APEX (bundles process + ui-ux, TDD rouge/vert, auto-revue adverse), **409 tests**, gate 100 % vert, vérifié en navigateur réel (FR/EN, 1440/390/320 px, 0 overflow, détecteur impeccable 0 finding).
+
+### Décisions
+
+- **Pas de chiffre dans la bande** : la promesse porte sur la méthode (rendement fixe supposé vs 100 ans d'historique réel rejoué), pas sur un taux. « Aléatoire » écarté : factuellement faux (les concurrents supposent un taux fixe, pas un taux aléatoire) et plus risqué juridiquement.
+- **Test scoped à la bande** (`within(region)`) : la vérification « aucun 5 % par an » est limitée à la bande — un futur taux légitime ailleurs sur la page ne casserait pas le test (corrigé en auto-revue adverse).
+- **Filet unique** : la bande n'a que `border-t` (la section « Chiffres clés » porte déjà `border-y`) — pas de double trait entre les deux bandes.
+- **Release v6.17.0** : bump (package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.17.0`, footer + « Dernières éditions » landing FR/EN), CHANGELOG (entrée v6.17.0), MEMORY (cette entrée), commit + `vercel --prod`.
+
+---
+
 ## SESSION — 2026-08-16 (v6.16.0 : Onboarding guidé — tutoriel non-skippable + questionnaire « Nouvelle simulation » + bibliothèque multi-sims)
 
 ### Résumé

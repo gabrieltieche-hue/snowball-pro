@@ -4,6 +4,20 @@
 
 ---
 
+## v6.17.0 — Landing : la bande « attaque du cluster taux fixe » sous le héro
+
+Premier chantier de la feuille de route landing (`IDEES-AMELIORATIONS-LANDING.md`, ordre de bataille n°1). Juste sous le héro, une bande plein-largeur oppose les simulateurs SEO français qui supposent un rendement fixe à la méthode Snowball Pro : 100 ans de vraie histoire rejouée, krachs inclus. **Décision utilisateur : aucun taux en dur** — la promesse porte sur la méthode, pas sur un chiffre (« Les autres simulateurs supposent un rendement fixe. Nous, on rejoue 100 ans de vraie histoire, krachs inclus. »). « Aléatoire » a été écarté : factuellement faux (le modèle concurrent est un taux fixe supposé) et plus risqué juridiquement. **409 tests**, gate 100 % vert, vérifié en navigateur réel (FR + EN, 1440/390/320 px, 0 overflow).
+
+### 🔄 Changements
+
+- **`src/components/Landing/LandingPage.tsx`** : bande « attaque du cluster taux fixe » (1.2) sous le héro — première phrase grise (leur monde), seconde en or display (notre monde), flèche (→ desktop / ↓ mobile) ; section `aria-label` traduite FR/EN ; `border-t` seul pour garder un filet unique avec la bande « Chiffres clés » (qui porte déjà son `border-y`).
+- **`src/engine/i18n.ts`** : 2 clés FR→EN (bande) + carte « Dernières éditions » v6.17.0 + footer v6.17.0 (FR + EN).
+- **Tests** (`src/__tests__/components.test.tsx`) : +1 test — la bande est rendue sous le héro, les deux phrases présentes **dans la bande** (region scoped via `within`), aucun « 5 % par an » cité — **409/409**.
+- Gate : typecheck ✓ lint ✓ **409/409 tests** ✓ format ✓ build ✓ (détecteur impeccable : 0 finding).
+- Version 6.16.0 → **6.17.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.17.0`, footer landing v6.17.0, « Dernières éditions » v6.17.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.16.0 — Onboarding guidé : tutoriel non-skippable + questionnaire « Nouvelle simulation » + bibliothèque multi-sims
 
 Gros chantier d'activation pour les nouveaux utilisateurs (notamment ceux qui ne comprennent rien à la finance ou à internet). À la première visite, l'app affiche un **tutoriel non-skippable en 5 écrans** qui présente simplement l'outil, puis un bouton **« Lancer ma première simulation »** ouvre un **questionnaire guidé** (une question par écran, barre de progression) qui construit la simulation à la place d'une prise en main des réglages. Le questionnaire adapte ses questions en direct : capital en **Oui/Non** (la sous-question montant n'apparaît que si Oui), projet en **2 parties** (objectif → durée avec l'horizon conseillé pré-sélectionné), enveloppe avec **⭐ RECOMMANDÉ dynamique** (calculé à partir des réponses précédentes, explication fiscale en une phrase), âge d'arrêt de travail **conditionnel** (retraite ET liberté financière), puis **renommage final** avec nom par défaut intelligent et **snapshot auto-créé**. Le bandeau « Commencez ici » (QuickStart) est **supprimé** — remplacé par ce parcours. Un bouton **« Nouvelle simulation »** (dans l'ActionBar) relance le questionnaire vierge, avec un dialogue **« Sauvegarder et créer / Créer sans sauvegarder / Annuler »** si la simulation en cours a été modifiée. Enfin, un **vrai onglet « Mes simulations »** (bibliothèque : ouvrir, renommer inline, supprimer avec double-clic de confirmation) et les réglages sont **repliés par défaut** derrière un rail « Déplier les réglages avancés » (le mode Débutant/Avancé et tout l'existant restent accessibles). **408 tests**, gate 100 % vert, parcours validé en navigateur réel de bout en bout.

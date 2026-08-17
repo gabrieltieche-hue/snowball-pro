@@ -406,6 +406,11 @@ const GUIDES_LINKS = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.17.0",
+    title: "La bande « taux fixe » sous le héro",
+    text: "Snowball Pro se démarque des simulateurs qui supposent un rendement fixe : sous le héro, une bande rappelle notre méthode — 100 ans de vraie histoire rejouée, krachs inclus, sans citer le moindre taux en dur.",
+  },
+  {
     version: "v6.16.0",
     title: "Mobile 100 % — résultat d'abord",
     text: "Sur téléphone, le simulateur affiche d'abord le capital final et les onglets (les réglages passent en dessous), le bandeau « Commencez ici » devient compact et défilant, les champs ne déclenchent plus le zoom iOS et les boutons sont plus faciles à toucher. Le site est aussi prêt pour une future app iOS (Capacitor).",
@@ -738,6 +743,27 @@ export function LandingPage() {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Bande « attaque du cluster taux fixe » (1.2) — le message le
+          plus drastique et le plus défendable, juste sous le héro. Pas de
+          taux en dur (décision utilisateur) : la promesse porte sur la
+          méthode — un rendement fixe supposé vs 100 ans d'historique réel. */}
+      <section
+        aria-label={`${tr("Les autres simulateurs supposent un rendement fixe.")} ${tr(
+          "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.",
+        )}`}
+        className="border-t border-border/70"
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-center">
+          <p className="text-sm sm:text-[15px] font-bold text-text-muted leading-snug">
+            {tr("Les autres simulateurs supposent un rendement fixe.")}
+          </p>
+          <ArrowRight size={16} className="text-primary rotate-90 md:rotate-0 shrink-0" aria-hidden />
+          <p className="font-display text-lg sm:text-[1.35rem] font-extrabold tracking-tight text-primary leading-snug">
+            {tr("Nous, on rejoue 100 ans de vraie histoire, krachs inclus.")}
+          </p>
         </div>
       </section>
 
@@ -1282,7 +1308,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.16.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.17.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

@@ -1076,6 +1076,19 @@ describe("v6.1 — landing page", () => {
     expect(screen.getByRole("button", { name: /mes données sont-elles envoyées/i })).toBeInTheDocument()
   })
 
+  it("bande « attaque du cluster taux fixe » : oppose le rendement fixe supposé à l'historique réel, sans citer de taux", () => {
+    render(<LandingPage />)
+    // La bande (region nommée par son aria-label) oppose le rendement fixe des
+    // simulateurs SEO à l'historique réel rejoué — vérifié DANS la bande.
+    const band = screen.getByRole("region", {
+      name: /les autres simulateurs supposent un rendement fixe.*nous, on rejoue 100 ans/i,
+    })
+    expect(within(band).getByText(/les autres simulateurs supposent un rendement fixe/i)).toBeInTheDocument()
+    expect(within(band).getByText(/nous, on rejoue 100 ans de vraie histoire, krachs inclus/i)).toBeInTheDocument()
+    // Aucun « 5 % par an » n'est cité dans la bande (décision : pas de taux en dur).
+    expect(within(band).queryByText(/5 % par an/i)).not.toBeInTheDocument()
+  })
+
   it("déplie la FAQ au clic", () => {
     render(<LandingPage />)
     const question = screen.getByRole("button", { name: /un compte est-il obligatoire/i })
