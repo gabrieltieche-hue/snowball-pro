@@ -16,6 +16,8 @@ Demande utilisateur : la fenêtre de droite du héro dépassait (bouton « Repar
 - **+3 clés i18n** : titre + texte v6.22.1, footer v6.22.1.
 - **Zéro changement moteur** : que du layout — aucun test ajouté. Suite : moteur ✓, 100/100 composants ✓.
 - Fichiers non liés laissés hors commit : `src/utils/chartTheme.ts`, 4 charts, `src/__tests__/engine.test.ts` (chantier en cours pré-existant, non touché).
+- **Commit/push exécutés ici** : commit `aa2f06e` « v6.22.1 — Landing : la carte demo tient a l'ecran » (9 fichiers : ni BACKUP tgz, ni `.agents/`, ni scripts vidéo, ni `skills-lock.json`), push `main` réussi (ls-remote confirme `aa2f06e` sur `origin/main`). Note : commit parallèle `22a23b3` (« v8 graphiques dynamiques », un autre chantier) apparu pendant la session — aucun conflit, historique linéaire.
+- **Vercel déployé** : `npx -y vercel --prod --yes` (CLI absente après restart, token disque inchangé) → READY, `https://snowball-pro.vercel.app` (build `snowball-pro@6.22.1`, iad1).
 
 ### Vérifications
 
