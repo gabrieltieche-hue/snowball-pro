@@ -68,7 +68,7 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   withdrawalInflation: false,
   retirementYears: 30,
   goalTarget: 500000,
-  goalDuration: 15,
+  goalDuration: 28,
   goalCapital: 10000,
   goalPayment: 500,
   // Défaut aligné sur le scénario CENTRAL de l'onglet principal (paquet 1) :

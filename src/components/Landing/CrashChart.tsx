@@ -31,6 +31,9 @@ export function CrashChart({ replay }: { replay: CrashReplay }) {
   const area = `${PAD.left},${baselineY.toFixed(1)} ${polyline} ${x(values.length - 1).toFixed(1)},${baselineY.toFixed(1)}`
   const lastX = x(values.length - 1)
   const lastY = y(values[values.length - 1]?.value ?? 100)
+  const troughIdx = values.reduce((best, v, i) => (v.value < values[best].value ? i : best), 0)
+  const troughX = x(troughIdx)
+  const troughY = y(values[troughIdx].value)
 
   return (
     <svg
@@ -41,10 +44,27 @@ export function CrashChart({ replay }: { replay: CrashReplay }) {
     >
       <defs>
         <linearGradient id="krach-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.03" />
+        </linearGradient>
+        <linearGradient id="krach-drawdown" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e08a8a" stopOpacity="0.02" />
+          <stop offset="100%" stopColor="#e08a8a" stopOpacity="0.16" />
+        </linearGradient>
+        <linearGradient id="krach-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="var(--color-primary-light)" />
+          <stop offset="100%" stopColor="var(--color-primary)" />
         </linearGradient>
       </defs>
+
+      {/* Zone drawdown (sous 100 €) — rouge translucide */}
+      <rect
+        x={PAD.left}
+        y={baselineY}
+        width={W - PAD.left - PAD.right}
+        height={H - PAD.bottom - baselineY}
+        fill="url(#krach-drawdown)"
+      />
 
       {/* Baseline « 100 € » (point de départ) */}
       <line
@@ -72,25 +92,36 @@ export function CrashChart({ replay }: { replay: CrashReplay }) {
       <motion.polyline
         points={polyline}
         fill="none"
-        className="text-primary"
-        stroke="currentColor"
-        strokeWidth={2.5}
+        stroke="url(#krach-line)"
+        strokeWidth={4}
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
+        style={{ filter: "drop-shadow(0 0 10px rgba(212,175,55,0.35))" }}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ duration: 1.6, ease: EASE }}
+      />
+
+      {/* Creux (trough) — pastille rouge */}
+      <circle
+        cx={troughX}
+        cy={troughY}
+        r={6}
+        fill="var(--color-value-red)"
+        stroke="var(--color-surface)"
+        strokeWidth={2.5}
+        vectorEffect="non-scaling-stroke"
       />
 
       {/* Point final (valeur d'aujourd'hui) */}
       <circle
         cx={lastX}
         cy={lastY}
-        r={5}
+        r={6}
         fill="var(--color-primary)"
         stroke="var(--color-surface)"
-        strokeWidth={2}
+        strokeWidth={2.5}
         vectorEffect="non-scaling-stroke"
       />
     </svg>

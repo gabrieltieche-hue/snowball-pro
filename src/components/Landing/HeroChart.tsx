@@ -71,11 +71,12 @@ export function HeroChart({ rows: providedRows, inputs: providedInputs, footer =
       >
         <defs>
           <linearGradient id="hero-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.03" />
           </linearGradient>
           <linearGradient id="hero-line" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="var(--color-primary-light)" />
+            <stop offset="50%" stopColor="var(--color-primary)" />
             <stop offset="100%" stopColor="var(--color-primary)" />
           </linearGradient>
         </defs>
@@ -121,8 +122,9 @@ export function HeroChart({ rows: providedRows, inputs: providedInputs, footer =
           d={linePath("nominal")}
           fill="none"
           stroke="url(#hero-line)"
-          strokeWidth="3"
+          strokeWidth="3.5"
           strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 12px rgba(212,175,55,0.35))" }}
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 1.3, ease: "easeOut" }}
@@ -132,7 +134,7 @@ export function HeroChart({ rows: providedRows, inputs: providedInputs, footer =
         <motion.circle
           cx={x(rows.length - 1)}
           cy={y(last.nominal)}
-          r="5"
+          r="6"
           fill="var(--color-primary)"
           stroke="var(--color-surface)"
           strokeWidth="2.5"

@@ -106,10 +106,10 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 28, filter: "blur(4px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.55, delay, ease: EASE }}
+      transition={{ duration: 0.7, delay, ease: EASE }}
     >
       {children}
     </motion.div>
@@ -121,10 +121,14 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
 function SectionTitle({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   const { tr } = useLang()
   return (
-    <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-      <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary mb-3">{tr(eyebrow)}</p>
-      <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-text">{tr(title)}</h2>
-      {sub && <p className="text-sm text-text-muted mt-3 leading-relaxed">{tr(sub)}</p>}
+    <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-16">
+      <p className="section-eyebrow mb-3">{tr(eyebrow)}</p>
+      <h2 className="font-display text-3xl sm:text-[2.75rem] font-extrabold tracking-[-0.02em] leading-[1.08] text-text text-balance">
+        {tr(title)}
+      </h2>
+      {sub && (
+        <p className="text-[15px] text-text-muted mt-4 leading-relaxed max-w-xl mx-auto text-balance">{tr(sub)}</p>
+      )}
     </div>
   )
 }
@@ -140,7 +144,7 @@ function FeatureCard({
 }) {
   const { tr } = useLang()
   return (
-    <article className="glass rounded-3xl p-6 card-interactive group">
+    <article className="glass card-top-gold rounded-3xl p-6 card-interactive group">
       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/25 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
         <Icon size={19} className="text-primary" aria-hidden />
       </div>
@@ -157,7 +161,7 @@ function CompareCellView({ cell }: { cell: CompareCell }) {
   if (cell.kind === "yes")
     return (
       <span className="inline-flex items-center gap-1.5">
-        <Check size={13} style={{ color: "var(--color-success)" }} aria-hidden />
+        <Check size={14} style={{ color: "var(--color-success)" }} aria-hidden className="compare-glow" />
         {nuance}
       </span>
     )
@@ -179,7 +183,7 @@ function CompareCellView({ cell }: { cell: CompareCell }) {
 function EnvelopeCard({ badge, title, children }: { badge: string; title: string; children: React.ReactNode }) {
   const { tr } = useLang()
   return (
-    <article className="glass rounded-3xl p-5 card-interactive">
+    <article className="glass card-top-gold rounded-3xl p-5 card-interactive group">
       <span className="inline-block text-[9.5px] font-bold uppercase tracking-[0.14em] text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg mb-3">
         {tr(badge)}
       </span>
@@ -253,16 +257,16 @@ function CountUpStat({
   const { tr, locale } = useLang()
   const shown = useCountUp(value, delay)
   return (
-    <div className="flex items-center gap-4 sm:flex-col sm:gap-3 sm:text-center">
-      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/25 flex items-center justify-center shrink-0">
+    <div className="flex items-center gap-4 sm:flex-col sm:gap-3 sm:text-center group">
+      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/25 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
         <Icon size={18} className="text-primary" aria-hidden />
       </div>
       <div className="sm:text-center">
-        <p className="font-display text-3xl sm:text-4xl font-extrabold text-primary tracking-tight mono">
+        <p className="font-display text-4xl sm:text-[2.75rem] font-extrabold text-primary tracking-tight mono leading-none">
           {shown.toLocaleString(locale)}
           {tr(suffix)}
         </p>
-        <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed max-w-[220px] mx-auto">{tr(label)}</p>
+        <p className="text-[11px] text-text-muted mt-2 leading-relaxed max-w-[220px] mx-auto">{tr(label)}</p>
       </div>
     </div>
   )
@@ -417,11 +421,15 @@ function ScenarioSwitch({
 // ─── Landing ─────────────────────────────────────────────────────────────────
 
 const NAV = [
+  { href: "#krachs", label: "Krachs" },
   { href: "#fonctionnalites", label: "Fonctionnalités" },
   { href: "#scenarios", label: "Scénarios" },
-  { href: "#pourqui", label: "Pour qui" },
+  { href: "#comparaison", label: "Comparaison" },
+  { href: "#manifeste", label: "Manifeste" },
   { href: "#enveloppes", label: "Enveloppes" },
   { href: "#methode", label: "Méthodologie" },
+  { href: "#pourqui", label: "Pour qui" },
+  { href: "#objectif", label: "Objectif" },
   { href: "#faq", label: "FAQ" },
 ]
 
@@ -534,6 +542,11 @@ const MANIFESTO = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.22.0",
+    title: "La démo du héro devient éditable",
+    text: "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.",
+  },
+  {
     version: "v6.21.0",
     title: "Header épuré : un CTA + l'erreur se corrige seule",
     text: "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.",
@@ -571,10 +584,15 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   // Scénario actif de la démo interactive : le héro devient un vrai simulateur.
   const [heroScenario, setHeroScenario] = useState<ReturnScenario>("central")
+  // Démo éditable (2.1) : 3 curseurs branchés sur le vrai moteur — le visiteur
+  // se projette avec SES chiffres (IKEA effect), puis repart via deep-link #s=.
+  const [heroCapital, setHeroCapital] = useState(10000)
+  const [heroMonthly, setHeroMonthly] = useState(500)
+  const [heroDuration, setHeroDuration] = useState(25)
   // Démo « objectif inversé » (5.1) : objectif + horizon réglables, le solveur
   // de l'app (solveGoal) calcule l'épargne mensuelle en direct.
-  const [goalTarget, setGoalTarget] = useState(1_000_000)
-  const [goalDuration, setGoalDuration] = useState(20)
+  const [goalTarget, setGoalTarget] = useState(500_000)
+  const [goalDuration, setGoalDuration] = useState(28)
   // Replay des krachs (3.2) : année de départ active (défaut 2008, le grand
   // plongeon — la bascule 2000/2008/2022 rejoue le vrai MSCI World).
   const [crashYear, setCrashYear] = useState<CrashYear>(2008)
@@ -582,6 +600,8 @@ export function LandingPage() {
   // bas de page). Le masquage ≥ sm est purement CSS (md:hidden) : jsdom n'a
   // pas de matchMedia, la logique ici ne dépend que du scroll.
   const [stickyCtaVisible, setStickyCtaVisible] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [showTop, setShowTop] = useState(false)
 
   // Le thème est une préférence d'appareil partagée avec l'app (même clé).
   useEffect(() => {
@@ -590,7 +610,17 @@ export function LandingPage() {
 
   // CTA sticky mobile : état recalculé à chaque scroll (et au montage).
   useEffect(() => {
-    const onScroll = () => setStickyCtaVisible((window.scrollY ?? 0) > 480)
+    const onScroll = () => {
+      const y = window.scrollY ?? 0
+      setStickyCtaVisible(y > 480)
+      setShowTop(y > 1200)
+      try {
+        const h = document.documentElement.scrollHeight - window.innerHeight
+        setScrollProgress(h > 0 ? Math.min(1, Math.max(0, y / h)) : 0)
+      } catch {
+        /* jsdom */
+      }
+    }
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
@@ -620,13 +650,22 @@ export function LandingPage() {
   }, [])
 
   // Séries complètes pour la démo interactive (la courbe change de forme).
+  // La démo éditable rejoue le moteur avec les réglages du visiteur.
   const heroRows = useMemo(
     () =>
-      Object.fromEntries(SCENARIO_ORDER.map(s => [s, runSimulation({ ...base, returnScenario: s })])) as Record<
-        ReturnScenario,
-        YearRow[]
-      >,
-    [base],
+      Object.fromEntries(
+        SCENARIO_ORDER.map(s => [
+          s,
+          runSimulation({
+            ...base,
+            capitalInitial: heroCapital,
+            monthlyPayment: heroMonthly,
+            duration: heroDuration,
+            returnScenario: s,
+          }),
+        ]),
+      ) as Record<ReturnScenario, YearRow[]>,
+    [base, heroCapital, heroMonthly, heroDuration],
   )
 
   const heroLast = heroRows[heroScenario][heroRows[heroScenario].length - 1]
@@ -700,6 +739,18 @@ export function LandingPage() {
     })
   }
 
+  // Démo éditable (2.1) : même pattern, avec les réglages du héro (capital,
+  // mensuel, durée, scénario) — l'app s'ouvre avec la simulation du visiteur.
+  const launchFromHero = () => {
+    window.location.hash = encodeInputsForUrl({
+      ...base,
+      capitalInitial: heroCapital,
+      monthlyPayment: heroMonthly,
+      duration: heroDuration,
+      returnScenario: heroScenario,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-surface text-text">
       <h1 className="sr-only">
@@ -714,12 +765,15 @@ export function LandingPage() {
           <a href="#/" aria-label={tr("Snowball Pro — accueil")} className="flex items-center">
             <Brand />
           </a>
-          <nav aria-label={tr("Navigation principale")} className="hidden md:flex items-center gap-1">
+          <nav
+            aria-label={tr("Navigation principale")}
+            className="hidden lg:flex items-center gap-1 max-w-[560px] overflow-x-auto"
+          >
             {NAV.map(item => (
               <a
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 rounded-lg text-[11.5px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
+                className="px-2.5 py-2 rounded-lg text-[11px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors whitespace-nowrap"
               >
                 {tr(item.label)}
               </a>
@@ -752,16 +806,32 @@ export function LandingPage() {
             </button>
           </div>
         </div>
+        <nav aria-label={tr("Navigation principale")} className="lg:hidden border-t border-border/60 overflow-x-auto">
+          <div className="flex items-center gap-1 px-4 py-2 w-max">
+            {NAV.map(item => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="px-3 py-1.5 rounded-full text-[11px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors whitespace-nowrap"
+              >
+                {tr(item.label)}
+              </a>
+            ))}
+          </div>
+        </nav>
+        <div aria-hidden className="scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} />
       </header>
 
       {/* ── Héro (démo interactive) ─────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      <section aria-label={tr("Démo interactive")} className="relative overflow-hidden">
+        <div aria-hidden className="aurora" />
+        <div aria-hidden className="absolute inset-0 pointer-events-none hero-grid" />
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none animate-pulse-glow"
           style={{
             background:
-              "radial-gradient(90% 60% at 50% -10%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 65%)",
+              "radial-gradient(90% 60% at 50% -10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 65%), radial-gradient(50% 35% at 82% 22%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 60%)",
           }}
         />
         <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-14 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
@@ -770,16 +840,17 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE }}
           >
-            <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-6">
-              <Sparkles size={11} aria-hidden /> {tr("Fiscalité française 2026 · 100 ans d'historique réel")}
+            <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-6 shadow-gold">
+              <span aria-hidden className="eyebrow-dot" /> <Sparkles size={11} aria-hidden />{" "}
+              {tr("Fiscalité française 2026 · 100 ans d'historique réel")}
             </p>
             <h2
               aria-label={tr("Combien peut valoir votre épargne dans 25 ans ?")}
-              className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold tracking-tight leading-[1.06]"
+              className="font-display text-[clamp(2.8rem,6vw,4.8rem)] font-extrabold tracking-[-0.04em] leading-[1.02] text-balance"
             >
               <span className="block">{tr("Combien peut valoir votre épargne")}</span>
               <span className="block">
-                <span className="text-primary whitespace-nowrap">{tr("dans 25 ans")}</span> ?
+                <span className="text-gold-gradient whitespace-nowrap">{tr("dans 25 ans")}</span> ?
               </span>
             </h2>
             <p className="text-sm sm:text-[15px] text-text-muted mt-5 leading-relaxed max-w-xl">
@@ -791,7 +862,7 @@ export function LandingPage() {
               <button
                 type="button"
                 onClick={launch}
-                className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+                className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
               >
                 {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
               </button>
@@ -817,59 +888,113 @@ export function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Démo réelle interactive : basculez de scénario, le moteur recalcule. */}
+          {/* Démo réelle interactive : curseurs + bascule de scénario, le moteur recalcule. */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: EASE }}
           >
-            <div className="glass-gold rounded-3xl p-5 sm:p-6 shadow-premium-lg relative overflow-hidden">
-              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-1 h-4 rounded-full bg-primary shrink-0" aria-hidden />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
-                    {tr("Simulation par défaut — démo réelle")}
-                  </span>
-                </div>
-                <span className="text-[9.5px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg">
+            <div className="app-window glass-gold shadow-premium-lg ring-1 ring-primary/30 relative overflow-hidden">
+              <div className="app-window-bar">
+                <span className="app-window-dot bg-danger/70" aria-hidden />
+                <span className="app-window-dot bg-warning/70" aria-hidden />
+                <span className="app-window-dot bg-success/70" aria-hidden />
+                <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted truncate">
+                  {tr("Simulation par défaut — démo réelle")}
+                </span>
+                <span className="ml-auto text-[9.5px] mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
                   MSCI World 1970-2025
                 </span>
               </div>
+              <div className="p-5 sm:p-6">
+                <ScenarioSwitch value={heroScenario} onChange={setHeroScenario} rates={rates} />
 
-              <ScenarioSwitch value={heroScenario} onChange={setHeroScenario} rates={rates} />
-
-              {/* Le nombre magique : résultat d'abord, recalculé à chaque bascule. */}
-              <div className="mt-5">
-                <div className="flex items-end justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
-                      {tr("Capital final")} · {tr(SCENARIO_META[heroScenario].label)}
-                    </p>
-                    <p className="font-display text-[2.6rem] sm:text-5xl font-extrabold tracking-tight text-text mono leading-none">
-                      <AnimatedAmount value={heroLast.nominal} />
-                    </p>
-                  </div>
-                  <div className="text-right pb-0.5">
-                    <p className="text-[9.5px] text-text-dim">{tr("en € d'aujourd'hui")}</p>
-                    <p className="mono text-base font-bold text-text-muted">{fmtCurrency(heroLast.real)}</p>
-                  </div>
+                {/* Démo éditable (2.1) : 3 curseurs branchés sur le vrai moteur, en
+                  une rangée compacte (empilés, la carte écrase la colonne
+                  texte). La saisie directe est bridée en largeur pour que le
+                  libellé ne soit jamais recouvert en colonne étroite. */}
+                <div className="slider-xxl mt-5 grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-1 [&_input[type=text]]:w-20">
+                  <SliderInput
+                    label={tr("Montant initial (€)")}
+                    id="landing-hero-capital"
+                    value={heroCapital}
+                    min={0}
+                    max={200000}
+                    step={1000}
+                    color="var(--color-primary)"
+                    hideBounds
+                    onChange={setHeroCapital}
+                  />
+                  <SliderInput
+                    label={tr("Versement mensuel (€)")}
+                    id="landing-hero-monthly"
+                    value={heroMonthly}
+                    min={0}
+                    max={5000}
+                    step={50}
+                    color="var(--color-primary)"
+                    hideBounds
+                    onChange={setHeroMonthly}
+                  />
+                  <SliderInput
+                    label={tr("Durée (ans)")}
+                    id="landing-hero-duration"
+                    value={heroDuration}
+                    min={5}
+                    max={40}
+                    step={1}
+                    color="var(--color-primary)"
+                    hideBounds
+                    onChange={setHeroDuration}
+                  />
                 </div>
-                <DecompositionBar invested={heroInvested} growth={heroGrowth} />
-              </div>
 
-              {/* La courbe, exécutée par le vrai moteur (clé = scénario → redessin animé). */}
-              <div className="mt-5">
-                <HeroChart
-                  key={heroScenario}
-                  rows={heroRows[heroScenario]}
-                  inputs={{ ...base, returnScenario: heroScenario }}
-                  footer={false}
-                />
-                <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
-                  <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
-                  {base.duration} {tr("ans")} · {base.monthlyPayment.toLocaleString(locale)} €/{tr("mois")} ·{" "}
-                  {tr(SCENARIO_META[heroScenario].desc)}
-                </p>
+                {/* Le nombre magique : résultat d'abord, recalculé à chaque réglage. */}
+                <div className="mt-5">
+                  <div className="flex items-end justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
+                        {tr("Capital final")} · {tr(SCENARIO_META[heroScenario].label)}
+                      </p>
+                      <p className="stat-glow font-display text-[2.6rem] sm:text-5xl font-extrabold tracking-tight text-text mono leading-none">
+                        <AnimatedAmount value={heroLast.nominal} />
+                      </p>
+                    </div>
+                    <div className="text-right pb-0.5">
+                      <p className="text-[9.5px] text-text-dim">{tr("en € d'aujourd'hui")}</p>
+                      <p className="mono text-base font-bold text-text-muted">{fmtCurrency(heroLast.real)}</p>
+                    </div>
+                  </div>
+                  <DecompositionBar invested={heroInvested} growth={heroGrowth} />
+                </div>
+
+                {/* La courbe, exécutée par le vrai moteur (clé = réglages → redessin animé). */}
+                <div className="mt-5">
+                  <HeroChart
+                    key={`${heroScenario}-${heroCapital}-${heroMonthly}-${heroDuration}`}
+                    rows={heroRows[heroScenario]}
+                    inputs={{
+                      ...base,
+                      capitalInitial: heroCapital,
+                      monthlyPayment: heroMonthly,
+                      duration: heroDuration,
+                      returnScenario: heroScenario,
+                    }}
+                    footer={false}
+                  />
+                  <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
+                    <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
+                    {heroDuration} {tr("ans")} · {heroMonthly.toLocaleString(locale)} €/{tr("mois")} ·{" "}
+                    {tr(SCENARIO_META[heroScenario].desc)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={launchFromHero}
+                    className="btn-shine mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-3 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
+                  >
+                    {tr("Repartir de cette simulation")} <ArrowRight size={14} aria-hidden />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -884,22 +1009,25 @@ export function LandingPage() {
         aria-label={`${tr("Les autres simulateurs supposent un rendement fixe.")} ${tr(
           "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.",
         )}`}
-        className="border-t border-border/70"
+        className="relative overflow-hidden border-y border-primary/25 bg-surface-50"
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-center">
-          <p className="text-sm sm:text-[15px] font-bold text-text-muted leading-snug">
+        <div aria-hidden className="aurora" />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-9 sm:py-11 flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-center">
+          <p className="text-sm sm:text-base font-bold leading-snug text-text-muted">
             {tr("Les autres simulateurs supposent un rendement fixe.")}
           </p>
-          <ArrowRight size={16} className="text-primary rotate-90 md:rotate-0 shrink-0" aria-hidden />
-          <p className="font-display text-lg sm:text-[1.35rem] font-extrabold tracking-tight text-primary leading-snug">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/12 border border-primary/30 shrink-0">
+            <ArrowRight size={15} className="text-primary rotate-90 md:rotate-0" aria-hidden />
+          </span>
+          <p className="font-display text-xl sm:text-[1.5rem] font-extrabold tracking-tight leading-snug text-text text-balance">
             {tr("Nous, on rejoue 100 ans de vraie histoire, krachs inclus.")}
           </p>
         </div>
       </section>
 
       {/* ── Chiffres clés ───────────────────────────────────────────────── */}
-      <section aria-label={tr("Chiffres clés")} className="border-y border-border/70 bg-glass/40">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+      <section aria-label={tr("Chiffres clés")} className="border-y border-border/70 bg-surface-50/70">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12 sm:py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           <CountUpStat
             value={100}
             suffix=" ans"
@@ -938,9 +1066,9 @@ export function LandingPage() {
       <section
         id="krachs"
         aria-label={tr("Vos 100 € face aux krachs")}
-        className="border-t border-border/70 bg-glass/30 scroll-mt-20"
+        className="border-t border-border/70 bg-surface-50/50 scroll-mt-20"
       >
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-20 sm:py-24">
           <Reveal>
             <SectionTitle
               eyebrow="Histoire réelle"
@@ -949,7 +1077,7 @@ export function LandingPage() {
             />
           </Reveal>
           <Reveal>
-            <div className="glass-gold rounded-3xl p-5 sm:p-8 shadow-premium-lg">
+            <div className="glass-strong rounded-3xl p-5 sm:p-8 shadow-premium-lg ring-1 ring-primary/30 relative overflow-hidden">
               {/* Sélecteur d'année (radiogroup, comme la démo du héro). */}
               <div
                 role="radiogroup"
@@ -984,7 +1112,7 @@ export function LandingPage() {
                   <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
                     {tr("au pire, votre épargne")}
                   </p>
-                  <p className="font-display text-5xl sm:text-6xl font-extrabold tracking-tight text-primary mono leading-none">
+                  <p className="font-display text-6xl sm:text-7xl font-extrabold tracking-tight text-primary mono leading-none drop-shadow-[0_0_24px_rgba(212,175,55,0.25)]">
                     −{crashDrawdownPct} <span className="text-2xl font-bold text-text-muted">%</span>
                   </p>
                   <p className="mt-2 text-[11px] text-text-muted">
@@ -1024,7 +1152,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Fonctionnalités ─────────────────────────────────────────────── */}
-      <section id="fonctionnalites" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
+      <section id="fonctionnalites" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Fonctionnalités"
@@ -1076,7 +1204,7 @@ export function LandingPage() {
 
       {/* ── Scénarios (moteur réel) ─────────────────────────────────────── */}
       <section id="scenarios" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24">
           <Reveal>
             <SectionTitle
               eyebrow="Scénarios"
@@ -1130,7 +1258,7 @@ export function LandingPage() {
       <section
         id="comparaison"
         aria-label={tr("Comment on se compare")}
-        className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+        className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20"
       >
         <Reveal>
           <SectionTitle
@@ -1140,15 +1268,15 @@ export function LandingPage() {
           />
         </Reveal>
         <Reveal>
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <table className="w-full min-w-[720px] border-collapse">
+          <div className="glass-strong rounded-3xl overflow-hidden shadow-premium ring-1 ring-primary/20 overflow-x-auto">
+            <table className="compare-table w-full min-w-[720px] border-collapse">
               <thead>
-                <tr>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted pb-3 pr-4">
+                <tr className="bg-primary/8 border-b border-primary/20">
+                  <th className="text-left text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted px-4 py-4">
                     {tr("Ce que l'outil fait")}
                   </th>
                   {COMPARE_COLS.map((name, i) => (
-                    <th key={name} className="pb-3 px-3 text-left">
+                    <th key={name} className={cn("px-4 py-4 text-left", i === 0 && "bg-primary/10")}>
                       <span
                         className={cn(
                           "text-[11px] font-extrabold uppercase tracking-[0.12em]",
@@ -1167,13 +1295,17 @@ export function LandingPage() {
                 </tr>
               </thead>
               <tbody>
-                {COMPARE_ROWS.map(row => (
-                  <tr key={row.label} className="border-t border-border/60">
-                    <th scope="row" className="text-left text-[11.5px] font-bold text-text py-3 pr-4 leading-snug">
+                {COMPARE_ROWS.map((row, ri) => (
+                  <tr key={row.label} className={cn("border-t border-border/60", ri % 2 === 1 && "bg-glass/40")}>
+                    <th scope="row" className="text-left text-[11.5px] font-bold text-text px-4 py-3.5 leading-snug">
                       {tr(row.label)}
                     </th>
                     {row.cells.map((cell, i) => (
-                      <td key={i} className={cn("px-3 py-3", i === 0 && "bg-primary/5")}>
+                      <td
+                        key={i}
+                        data-col={tr(COMPARE_COLS[i])}
+                        className={cn("px-4 py-3.5", i === 0 && "bg-primary/10 ring-1 ring-inset ring-primary/20")}
+                      >
                         <CompareCellView cell={cell} />
                       </td>
                     ))}
@@ -1229,7 +1361,7 @@ export function LandingPage() {
       <section
         id="manifeste"
         aria-label={tr("Ce que nous ne faisons pas")}
-        className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+        className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20"
       >
         <Reveal>
           <SectionTitle
@@ -1241,7 +1373,7 @@ export function LandingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
           {MANIFESTO.map((item, i) => (
             <Reveal key={item.title} delay={i * 0.07}>
-              <article className="glass rounded-3xl p-6 card-interactive h-full">
+              <article className="manifesto-card rounded-3xl p-6 card-interactive h-full">
                 <div
                   className="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 border"
                   style={{
@@ -1275,7 +1407,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Enveloppes ──────────────────────────────────────────────────── */}
-      <section id="enveloppes" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
+      <section id="enveloppes" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Fiscalité"
@@ -1317,7 +1449,7 @@ export function LandingPage() {
 
       {/* ── Méthodologie ────────────────────────────────────────────────── */}
       <section id="methode" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24">
           <Reveal>
             <SectionTitle
               eyebrow="Méthodologie"
@@ -1342,14 +1474,14 @@ export function LandingPage() {
                       <span className="font-semibold text-text">{tr("Optimiste")}</span>
                     </p>
                   </div>
-                  <p className="mono text-2xl font-extrabold text-text shrink-0">
+                  <p className="mono text-[28px] font-extrabold tracking-tight text-text shrink-0">
                     10,07 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2.5 my-3 pl-1">
-                  <span className="w-5 h-5 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center shrink-0">
-                    <ArrowDown size={11} className="text-primary" aria-hidden />
+                <div className="flex items-center gap-2.5 my-3.5 pl-1">
+                  <span className="w-6 h-6 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center shrink-0">
+                    <ArrowDown size={13} className="text-primary" aria-hidden />
                   </span>
                   <p className="text-[10.5px] text-text-muted leading-snug">
                     {tr("on retire")} <strong className="text-text">{tr("la volatilité")}</strong>{" "}
@@ -1357,7 +1489,7 @@ export function LandingPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary/8 px-3.5 py-3">
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/12 px-4 py-3.5 shadow-gold">
                   <div className="min-w-0">
                     <p className="text-[13px] font-bold text-primary">
                       {tr("Composé")} <span className="font-medium text-text-muted">{tr("— krachs inclus")}</span>
@@ -1370,14 +1502,14 @@ export function LandingPage() {
                       <span className="font-semibold text-text">{tr("Central")}</span>
                     </p>
                   </div>
-                  <p className="mono text-2xl font-extrabold text-primary shrink-0">
+                  <p className="mono text-[28px] font-extrabold tracking-tight text-primary shrink-0">
                     8,22 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2.5 my-3 pl-1">
-                  <span className="w-5 h-5 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center shrink-0">
-                    <ArrowDown size={11} className="text-primary" aria-hidden />
+                <div className="flex items-center gap-2.5 my-3.5 pl-1">
+                  <span className="w-6 h-6 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center shrink-0">
+                    <ArrowDown size={13} className="text-primary" aria-hidden />
                   </span>
                   <p className="text-[10.5px] text-text-muted leading-snug">
                     {tr("on retire")} <strong className="text-text">{tr("l'inflation")}</strong> (2,1 %/an) —{" "}
@@ -1395,7 +1527,7 @@ export function LandingPage() {
                       <span className="font-semibold text-text">{tr("Prudent")}</span>
                     </p>
                   </div>
-                  <p className="mono text-2xl font-extrabold text-primary shrink-0">
+                  <p className="mono text-[28px] font-extrabold tracking-tight text-primary shrink-0">
                     5,99 <span className="text-[11px] font-medium text-text-muted">{tr("%/an")}</span>
                   </p>
                 </div>
@@ -1443,7 +1575,7 @@ export function LandingPage() {
       </section>
 
       {/* ── Pour qui (moteur réel) ──────────────────────────────────────── */}
-      <section id="pourqui" className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20">
+      <section id="pourqui" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20">
         <Reveal>
           <SectionTitle
             eyebrow="Exemples"
@@ -1476,23 +1608,23 @@ export function LandingPage() {
         aria-label={tr("Objectif inversé")}
         className="border-t border-border/70 bg-glass/30 scroll-mt-20"
       >
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-20 sm:py-24">
           <Reveal>
             <SectionTitle
               eyebrow="Objectif inversé"
-              title="Je veux 1 M€ → combien par mois ?"
+              title="Je veux 500 k€ → combien par mois ?"
               sub="Dites-nous votre objectif et votre horizon : le moteur calcule l'épargne mensuelle nécessaire, sur le rendement réel composé du MSCI World — krachs inclus."
             />
           </Reveal>
           <Reveal>
-            <div className="glass-gold rounded-3xl p-5 sm:p-8 shadow-premium-lg grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+            <div className="glass-gold rounded-3xl p-5 sm:p-8 shadow-premium-lg ring-1 ring-primary/30 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
               <div>
                 <SliderInput
                   label={tr("Objectif (€)")}
                   id="landing-goal-target"
                   value={goalTarget}
                   min={100000}
-                  max={5000000}
+                  max={2000000}
                   step={25000}
                   color="var(--color-primary)"
                   onChange={setGoalTarget}
@@ -1532,7 +1664,7 @@ export function LandingPage() {
                   <button
                     type="button"
                     onClick={launchFromGoal}
-                    className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-3 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+                    className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-3 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
                   >
                     {tr("Repartir de cette simulation")} <ArrowRight size={14} aria-hidden />
                   </button>
@@ -1552,7 +1684,7 @@ export function LandingPage() {
 
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" className="border-t border-border/70 bg-glass/30 scroll-mt-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
           <Reveal>
             <SectionTitle eyebrow="FAQ" title="Questions fréquentes" />
           </Reveal>
@@ -1648,7 +1780,11 @@ export function LandingPage() {
       </section>
 
       {/* ── Dernières éditions (CHANGELOG réel) ──────────────────────────── */}
-      <section aria-label={tr("Dernières évolutions")} className="max-w-[1440px] mx-auto px-4 sm:px-6 py-14 sm:py-20">
+      <section
+        id="editions"
+        aria-label={tr("Dernières évolutions")}
+        className="max-w-[1200px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20"
+      >
         <Reveal>
           <div className="flex items-center gap-2 justify-center mb-6">
             <History size={13} className="text-primary" aria-hidden />
@@ -1680,26 +1816,27 @@ export function LandingPage() {
 
       {/* ── Appel final ─────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
+        <div aria-hidden className="aurora" />
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none animate-pulse-glow"
           style={{
             background:
-              "radial-gradient(70% 90% at 50% 110%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 65%)",
+              "radial-gradient(70% 90% at 50% 110%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 65%), radial-gradient(40% 40% at 50% 100%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 60%)",
           }}
         />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
           <Reveal>
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight">
-              {tr("Voyez où va votre épargne,")} <span className="text-primary">{tr("avant de l'y mettre")}</span>
+            <h2 className="font-display text-4xl sm:text-5xl font-extrabold tracking-[-0.02em] leading-[1.05] text-balance">
+              {tr("Voyez où va votre épargne,")} <span className="text-gold-gradient">{tr("avant de l'y mettre")}</span>
             </h2>
-            <p className="text-sm text-text-muted mt-4 max-w-xl mx-auto">
+            <p className="text-[15px] text-text-muted mt-5 max-w-xl mx-auto leading-relaxed">
               {tr("Quelques secondes suffisent — gratuit, sans inscription, sans envoyer vos données nulle part.")}
             </p>
             <button
               type="button"
               onClick={launch}
-              className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-8 py-4 mt-8 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+              className="btn-shine inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-base px-10 py-5 mt-10 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
             >
               {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
             </button>
@@ -1728,12 +1865,23 @@ export function LandingPage() {
           <button
             type="button"
             onClick={launch}
-            className="btn-shine w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110"
+            className="btn-shine w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-sm px-6 py-3.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
           >
             {tr("Calculer mon nombre magique")} <ArrowRight size={15} aria-hidden />
           </button>
         </div>
       </div>
+
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label={tr("Retour en haut")}
+          className="back-to-top glass-strong text-primary hover:bg-glass-hover transition-colors"
+        >
+          <ArrowDown size={16} aria-hidden className="rotate-180" />
+        </button>
+      )}
 
       {/* ── Pied de page ────────────────────────────────────────────────── */}
       <footer className="border-t border-border/70">
@@ -1772,7 +1920,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.17.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.22.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

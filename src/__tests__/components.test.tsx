@@ -1197,14 +1197,14 @@ describe("v6.1 — landing page", () => {
 
   it("objectif inversé : le solveur calcule l'épargne mensuelle en direct et le CTA repart via #s=", () => {
     render(<LandingPage />)
-    expect(screen.getByRole("heading", { name: /je veux 1 m€/i })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /je veux 500 k€/i })).toBeInTheDocument()
     // Le montant affiché est celui du VRAI solveur (mêmes inputs que la section).
     const base = parseStoredInputs(null)
     const historical = getHistoricalDataset(base.historicalIndex)
     const expected = solveGoal({
       ...base,
-      goalTarget: 1_000_000,
-      goalDuration: 20,
+      goalTarget: 500_000,
+      goalDuration: 28,
       goalCapital: 0,
       goalAnnualReturn: historical.compoundedReturn,
     }).pmtPerMonth
@@ -1213,11 +1213,45 @@ describe("v6.1 — landing page", () => {
     expect(text).toContain(fmtCurrency(expected ?? 0).replace(/[\u202F\u00A0]/g, " "))
     // Le CTA « Repartir de cette simulation » écrit un hash #s=… décodable qui
     // route vers l'app avec les MÊMES réglages d'objectif (deep-link v6).
-    fireEvent.click(screen.getByRole("button", { name: /repartir de cette simulation/i }))
+    // Scopé à la section : le héro a désormais son propre CTA homonyme (2.1).
+    fireEvent.click(within(section).getByRole("button", { name: /repartir de cette simulation/i }))
     expect(window.location.hash).toMatch(/^#s=/)
     const decoded = decodeInputsFromUrl(window.location.hash.slice(1))
-    expect(decoded?.goalTarget).toBe(1_000_000)
-    expect(decoded?.goalDuration).toBe(20)
+    expect(decoded?.goalTarget).toBe(500_000)
+    expect(decoded?.goalDuration).toBe(28)
+  })
+
+  it("démo éditable du héro (2.1) : 3 curseurs recalculent le moteur + CTA repart via #s=", () => {
+    render(<LandingPage />)
+    const hero = screen.getByRole("region", { name: /démo interactive/i })
+    // 3 curseurs : le SliderInput rend un range + une saisie directe —
+    // on cible les sliders (role) au nom exact.
+    const capital = within(hero).getByRole("slider", { name: "Montant initial (€)" })
+    const monthly = within(hero).getByRole("slider", { name: "Versement mensuel (€)" })
+    const duration = within(hero).getByRole("slider", { name: "Durée (ans)" })
+    expect(capital).toBeInTheDocument()
+    expect(monthly).toBeInTheDocument()
+    expect(duration).toBeInTheDocument()
+    // Changer la durée recalcule le vrai moteur : le montant « en € d'aujourd'hui »
+    // (rendu direct, non animé) égale runSimulation avec les nouveaux réglages.
+    fireEvent.change(duration, { target: { value: "30" } })
+    const expected = runSimulation({
+      ...parseStoredInputs(null),
+      capitalInitial: 10000,
+      monthlyPayment: 500,
+      duration: 30,
+      returnScenario: "central",
+    })
+    const last = expected[expected.length - 1]
+    expect(hero.textContent ?? "").toContain(fmtCurrency(last.real))
+    expect(hero.textContent ?? "").toContain("30 ans")
+    // Le CTA du héro repart avec les réglages du héro.
+    fireEvent.click(within(hero).getByRole("button", { name: /repartir de cette simulation/i }))
+    expect(window.location.hash).toMatch(/^#s=/)
+    const decodedHero = decodeInputsFromUrl(window.location.hash.slice(1))
+    expect(decodedHero?.duration).toBe(30)
+    expect(decodedHero?.monthlyPayment).toBe(500)
+    expect(decodedHero?.capitalInitial).toBe(10000)
   })
 
   it("dernières éditions : au plus 4 versions + lien vers le changelog complet", () => {

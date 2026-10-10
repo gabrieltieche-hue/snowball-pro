@@ -51,14 +51,28 @@
   body {
     font-family: var(--font-sans);
     background-color: var(--color-surface);
-    /* Ambiance : halo doré en haut, ambre chaud en bas à droite, vignette
-       profonde pour asseoir la profondeur sans bruit. */
+    /* Fond dynamique v8 : double halo or + nappe basse + vignette. Le grain
+       est posé en ::before (SVG turbulence, 3% d'opacite) pour casser le flat. */
     background-image:
-      radial-gradient(ellipse 90% 55% at 50% -12%, rgba(212, 175, 55, 0.05) 0%, transparent 62%),
-      radial-gradient(ellipse 55% 40% at 85% 105%, rgba(201, 163, 36, 0.03) 0%, transparent 55%),
-      radial-gradient(ellipse 40% 30% at 8% 90%, rgba(212, 175, 55, 0.02) 0%, transparent 60%);
+      radial-gradient(ellipse 70% 42% at 50% -10%, rgba(212, 175, 55, 0.1) 0%, transparent 62%),
+      radial-gradient(ellipse 46% 34% at 88% 108%, rgba(201, 163, 36, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 36% at 6% 96%, rgba(232, 213, 163, 0.05) 0%, transparent 60%),
+      linear-gradient(180deg, transparent 0%, rgba(212, 175, 55, 0.025) 100%);
     color: var(--color-text);
     overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+  body > * {
+    position: relative;
+    z-index: 1;
   }
   :root {
     color-scheme: dark;
@@ -122,11 +136,16 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
   .glass-gold {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.09), rgba(201, 163, 36, 0.03));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(212, 175, 55, 0.16);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 22%),
+      linear-gradient(135deg, rgba(212, 175, 55, 0.14), rgba(201, 163, 36, 0.05) 55%, rgba(212, 175, 55, 0.08));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 24px 70px rgba(0, 0, 0, 0.35),
+      0 0 60px rgba(212, 175, 55, 0.08);
   }
   .glass-gold-hover:hover {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(201, 163, 36, 0.06));
@@ -229,6 +248,77 @@
      point blanc respecte le contraste non-textuel 3:1 (WCAG 1.4.11). */
   .toggle-on {
     background: #8a6d1f;
+  }
+  /* ── Landing v6.22 — kit visuel « wow » (pur CSS, single-file OK) ── */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #f0d992 0%, #d4af37 45%, #a8840d 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.35));
+  }
+  .light-mode .text-gold-gradient {
+    background: linear-gradient(135deg, #a8840d 0%, #7c5e0a 55%, #624a08 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: none;
+  }
+  .hero-grid {
+    background-image:
+      linear-gradient(rgba(212, 175, 55, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212, 175, 55, 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(75% 65% at 50% 30%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(75% 65% at 50% 30%, black 30%, transparent 75%);
+  }
+  .light-mode .hero-grid {
+    background-image:
+      linear-gradient(rgba(124, 94, 10, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 94, 10, 0.08) 1px, transparent 1px);
+  }
+  .eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.9);
+    animation: eyebrowPulse 2.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .card-top-gold {
+    position: relative;
+  }
+  .card-top-gold::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.7), transparent);
+    pointer-events: none;
+  }
+  .manifesto-card {
+    background:
+      linear-gradient(180deg, rgba(245, 240, 232, 0.05) 0%, rgba(245, 240, 232, 0.025) 100%),
+      color-mix(in srgb, var(--color-danger) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 18%, var(--color-border) 82%);
+  }
+  .compare-glow {
+    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.35));
+  }
+}
+@keyframes eyebrowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
   }
 }
 
@@ -646,4 +736,219 @@ input[type="number"].mono {
 
 select {
   background-color: var(--color-surface-50) !important;
+}
+
+/* ============ LANDING REFONTE v7 — kit « en jette » (pur CSS, single-file OK) ============
+   Principes : identité or/ivoire conservée, 3 niveaux de surface max,
+   rythme vertical systématique, mobile-first, reduced-motion respecté. */
+
+@layer utilities {
+  /* Aurores d'ambiance (héro + final) : 2 blobs flous, zero image. */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .aurora::before,
+  .aurora::after {
+    content: "";
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+  }
+  .aurora::before {
+    width: 560px;
+    height: 380px;
+    left: -140px;
+    top: -120px;
+    background: radial-gradient(closest-side, rgba(212, 175, 55, 0.22), transparent 70%);
+  }
+  .aurora::after {
+    width: 620px;
+    height: 420px;
+    right: -160px;
+    top: -60px;
+    background: radial-gradient(closest-side, rgba(232, 213, 163, 0.14), transparent 70%);
+  }
+  .light-mode .aurora::before {
+    background: radial-gradient(closest-side, rgba(153, 111, 9, 0.14), transparent 70%);
+  }
+  .light-mode .aurora::after {
+    background: radial-gradient(closest-side, rgba(153, 111, 9, 0.08), transparent 70%);
+  }
+
+  /* Fenêtre app du héro : barre titre + corps. */
+  .app-window {
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .app-window-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-surface-50) 70%, transparent);
+  }
+  .app-window-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 9999px;
+  }
+
+  /* Eyebrow section : pastille + ligne. */
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    color: var(--color-primary);
+  }
+  .section-eyebrow::after {
+    content: "";
+    width: 28px;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--color-primary), transparent);
+  }
+
+  /* Sliders XXL landing : zone tactile 44px, pouce 22px. */
+  .slider-xxl input[type="range"] {
+    height: 10px;
+  }
+  .slider-xxl input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+  .slider-xxl input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Tableau honnête → cartes sur mobile, 100% CSS (pas de duplication JSX). */
+  @media (max-width: 767px) {
+    .compare-table thead {
+      display: none;
+    }
+    .compare-table,
+    .compare-table tbody,
+    .compare-table tr,
+    .compare-table th,
+    .compare-table td {
+      display: block;
+      width: 100%;
+    }
+    .compare-table tr {
+      border: 1px solid var(--color-border);
+      border-radius: 18px;
+      margin: 10px;
+      padding: 6px 4px;
+      background: color-mix(in srgb, var(--color-surface-50) 60%, transparent);
+    }
+    .compare-table th[scope="row"] {
+      font-size: 13px;
+      padding: 10px 14px 2px;
+    }
+    .compare-table td {
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .compare-table td::before {
+      content: attr(data-col);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+    }
+  }
+
+  /* Halo chiffres héro/krach : lisible sans écraser le reste. */
+  .stat-glow {
+    text-shadow: 0 0 32px rgba(212, 175, 55, 0.28);
+  }
+  .light-mode .stat-glow {
+    text-shadow: none;
+  }
+
+  /* Barre de progression scroll (header). */
+  .scroll-progress {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    height: 2px;
+    width: 100%;
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--color-primary-light), var(--color-primary));
+  }
+
+  /* Back-to-top. */
+  .back-to-top {
+    position: fixed;
+    right: 16px;
+    bottom: 88px;
+    z-index: 50;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (min-width: 768px) {
+    .back-to-top {
+      bottom: 24px;
+      right: 24px;
+    }
+  }
+}
+
+@layer utilities {
+  /* Hero dingue : panneau encre + faisceaux or + millimetre lumineux. */
+  .hero-dingue {
+    --color-text: #f5f0e8;
+    --color-text-muted: #cfc4b0;
+    --color-text-dim: #a89e8c;
+    color: #f5f0e8;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212, 175, 55, 0.22) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 35% at 85% 20%, rgba(232, 213, 163, 0.12) 0%, transparent 60%),
+      linear-gradient(180deg, #171208 0%, #12100e 78%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  }
+  .hero-dingue .hero-grid {
+    background-image:
+      linear-gradient(rgba(212, 175, 55, 0.14) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212, 175, 55, 0.14) 1px, transparent 1px);
+    mask-image: radial-gradient(80% 70% at 50% 28%, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(80% 70% at 50% 28%, black 30%, transparent 80%);
+  }
+  .hero-dingue .aurora::before {
+    background: radial-gradient(closest-side, rgba(212, 175, 55, 0.35), transparent 70%);
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .hero-dingue .aurora::after {
+    background: radial-gradient(closest-side, rgba(232, 213, 163, 0.2), transparent 70%);
+    animation: drift 18s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes drift {
+    from { transform: translate3d(-30px, 0, 0) scale(1); }
+    to { transform: translate3d(30px, 24px, 0) scale(1.12); }
+  }
+  .orb {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    filter: blur(60px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-dingue .aurora::before, .hero-dingue .aurora::after { animation: none; }
 }

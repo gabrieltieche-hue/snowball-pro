@@ -22,6 +22,8 @@ interface SliderInputProps {
   hardMax?: number
   /** Autorise les valeurs négatives dans la saisie directe. */
   allowNegative?: boolean
+  /** Masque la rangée min/max (démo héro landing : allège la carte). */
+  hideBounds?: boolean
   onChange: (v: number) => void
 }
 
@@ -42,6 +44,7 @@ export function SliderInput({
   hardMin,
   hardMax,
   allowNegative,
+  hideBounds,
 }: SliderInputProps) {
   const { tr } = useLang()
   // Rail « rempli » : la partie déjà parcourue est teintée (or, ou la couleur
@@ -96,11 +99,13 @@ export function SliderInput({
         aria-label={label}
       />
       {/* Bornes min/max affichées (cohérence avec l'onglet Rente « 5 ans / 60 ans ») */}
-      <div className="flex items-center justify-between gap-2 text-[10px] text-text-dim mt-1">
-        <span className="shrink-0">{min}</span>
-        {suffix ? <span className="truncate text-right">{suffix}</span> : <span />}
-        <span className="shrink-0">{max}</span>
-      </div>
+      {!hideBounds && (
+        <div className="flex items-center justify-between gap-2 text-[10px] text-text-dim mt-1">
+          <span className="shrink-0">{min}</span>
+          {suffix ? <span className="truncate text-right">{suffix}</span> : <span />}
+          <span className="shrink-0">{max}</span>
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-[11px] font-semibold text-danger mt-1 flex items-start gap-1">
           <AlertTriangle size={11} className="shrink-0 mt-px" aria-hidden /> {error}

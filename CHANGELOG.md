@@ -4,6 +4,20 @@
 
 ---
 
+## v6.22.0 — Landing : la démo du héro devient éditable (3 curseurs + deep-link)
+
+Chantier **n°3 de la feuille de route landing** (`IDEES-AMELIORATIONS-LANDING.md`, 2.1 — meilleur ROI) : le héro n'est plus une vitrine — le visiteur manipule **SES chiffres** (montant initial, versement mensuel, durée), le vrai moteur recalcule en direct, et le CTA **« Repartir de cette simulation »** pré-remplit l'app via le deep-link `#s=` existant (IKEA effect : ce qu'on a paramétré soi-même, on veut le voir finir).
+
+### 🔄 Changements
+
+- **`src/components/Landing/LandingPage.tsx`** : 3× `SliderInput` (`landing-hero-capital` 0–200 000 €, `landing-hero-monthly` 0–5 000 €, `landing-hero-duration` 5–40 ans) branchés sur `runSimulation({...base, capitalInitial: heroCapital, monthlyPayment: heroMonthly, duration: heroDuration, returnScenario: heroScenario})` ; résultat (`AnimatedAmount` + `DecompositionBar`) et `HeroChart` recalculés via `heroRows` ; CTA `launchFromHero` écrit `window.location.hash = encodeInputsForUrl({...})` (même chemin que l'objectif inversé, `parseHash` → vue app → `readSharedState`).
+- **`src/engine/i18n.ts`** : 2 clés FR→EN (carte « Dernières éditions » v6.22.0) + footer v6.22.0 (FR + EN). Fix au passage : le footer source disait encore v6.17.0 alors que le dictionnaire était en v6.21.0 (fallback affichait l'ancienne version).
+- **Tests** : la démo éditable était déjà couverte (`components.test.tsx` : 3 curseurs + recalcul moteur + CTA `#s=` décodable) — aucun test ajouté, suite inchangée.
+- Gate : typecheck ✓ lint ✓ tests ✓ format ✓ build ✓, vérifié en navigateur réel (FR + EN, desktop + mobile).
+- Version 6.21.0 → **6.22.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.22.0`, footer landing v6.22.0, « Dernières éditions » v6.22.0), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.21.0 — Header épuré : un seul CTA doré + l'avertissement corrige tout seul
 
 Mini-refonte du header validée par l'utilisateur (« IL Y A TROP DE BOUTONS ! ») : le CTA **« Nouvelle simulation »** était noyé entre deux boutons dorés (lui et « Exporter »), et le badge « 1 avertissement » ne disait pas où était le problème. Le header passe de **9 à 6 contrôles** avec 3 niveaux hiérarchiques clairs, et l'avertissement devient actionnable — il s'explique au clic et se corrige **tout seul**. Mode inline APEX + bundles process/ui-ux (TDD rouge/vert, auto-revue adverse), **425 tests**, gate 100 % vert, vérifié en navigateur réel.

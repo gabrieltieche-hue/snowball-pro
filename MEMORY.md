@@ -4,6 +4,27 @@
 
 ---
 
+## SESSION — 2026-10-10 (v6.22.0 : Landing — la démo du héro devient éditable)
+
+### Résumé
+
+Release du chantier **2.1 (démo éditable, ordre de bataille n°3)** déjà implémenté mais non publié : 3 curseurs du héro branchés sur le vrai moteur + CTA « Repartir de cette simulation » via `#s=`. Cérémonie v6.22.0 complète (bump, CHANGELOG, changelog.html, UPDATES, footer, i18n, MEMORY), gate 100 % vert, vérifié en navigateur réel (screenshots desktop 1440 + mobile 390 relus : PASS). **Blocage réseau** : `git clone/fetch` vers `github.com/gabrieltieche-hue/snowball-pro` en timeout depuis cette machine + aucun credential de push — commit/push/vercel à finaliser depuis une machine avec accès GitHub.
+
+### Décisions
+
+- **Version 6.22.0** : package.json, package-lock.json (lignes 3/9 — `undici-types 6.21.0` intact), `sw.js` `CACHE_VERSION` = `snowball-pro-v6.22.0`, footer + « Dernières éditions » landing FR/EN, CHANGELOG (entrée v6.22.0), changelog.html (bloc v6.22.0 en tête), MEMORY (cette entrée).
+- **Fix footer** : la source FR disait encore v6.17.0 alors que le dictionnaire i18n était en v6.21.0 (le `tr()` retombait sur l'ancienne version) — source et dictionnaire alignés en v6.22.0.
+- **+2 clés i18n** : `i18n-check` signalait 2 manquantes pré-existantes (« Retour en haut » → Back to top, « Passer en anglais » → Switch to English) — ajoutées, check à 0.
+- **Zéro changement moteur** : la démo éditable était déjà couverte par les tests (`démo éditable du héro (2.1)`) — aucun test ajouté. Suite : **433/433** (425 au tag v6.21.0 → +8 déjà présents dans l'arbre, du lot non commité).
+- **Commit/push non exécutés ici** : pas de `.git` local, clone/fetch en timeout, pas de token — commandes fournies pour la machine avec accès.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **433/433 tests** ✓ i18n 0 manquante ✓ prettier ✓ build ✓ (dist 1 315 ko / 381 ko gzip).
+- `VERDICT VISUEL: PASS` (desktop 1440 : héro + 3 curseurs + scénarios + 328 080 € + CTA ; mobile 390 : carte démo complète + CTA, 0 overflow). Écarts mineurs hors périmètre : libellé « SIMULATION PAR DÉ… » tronqué à 390 px (pré-existant), compteurs animés capturés à mi-course.
+
+---
+
 ## SESSION — 2026-08-17 (v6.21.0 : Header épuré — un seul CTA + l'avertissement corrige tout seul)
 
 ### Résumé

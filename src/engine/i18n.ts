@@ -845,6 +845,11 @@ const EN: Record<string, string> = {
   "Reprend le capital, la durée, l'épargne et le rendement (scénario courant) de l'onglet Simulateur — l'objectif n'est plus une calculatrice séparée.":
     "Takes the capital, duration, savings and return (current scenario) from the Simulator tab — the goal is no longer a separate calculator.",
   "Objectif (€)": "Goal (€)",
+  // ─── Landing : démo éditable du héro (2.1) ─────────────────────────────────
+  "Montant initial (€)": "Initial amount (€)",
+  "Versement mensuel (€)": "Monthly payment (€)",
+  "Durée (ans)": "Duration (years)",
+  "Démo interactive": "Interactive demo",
   "Synchronisé avec le Simulateur": "Synced with the Simulator",
   "Capital :": "Capital:",
   "Durée :": "Duration:",
@@ -1051,6 +1056,10 @@ const EN: Record<string, string> = {
     "Real numbers, not promises: every figure on this page is computed live by the engine, on the real MSCI World 1970-2025 returns — crashes included, French 2026 taxation.",
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
+  // ─── Landing v6.22 : démo éditable du héro (2.1) ─────────────────────────
+  "La démo du héro devient éditable": "The hero demo becomes editable",
+  "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.":
+    "The hero is no longer a showcase: 3 sliders (initial amount, monthly payment, duration) recompute the real engine live, with the Cautious/Central/Optimistic switch and the “Start from this simulation” button that pre-fills the app via a #s= deep link.",
   // ─── Landing v6.19 : header épuré + correction automatique ──────────────
   "Header épuré : un CTA + l'erreur se corrige seule": "Clean header: one CTA + errors fix themselves",
   "Le simulateur respire : un seul bouton doré (« Nouvelle simulation »), les actions secondaires rangées dans « ⋯ » (le thème Sombre/Clair reste à portée), et l'avertissement ⚠ est maintenant actionnable — un clic l'explique simplement, et « Corriger automatiquement » corrige tout seul (bornes + cohérence âge/durée/retraite), avec Annuler ⌘Z pour revenir en arrière.":
@@ -1229,8 +1238,8 @@ const EN: Record<string, string> = {
     "No sign-up required — your data never leaves this device.",
   "Snowball Pro fournit des simulations pédagogiques basées sur des données historiques réelles — il ne constitue pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Vos données restent stockées localement sur votre appareil.":
     "Snowball Pro provides educational simulations based on real historical data — it is not investment advice. Past performance does not predict future results. Your data stays stored locally on your device.",
-  "© 2026 Snowball Pro · v6.21.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.21.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.22.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.22.0 · 100% local data · Made with real returns, not promises.",
   "La bande « taux fixe » sous le héro": "The “fixed rate” band under the hero",
   "Snowball Pro se démarque des simulateurs qui supposent un rendement fixe : sous le héro, une bande rappelle notre méthode — 100 ans de vraie histoire rejouée, krachs inclus, sans citer le moindre taux en dur.":
     "Snowball Pro now stands apart from simulators that assume a fixed return: right under the hero, a band states our method — 100 years of real history replayed, crashes included, without quoting a single hardcoded rate.",
@@ -1300,6 +1309,8 @@ const EN: Record<string, string> = {
   "Vos simulations, isolées sur cet appareil — gratuit et sans engagement.":
     "Your simulations, isolated on this device — free and no commitment.",
   "Retour à l'accueil": "Back to home",
+  "Retour en haut": "Back to top",
+  "Passer en anglais": "Switch to English",
   "Vos identifiants et vos simulations restent": "Your credentials and simulations stay",
   "sur cet appareil": "on this device",
   "aucune donnée n'est envoyée sur un serveur.": "no data is sent to a server.",

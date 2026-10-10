@@ -163,7 +163,7 @@ export function GoalTab({ inputs, rows, darkMode, updateInput }: GoalTabProps) {
             id="goal-target"
             value={inputs.goalTarget}
             min={10000}
-            max={5000000}
+            max={2000000}
             step={10000}
             color="var(--color-primary)"
             onChange={v => updateInput("goalTarget", v)}
