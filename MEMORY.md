@@ -4,6 +4,26 @@
 
 ---
 
+## SESSION — 2026-10-10 (v6.22.1 : la carte démo tient à l'écran)
+
+### Résumé
+
+Demande utilisateur : la fenêtre de droite du héro dépassait (bouton « Repartir de cette simulation » invisible sans scroller). Compactage vertical de la carte démo (≈ 150 px gagnés) : `HeroChart` H 250 → 185, paddings/marges resserrés, chiffre réduit. Cérémonie v6.22.1 complète (bump, CHANGELOG, changelog.html, UPDATES, footer, i18n, MEMORY), gate vert, vérifié en navigateur réel (desktop 1280×800 + mobile 390 relus).
+
+### Décisions
+
+- **Version 6.22.1** : package.json, package-lock.json, `sw.js` `CACHE_VERSION` = `snowball-pro-v6.22.1`, footer + « Dernières éditions » landing FR/EN, changelog.html (bloc v6.22.1 en tête), CHANGELOG (entrée v6.22.1), MEMORY (cette entrée).
+- **+3 clés i18n** : titre + texte v6.22.1, footer v6.22.1.
+- **Zéro changement moteur** : que du layout — aucun test ajouté. Suite : moteur ✓, 100/100 composants ✓.
+- Fichiers non liés laissés hors commit : `src/utils/chartTheme.ts`, 4 charts, `src/__tests__/engine.test.ts` (chantier en cours pré-existant, non touché).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ tests composants 100/100 ✓.
+- `VERDICT VISUEL: PASS` (desktop : carte + bouton visibles sans scroll à 800 px de haut ; mobile : pile intacte, 0 overflow). Captures prises pendant les animations (compteur/courbe à mi-course — transitoire, pas un écart).
+
+---
+
 ## SESSION — 2026-10-10 (v6.22.0 : Landing — la démo du héro devient éditable)
 
 ### Résumé

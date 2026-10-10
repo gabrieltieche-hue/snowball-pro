@@ -1056,6 +1056,12 @@ const EN: Record<string, string> = {
     "Real numbers, not promises: every figure on this page is computed live by the engine, on the real MSCI World 1970-2025 returns — crashes included, French 2026 taxation.",
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
+  // ─── Landing v6.22.1 : carte démo compacte ──────────────────────────────
+  "La carte démo tient à l'écran": "The demo card fits on screen",
+  "La fenêtre de simulation du héro est compactée (courbe réduite, espacements resserrés) : le bouton « Repartir de cette simulation » est visible dès l'arrivée, sans scroller.":
+    "The hero simulation card is compacted (shorter chart, tighter spacing): the “Start from this simulation” button is visible on arrival, no scrolling needed.",
+  "© 2026 Snowball Pro · v6.22.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.22.1 · 100% local data · Made with real returns, not promises.",
   // ─── Landing v6.22 : démo éditable du héro (2.1) ─────────────────────────
   "La démo du héro devient éditable": "The hero demo becomes editable",
   "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.":

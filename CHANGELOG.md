@@ -4,6 +4,22 @@
 
 ---
 
+## v6.22.1 — La carte démo tient à l'écran
+
+La fenêtre de simulation du héro dépassait du viewport (bouton « Repartir de cette simulation » sous la ligne de flottaison, scroll obligatoire à l'arrivée). Compactage vertical ≈ 150 px : courbe `HeroChart` 250 → 185, paddings et marges resserrés, chiffre 2,6 rem → 2,25 rem.
+
+### 🔄 Changements
+
+- **`src/components/Landing/HeroChart.tsx`** : `H` 250 → 185, `PAD` resserré (top 12, bottom 22).
+- **`src/components/Landing/LandingPage.tsx`** : grille héro (`pt-6/sm:pt-8`, `pb-10/sm:pb-12`, `gap-8/lg:gap-10`), carte (`p-4/sm:p-5`), curseurs (`mt-3`, `[&>div]:mb-2`), capital (`mt-3`, `text-4xl/sm:text-[2.75rem]`), bloc courbe (`mt-3`, légende `mt-2`, CTA `mt-3/py-2.5`) ; entrée « Dernières éditions » v6.22.1 + footer v6.22.1.
+- **`src/index.css`** : `.app-window-bar` padding 10 → 8 px.
+- **`src/engine/i18n.ts`** : +3 clés FR→EN (titre + texte v6.22.1, footer v6.22.1).
+- **Tests** : aucun changement moteur — suite inchangée (moteur ✓, 100/100 composants ✓).
+- Gate : typecheck ✓ lint ✓ tests ✓, vérifié en navigateur réel (desktop 1280×800 : carte + bouton visibles sans scroll ; mobile 390 : pile intacte).
+- Version 6.22.0 → **6.22.1** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.22.1`, footer landing v6.22.1, « Dernières éditions » v6.22.1, changelog.html), CHANGELOG (cette entrée), MEMORY.md (entrée session), commit + déploiement Vercel (`vercel --prod`).
+
+---
+
 ## v6.22.0 — Landing : la démo du héro devient éditable (3 curseurs + deep-link)
 
 Chantier **n°3 de la feuille de route landing** (`IDEES-AMELIORATIONS-LANDING.md`, 2.1 — meilleur ROI) : le héro n'est plus une vitrine — le visiteur manipule **SES chiffres** (montant initial, versement mensuel, durée), le vrai moteur recalcule en direct, et le CTA **« Repartir de cette simulation »** pré-remplit l'app via le deep-link `#s=` existant (IKEA effect : ce qu'on a paramétré soi-même, on veut le voir finir).

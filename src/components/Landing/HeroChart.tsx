@@ -5,8 +5,8 @@ import { useLang } from "../../i18n"
 import type { SimulationInputs, YearRow } from "../../types"
 
 const W = 640
-const H = 250
-const PAD = { top: 14, right: 14, bottom: 26, left: 14 }
+const H = 185
+const PAD = { top: 12, right: 14, bottom: 22, left: 14 }
 
 interface HeroChartProps {
   /** Séries déjà calculées par l'appelant (démo interactive du héro). */

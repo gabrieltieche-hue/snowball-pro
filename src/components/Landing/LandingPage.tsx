@@ -542,6 +542,11 @@ const MANIFESTO = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.22.1",
+    title: "La carte démo tient à l'écran",
+    text: "La fenêtre de simulation du héro est compactée (courbe réduite, espacements resserrés) : le bouton « Repartir de cette simulation » est visible dès l'arrivée, sans scroller.",
+  },
+  {
     version: "v6.22.0",
     title: "La démo du héro devient éditable",
     text: "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.",
@@ -834,13 +839,13 @@ export function LandingPage() {
               "radial-gradient(90% 60% at 50% -10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 65%), radial-gradient(50% 35% at 82% 22%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 60%)",
           }}
         />
-        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-14 sm:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-10 sm:pb-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE }}
           >
-            <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-6 shadow-gold">
+            <p className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-primary bg-primary/10 border border-primary/25 px-3 py-1.5 rounded-full mb-4 shadow-gold">
               <span aria-hidden className="eyebrow-dot" /> <Sparkles size={11} aria-hidden />{" "}
               {tr("Fiscalité française 2026 · 100 ans d'historique réel")}
             </p>
@@ -858,7 +863,7 @@ export function LandingPage() {
                 "Votre nombre magique, c'est le capital final de votre épargne — calculé sur 100 ans de vraie histoire boursière, krachs inclus. En 30 secondes, sans inscription, sur votre appareil.",
               )}
             </p>
-            <div className="flex items-center gap-3 mt-7 flex-wrap">
+            <div className="flex items-center gap-3 mt-5 flex-wrap">
               <button
                 type="button"
                 onClick={launch}
@@ -873,7 +878,7 @@ export function LandingPage() {
                 {tr("Voir la méthode")} <ArrowDown size={14} aria-hidden />
               </a>
             </div>
-            <ul className="flex items-center gap-4 mt-6 flex-wrap text-[10.5px] text-text-dim">
+            <ul className="flex items-center gap-4 mt-4 flex-wrap text-[10.5px] text-text-dim">
               {[tr("Gratuit"), tr("Sans inscription"), tr("Vos données restent sur cet appareil")].map(item => (
                 <li key={item} className="flex items-center gap-1.5">
                   <Check size={11} className="text-primary" aria-hidden /> {item}
@@ -906,14 +911,14 @@ export function LandingPage() {
                   MSCI World 1970-2025
                 </span>
               </div>
-              <div className="p-5 sm:p-6">
+              <div className="p-4 sm:p-5">
                 <ScenarioSwitch value={heroScenario} onChange={setHeroScenario} rates={rates} />
 
                 {/* Démo éditable (2.1) : 3 curseurs branchés sur le vrai moteur, en
                   une rangée compacte (empilés, la carte écrase la colonne
                   texte). La saisie directe est bridée en largeur pour que le
                   libellé ne soit jamais recouvert en colonne étroite. */}
-                <div className="slider-xxl mt-5 grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-1 [&_input[type=text]]:w-20">
+                <div className="slider-xxl mt-3 grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-0 [&>div]:mb-2 [&_input[type=text]]:w-20">
                   <SliderInput
                     label={tr("Montant initial (€)")}
                     id="landing-hero-capital"
@@ -950,13 +955,13 @@ export function LandingPage() {
                 </div>
 
                 {/* Le nombre magique : résultat d'abord, recalculé à chaque réglage. */}
-                <div className="mt-5">
+                <div className="mt-3">
                   <div className="flex items-end justify-between gap-3 flex-wrap">
                     <div className="min-w-0">
                       <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
                         {tr("Capital final")} · {tr(SCENARIO_META[heroScenario].label)}
                       </p>
-                      <p className="stat-glow font-display text-[2.6rem] sm:text-5xl font-extrabold tracking-tight text-text mono leading-none">
+                      <p className="stat-glow font-display text-4xl sm:text-[2.75rem] font-extrabold tracking-tight text-text mono leading-none">
                         <AnimatedAmount value={heroLast.nominal} />
                       </p>
                     </div>
@@ -969,7 +974,7 @@ export function LandingPage() {
                 </div>
 
                 {/* La courbe, exécutée par le vrai moteur (clé = réglages → redessin animé). */}
-                <div className="mt-5">
+                <div className="mt-3">
                   <HeroChart
                     key={`${heroScenario}-${heroCapital}-${heroMonthly}-${heroDuration}`}
                     rows={heroRows[heroScenario]}
@@ -982,7 +987,7 @@ export function LandingPage() {
                     }}
                     footer={false}
                   />
-                  <p className="text-[10px] text-text-dim mt-3 flex items-center gap-1.5">
+                  <p className="text-[10px] text-text-dim mt-2 flex items-center gap-1.5">
                     <TrendingUp size={11} className="text-primary shrink-0" aria-hidden />
                     {heroDuration} {tr("ans")} · {heroMonthly.toLocaleString(locale)} €/{tr("mois")} ·{" "}
                     {tr(SCENARIO_META[heroScenario].desc)}
@@ -990,7 +995,7 @@ export function LandingPage() {
                   <button
                     type="button"
                     onClick={launchFromHero}
-                    className="btn-shine mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-3 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
+                    className="btn-shine mt-3 inline-flex items-center gap-2 rounded-2xl bg-primary btn-gold-text font-extrabold text-[13px] px-5 py-2.5 shadow-gold-strong transition-all duration-150 active:scale-[0.98] hover:brightness-110 hover:scale-[1.02]"
                   >
                     {tr("Repartir de cette simulation")} <ArrowRight size={14} aria-hidden />
                   </button>
@@ -1920,7 +1925,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.22.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.22.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>
