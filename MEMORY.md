@@ -16,7 +16,8 @@ Release du chantier **2.1 (démo éditable, ordre de bataille n°3)** déjà imp
 - **Fix footer** : la source FR disait encore v6.17.0 alors que le dictionnaire i18n était en v6.21.0 (le `tr()` retombait sur l'ancienne version) — source et dictionnaire alignés en v6.22.0.
 - **+2 clés i18n** : `i18n-check` signalait 2 manquantes pré-existantes (« Retour en haut » → Back to top, « Passer en anglais » → Switch to English) — ajoutées, check à 0.
 - **Zéro changement moteur** : la démo éditable était déjà couverte par les tests (`démo éditable du héro (2.1)`) — aucun test ajouté. Suite : **433/433** (425 au tag v6.21.0 → +8 déjà présents dans l'arbre, du lot non commité).
-- **Commit/push non exécutés ici** : pas de `.git` local, clone/fetch en timeout, pas de token — commandes fournies pour la machine avec accès.
+- **Commit/push exécutés ici** : dépôt initialisé sur place (`git init -b main`, remote `origin` sans token sur disque — auth via header mémoire éphémère), `git reset origin/main` puis `git add -u` (15 fichiers suivis uniquement : ni BACKUP tgz, ni `.agents/`, ni scripts vidéo, ni `skills-lock.json`), scan secrets OK, commit `8f3d7b3` « v6.22.0 — Landing : la démo du héro devient éditable », push `d70a318..8f3d7b3 main -> main` réussi (token PAT fourni par l'utilisateur, validé via API : `gabrieltieche-hue`).
+- **Vercel en attente** : aucune auth Vercel sur cette machine (`~/.vercel` absent) — soit le push déclenche l'auto-deploy (si projet connecté au repo), soit `npx vercel --prod` à lancer depuis une machine authentifiée.
 
 ### Vérifications
 
