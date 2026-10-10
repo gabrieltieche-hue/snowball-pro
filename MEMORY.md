@@ -17,7 +17,7 @@ Release du chantier **2.1 (démo éditable, ordre de bataille n°3)** déjà imp
 - **+2 clés i18n** : `i18n-check` signalait 2 manquantes pré-existantes (« Retour en haut » → Back to top, « Passer en anglais » → Switch to English) — ajoutées, check à 0.
 - **Zéro changement moteur** : la démo éditable était déjà couverte par les tests (`démo éditable du héro (2.1)`) — aucun test ajouté. Suite : **433/433** (425 au tag v6.21.0 → +8 déjà présents dans l'arbre, du lot non commité).
 - **Commit/push exécutés ici** : dépôt initialisé sur place (`git init -b main`, remote `origin` sans token sur disque — auth via header mémoire éphémère), `git reset origin/main` puis `git add -u` (15 fichiers suivis uniquement : ni BACKUP tgz, ni `.agents/`, ni scripts vidéo, ni `skills-lock.json`), scan secrets OK, commit `8f3d7b3` « v6.22.0 — Landing : la démo du héro devient éditable », push `d70a318..8f3d7b3 main -> main` réussi (token PAT fourni par l'utilisateur, validé via API : `gabrieltieche-hue`).
-- **Vercel en attente** : aucune auth Vercel sur cette machine (`~/.vercel` absent) — soit le push déclenche l'auto-deploy (si projet connecté au repo), soit `npx vercel --prod` à lancer depuis une machine authentifiée.
+- **Vercel déployé** : `vercel --prod` → READY, `https://snowball-pro.vercel.app` (build `snowball-pro@6.22.0`, 2881 modules, Washington iad1). Premier token Vercel fourni rejeté (`User not found` — révoqué ou mauvais type), second OK (`gabrieltieche-2270`), sauvegardé dans `/root/.config/snowball-pro/vercel_token` (600, hors dépôt). Lien projet créé (`.vercel/`, gitignoré). Piste : `vercel git connect` pour l'auto-deploy au push (actuellement aucun).
 
 ### Vérifications
 
