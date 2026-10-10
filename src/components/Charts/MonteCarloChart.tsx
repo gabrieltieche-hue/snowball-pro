@@ -80,14 +80,15 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
       </p>
       <div ref={chartRef} className="h-72 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart margin={{ top: 8, right: 8, bottom: 0, left: 0 }} data={data}>
+          <ComposedChart margin={{ top: 12, right: 8, bottom: 0, left: 0 }} data={data}>
             <defs>
               <linearGradient id="bandGradientMC" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.03} />
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.34} />
+                <stop offset="55%" stopColor="var(--color-primary)" stopOpacity={0.14} />
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.04} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+            <CartesianGrid strokeDasharray="3 6" stroke={theme.grid} vertical={false} />
             <XAxis
               dataKey="year"
               tick={{ fill: theme.tick, fontSize: 11 }}
@@ -136,33 +137,50 @@ export function MonteCarloChart({ result, darkMode, real = false }: MonteCarloCh
               name={tr("Fourchette (pire – meilleur cas)")}
               stroke="none"
               fill="url(#bandGradientMC)"
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={1200}
+              animationEasing="ease-out"
             />
             <Line
               type="monotone"
               dataKey="p90"
               name={tr("Bonne période de bourse (P90)")}
               stroke="var(--color-success)"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              strokeLinecap="round"
               dot={false}
+              isAnimationActive
+              animationDuration={1300}
+              animationEasing="ease-out"
+              activeDot={{ r: 4, strokeWidth: 1.5, stroke: "rgba(255,255,255,0.8)" }}
             />
             <Line
               type="monotone"
               dataKey="p50"
               name={tr("Scénario moyen (P50)")}
               stroke="var(--color-primary)"
-              strokeWidth={2.5}
+              strokeWidth={3.25}
               dot={false}
+              isAnimationActive
+              animationDuration={1500}
+              animationEasing="ease-out"
+              style={{ filter: "drop-shadow(0 2px 10px rgba(212,175,55,0.4))" }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgba(255,255,255,0.9)" }}
             />
             <Line
               type="monotone"
               dataKey="p10"
               name={tr("Période difficile (P10)")}
               stroke="var(--color-danger)"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              strokeLinecap="round"
               dot={false}
+              isAnimationActive
+              animationDuration={1300}
+              animationEasing="ease-out"
+              activeDot={{ r: 4, strokeWidth: 1.5, stroke: "rgba(255,255,255,0.8)" }}
             />
             {/* M13 — la ligne objectif est étiquetée (plus de trait bleu muet) et
                 suit la charte : ambre, comme les repères de réglage. */}

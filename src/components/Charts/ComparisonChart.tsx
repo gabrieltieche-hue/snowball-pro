@@ -30,7 +30,7 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
   const colorB = theme.gains
 
   return (
-    <div className="glass rounded-3xl p-5 sm:p-6 animate-scale-in">
+    <div className="glass rounded-3xl p-5 sm:p-6 animate-scale-in chart-lively">
       <SectionHeader
         as="h2"
         level="card"
@@ -93,8 +93,31 @@ export function ComparisonChart({ rowsA, rowsB, inputs, darkMode }: ComparisonCh
                 )
               }}
             />
-            <Line type="monotone" dataKey="A" name={tr("Scénario A")} stroke={colorA} strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="B" name={tr("Scénario B")} stroke={colorB} strokeWidth={2} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="A"
+              name={tr("Scénario A")}
+              stroke={colorA}
+              strokeWidth={2.25}
+              dot={false}
+              isAnimationActive
+              animationDuration={1200}
+              animationEasing="ease-out"
+              activeDot={{ r: 4, strokeWidth: 1.5, stroke: "rgba(255,255,255,0.8)" }}
+            />
+            <Line
+              type="monotone"
+              dataKey="B"
+              name={tr("Scénario B")}
+              stroke={colorB}
+              strokeWidth={3.5}
+              dot={false}
+              isAnimationActive
+              animationDuration={1500}
+              animationEasing="ease-out"
+              style={{ filter: `drop-shadow(0 2px 10px ${theme.glowGains})` }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgba(255,255,255,0.9)" }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>

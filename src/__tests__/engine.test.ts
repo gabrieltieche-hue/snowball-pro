@@ -965,31 +965,31 @@ describe("autoFixValidationErrors — « Corriger automatiquement »", () => {
 describe("chartTheme", () => {
   it("returns light colors when darkMode is false", () => {
     const theme = chartTheme(false)
-    // Grille légèrement plus affirmée en clair (v6.10) : 0.06 était
-    // quasi invisible sur ivoire.
-    expect(theme.grid).toBe("rgba(0,0,0,0.08)")
+    // v8 — grille adoucie (0.07) : les courbes épaisses + glow portent déjà
+    // le contraste, la grille s'efface.
+    expect(theme.grid).toBe("rgba(0,0,0,0.07)")
     expect(theme.tick).toBe("#6B7280")
   })
 
   it("returns dark colors when darkMode is true", () => {
     const theme = chartTheme(true)
-    expect(theme.grid).toBe("rgba(255,255,255,0.04)")
+    expect(theme.grid).toBe("rgba(255,255,255,0.05)")
     // I3 — tick aligné sur --color-text-dim (WCAG AA 4.5:1) : #A39A8C
     expect(theme.tick).toBe("#A39A8C")
   })
 
   it("returns theme-safe series colors", () => {
-    // v6.10 — palette unifiée avec CapitalAllocation : or de marque pour
-    // les gains, gris acier pour l'épargné, dans les deux thèmes.
+    // v8 — palette « excitante » : or plus saturé/vif (surtout en clair où
+    // le #996f09 rendait boueux sur ivoire), glow assorti pour le halo.
     const light = chartTheme(false)
-    expect(light.gains).toBe("#996f09")
+    expect(light.gains).toBe("#a67c00")
     expect(light.gainsAlt).toBe("#7a5807")
     expect(light.invested).toBe("#5f6b7a")
     expect(light.tax).toBe("#B04545")
     const dark = chartTheme(true)
-    expect(dark.gains).toBe("#E3B341")
-    expect(dark.invested).toBe("#9aa3af")
-    expect(dark.tax).toBe("#E08A8A")
+    expect(dark.gains).toBe("#F0C443")
+    expect(dark.invested).toBe("#a8b2c0")
+    expect(dark.tax).toBe("#F09292")
   })
 })
 

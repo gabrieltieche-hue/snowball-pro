@@ -64,8 +64,11 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
 
   // v6.10 — labels de fin de courbe : la valeur finale lisible sans hover,
   // avec un point or sur « Gains ». Couleurs texte alignées WCAG AA 4.5:1
-  // sur la carte : l'or vif #996f09 ne passe pas en texte clair (4.1:1), on
-  // utilise la variante profonde gainsAlt (#7a5807, 5.9:1).
+  // sur la carte : l'or de courbe ne passe pas en texte clair, on utilise
+  // la variante profonde gainsAlt (#7a5807, 5.9:1).
+  // v8 — rendu « excitant » : halo pulsant autour du point final (classe CSS
+  // .chart-end-pulse, respect de prefers-reduced-motion), pastille plus
+  // généreuse, glow sur la courbe maîtresse.
   const fmtEnd = (v: number) => (lang === "en" ? `€${fmtCompact(v)}` : `${fmtCompact(v)} €`)
   const endLabel =
     (seriesColor: string, textColor: string, dot: boolean) =>
@@ -76,13 +79,19 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
       const py = Number(y ?? 0)
       return (
         <g>
-          {dot && <circle cx={px} cy={py} r={3.5} fill={seriesColor} stroke="rgba(255,255,255,0.85)" strokeWidth={1} />}
+          {dot && (
+            <>
+              <circle cx={px} cy={py} r={9} fill={seriesColor} opacity={0.22} className="chart-end-pulse" />
+              <circle cx={px} cy={py} r={5} fill={seriesColor} stroke="rgba(255,255,255,0.9)" strokeWidth={2} />
+              <circle cx={px} cy={py} r={1.8} fill="#fff" opacity={0.95} />
+            </>
+          )}
           <text
-            x={px + (dot ? 10 : 7)}
-            y={py + (dot ? 4 : 3.5)}
+            x={px + (dot ? 14 : 8)}
+            y={py + (dot ? 4.5 : 3.5)}
             fill={textColor}
-            fontSize={dot ? 11 : 10}
-            fontWeight={dot ? 700 : 500}
+            fontSize={dot ? 12 : 10.5}
+            fontWeight={dot ? 800 : 600}
             fontFamily="var(--font-mono)"
             style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}
           >
@@ -93,7 +102,7 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
     }
 
   return (
-    <div className="glass rounded-3xl p-5 sm:p-6 animate-scale-in">
+    <div className="glass rounded-3xl p-5 sm:p-6 animate-scale-in chart-lively">
       <SectionHeader
         as="h2"
         level="card"
@@ -129,18 +138,20 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           {/* Marge droite élargie : les labels de fin de courbe vivent hors du
               tracé, sans rogner la dernière valeur. */}
-          <AreaChart data={data} margin={{ top: 8, right: 64, bottom: 0, left: 0 }}>
+          <AreaChart data={data} margin={{ top: 12, right: 72, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="gradInvesti" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={investedColor} stopOpacity={0.18} />
+                <stop offset="0%" stopColor={investedColor} stopOpacity={0.3} />
+                <stop offset="55%" stopColor={investedColor} stopOpacity={0.1} />
                 <stop offset="100%" stopColor={investedColor} stopOpacity={0.01} />
               </linearGradient>
               <linearGradient id="gradGains" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={gainsColor} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={gainsColor} stopOpacity={0.01} />
+                <stop offset="0%" stopColor={gainsColor} stopOpacity={0.5} />
+                <stop offset="45%" stopColor={gainsColor} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={gainsColor} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+            <CartesianGrid strokeDasharray="3 6" stroke={theme.grid} vertical={false} opacity={0.9} />
             <XAxis
               dataKey="year"
               tick={{ fill: theme.tick, fontSize: 11 }}
@@ -187,9 +198,12 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               name={tr("Argent épargné")}
               stackId="1"
               stroke={investedColor}
-              strokeWidth={2}
+              strokeWidth={2.25}
               fill="url(#gradInvesti)"
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={1200}
+              animationEasing="ease-out"
+              activeDot={{ r: 4, strokeWidth: 1.5, stroke: "rgba(255,255,255,0.8)" }}
               label={{ content: endLabel(investedColor, investedColor, false) }}
             />
             <Area
@@ -198,9 +212,13 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
               name={tr("Gains (bourse)")}
               stackId="1"
               stroke={gainsColor}
-              strokeWidth={2}
+              strokeWidth={3.5}
               fill="url(#gradGains)"
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={1500}
+              animationEasing="ease-out"
+              style={{ filter: `drop-shadow(0 2px 10px ${theme.glowGains})` }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgba(255,255,255,0.9)" }}
               label={{ content: endLabel(gainsColor, theme.gainsAlt, true) }}
             />
             {inputs.envelope !== "none" && (
@@ -210,9 +228,13 @@ export function EquityChart({ rows, inputs, darkMode }: EquityChartProps) {
                 name={tr("Impôts théoriques (liquidation)")}
                 stroke={taxColor}
                 strokeWidth={2}
-                strokeDasharray="6 3"
+                strokeDasharray="7 4"
+                strokeLinecap="round"
                 dot={false}
-                isAnimationActive={false}
+                isAnimationActive
+                animationDuration={1300}
+                animationEasing="ease-out"
+                activeDot={{ r: 4, strokeWidth: 1.5, stroke: "rgba(255,255,255,0.8)" }}
                 label={{ content: endLabel(taxColor, taxColor, false) }}
               />
             )}
