@@ -21,6 +21,8 @@ Demande utilisateur : « où j'en suis » → reprise du dernier chantier landin
 
 - Gate : typecheck ✓ lint ✓ **439/439 tests** ✓ i18n 0 clé manquante ✓ build ✓ (1 337 ko / 387 ko gzip).
 - Pas de navigateur exploitable dans ce cloud (Chromium sans bibliothèques système, pas de root) : vérification DOM/tests, pas de capture ; preview dev 3001 contrôlée (module servi sans les textes supprimés).
+- **Commit/push** : commit `55ad1f7` « v6.23.0 — Landing : retraite en 2008 + app mobile allégée » (21 fichiers), push `19aebf2..55ad1f7` sur `main` réussi.
+- **⚠ Vercel bloqué** : la CLI de ce cloud n'a aucun credential (`vercel --prod` → « No existing credentials found ») et aucun `VERCEL_TOKEN` n'est exposé. Déploiement à rejouer depuis un environnement authentifié (token fourni via les secrets du projet) ou par l'intégration Git du dashboard si elle est branchée.
 
 ---
 
