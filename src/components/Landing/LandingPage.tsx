@@ -20,6 +20,7 @@ import {
   Sun,
   Target,
   TrendingUp,
+  User,
   X,
 } from "lucide-react"
 import { cn } from "../../utils/cn"
@@ -27,6 +28,8 @@ import { navigateTo } from "../../router"
 import { encodeInputsForUrl } from "../../utils/urlState"
 import { loadInitialDarkMode, persistThemeClass } from "../../utils/theme"
 import {
+  STRESS_TEST_SCENARIOS,
+  baseMonthlyWithdrawal,
   fmtTaxPercent,
   getHistoricalDataset,
   getTaxRules,
@@ -34,6 +37,7 @@ import {
   pfuRate,
   replayCrashFrom,
   runSimulation,
+  runStressTest,
   solveGoal,
 } from "../../engine"
 import { useLang } from "../../i18n"
@@ -43,6 +47,7 @@ import { QUICKSTART_PROFILES } from "../../utils/quickStart"
 import { Brand } from "./Brand"
 import { CrashChart } from "./CrashChart"
 import { HeroChart } from "./HeroChart"
+import { RetirementChart } from "./RetirementChart"
 
 // ─── Hooks maison (framer-motion est mocké en test : on n'utilise pas useInView) ──
 
@@ -422,6 +427,7 @@ function ScenarioSwitch({
 
 const NAV = [
   { href: "#krachs", label: "Krachs" },
+  { href: "#retraite", label: "Retraite" },
   { href: "#fonctionnalites", label: "Fonctionnalités" },
   { href: "#scenarios", label: "Scénarios" },
   { href: "#comparaison", label: "Comparaison" },
@@ -512,6 +518,9 @@ const GOAL_DIFFICULTY_META: Record<GoalDifficulty, { label: string; color: strin
 
 /** Les trois krachs rejouables (3.2) — années de départ du replay. */
 const CRASH_YEARS = [2000, 2008, 2022] as const
+
+/** Démo retraite (5.3) : les trois fenêtres réelles du moteur de décaissement. */
+const RETIREMENT_YEARS = STRESS_TEST_SCENARIOS.map(s => s.startYear)
 type CrashYear = (typeof CRASH_YEARS)[number]
 
 /** Manifeste « Ce que nous ne faisons pas » (5.2) — les 5 refus, l'envers de
@@ -541,6 +550,11 @@ const MANIFESTO = [
 
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
+  {
+    version: "v6.23.0",
+    title: "La retraite en 2008 + l'app mobile allégée",
+    text: "Nouvelle démo landing : choisissez votre année de retraite (1973, 2000 ou 2008) et votre capital, le moteur rejoue la crise réelle — rente de 4 %, inflation, garde-fous. Côté mobile : en-tête compact, onglets sur une rangée, réglages en tiroir, et les explications secondaires rangées pour ne garder que l'essentiel.",
+  },
   {
     version: "v6.22.1",
     title: "La carte démo tient à l'écran",
@@ -601,6 +615,10 @@ export function LandingPage() {
   // Replay des krachs (3.2) : année de départ active (défaut 2008, le grand
   // plongeon — la bascule 2000/2008/2022 rejoue le vrai MSCI World).
   const [crashYear, setCrashYear] = useState<CrashYear>(2008)
+  // Démo retraite (5.3) : l'année où le visiteur liquide son capital et le
+  // capital liquidé — le moteur rejoue la retraite réelle, garde-fous inclus.
+  const [retirementYear, setRetirementYear] = useState(2008)
+  const [retirementCapital, setRetirementCapital] = useState(500_000)
   // CRO v6.8 — CTA sticky mobile : apparu après un scroll de 480 px (rendu en
   // bas de page). Le masquage ≥ sm est purement CSS (md:hidden) : jsdom n'a
   // pas de matchMedia, la logique ici ne dépend que du scroll.
@@ -694,6 +712,46 @@ export function LandingPage() {
   const fmt2 = (v: number | undefined) =>
     v === undefined ? "—" : v.toLocaleString(locale, { maximumFractionDigits: 2 })
 
+  // Démo retraite (5.3) : le vrai moteur de décaissement, pas une maquette.
+  // Retrait de la règle des 4 % (le modèle « rule-4 » du moteur), rente indexée
+  // sur l'inflation réelle de chaque année rejouée, garde-fous dynamiques ON.
+  const retirementInputs = useMemo(
+    () => ({ ...base, withdrawalModel: "rule-4" as const, withdrawalInflation: true }),
+    [base],
+  )
+  const retirementScenario = useMemo(() => {
+    const found = STRESS_TEST_SCENARIOS.find(s => s.startYear === retirementYear)
+    if (!found) throw new Error(`scénario de retraite ${retirementYear} introuvable`)
+    return found
+  }, [retirementYear])
+  const retirement = useMemo(
+    () => runStressTest(retirementInputs, retirementCapital, retirementScenario),
+    [retirementInputs, retirementCapital, retirementScenario],
+  )
+  // Même retraite SANS les garde-fous : l'écart est le propos de la section
+  // (couper 10 % après une année négative sauve la rente là où elle s'épuisait).
+  const retirementNoGuards = useMemo(
+    () => runStressTest({ ...retirementInputs, dynamicGuardrails: false }, retirementCapital, retirementScenario),
+    [retirementInputs, retirementCapital, retirementScenario],
+  )
+  const retirementMonthly = baseMonthlyWithdrawal(retirementInputs, retirementCapital)
+  const retirementEndYear = retirement.windowReturns[retirement.windowReturns.length - 1]?.year ?? retirementYear
+  const retirementYearsPlayed = retirement.windowReturns.length
+  const retirementWorstIdx = retirement.yearsPath.indexOf(Math.min(...retirement.yearsPath))
+  const retirementWorstYear = retirementWorstIdx <= 0 ? retirementYear : retirementYear + retirementWorstIdx - 1
+  const retirementFirstDrop = Math.round(Math.abs(retirement.windowReturns[0]?.return ?? 0) * 100)
+  const retirementGuardNote = !retirement.survived
+    ? tr("Même avec les garde-fous, la rente s'épuise en {year}.", { year: retirement.ruinYear ?? "" })
+    : retirementNoGuards.ruinYear !== null
+      ? tr(
+          "Sans les garde-fous dynamiques, elle s'épuisait en {year} : couper 10 % après une année négative, c'est ce qui la sauve.",
+          { year: retirementNoGuards.ruinYear },
+        )
+      : tr(
+          "Sans les garde-fous, il restait {value} € en {endYear} — les coupes de 10 % après une année négative changent la fin de l'histoire.",
+          { value: fmtCurrency(retirementNoGuards.finalCapital), endYear: retirementEndYear },
+        )
+
   const scenarios = useMemo(
     () => SCENARIO_ORDER.map(s => ({ scenario: s, last: heroRows[s][heroRows[s].length - 1] })),
     [heroRows],
@@ -766,7 +824,7 @@ export function LandingPage() {
 
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
       <header className="sticky-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
           <a href="#/" aria-label={tr("Snowball Pro — accueil")} className="flex items-center">
             <Brand />
           </a>
@@ -784,34 +842,42 @@ export function LandingPage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setDarkMode(d => !d)}
               aria-label={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
               title={tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:gap-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover transition-colors"
             >
-              {darkMode ? <Sun size={12} aria-hidden /> : <Moon size={12} aria-hidden />}
+              {darkMode ? <Sun size={13} aria-hidden /> : <Moon size={13} aria-hidden />}
               <span className="hidden sm:inline">{tr(darkMode ? "Clair" : "Sombre")}</span>
             </button>
             <button
               type="button"
               onClick={() => navigateTo("login")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover text-primary border border-primary/30 transition-colors"
+              aria-label={tr("Se connecter")}
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:gap-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] font-bold glass hover:bg-glass-hover text-primary border border-primary/30 transition-colors"
             >
-              {tr("Se connecter")}
+              <User size={14} className="sm:hidden" aria-hidden />
+              <span className="hidden sm:inline">{tr("Se connecter")}</span>
             </button>
             <button
               type="button"
               onClick={launch}
-              className="btn-shine inline-flex items-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
+              aria-label={tr("Calculer mon nombre magique")}
+              className="btn-shine inline-flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-xl text-[11px] font-extrabold bg-primary btn-gold-text shadow-gold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
             >
-              {tr("Calculer mon nombre magique")} <ArrowRight size={12} aria-hidden />
+              <span className="hidden sm:inline">{tr("Calculer mon nombre magique")}</span>
+              <span className="sm:hidden">{tr("Calculer")}</span>
+              <ArrowRight size={12} aria-hidden />
             </button>
           </div>
         </div>
-        <nav aria-label={tr("Navigation principale")} className="lg:hidden border-t border-border/60 overflow-x-auto">
+        <nav
+          aria-label={tr("Navigation principale")}
+          className="hidden sm:block lg:hidden border-t border-border/60 overflow-x-auto"
+        >
           <div className="flex items-center gap-1 px-4 py-2 w-max">
             {NAV.map(item => (
               <a
@@ -1154,6 +1220,149 @@ export function LandingPage() {
             </div>
           </Reveal>
         </div>
+      </section>
+
+      {/* ── Retraite en pleine crise (5.3) : la décumulation en scène. Le
+          visiteur choisit l'année de son départ à la retraite (les trois
+          fenêtres réelles du moteur : 1973, 2000, 2008) et son capital ;
+          runStressTest rejoue les rendements réels contigus, retraits et
+          garde-fous compris. Aucun chiffre en dur. */}
+      <section
+        id="retraite"
+        aria-label={tr("Et si vous preniez votre retraite en 2008 ?")}
+        className="max-w-[1100px] mx-auto px-4 sm:px-6 py-20 sm:py-24 scroll-mt-20"
+      >
+        <Reveal>
+          <SectionTitle
+            eyebrow="La question que personne ne pose"
+            title="Et si vous preniez votre retraite en 2008 ?"
+            sub="Le marché s'effondre la première année — et vous retirez de l'argent chaque mois. Le moteur rejoue la vraie histoire : retraits, inflation réelle, garde-fous."
+          />
+        </Reveal>
+        <Reveal>
+          <div className="glass-strong rounded-3xl p-5 sm:p-8 shadow-premium-lg ring-1 ring-primary/30">
+            {/* Année de départ : les trois stress tests réels du moteur. */}
+            <div
+              role="radiogroup"
+              aria-label={tr("Année de départ à la retraite")}
+              className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-surface-50/70 border border-border max-w-xs mx-auto mb-6"
+            >
+              {RETIREMENT_YEARS.map(year => {
+                const active = retirementYear === year
+                return (
+                  <button
+                    key={year}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setRetirementYear(year)}
+                    className={cn(
+                      "rounded-xl px-3 py-2 text-center text-[11px] font-extrabold mono transition-all duration-200",
+                      active
+                        ? "bg-primary btn-gold-text shadow-gold"
+                        : "text-text-muted hover:text-text hover:bg-glass-hover",
+                    )}
+                  >
+                    {year}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="max-w-md mx-auto mb-8">
+              <SliderInput
+                label={tr("Capital à la retraite (€)")}
+                id="landing-retirement-capital"
+                value={retirementCapital}
+                min={200_000}
+                max={1_500_000}
+                step={25_000}
+                color="var(--color-primary)"
+                onChange={setRetirementCapital}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 items-center">
+              {/* Colonne chiffres — la rente, le pire point, la fin. */}
+              <div className="text-center md:text-left">
+                <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-text-muted mb-1">
+                  {tr("votre rente la première année")}
+                </p>
+                <p className="font-display text-5xl sm:text-6xl font-extrabold tracking-tight text-primary mono leading-none drop-shadow-[0_0_24px_rgba(212,175,55,0.25)]">
+                  {fmtCurrency(retirementMonthly)}
+                  <span className="text-2xl font-bold text-text-muted"> /{tr("mois")}</span>
+                </p>
+                <p className="mt-2 text-[11px] text-text-muted">
+                  {tr("règle des 4 % — la rente est indexée sur l'inflation de chaque année rejouée")}
+                </p>
+                <p
+                  className={cn(
+                    "mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10.5px] font-bold border",
+                    retirement.survived
+                      ? "border-border/60 bg-surface/50 text-text"
+                      : "border-[color:var(--color-value-red)]/40 bg-[color:var(--color-value-red)]/10 text-[color:var(--color-value-red)]",
+                  )}
+                >
+                  {retirement.survived ? (
+                    <>
+                      <Check size={11} className="text-primary shrink-0" aria-hidden />
+                      {tr("la rente tient jusqu'en {endYear}", { endYear: retirementEndYear })}
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle size={11} className="shrink-0" aria-hidden />
+                      {tr("la rente s'épuise en {ruinYear}", { ruinYear: retirement.ruinYear ?? "" })}
+                    </>
+                  )}
+                </p>
+
+                <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-left">
+                  <div>
+                    <dt className="text-[9px] font-bold uppercase tracking-[0.12em] text-text-dim">
+                      {tr("la première année")}
+                    </dt>
+                    <dd className="mono text-sm font-extrabold text-text">−{retirementFirstDrop} %</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[9px] font-bold uppercase tracking-[0.12em] text-text-dim">{tr("au pire")}</dt>
+                    <dd className="mono text-sm font-extrabold text-text">
+                      {fmtCurrency(retirement.minCapital)}{" "}
+                      <span className="text-[10px] font-bold text-text-muted">{retirementWorstYear}</span>
+                    </dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-[9px] font-bold uppercase tracking-[0.12em] text-text-dim">
+                      {tr("en {endYear}, après {years} ans rejoués", {
+                        endYear: retirementEndYear,
+                        years: retirementYearsPlayed,
+                      })}
+                    </dt>
+                    <dd className="mono text-sm font-extrabold text-primary">{fmtCurrency(retirement.finalCapital)}</dd>
+                  </div>
+                </dl>
+
+                <p className="mt-4 text-[10.5px] text-text-dim leading-relaxed">{retirementGuardNote}</p>
+              </div>
+
+              {/* Colonne courbe — le capital restant, moteur réel. */}
+              <div>
+                <RetirementChart
+                  key={`${retirementYear}-${retirementCapital}`}
+                  path={retirement.yearsPath}
+                  startYear={retirementYear}
+                  endYear={retirementEndYear}
+                  initial={retirement.yearsPath[0] ?? retirementCapital}
+                />
+                <p className="text-[9.5px] text-text-dim mt-3 leading-relaxed">
+                  {tr(
+                    "Moteur réel — {years} ans de retraite prévus, fenêtre bornée par la fin de l'historique · CTO, frais et fiscalité inclus · inflation française réelle des années rejouées.",
+                    { years: retirementInputs.retirementYears },
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       {/* ── Fonctionnalités ─────────────────────────────────────────────── */}
@@ -1925,7 +2134,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.22.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.23.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

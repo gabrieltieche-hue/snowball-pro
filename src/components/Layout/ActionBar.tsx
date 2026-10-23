@@ -14,12 +14,15 @@ import {
   Share2,
   Sun,
   Undo2,
+  User,
 } from "lucide-react"
 import type { ValidationError } from "../../engine"
 import { cn } from "../../utils/cn"
 import type { UiMode } from "../../utils/uiMode"
 import { useLang } from "../../i18n"
 import type { SimulationInputs } from "../../types"
+import { useSession } from "../../auth/store"
+import { navigateTo } from "../../router"
 import { ExportPanel } from "./ExportMenu"
 import { SharePanel } from "./ShareMenu"
 
@@ -88,6 +91,7 @@ export function ActionBar({
   onAutoFix,
 }: ActionBarProps) {
   const { tr, lang, toggleLang } = useLang()
+  const session = useSession()
   const errorCount = validationErrors.filter(e => e.severity === "error").length
   const warningCount = validationErrors.filter(e => e.severity === "warning").length
   // Première chose à corriger : une erreur passe avant un simple avertissement.
@@ -129,19 +133,22 @@ export function ActionBar({
     "w-full text-left inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold transition-colors hover:bg-glass-hover"
 
   return (
-    <div className="flex gap-2 sm:gap-2.5 justify-end flex-wrap no-print items-center max-sm:justify-start">
+    <div className="flex gap-1.5 sm:gap-2.5 justify-end no-print items-center">
       {/* v7 — l'action principale de l'app : « Nouvelle simulation » ouvre le
           questionnaire guidé (avec sauvegarde proposée si la simulation en
           cours a été modifiée). Seul bouton doré du header (refonte). */}
       <button
         type="button"
         onClick={onNewSimulation}
+        aria-label={tr("Nouvelle simulation")}
         className={cn(
           "inline-flex items-center gap-1.5 px-4 py-2.5 sm:py-2.5 rounded-xl text-[11.5px] font-bold transition-all duration-150 active:scale-[0.97]",
           "bg-gradient-to-b from-primary-light via-primary to-primary-dark btn-gold-text shadow-gold hover:brightness-110",
         )}
       >
-        <Plus size={14} aria-hidden /> {tr("Nouvelle simulation")}
+        <Plus size={14} aria-hidden />
+        <span className="hidden sm:inline">{tr("Nouvelle simulation")}</span>
+        <span className="sm:hidden">{tr("Nouvelle")}</span>
       </button>
 
       {/* Avertissement ⚠ — icône seule (refonte) : on ne sait pas où est le
@@ -223,7 +230,7 @@ export function ActionBar({
 
       {/* Annuler / Rétablir : paire segmentée en icônes seules (refonte) —
           ils vont toujours ensemble, l'aria-label garde le nom accessible. */}
-      <div className="inline-flex items-center glass rounded-xl overflow-hidden">
+      <div className="hidden sm:inline-flex items-center glass rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={onUndo}
@@ -253,7 +260,7 @@ export function ActionBar({
         onClick={onToggleDarkMode}
         title={darkMode ? tr("Passer en mode clair") : tr("Passer en mode sombre")}
         aria-label={darkMode ? tr("Passer en mode clair") : tr("Passer en mode sombre")}
-        className={cn(iconBtn, "glass hover:bg-glass-hover")}
+        className={cn(iconBtn, "hidden sm:inline-flex glass hover:bg-glass-hover")}
       >
         {darkMode ? <Sun size={13} aria-hidden /> : <Moon size={13} aria-hidden />}
       </button>
@@ -283,6 +290,66 @@ export function ActionBar({
           >
             {panel === "menu" && (
               <>
+                {/* Mobile : Annuler/Rétablir et le thème vivent ici (ils sont
+                    masqués du header pour ne pas le faire déborder). */}
+                <div className="sm:hidden">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      close()
+                      onUndo()
+                    }}
+                    disabled={!canUndo}
+                    className={cn(itemClass, "disabled:opacity-40 disabled:cursor-not-allowed")}
+                  >
+                    <Undo2 size={13} className="text-primary" aria-hidden /> {tr("Annuler")}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      close()
+                      onRedo()
+                    }}
+                    disabled={!canRedo}
+                    className={cn(itemClass, "disabled:opacity-40 disabled:cursor-not-allowed")}
+                  >
+                    <Redo2 size={13} className="text-primary" aria-hidden /> {tr("Rétablir")}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      close()
+                      onToggleDarkMode()
+                    }}
+                    className={itemClass}
+                  >
+                    {darkMode ? (
+                      <Sun size={13} className="text-primary" aria-hidden />
+                    ) : (
+                      <Moon size={13} className="text-primary" aria-hidden />
+                    )}
+                    {tr(darkMode ? "Passer en mode clair" : "Passer en mode sombre")}
+                  </button>
+                  <div className="border-t border-border/70 my-1" />
+                  {/* Invité : le seul accès au compte sur mobile (l'icône du
+                      header est masquée pour ne pas l'encombrer). */}
+                  {!session && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        close()
+                        navigateTo("login")
+                      }}
+                      className={itemClass}
+                    >
+                      <User size={13} className="text-primary" aria-hidden /> {tr("Se connecter")}
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   role="menuitem"
@@ -290,7 +357,7 @@ export function ActionBar({
                     close()
                     onToggleCompare()
                   }}
-                  className={cn(itemClass, comparing && "text-primary")}
+                  className={cn(itemClass, "max-sm:hidden", comparing && "text-primary")}
                 >
                   <GitCompareArrows size={13} className="text-primary" aria-hidden />
                   {comparing ? tr("Quitter la comparaison") : tr("Comparer deux scénarios")}
@@ -299,7 +366,7 @@ export function ActionBar({
                   type="button"
                   role="menuitem"
                   onClick={onToggleUiMode}
-                  className={itemClass}
+                  className={cn(itemClass, "max-sm:hidden")}
                   aria-pressed={uiMode === "avance"}
                 >
                   <GraduationCap size={13} className="text-primary" aria-hidden />
@@ -335,7 +402,7 @@ export function ActionBar({
                 </button>
                 <div className="border-t border-border/70 my-1" />
                 {confirmReset ? (
-                  <div className="px-3 py-2 space-y-1.5">
+                  <div className="max-sm:hidden px-3 py-2 space-y-1.5">
                     <p className="text-[10px] text-danger leading-snug">
                       {tr(
                         "Revenir aux réglages par défaut ? Vos simulations et snapshots de cet espace seront effacés.",
@@ -366,7 +433,7 @@ export function ActionBar({
                     type="button"
                     role="menuitem"
                     onClick={() => setConfirmReset(true)}
-                    className={cn(itemClass, "text-danger hover:bg-danger/10")}
+                    className={cn(itemClass, "max-sm:hidden text-danger hover:bg-danger/10")}
                   >
                     <Eraser size={13} aria-hidden /> {tr("Tout réinitialiser")}
                   </button>

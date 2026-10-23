@@ -4,6 +4,40 @@
 
 ---
 
+## v6.23.0 — La retraite en 2008 + l'app mobile allégée
+
+Deux chantiers : le **dernier de la feuille de route landing** (5.3 — « et si vous partiez à la retraite en 2008 ? ») et une **refonte de la densité sur mobile** (en-tête, onglets, réglages, explications). Au passage, le lot graphiques v8 (commit `22a23b3`, déjà sur `main`) est enfin documenté — il était resté sans entrée.
+
+### 🆕 Landing — la décumulation en scène (5.3)
+
+- **Section `#retraite`** : sélecteur 1973 / 2000 / 2008 (les trois fenêtres du moteur de décaissement, `STRESS_TEST_SCENARIOS`), curseur de capital 200 k€ → 1,5 M€, rente de départ calculée par le moteur (`baseMonthlyWithdrawal`, désormais exporté — plus aucun « 4 % » recopié dans le JSX).
+- **Chiffres 100 % dérivés** : baisse de la première année, pire point de la retraite, capital final, survie ou année de ruine, et comparaison avec/sans garde-fous dynamiques (sur 2000, la rente sans garde-fous s'épuise en 2015 ; sur 2008, ils font 1,05 M€ au lieu de 840 k€ en 2025).
+- **`RetirementChart.tsx`** : courbe du capital restant (or + aire, pastille rouge au pire point, bornes de la fenêtre réelle), et ancre `#retraite` dans la navigation. Section traduite FR/EN.
+
+### 📱 Mobile — allégé (≤ 640 px)
+
+- **En-tête** : logo 32 px, sous-titre masqué, une seule rangée (marque · réglages · compte · « Nouvelle » · ⋯) ; Annuler/Rétablir et le thème passent dans le menu sur téléphone.
+- **Onglets** : libellés courts sur une rangée pleine largeur (fin du trou à droite de « Simulations » et des trois rangées).
+- **Réglages** : tiroir plein écran ouvert depuis l'en-tête (`Sidebar` unique, plus de colonne enterrée en bas de page), avec phrase d'aide ; l'icône ⚠ l'ouvre automatiquement sur le champ fautif.
+- **Menu « ⋯ » réduit** sur mobile : Comparer, Mode Avancé/Débutant et Tout réinitialiser restent sur ordinateur ; « Se connecter » y entre pour les invités (l'icône compte du header est masquée).
+- **Landing** alignée : marque compacte, connexion en icône, CTA « Calculer », rangée de liens masquée sous 640 px.
+- **Densité** : sous-titres des « Statistiques clés » et précisions « avant/après impôts » de « Votre capital en détail » réservés à l'ordinateur ; explications de la rente derrière « Comprendre ce résultat ».
+
+### 🗑️ Rente & retraite — pavés supprimés
+
+- Guide **« Quel modèle choisir ? »** retiré (les cartes de modèle suffisent).
+- Intro de « Et si vous partiez en pleine crise ? » : 7 lignes → 1 phrase.
+- Descriptions historiques des trois scénarios et phrase de conseil de l'alerte de risque supprimées.
+
+### 🔧 Technique
+
+- `baseMonthlyWithdrawal` exporté (+3 tests moteur) ; 2 tests d'interface (tiroir réglages, repli des explications) ; clés i18n FR→EN.
+- Lot graphiques v8 (`22a23b3`) documenté ici : animations 1,2–1,5 s, or plus vif + glow, point final pulsant, `chartTheme` enrichi.
+- Gate : typecheck ✓ lint ✓ **439/439 tests** ✓ i18n 0 clé manquante ✓ build ✓ (1 337 ko / 387 ko gzip).
+- Version 6.22.1 → **6.23.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.23.0`, footer landing v6.23.0, « Dernières éditions » v6.23.0, changelog.html), CHANGELOG (cette entrée), MEMORY.md (entrée session).
+
+---
+
 ## v6.22.1 — La carte démo tient à l'écran
 
 La fenêtre de simulation du héro dépassait du viewport (bouton « Repartir de cette simulation » sous la ligne de flottaison, scroll obligatoire à l'arrivée). Compactage vertical ≈ 150 px : courbe `HeroChart` 250 → 185, paddings et marges resserrés, chiffre 2,6 rem → 2,25 rem.

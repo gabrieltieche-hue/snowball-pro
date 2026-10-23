@@ -113,11 +113,17 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
   ]
 
   return (
-    <div className="glass rounded-3xl p-4 sm:p-5">
-      <SectionHeader as="h2" level="card" icon={PieChart} title={tr("Votre capital en détail")} className="mb-3" />
+    <div className="glass rounded-3xl p-3 sm:p-5">
+      <SectionHeader
+        as="h2"
+        level="card"
+        icon={PieChart}
+        title={tr("Votre capital en détail")}
+        className="mb-2 sm:mb-3"
+      />
       {/* Colonnes séparées par des filets verticaux (≥ lg, une seule ligne) ;
           en 2×2 sur mobile, les filets disparaissent au profit de l'espace. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 lg:gap-x-0 lg:divide-x lg:divide-[color:var(--color-border)]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 sm:gap-x-4 gap-y-3 sm:gap-y-4 lg:gap-x-0 lg:divide-x lg:divide-[color:var(--color-border)]">
         {columns.map(col => {
           const Icon = col.icon
           return (
@@ -143,7 +149,9 @@ export function SummaryStats({ rows, inputs }: SummaryStatsProps) {
                 size="lg"
               />
               {col.sub && (
-                <div className="text-[10px] text-text-dim mt-0.5 truncate" title={col.sub}>
+                // Mobile (v6.23) : le libellé porte déjà l'essentiel — les
+                // précisions « avant/après impôts » restent sur ordinateur.
+                <div className="hidden sm:block text-[10px] text-text-dim mt-0.5 truncate" title={col.sub}>
                   {col.sub}
                 </div>
               )}

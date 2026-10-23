@@ -63,6 +63,7 @@ import {
   sampleNormal,
   runStressTest,
   STRESS_TEST_SCENARIOS,
+  baseMonthlyWithdrawal,
   average,
   MSCI_WORLD_AVG_RETURN,
   EXTENDED_WORLD_RETURNS,
@@ -2077,6 +2078,31 @@ describe("wilsonScoreCI / buildTerminalHistogram / sampleNormal (v5.5.0)", () =>
     const rng2 = mulberry32(7)
     const again = Array.from({ length: 500 }, () => sampleNormal(0.1, 0.05, rng2))
     expect(draws).toEqual(again)
+  })
+})
+
+describe("retrait mensuel de base (landing retraite 5.3) — baseMonthlyWithdrawal", () => {
+  it("rule-4 : 4 %/an du capital initial, converti en mensuel", () => {
+    expect(baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "rule-4" }, 500_000)).toBeCloseTo(1_666.67, 2)
+    expect(baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "rule-4" }, 0)).toBe(0)
+  })
+
+  it("ultra-safe (2,5 %) et optimistic (5,5 %) suivent le modèle choisi", () => {
+    expect(baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "ultra-safe" }, 1_000_000)).toBeCloseTo(
+      2_083.33,
+      2,
+    )
+    expect(baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "optimistic" }, 1_000_000)).toBeCloseTo(
+      4_583.33,
+      2,
+    )
+  })
+
+  it("custom : montant fixe saisi, 0 € reste un choix valide", () => {
+    expect(
+      baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "custom", withdrawalFixed: 2_000 }, 500_000),
+    ).toBe(2_000)
+    expect(baseMonthlyWithdrawal({ ...DEFAULT_INPUTS, withdrawalModel: "custom", withdrawalFixed: 0 }, 500_000)).toBe(0)
   })
 })
 

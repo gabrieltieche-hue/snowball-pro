@@ -23,8 +23,12 @@ const DECUM_CHUNK_SIZE = 150
 /**
  * Retrait mensuel de base selon le modèle choisi (règle de Bengen sur le
  * capital INITIAL, indexé ensuite sur l'inflation — la « rente constante »).
+ *
+ * Exporté : la démo « retraite » de la landing doit afficher EXACTEMENT la
+ * rente que le moteur applique (aucun « 4 % » recopié dans le JSX — leçon
+ * v6.8 : un taux cité à la main finit un jour par mentir).
  */
-function computeBaseWithdrawal(inputs: SimulationInputs, startingCapital: number): number {
+export function baseMonthlyWithdrawal(inputs: SimulationInputs, startingCapital: number): number {
   if (inputs.withdrawalModel === "rule-4") return (startingCapital * 0.04) / 12
   if (inputs.withdrawalModel === "ultra-safe") return (startingCapital * 0.025) / 12
   if (inputs.withdrawalModel === "optimistic") return (startingCapital * 0.055) / 12
@@ -410,7 +414,7 @@ export function runStressTest(
       ? (FRENCH_INFLATION_1970_2025[frIndex] ?? inputs.inflation)
       : inputs.inflation
   })
-  const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
+  const baseWithdrawal = baseMonthlyWithdrawal(inputs, startingCapital)
   // Le krach paramétrable ne s'applique PAS ici : ces fenêtres historiques
   // SONT déjà des crises réelles (1973, 2000, 2008) — lui superposer un krach
   // synthétique compterait la crise deux fois.
@@ -451,7 +455,7 @@ export function runDecumulation(
   // mois × N runs — gel de l'interface (audit v6). Le clamp est défensif :
   // sanitizeInputs applique déjà la même borne en amont.
   const years = Math.round(clamp(inputs.retirementYears, 1, 60))
-  const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
+  const baseWithdrawal = baseMonthlyWithdrawal(inputs, startingCapital)
   const acc: DecumAccumulator = {
     paths: [],
     ruinYears: [],
@@ -498,7 +502,7 @@ export async function runDecumulationAsync(
   // mois × N runs — gel de l'interface (audit v6). Le clamp est défensif :
   // sanitizeInputs applique déjà la même borne en amont.
   const years = Math.round(clamp(inputs.retirementYears, 1, 60))
-  const baseWithdrawal = computeBaseWithdrawal(inputs, startingCapital)
+  const baseWithdrawal = baseMonthlyWithdrawal(inputs, startingCapital)
   const acc: DecumAccumulator = {
     paths: [],
     ruinYears: [],

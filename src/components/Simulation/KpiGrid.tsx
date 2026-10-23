@@ -230,7 +230,7 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
           return (
             <div
               key={kpi.key}
-              className="card-subtle rounded-2xl p-4 card-interactive flex flex-col min-w-0 min-h-[132px]"
+              className="card-subtle rounded-2xl p-3 sm:p-4 card-interactive flex flex-col min-w-0 min-h-0 sm:min-h-[132px]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted leading-snug min-w-0">
@@ -253,10 +253,15 @@ export function KpiGrid({ kpis, inputs, uiMode = "debutant" }: KpiGridProps) {
                   <Icon size={12} aria-hidden />
                 </span>
               </div>
-              <div className="mono text-lg font-bold mt-2 leading-tight" style={{ color: kpi.color }}>
+              <div
+                className="mono text-base sm:text-lg font-bold mt-1.5 sm:mt-2 leading-tight"
+                style={{ color: kpi.color }}
+              >
                 {display}
               </div>
-              <div className="text-[10px] text-text-muted mt-auto pt-2 leading-snug">
+              {/* Mobile (v6.23) : libellé + valeur suffisent — les explications
+                  restent sur ordinateur, où la place ne manque pas. */}
+              <div className="hidden sm:block text-[10px] text-text-muted mt-auto pt-2 leading-snug">
                 {dyn
                   ? uiMode === "debutant"
                     ? dyn.subDebutant

@@ -7,6 +7,8 @@ import { cn } from "../../utils/cn"
 export interface TabDef {
   id: string
   label: string
+  /** Libellé court affiché sous `sm` — évite trois rangées d'onglets sur téléphone. */
+  shortLabel?: string
   icon?: LucideIcon
 }
 
@@ -39,7 +41,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
       ref={listRef}
       role="tablist"
       aria-label={tr("Onglets de simulation")}
-      className="flex flex-wrap gap-1 glass rounded-2xl p-1.5 no-print"
+      className="flex flex-nowrap sm:flex-wrap gap-1 glass rounded-2xl p-1 sm:p-1.5 no-print overflow-x-auto"
     >
       {tabs.map((tab, index) => {
         const selected = active === tab.id
@@ -52,12 +54,13 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             data-tab-id={tab.id}
             id={`tab-${tab.id}`}
             aria-selected={selected}
+            aria-label={tr(tab.label)}
             aria-controls={`panel-${tab.id}`}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={e => handleKeyDown(e, index)}
             className={cn(
-              "relative flex-1 min-w-[132px] px-3 py-2.5 rounded-xl text-xs font-bold transition-colors",
+              "relative flex-1 min-w-0 sm:min-w-[132px] px-1.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold whitespace-nowrap transition-colors",
               selected ? "btn-gold-text" : "text-text-muted hover:text-text hover:bg-glass-hover",
             )}
           >
@@ -74,8 +77,9 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
                 la ligne au lieu de déborder (bug préexistant v6.11.2 — le bouton
                 flex-1 n'était pas assez large pour « Robustesse de votre plan »). */}
             <span className="relative z-10 inline-flex items-center justify-center gap-1.5">
-              {Icon && <Icon size={13} className="shrink-0" aria-hidden />}
-              {tab.label}
+              {Icon && <Icon size={13} className="shrink-0 hidden sm:block" aria-hidden />}
+              <span className="sm:hidden truncate">{tr(tab.shortLabel ?? tab.label)}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </span>
           </button>
         )

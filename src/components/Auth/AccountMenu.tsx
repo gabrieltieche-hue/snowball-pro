@@ -85,9 +85,10 @@ export function AccountMenu() {
         }}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={account ? tr("Compte de {name}", { name: account.name }) : tr("Se connecter")}
         title={account ? tr("Compte de {name}", { name: account.name }) : tr("Compte invité — se connecter")}
         className={cn(
-          "inline-flex items-center gap-2 px-2.5 py-2 sm:py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]",
+          "inline-flex items-center gap-2 px-2 py-2 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-[0.97]",
           open ? "glass-gold border border-primary/40" : "glass hover:bg-glass-hover",
         )}
       >
@@ -103,11 +104,15 @@ export function AccountMenu() {
           </>
         ) : (
           <>
-            <User size={13} className="text-primary" aria-hidden />
-            <span>{tr("Se connecter")}</span>
+            <User size={15} className="text-primary" aria-hidden />
+            <span className="hidden sm:inline">{tr("Se connecter")}</span>
           </>
         )}
-        <ChevronDown size={12} aria-hidden className={cn("text-text-dim transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          size={12}
+          aria-hidden
+          className={cn("hidden sm:block text-text-dim transition-transform", open && "rotate-180")}
+        />
       </button>
 
       {open && (

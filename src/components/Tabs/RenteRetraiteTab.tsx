@@ -169,12 +169,12 @@ export function RenteRetraiteTab({
   const [stressOpen, setStressOpen] = useState(false)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* ──────────────────────────────────────────────────────────
           En-tête + capital à décumuler
          ────────────────────────────────────────────────────────── */}
-      <div className="glass rounded-3xl p-4 sm:p-6">
-        <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
+      <div className="glass rounded-3xl p-3 sm:p-6">
+        <div className="flex items-start justify-between mb-4 sm:mb-5 gap-4 flex-wrap">
           <div className="flex-1 min-w-[260px]">
             <SectionHeader
               as="h2"
@@ -242,7 +242,7 @@ export function RenteRetraiteTab({
           {/* Sélecteur de modèle */}
           <div className="lg:col-span-3">
             <SectionHeader level="label">{tr("Modèle de retrait")}</SectionHeader>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
               {WITHDRAWAL_MODELS.map(model => {
                 const isActive = inputs.withdrawalModel === model.id
                 const Icon = model.icon
@@ -252,7 +252,7 @@ export function RenteRetraiteTab({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => updateInputs({ withdrawalModel: model.id })}
                     className={cn(
-                      "relative rounded-xl p-3.5 border text-left transition-all",
+                      "relative rounded-xl p-2.5 sm:p-3.5 border text-left transition-all",
                       isActive
                         ? "border-primary/60 bg-primary/10 shadow-[inset_0_0_0_1px_rgba(var(--color-primary-rgb),0.25)]"
                         : "glass border-border hover:bg-glass-hover",
@@ -270,7 +270,9 @@ export function RenteRetraiteTab({
                           <span className="text-xs font-bold">{tr(model.label)}</span>
                           {isActive && <CheckCircle2 size={13} className="text-primary shrink-0" />}
                         </div>
-                        <div className="text-[10px] text-text-dim mt-0.5 leading-snug">{tr(model.desc)}</div>
+                        <div className="text-[9px] sm:text-[10px] text-text-dim mt-0.5 leading-snug line-clamp-2 sm:line-clamp-none">
+                          {tr(model.desc)}
+                        </div>
                         {model.rate > 0 && (
                           <div className="text-[10px] mono text-text-dim mt-1.5">
                             ≈ {fmtCurrency((startingCapital * model.rate) / 12)} / {tr("mois")}
@@ -281,27 +283,6 @@ export function RenteRetraiteTab({
                   </motion.button>
                 )
               })}
-            </div>
-
-            {/* Guide de choix : comble le vide sous les modèles (colonne
-                gauche) et aide à choisir le bon taux de retrait. */}
-            <div className="mt-3 rounded-xl bg-primary/8 border border-primary/20 p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb size={12} className="text-primary shrink-0" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                  {tr("Quel modèle choisir ?")}
-                </span>
-              </div>
-              <p className="text-[10px] text-text-dim leading-relaxed">
-                <strong className="text-text">{tr("La règle des 4 %")}</strong>{" "}
-                {tr("est le standard historique (Bengen) : elle a tenu sur toutes les périodes de 30 ans testées.")}{" "}
-                <strong className="text-text">{tr("Très prudent")}</strong>{" "}
-                {tr("sacrifie du confort pour la sécurité, pendant que")}{" "}
-                <strong className="text-text">{tr("Optimiste")}</strong>{" "}
-                {tr("convient si vous pouvez réduire vos retraits les mauvaises années. Le mode")}{" "}
-                <strong className="text-text">{tr("Personnalisé")}</strong>{" "}
-                {tr("teste le montant exact que vous visez.")}
-              </p>
             </div>
           </div>
 
@@ -488,7 +469,7 @@ export function RenteRetraiteTab({
                       <span>−60 %</span>
                     </div>
                   </div>
-                  <p className="text-[9px] text-text-dim leading-snug flex items-start gap-1">
+                  <p className="hidden sm:flex text-[9px] text-text-dim leading-snug items-start gap-1">
                     <AlertTriangle size={10} className="shrink-0 mt-0.5 text-warning" />
                     {tr(
                       "Chaque scénario subit cette chute la même année — le « et si le départ tombait en pleine crise ? » appliqué à 100 % des cas, pas seulement au cas pessimiste.",
@@ -558,7 +539,6 @@ export function RenteRetraiteTab({
               <strong className="text-warning">−{Math.round(worstDrawdown * 100)} %</strong>
               {tr(", au-delà de votre tolérance de")} −{Math.round(inputs.maxDrawdownTolerance * 100)} %.{" "}
               {tr("Ce plan peut être")} <strong className="text-text">{tr("trop risqué pour vous")}</strong>{" "}
-              {tr("— envisagez une part plus prudente (obligations, livrets) ou un taux de retrait plus faible.")}
             </>
           ) : (
             <>
@@ -777,6 +757,9 @@ function ResultsSection({
   const finalSurvival = finalMedian > 0
   const success = survival >= 85
   const [showGuide, setShowGuide] = useState(false)
+  // Mobile (v6.23) : les explications secondaires sont repliées derrière un
+  // bouton — le verdict, les KPI et le graphique restent visibles d'emblée.
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const chartRef = useChartA11y(tr("Votre capital pendant la retraite — P10, P50 et P90"))
   const coarse = useIsCoarsePointer()
 
@@ -808,7 +791,7 @@ function ResultsSection({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="glass rounded-3xl p-4 sm:p-6 space-y-5"
+      className="glass rounded-3xl p-3 sm:p-6 space-y-3 sm:space-y-5"
     >
       {/* Verdict global — UNE seule boîte : le constat. Les détails (krach
           simulé, « en clair ») vivent en dessous, à plat — jamais imbriqués. */}
@@ -862,148 +845,164 @@ function ResultsSection({
         </div>
       </div>
 
-      {/* Krach simulé — à plat sous le verdict (le bloc vert ne contient plus
+      {/* Mobile : un seul bouton pour les explications secondaires. */}
+      <button
+        type="button"
+        onClick={() => setDetailsOpen(v => !v)}
+        aria-expanded={detailsOpen}
+        className="lg:hidden w-full inline-flex items-center justify-between gap-2 rounded-xl bg-glass border border-border px-3 py-2.5 text-[11px] font-bold text-text"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <Lightbulb size={12} className="text-primary" aria-hidden />
+          {detailsOpen ? tr("Masquer les détails") : tr("Comprendre ce résultat")}
+        </span>
+        <ChevronDown size={13} className={cn("transition-transform", detailsOpen && "rotate-180")} aria-hidden />
+      </button>
+
+      <div className={cn("space-y-3 sm:space-y-4", detailsOpen ? "block" : "max-lg:hidden")}>
+        {/* Krach simulé — à plat sous le verdict (le bloc vert ne contient plus
           de sous-boîtes). M18 — ambre, pas rouge : c'est un réglage CHOISI
           par l'utilisateur (scénario durci), pas une erreur ni un danger
           imprévu. */}
-      {crisisNote && (
-        <div className="rounded-xl bg-warning/8 border border-warning/20 px-4 py-3 flex items-start gap-2.5">
-          <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
-          <p className="text-[11px] leading-relaxed text-text-dim">
-            <strong className="text-warning">{tr("Krach simulé :")}</strong> {crisisNote}
-          </p>
-        </div>
-      )}
+        {crisisNote && (
+          <div className="rounded-xl bg-warning/8 border border-warning/20 px-4 py-3 flex items-start gap-2.5">
+            <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" />
+            <p className="text-[11px] leading-relaxed text-text-dim">
+              <strong className="text-warning">{tr("Krach simulé :")}</strong> {crisisNote}
+            </p>
+          </div>
+        )}
 
-      {/* « En clair » — la version grand public. Ne re-cite PAS le taux de
+        {/* « En clair » — la version grand public. Ne re-cite PAS le taux de
           survie (déjà dans le verdict + la carte KPI) : il apporte l'info
           « quand l'argent manque » au lieu de répéter le chiffre. */}
-      <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 flex items-start gap-2.5">
-        <Lightbulb size={14} className="text-primary shrink-0 mt-0.5" />
-        <p className="text-[11px] leading-relaxed text-text-dim">
-          <strong className="text-text">{tr("En clair :")}</strong>{" "}
-          {ruinYear !== null ? (
-            <>
-              {tr("quand un plan échoue, l'argent manque généralement autour de l'année")}{" "}
-              <strong className="text-text">{ruinYear}</strong>{" "}
-              {tr("— les autres années, la rente est versée sans interruption pendant")} {decumResult.years.length - 1}{" "}
-              {tr("ans.")}
-            </>
-          ) : (
-            <>
-              {tr("dans")} <strong className="text-text">{tr("100 % des simulations")}</strong>
-              {tr(", votre rente est payée jusqu'au bout — et il reste toujours de l'argent à la fin.")}
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* Bandeau de fiabilité (v6) : un signal de confiance factuel, en une
-          ligne — ce que le taux de survie repose réellement sur. */}
-      {/* Bandeau de fiabilité (paquet 2) : la rente applique désormais la
-          fiscalité des retraits ET les frais de gestion — on dit la vérité. */}
-      <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
-        <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
-        {tr("Basé sur")}{" "}
-        <strong className="text-text">
-          {decumResult.runs.toLocaleString(locale)} {tr("scénarios")}
-        </strong>{" "}
-        · {tr(extendedHistory ? "100 ans" : "56 ans")}{" "}
-        {tr("d'historique réel · fiscalité des retraits incluse (enveloppe")} {envelopeLabel})
-      </p>
-
-      {/* Paquet 2 — la fiscalité des retraits est désormais modélisée : on
-          montre la rente NETTE réelle (retraits nets moyens par mois, impôts
-          et frais de gestion déduits), au lieu de divulguer une absence. */}
-      <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
-        <Landmark size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
-        {inputs.envelope === "none" ? (
-          <p className="text-[10px] leading-relaxed text-text-dim">
-            <strong className="text-text">{tr("Sans fiscalité :")}</strong>{" "}
-            {tr(
-              "l'enveloppe choisie est « BRUT » — aucun impôt n'est prélevé sur les retraits. La rente affichée est donc la rente brute.",
-            )}
-          </p>
-        ) : (
-          <p className="text-[10px] leading-relaxed text-text-dim">
-            <strong className="text-text">{tr("Rente nette :")}</strong> {tr("après impôt sur les retraits (enveloppe")}{" "}
-            <strong className="text-text">{envelopeLabel}</strong>
-            {tr("), vous recevez en moyenne")}{" "}
-            <strong className="text-text">
-              {fmtCurrency(Math.round(netMonthly))} / {tr("mois")}
-            </strong>{" "}
-            ({tr("euros courants")}) — {tr("soit")}{" "}
-            <strong className="text-text">
-              {fmtCurrency(Math.round(netMonthlyToday))} / {tr("mois")} {tr("en euros d'aujourd'hui")}
-            </strong>
-            . {tr("Au total :")} <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong>{" "}
-            {tr("d'impôts et")} <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong>{" "}
-            {tr("de frais de gestion payés pendant toute la retraite (la rente brute reste")}{" "}
-            {fmtCurrency(decumResult.initialWithdrawal)}
-            {tr("/mois).")}
-          </p>
-        )}
-      </div>
-
-      {/* Paquet 3 — vos revenus de retraite face à vos dépenses (profil).
-          Comparaison en EUROS D'AUJOURD'HUI : la rente nette moyenne est
-          déflatée (pouvoir d'achat) pour être comparable aux dépenses, que
-          l'utilisateur pense dans sa monnaie actuelle (audit). */}
-      {(inputs.retirementExpenses > 0 || inputs.otherPensions > 0) && coverage !== null && (
-        <div
-          className={cn(
-            "rounded-xl px-3 py-2 flex items-start gap-2 border",
-            coverage >= 100
-              ? "bg-[var(--color-success)]/8 border-[var(--color-success)]/25"
-              : "bg-warning/8 border-warning/25",
-          )}
-        >
-          {coverage >= 100 ? (
-            <CheckCircle2 size={12} className="text-[var(--color-success)] shrink-0 mt-0.5" />
-          ) : (
-            <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
-          )}
-          <p className="text-[10px] leading-relaxed text-text-dim">
-            {coverage >= 100 ? (
+        <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 flex items-start gap-2.5">
+          <Lightbulb size={14} className="text-primary shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed text-text-dim">
+            <strong className="text-text">{tr("En clair :")}</strong>{" "}
+            {ruinYear !== null ? (
               <>
-                <strong className="text-text">{tr("Revenus couverts :")}</strong> {tr("votre rente nette")} ({" "}
-                <strong className="text-text">
-                  {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
-                </strong>{" "}
-                {tr("en euros d'aujourd'hui")}) {tr("plus vos autres revenus")} ({" "}
-                <strong className="text-text">
-                  {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
-                </strong>
-                ) {tr("couvrent")} <strong className="text-[var(--color-success)]">{coverage} %</strong>{" "}
-                {tr("de vos dépenses prévues")} ( {fmtCurrency(inputs.retirementExpenses)}
-                {tr("/mois).")}
+                {tr("quand un plan échoue, l'argent manque généralement autour de l'année")}{" "}
+                <strong className="text-text">{ruinYear}</strong>{" "}
+                {tr("— les autres années, la rente est versée sans interruption pendant")}{" "}
+                {decumResult.years.length - 1} {tr("ans.")}
               </>
             ) : (
               <>
-                <strong className="text-text">{tr("Manque à couvrir :")}</strong> {tr("rente nette")} ({" "}
-                <strong className="text-text">
-                  {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
-                </strong>{" "}
-                {tr("en euros d'aujourd'hui")}) + {tr("autres revenus")} ({" "}
-                <strong className="text-text">
-                  {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
-                </strong>
-                ) ={" "}
-                <strong className="text-text">
-                  {fmtCurrency(Math.round(retirementIncome))}/{tr("mois")}
-                </strong>
-                , {tr("soit")} <strong className="text-text">{coverage} %</strong> {tr("de vos dépenses prévues")} ({" "}
-                {fmtCurrency(inputs.retirementExpenses)}
-                {tr("/mois) — il manque")}{" "}
-                <strong className="text-warning">
-                  {fmtCurrency(Math.round(Math.max(0, shortfall)))}/{tr("mois")}
-                </strong>
-                .
+                {tr("dans")} <strong className="text-text">{tr("100 % des simulations")}</strong>
+                {tr(", votre rente est payée jusqu'au bout — et il reste toujours de l'argent à la fin.")}
               </>
             )}
           </p>
         </div>
-      )}
+
+        {/* Bandeau de fiabilité (v6) : un signal de confiance factuel, en une
+          ligne — ce que le taux de survie repose réellement sur. */}
+        {/* Bandeau de fiabilité (paquet 2) : la rente applique désormais la
+          fiscalité des retraits ET les frais de gestion — on dit la vérité. */}
+        <p className="text-[10px] text-text-dim flex items-center gap-1.5 flex-wrap">
+          <ShieldCheck size={11} className="text-primary shrink-0" aria-hidden />
+          {tr("Basé sur")}{" "}
+          <strong className="text-text">
+            {decumResult.runs.toLocaleString(locale)} {tr("scénarios")}
+          </strong>{" "}
+          · {tr(extendedHistory ? "100 ans" : "56 ans")}{" "}
+          {tr("d'historique réel · fiscalité des retraits incluse (enveloppe")} {envelopeLabel})
+        </p>
+
+        {/* Paquet 2 — la fiscalité des retraits est désormais modélisée : on
+          montre la rente NETTE réelle (retraits nets moyens par mois, impôts
+          et frais de gestion déduits), au lieu de divulguer une absence. */}
+        <div className="rounded-xl bg-glass border border-border px-3 py-2 flex items-start gap-2">
+          <Landmark size={12} className="text-text-dim shrink-0 mt-0.5" aria-hidden />
+          {inputs.envelope === "none" ? (
+            <p className="text-[10px] leading-relaxed text-text-dim">
+              <strong className="text-text">{tr("Sans fiscalité :")}</strong>{" "}
+              {tr(
+                "l'enveloppe choisie est « BRUT » — aucun impôt n'est prélevé sur les retraits. La rente affichée est donc la rente brute.",
+              )}
+            </p>
+          ) : (
+            <p className="text-[10px] leading-relaxed text-text-dim">
+              <strong className="text-text">{tr("Rente nette :")}</strong>{" "}
+              {tr("après impôt sur les retraits (enveloppe")} <strong className="text-text">{envelopeLabel}</strong>
+              {tr("), vous recevez en moyenne")}{" "}
+              <strong className="text-text">
+                {fmtCurrency(Math.round(netMonthly))} / {tr("mois")}
+              </strong>{" "}
+              ({tr("euros courants")}) — {tr("soit")}{" "}
+              <strong className="text-text">
+                {fmtCurrency(Math.round(netMonthlyToday))} / {tr("mois")} {tr("en euros d'aujourd'hui")}
+              </strong>
+              . {tr("Au total :")} <strong className="text-text">{fmtCurrency(decumResult.totalTaxPaid)}</strong>{" "}
+              {tr("d'impôts et")} <strong className="text-text">{fmtCurrency(decumResult.totalFeesPaid)}</strong>{" "}
+              {tr("de frais de gestion payés pendant toute la retraite (la rente brute reste")}{" "}
+              {fmtCurrency(decumResult.initialWithdrawal)}
+              {tr("/mois).")}
+            </p>
+          )}
+        </div>
+
+        {/* Paquet 3 — vos revenus de retraite face à vos dépenses (profil).
+          Comparaison en EUROS D'AUJOURD'HUI : la rente nette moyenne est
+          déflatée (pouvoir d'achat) pour être comparable aux dépenses, que
+          l'utilisateur pense dans sa monnaie actuelle (audit). */}
+        {(inputs.retirementExpenses > 0 || inputs.otherPensions > 0) && coverage !== null && (
+          <div
+            className={cn(
+              "rounded-xl px-3 py-2 flex items-start gap-2 border",
+              coverage >= 100
+                ? "bg-[var(--color-success)]/8 border-[var(--color-success)]/25"
+                : "bg-warning/8 border-warning/25",
+            )}
+          >
+            {coverage >= 100 ? (
+              <CheckCircle2 size={12} className="text-[var(--color-success)] shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
+            )}
+            <p className="text-[10px] leading-relaxed text-text-dim">
+              {coverage >= 100 ? (
+                <>
+                  <strong className="text-text">{tr("Revenus couverts :")}</strong> {tr("votre rente nette")} ({" "}
+                  <strong className="text-text">
+                    {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
+                  </strong>{" "}
+                  {tr("en euros d'aujourd'hui")}) {tr("plus vos autres revenus")} ({" "}
+                  <strong className="text-text">
+                    {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
+                  </strong>
+                  ) {tr("couvrent")} <strong className="text-[var(--color-success)]">{coverage} %</strong>{" "}
+                  {tr("de vos dépenses prévues")} ( {fmtCurrency(inputs.retirementExpenses)}
+                  {tr("/mois).")}
+                </>
+              ) : (
+                <>
+                  <strong className="text-text">{tr("Manque à couvrir :")}</strong> {tr("rente nette")} ({" "}
+                  <strong className="text-text">
+                    {fmtCurrency(Math.round(netMonthlyToday))}/{tr("mois")}
+                  </strong>{" "}
+                  {tr("en euros d'aujourd'hui")}) + {tr("autres revenus")} ({" "}
+                  <strong className="text-text">
+                    {fmtCurrency(inputs.otherPensions)}/{tr("mois")}
+                  </strong>
+                  ) ={" "}
+                  <strong className="text-text">
+                    {fmtCurrency(Math.round(retirementIncome))}/{tr("mois")}
+                  </strong>
+                  , {tr("soit")} <strong className="text-text">{coverage} %</strong> {tr("de vos dépenses prévues")} ({" "}
+                  {fmtCurrency(inputs.retirementExpenses)}
+                  {tr("/mois) — il manque")}{" "}
+                  <strong className="text-warning">
+                    {fmtCurrency(Math.round(Math.max(0, shortfall)))}/{tr("mois")}
+                  </strong>
+                  .
+                </>
+              )}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* 4 KPI cards */}
       <p className="text-[10px] text-text-dim italic">
@@ -1373,18 +1372,10 @@ function StressTestsSection({
 
   return (
     <div className="pt-2">
-      <p className="text-[10px] text-text-dim leading-relaxed mb-4 max-w-2xl">
-        {tr("Les percentiles ci-dessus mélangent toutes les époques. Ici, nous rejouons")}{" "}
-        <strong className="text-text">
-          {tr("les trois pires fenêtres historiques telles qu'elles se sont réellement déroulées")}
-        </strong>{" "}
+      <p className="text-[10px] text-text-dim leading-relaxed mb-3">
         {tr(
-          "(rendements contigus réels, inflation réelle de l'époque, garde-fous et indexation appliqués à l'identique).",
-        )}{" "}
-        {tr(
-          "Aucun hasard : c'est exactement ce que la bourse a fait. Pour un krach au moment de votre choix, utilisez l'option",
-        )}{" "}
-        <strong className="text-text">« {tr("Partir en période difficile")} »</strong> {tr("dans les paramètres.")}
+          "Les trois pires fenêtres réelles, rejouées telles quelles : mêmes rendements, même inflation, mêmes garde-fous.",
+        )}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {results.map(({ scenario, result }) => (
@@ -1416,7 +1407,6 @@ function StressTestCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-xs font-bold">{scenario.label}</div>
-          <div className="text-[9px] text-text-dim mt-0.5 leading-snug">{scenario.desc}</div>
         </div>
         <span
           className={cn(

@@ -36,6 +36,9 @@ import {
   replayCrashFrom,
   runSimulation,
   runDecumulation,
+  runStressTest,
+  STRESS_TEST_SCENARIOS,
+  baseMonthlyWithdrawal,
   buildTerminalHistogram,
   solveGoal,
 } from "../engine"
@@ -911,6 +914,15 @@ describe("fiabilité v5.5.0 — RenteRetraiteTab : options, CI et stress tests",
     expect(screen.queryByRole("button", { name: /fiabilité & sûreté des estimations/i })).not.toBeInTheDocument()
   })
 
+  it("mobile : les explications secondaires se replient derrière un bouton (v6.23)", () => {
+    const decum = runDecumulation(baseProps.inputs, lastRow.nominal, 200, lastRow.investedNom)
+    render(<RenteRetraiteTab {...baseProps} decumResult={decum} />)
+    const toggle = screen.getByRole("button", { name: /comprendre ce résultat/i })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    fireEvent.click(toggle)
+    expect(screen.getByRole("button", { name: /masquer les détails/i })).toHaveAttribute("aria-expanded", "true")
+  })
+
   it("mode Avancé : la section « Fiabilité & sûreté des estimations » est repliée par défaut (v6)", () => {
     render(<RenteRetraiteTab {...baseProps} uiMode="avance" />)
     // v6 (comme Monte Carlo) : le titre est visible, mais pas les options
@@ -1288,6 +1300,34 @@ describe("v6.1 — landing page", () => {
     expect(within(section).getByText(new RegExp(`revenu à 100 € en ${r2000.recoveryYear}`, "i"))).toBeInTheDocument()
   })
 
+  it("démo retraite : 1973/2000/2008 rejoués par le moteur de décaissement (5.3)", () => {
+    render(<LandingPage />)
+    const section = screen.getByRole("region", { name: /et si vous preniez votre retraite en 2008/i })
+    for (const year of [1973, 2000, 2008]) {
+      expect(within(section).getByRole("radio", { name: String(year) })).toBeInTheDocument()
+    }
+    const inputs = { ...DEFAULT_INPUTS, withdrawalModel: "rule-4" as const, withdrawalInflation: true }
+    const scenario = (year: number) => {
+      const found = STRESS_TEST_SCENARIOS.find(s => s.startYear === year)
+      if (!found) throw new Error(`scénario ${year} manquant`)
+      return found
+    }
+    const capital = 500_000
+    // Rente de départ = celle du moteur (règle des 4 %), jamais un chiffre recopié.
+    const norm = (v: string) => v.replace(/[\u00a0\u202f]/g, " ")
+    const monthly = norm(fmtCurrency(baseMonthlyWithdrawal(inputs, capital)))
+    expect(within(section).getByText(content => norm(content).includes(monthly))).toBeInTheDocument()
+    // Défaut 2008 : la rente tient jusqu'à la fin de la fenêtre rejouée.
+    const r2008 = runStressTest(inputs, capital, scenario(2008))
+    const end2008 = r2008.windowReturns[r2008.windowReturns.length - 1]?.year
+    expect(within(section).getByText(new RegExp(`la rente tient jusqu'en ${end2008}`, "i"))).toBeInTheDocument()
+    expect(within(section).getByRole("img", { name: /le capital restant année après année/i })).toBeInTheDocument()
+    // Bascule sur 2000 : la ruine SANS garde-fous vient du moteur.
+    fireEvent.click(within(section).getByRole("radio", { name: "2000" }))
+    const r2000 = runStressTest({ ...inputs, dynamicGuardrails: false }, capital, scenario(2000))
+    expect(within(section).getByText(new RegExp(`s'épuisait en ${r2000.ruinYear}`))).toBeInTheDocument()
+  })
+
   it("manifeste : les 5 « nous ne faisons pas » + ancre vers le tableau honnête (5.2)", () => {
     render(<LandingPage />)
     expect(screen.getByRole("heading", { name: "Ce que nous ne faisons pas" })).toBeInTheDocument()
@@ -1600,6 +1640,16 @@ describe("v7 — onboarding : tutoriel non-skippable, questionnaire et biblioth�
     fireEvent.click(screen.getByRole("tab", { name: /mes simulations/i }))
     expect(screen.getAllByText("Ma retraite rêvée").length).toBeGreaterThan(0)
     expect(screen.getByText("Simulation en cours")).toBeInTheDocument()
+  })
+
+  it("mobile : le tiroir des réglages s'ouvre depuis le header puis se referme", () => {
+    render(<App />)
+    // Fermé par défaut : aucun voile (le bouton de fermeture n'existe pas).
+    expect(screen.queryByRole("button", { name: "Fermer les réglages" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Ouvrir les réglages" }))
+    expect(screen.getByRole("button", { name: "Fermer les réglages" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Fermer les réglages" }))
+    expect(screen.queryByRole("button", { name: "Fermer les réglages" })).not.toBeInTheDocument()
   })
 
   it("« Nouvelle simulation » propose de sauvegarder quand la simulation a été modifiée", () => {

@@ -1057,11 +1057,15 @@ const EN: Record<string, string> = {
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
   // ─── Landing v6.22.1 : carte démo compacte ──────────────────────────────
+  // ─── Landing v6.23.0 : retraite 2008 + mobile allégé ─────────────────────
+  "La retraite en 2008 + l'app mobile allégée": "Retiring in 2008 + a lighter mobile app",
+  "Nouvelle démo landing : choisissez votre année de retraite (1973, 2000 ou 2008) et votre capital, le moteur rejoue la crise réelle — rente de 4 %, inflation, garde-fous. Côté mobile : en-tête compact, onglets sur une rangée, réglages en tiroir, et les explications secondaires rangées pour ne garder que l'essentiel.":
+    "New landing demo: pick your retirement year (1973, 2000 or 2008) and your capital, and the engine replays the real crisis — 4% withdrawal, inflation, guardrails. On mobile: compact header, single-row tabs, settings in a drawer, and secondary explanations tucked away to keep only what matters.",
   "La carte démo tient à l'écran": "The demo card fits on screen",
   "La fenêtre de simulation du héro est compactée (courbe réduite, espacements resserrés) : le bouton « Repartir de cette simulation » est visible dès l'arrivée, sans scroller.":
     "The hero simulation card is compacted (shorter chart, tighter spacing): the “Start from this simulation” button is visible on arrival, no scrolling needed.",
-  "© 2026 Snowball Pro · v6.22.1 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.22.1 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.23.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.23.0 · 100% local data · Made with real returns, not promises.",
   // ─── Landing v6.22 : démo éditable du héro (2.1) ─────────────────────────
   "La démo du héro devient éditable": "The hero demo becomes editable",
   "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.":
@@ -1132,6 +1136,44 @@ const EN: Record<string, string> = {
   "Replay indisponible pour cette année.": "Replay unavailable for this year.",
   "100 € investis en début d'année · MSCI World Net Return EUR, dividendes nets réinvestis · avant frais, fiscalité et versements supplémentaires.":
     "€100 invested at the start of the year · MSCI World Net Return EUR, net dividends reinvested · before fees, tax and additional contributions.",
+  // ─── Mobile (v6.23) : header compact, tiroir réglages, onglets courts ─────
+  Calculer: "Calculate",
+  "Modifiez vos chiffres : le résultat se met à jour instantanément.":
+    "Change your numbers: the result updates instantly.",
+  "Les trois pires fenêtres réelles, rejouées telles quelles : mêmes rendements, même inflation, mêmes garde-fous.":
+    "The three worst real windows, replayed as they happened: same returns, same inflation, same guardrails.",
+  "Comprendre ce résultat": "Understand this result",
+  "Masquer les détails": "Hide details",
+  "Ouvrir les réglages": "Open settings",
+  "Fermer les réglages": "Close settings",
+  Nouvelle: "New",
+  Robustesse: "Robustness",
+  Rente: "Annuity",
+  Simulations: "Simulations",
+  // ─── Landing : la retraite en pleine crise (5.3) ──────────────────────────
+  "Et si vous preniez votre retraite en 2008 ?": "What if you retired in 2008?",
+  "La question que personne ne pose": "The question nobody asks",
+  "Année de départ à la retraite": "Retirement start year",
+  "Capital à la retraite (€)": "Capital at retirement (€)",
+  "votre rente la première année": "your annuity in year one",
+  "la rente tient jusqu'en {endYear}": "the annuity lasts until {endYear}",
+  "la rente s'épuise en {ruinYear}": "the annuity runs out in {ruinYear}",
+  "la première année": "year one",
+  "au pire": "at worst",
+  "en {endYear}, après {years} ans rejoués": "in {endYear}, after {years} years replayed",
+  "Même avec les garde-fous, la rente s'épuise en {year}.": "Even with the guardrails, the annuity runs out in {year}.",
+  "Le marché s'effondre la première année — et vous retirez de l'argent chaque mois. Le moteur rejoue la vraie histoire : retraits, inflation réelle, garde-fous.":
+    "The market collapses in year one — and you withdraw money every month. The engine replays real history: withdrawals, real inflation, guardrails.",
+  "règle des 4 % — la rente est indexée sur l'inflation de chaque année rejouée":
+    "4% rule — the annuity is indexed to the inflation of each replayed year",
+  "Sans les garde-fous dynamiques, elle s'épuisait en {year} : couper 10 % après une année négative, c'est ce qui la sauve.":
+    "Without the dynamic guardrails, it would have run out in {year}: cutting 10% after a negative year is what saves it.",
+  "Sans les garde-fous, il restait {value} € en {endYear} — les coupes de 10 % après une année négative changent la fin de l'histoire.":
+    "Without the guardrails, {value} € was left in {endYear} — 10% cuts after a negative year change how the story ends.",
+  "Moteur réel — {years} ans de retraite prévus, fenêtre bornée par la fin de l'historique · CTO, frais et fiscalité inclus · inflation française réelle des années rejouées.":
+    "Real engine — {years} years of retirement planned, window bounded by the end of history · CTO, fees and tax included · real French inflation of the replayed years.",
+  "Courbe : le capital restant année après année, retraite commencée en {year}":
+    "Chart: the capital left year after year, retirement started in {year}",
   Manifeste: "Manifesto",
   "Ce que nous ne faisons pas": "What we don't do",
   "L'envers de la promesse. Aucun simulateur français n'ose l'écrire — voici notre liste, vérifiable dans le code.":

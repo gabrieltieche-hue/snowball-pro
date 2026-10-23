@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, Banknote, Dices, FolderOpen, LineChart, Link2, Target, Wallet, X } from "lucide-react"
+import {
+  AlertTriangle,
+  Banknote,
+  Dices,
+  FolderOpen,
+  LineChart,
+  Link2,
+  SlidersHorizontal,
+  Target,
+  Wallet,
+  X,
+} from "lucide-react"
 import {
   V4_SETTINGS_KEY,
   SETTINGS_KEY,
@@ -59,12 +70,14 @@ import { SimulationsTab } from "./components/Tabs/SimulationsTab"
 // l'onglet apporte, pas sa technique interne. Les ids restent inchangés
 // (persistance, tests, partage). Les libellés français servent de clés i18n
 // (v6.12) — traduits au rendu via useLang().tr.
+// `shortLabel` : libellés mobiles (v6.23) — les 5 onglets tiennent sur UNE
+// rangée au lieu de trois, sans jamais tronquer le libellé desktop.
 const TABS: TabDef[] = [
-  { id: "simulator", label: "Projection", icon: LineChart },
-  { id: "montecarlo", label: "Robustesse de votre plan", icon: Dices },
-  { id: "rente", label: "Rente & Retraite", icon: Banknote },
-  { id: "goal", label: "Combien investir ?", icon: Target },
-  { id: "simulations", label: "Mes simulations", icon: FolderOpen },
+  { id: "simulator", label: "Projection", shortLabel: "Projection", icon: LineChart },
+  { id: "montecarlo", label: "Robustesse de votre plan", shortLabel: "Robustesse", icon: Dices },
+  { id: "rente", label: "Rente & Retraite", shortLabel: "Rente", icon: Banknote },
+  { id: "goal", label: "Combien investir ?", shortLabel: "Objectif", icon: Target },
+  { id: "simulations", label: "Mes simulations", shortLabel: "Simulations", icon: FolderOpen },
 ]
 
 const LEGACY_SIDEBAR_KEY = "snowball_v5_sidebar"
@@ -108,6 +121,7 @@ export default function App() {
 
 function AppShell({ scope }: { scope: string | null }) {
   const { tr, locale } = useLang()
+  const session = useSession()
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const initial = loadInitialDarkMode()
     applyThemeClass(initial)
@@ -123,6 +137,9 @@ function AppShell({ scope }: { scope: string | null }) {
   // largeur au contenu, la Sidebar n'est que le miroir. Persisté en
   // localStorage (préférence d'affichage, comme le thème).
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(loadSidebarCollapsed)
+  // Réglages mobiles (v6.23) : sur téléphone la sidebar n'est plus reléguée
+  // 2 200 px plus bas — un tiroir plein écran s'ouvre depuis le header.
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
   const toggleSidebarCollapsed = useCallback(() => {
     setSidebarCollapsed(prev => {
       const next = !prev
@@ -171,6 +188,16 @@ function AppShell({ scope }: { scope: string | null }) {
   // (objectif, rente) on change d'onglet ; sinon on relaie le focus à la
   // sidebar (révéler la section + focus l'input) via focusRequest.
   const [focusRequest, setFocusRequest] = useState<{ field: keyof SimulationInputs; nonce: number } | null>(null)
+  // ⚠ « Corriger l'erreur » sur mobile : les réglages vivent dans un tiroir —
+  // on l'ouvre pour que le champ fautif soit réellement visible au focus.
+  useEffect(() => {
+    if (!focusRequest) return
+    try {
+      if (window.matchMedia?.("(max-width: 1023px)").matches) setMobileSettingsOpen(true)
+    } catch {
+      /* jsdom sans matchMedia */
+    }
+  }, [focusRequest])
   const handleFixError = useCallback((field: ValidationError["field"]) => {
     const tab = TAB_FIELD[field]
     if (tab) {
@@ -642,23 +669,37 @@ function AppShell({ scope }: { scope: string | null }) {
         {/* En-tête global : la marque et les actions (annuler, partager, thème,
           export…) restent accessibles pendant tout le scroll. */}
         <header className="sticky-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-xl bg-surface/72 no-print">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
-                <Wallet size={18} className="btn-gold-text" aria-hidden />
+          <div className="max-w-[1440px] mx-auto px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary-light via-primary to-primary-dark flex items-center justify-center shadow-gold shrink-0">
+                <Wallet size={15} className="btn-gold-text sm:hidden" aria-hidden />
+                <Wallet size={18} className="btn-gold-text hidden sm:block" aria-hidden />
                 <span className="absolute -inset-px rounded-xl ring-1 ring-primary/50" aria-hidden />
               </div>
               <div className="min-w-0 leading-tight">
-                <div className="font-display text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
+                <div className="font-display text-[15px] sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
                   SNOWBALL <span className="text-primary">PRO</span>
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
+                <div className="hidden sm:block text-[9px] sm:text-[10px] text-text-dim uppercase tracking-[0.22em] truncate">
                   {tr("Simulateur patrimonial")}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-2.5 justify-end flex-wrap">
-              <AccountMenu />
+            <div className="flex items-center gap-1.5 sm:gap-2.5 justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileSettingsOpen(true)}
+                aria-label={tr("Ouvrir les réglages")}
+                title={tr("Ouvrir les réglages")}
+                className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-xl glass text-text-muted hover:text-text transition-colors"
+              >
+                <SlidersHorizontal size={14} aria-hidden />
+              </button>
+              {/* Invité sur mobile : l'icône compte disparaît du header (elle
+                  encombre pour rien) — « Se connecter » vit dans le menu ⋯. */}
+              <div className={session ? "contents" : "hidden sm:block"}>
+                <AccountMenu />
+              </div>
               <ActionBar
                 onNewSimulation={openNewSimulation}
                 onExportCSV={exportCSV}
@@ -684,12 +725,12 @@ function AppShell({ scope }: { scope: string | null }) {
           </div>
         </header>
 
-        <div className="max-w-[1440px] mx-auto p-4 sm:p-6">
+        <div className="max-w-[1440px] mx-auto p-3 sm:p-6">
           {/* La colonne réglages s'anime entre 380 px (déplié) et 72 px (rail
               d'icônes replié, style ChatGPT) — grid-template-columns est
               interpolable par le navigateur (Chrome/FF/Safari 16+). */}
           <div
-            className={`grid grid-cols-1 gap-6 items-start transition-[grid-template-columns] duration-300 ease-out ${
+            className={`grid grid-cols-1 gap-4 sm:gap-6 items-start transition-[grid-template-columns] duration-300 ease-out ${
               sidebarCollapsed ? "lg:grid-cols-[76px_1fr]" : "lg:grid-cols-[380px_1fr]"
             }`}
           >
@@ -697,7 +738,43 @@ function AppShell({ scope }: { scope: string | null }) {
                 héro passent avant les réglages (order), la sidebar suit. Sur
                 desktop la grille conserve l'ordre source : réglages à gauche,
                 résultats à droite, visibles côte à côte. */}
-            <div className="order-2 lg:order-1 min-w-0">
+            {/* Mobile : voile du tiroir réglages (le panneau vit au-dessus). */}
+            {mobileSettingsOpen && (
+              <button
+                type="button"
+                aria-label={tr("Fermer les réglages")}
+                onClick={() => setMobileSettingsOpen(false)}
+                className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              />
+            )}
+            {/* Un seul Sidebar monté : colonne sur desktop, tiroir plein écran
+                sur mobile (plus de réglages enterrés 2 000 px plus bas). */}
+            <div
+              className={
+                mobileSettingsOpen
+                  ? "order-2 lg:order-1 min-w-0 max-lg:fixed max-lg:inset-0 max-lg:z-50 max-lg:overflow-y-auto max-lg:bg-surface max-lg:p-3 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0"
+                  : "order-2 lg:order-1 min-w-0 max-lg:hidden"
+              }
+            >
+              {mobileSettingsOpen && (
+                <div className="lg:hidden sticky top-0 z-10 mb-2 flex items-center justify-between gap-2 bg-surface/95 py-1 backdrop-blur">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-text-muted">
+                      {tr("Réglages")}
+                    </p>
+                    <p className="text-[10px] text-text-dim leading-snug">
+                      {tr("Modifiez vos chiffres : le résultat se met à jour instantanément.")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSettingsOpen(false)}
+                    className="inline-flex items-center gap-1 rounded-xl glass px-3 py-2 text-[11px] font-bold text-text"
+                  >
+                    <X size={13} aria-hidden /> {tr("Fermer")}
+                  </button>
+                </div>
+              )}
               <ErrorBoundary label={tr("les réglages")}>
                 <Sidebar
                   inputs={activeInputs}
@@ -709,14 +786,14 @@ function AppShell({ scope }: { scope: string | null }) {
                   onLoadSnapshot={handleLoadSnapshot}
                   onRemoveSnapshot={handleRemoveSnapshot}
                   uiMode={uiMode}
-                  collapsed={sidebarCollapsed}
-                  onToggleCollapsed={toggleSidebarCollapsed}
+                  collapsed={mobileSettingsOpen ? false : sidebarCollapsed}
+                  onToggleCollapsed={mobileSettingsOpen ? () => setMobileSettingsOpen(false) : toggleSidebarCollapsed}
                   focusRequest={focusRequest}
                 />
               </ErrorBoundary>
             </div>
 
-            <main className="space-y-5 min-w-0 order-1 lg:order-2">
+            <main className="space-y-4 sm:space-y-5 min-w-0 order-1 lg:order-2">
               {sharedLinkLoaded && (
                 <div className="glass-gold rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-text-muted flex items-center gap-2 min-w-0">

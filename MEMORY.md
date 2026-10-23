@@ -4,6 +4,26 @@
 
 ---
 
+## SESSION — 2026-10-23 (v6.23.0 : landing retraite 2008 + app mobile allégée)
+
+### Résumé
+
+Demande utilisateur : « où j'en suis » → reprise du dernier chantier landing (5.3), puis deux passes de refonte mobile (en-tête/onglets/réglages trop hauts, onglet Rente ultra surchargé), et suppression des pavés explicatifs de la rente. Release **6.23.0**.
+
+### Décisions
+
+- **Démo retraite** : sélecteur 1973/2000/2008 = les trois stress tests du moteur ; capital 200 k€–1,5 M€ ; `baseMonthlyWithdrawal` exporté pour afficher la rente réelle (aucun taux recopié) ; comparaison avec/sans garde-fous ; `RetirementChart` SVG.
+- **Mobile** : compaction par breakpoints uniquement (desktop inchangé). `Sidebar` unique déplacée en tiroir (`max-lg:fixed`) — aucune duplication de DOM. Onglets courts via `shortLabel` (`aria-label` conservé). Menu ⋯ réduit sur mobile ; compte masqué pour les invités (connexion via ⋯).
+- **Rente** : suppression franche (pas de flag) du guide « Quel modèle choisir ? », de l'intro des stress tests, des descriptions de scénarios et du conseil de risque — décision utilisateur (« simplifie ou dégage »).
+- **v8 graphiques** documenté rétroactivement (commit `22a23b3`, resté sans entrée CHANGELOG).
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **439/439 tests** ✓ i18n 0 clé manquante ✓ build ✓ (1 337 ko / 387 ko gzip).
+- Pas de navigateur exploitable dans ce cloud (Chromium sans bibliothèques système, pas de root) : vérification DOM/tests, pas de capture ; preview dev 3001 contrôlée (module servi sans les textes supprimés).
+
+---
+
 ## SESSION — 2026-10-10 (v6.22.1 : la carte démo tient à l'écran)
 
 ### Résumé

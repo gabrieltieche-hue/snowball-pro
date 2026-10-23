@@ -35,7 +35,13 @@ export {
 } from "./math"
 export { runSimulation } from "./simulation"
 export { runMonteCarlo, runMonteCarloAsync, sampleHistoricalReturns } from "./montecarlo"
-export { runDecumulation, runDecumulationAsync, runStressTest, STRESS_TEST_SCENARIOS } from "./decumulation"
+export {
+  runDecumulation,
+  runDecumulationAsync,
+  runStressTest,
+  STRESS_TEST_SCENARIOS,
+  baseMonthlyWithdrawal,
+} from "./decumulation"
 export {
   computeKPIs,
   computeMilestones,
