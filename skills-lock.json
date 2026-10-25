@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "apex": {
+      "source": "melvynx/aiblueprint",
+      "sourceType": "github",
+      "skillPath": "skills/apex/SKILL.md",
+      "computedHash": "8778a40b7283b0fc889525aef1da389ac1f27862cfae58d379f6943453b90b45"
+    }
+  }
+}

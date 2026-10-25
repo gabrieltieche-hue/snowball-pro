@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snowball Pro — Vidéo démo 75s</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#12100e;--ink:#f5efe2;--muted:#a89f8d;--gold:#c9a86a;--gold2:#e8cf9a;--card:#1d1a15;--line:rgba(201,168,106,.28)}
+html,body{background:#0a0908;color:var(--ink);font-family:"Inter","SF Pro Display",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100%}
+.page{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px;gap:14px}
+.topbar{width:100%;max-width:1280px;display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.topbar b{color:var(--gold)}
+.stage-wrap{width:100%;max-width:1280px;aspect-ratio:16/9;position:relative;border-radius:18px;overflow:hidden;background:var(--bg);border:1px solid rgba(201,168,106,.35);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.6),0 0 60px rgba(201,168,106,.08)}
+#bg-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%)}
+.scene{position:absolute;inset:0;padding:4.5% 6%;display:flex;flex-direction:column;justify-content:center;opacity:0;transform:translateX(60px);transition:opacity .6s ease,transform .6s ease;pointer-events:none;visibility:hidden}
+.scene.active{opacity:1;transform:none;pointer-events:auto;visibility:visible}
+.scene.exit-left{transform:translateX(-60px);opacity:0}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:clamp(10px,1.4vw,14px);letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2%}
+.eyebrow::before{content:"";width:34px;height:2px;background:var(--gold);display:inline-block;border-radius:2px}
+h1,h2{line-height:1.02;letter-spacing:-.02em}
+.kinetic{overflow:hidden;display:block}
+.kinetic>span{display:inline-block;transform:translateY(110%);animation:rise .8s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes rise{to{transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.31s}.d4{animation-delay:.44s}
+.big{font-size:clamp(34px,7.2vw,96px);font-weight:800}
+.big .gold{color:var(--gold)}
+.sub{color:var(--muted);font-size:clamp(12px,1.8vw,20px);margin-top:1.4%;max-width:62ch;line-height:1.5}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:2.2%}
+.badge{font-size:clamp(10px,1.3vw,14px);border:1px solid var(--line);color:var(--gold2);padding:8px 14px;border-radius:999px;background:rgba(201,168,106,.08)}
+.count{font-variant-numeric:tabular-nums;color:var(--ink);text-shadow:0 0 30px rgba(201,168,106,.35)}
+.glitch{position:relative}
+.glitch::after{content:attr(data-t);position:absolute;left:0;top:0;width:100%;color:var(--gold);opacity:0;pointer-events:none}
+.scene.active .glitch::after{animation:gl .5s steps(2) 2}
+@keyframes gl{0%{opacity:.7;transform:translate(3px,-2px);clip-path:inset(0 0 55% 0)}50%{opacity:.7;transform:translate(-3px,2px);clip-path:inset(55% 0 0 0)}100%{opacity:0}}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:4%;align-items:center}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.pills{display:flex;gap:12px;margin-top:2.5%;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:linear-gradient(180deg,#232019,#171410);border-radius:14px;padding:12px 16px;min-width:150px;opacity:0;transform:translateY(18px) scale(.96)}
+.scene.active .pill{animation:pop .6s cubic-bezier(.2,1.4,.3,1) forwards}
+.scene.active .pill:nth-child(1){animation-delay:.5s}.scene.active .pill:nth-child(2){animation-delay:.7s}.scene.active .pill:nth-child(3){animation-delay:.9s}
+@keyframes pop{to{opacity:1;transform:none}}
+.pill small{display:block;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.pill strong{font-size:clamp(18px,2.6vw,30px);color:var(--gold)}
+.pill.central{border-color:var(--gold);box-shadow:0 0 24px rgba(201,168,106,.25)}
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:2.5%}
+@media(max-width:760px){.cards4{grid-template-columns:repeat(2,1fr)}}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;opacity:0;transform:translateY(24px) scale(.95)}
+.scene.active .fcard{animation:pop .55s cubic-bezier(.2,1.4,.3,1) forwards}
+.scene.active .fcard:nth-child(1){animation-delay:.3s}.scene.active .fcard:nth-child(2){animation-delay:.5s}.scene.active .fcard:nth-child(3){animation-delay:.7s}.scene.active .fcard:nth-child(4){animation-delay:.9s}
+.fcard h3{color:var(--gold);font-size:clamp(15px,2vw,22px);letter-spacing:.06em}
+.fcard p{color:var(--muted);font-size:clamp(11px,1.4vw,14px);margin-top:8px;line-height:1.5}
+.fcard .tag{display:inline-block;margin-top:10px;font-size:11px;color:#12100e;background:var(--gold);border-radius:999px;padding:3px 10px;font-weight:700}
+svg.curve{width:100%;height:auto;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:16px}
+#mc-canvas{width:100%;height:220px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:16px}
+@media(min-width:1000px){#mc-canvas{height:300px}}
+.pbar-row{display:flex;gap:10px;margin-top:14px}
+.pstat{flex:1;background:#1b1813;border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-align:center}
+.pstat small{color:var(--muted);letter-spacing:.14em;font-size:11px}
+.pstat strong{display:block;font-size:clamp(15px,2vw,22px);color:var(--ink);font-variant-numeric:tabular-nums}
+.stress{display:flex;gap:12px;margin-top:2%;flex-wrap:wrap}
+.flash{font-weight:800;font-size:clamp(16px,2.6vw,30px);padding:10px 18px;border-radius:12px;border:1px solid #5a2b2b;background:#241313;color:#ff9c9c;opacity:.25}
+.scene.active .flash{animation:flash 1s ease forwards}
+.scene.active .flash:nth-child(2){animation-delay:.6s}.scene.active .flash:nth-child(3){animation-delay:1.2s}
+@keyframes flash{0%{opacity:.25}20%{opacity:1;box-shadow:0 0 30px rgba(255,80,80,.6);transform:scale(1.06)}100%{opacity:1;border-color:var(--gold);color:var(--gold2);background:rgba(201,168,106,.1);box-shadow:none;transform:none}}
+.shield{margin-top:2%;display:inline-flex;align-items:center;gap:12px;border:1px solid var(--gold);border-radius:14px;padding:12px 18px;background:linear-gradient(90deg,rgba(201,168,106,.18),rgba(201,168,106,.05));font-size:clamp(13px,1.8vw,18px)}
+.cta-btn{display:inline-block;margin-top:2.4%;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#171310;font-weight:800;font-size:clamp(14px,2vw,20px);padding:14px 28px;border-radius:999px;text-decoration:none;box-shadow:0 12px 40px rgba(201,168,106,.35);border:0;cursor:pointer}
+.cta-points{display:flex;gap:10px;margin-top:2%;flex-wrap:wrap;color:var(--muted);font-size:clamp(12px,1.6vw,17px)}
+.dot-sep{color:var(--gold)}
+/* captions */
+.caption{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;max-width:90%;background:rgba(0,0,0,.72);border:1px solid rgba(201,168,106,.25);color:var(--ink);font-size:clamp(11px,1.5vw,16px);padding:8px 16px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* controls */
+.controls{width:100%;max-width:1280px;background:#171410;border:1px solid rgba(201,168,106,.25);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.prog{height:8px;background:#2a251d;border-radius:999px;cursor:pointer;position:relative;overflow:hidden}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:999px}
+.prog-marks{position:absolute;inset:0;display:flex}
+.prog-marks i{flex:1;border-right:1px solid rgba(0,0,0,.5)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+button.btn{background:#241f18;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px;cursor:pointer}
+button.btn:hover{border-color:var(--gold);color:var(--gold2)}
+button.btn.primary{background:var(--gold);color:#171310;font-weight:700;border-color:var(--gold)}
+.timer{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:14px}
+.scenedots{display:flex;gap:6px}
+.scenedots i{width:8px;height:8px;border-radius:999px;background:#3a332a;cursor:pointer}
+.scenedots i.on{background:var(--gold)}
+.hint{color:var(--muted);font-size:13px;text-align:center}
+.hint kbd{background:#241f18;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar"><span><b>Snowball Pro</b> · vidéo démo · 75 s · 16:9</span><span>fichier unique · aucune dépendance</span></div>
+  <div class="stage-wrap" id="stage" role="region" aria-label="Vidéo Snowball Pro">
+    <canvas id="bg-canvas"></canvas>
+    <div class="vignette"></div>
+
+    <!-- SCENE 1 -->
+    <div class="scene" data-cap="Quel est le montant qui te rendrait libre ? Calcule ton nombre magique.">
+      <div class="eyebrow">Snowball Pro · Simulateur patrimonial français</div>
+      <h1 class="big"><span class="kinetic"><span class="d1">Ton nombre</span></span><span class="kinetic"><span class="d2 gold glitch" data-t="magique.">magique.</span></span></h1>
+      <div class="big count" style="margin-top:1%"><span id="count-hero">0&nbsp;€</span></div>
+      <p class="sub">Combien te faut-il pour être libre&nbsp;? Snowball Pro projette ton capital en <b style="color:var(--gold2)">euros réels</b>, nets d'inflation — pas un fantasme nominal.</p>
+      <div class="badges"><span class="badge">100 ans d'historique</span><span class="badge">Rendements réels</span><span class="badge">Inflation 2,1&nbsp;% déduite</span></div>
+    </div>
+
+    <!-- SCENE 2 -->
+    <div class="scene" data-cap="Trois futurs : prudent 5,99 %, central 8,22 %, optimiste 10,07 % réels.">
+      <div class="eyebrow">Projection long terme</div>
+      <div class="grid2">
+        <div>
+          <h2 class="big" style="font-size:clamp(26px,4.5vw,58px)"><span class="kinetic"><span class="d1">3 futurs</span></span><span class="kinetic"><span class="d2" style="color:var(--gold)">possibles.</span></span></h2>
+          <p class="sub">Une courbe qui se dessine sous tes yeux. Rendements <b style="color:var(--gold2)">réels</b> calibrés sur un siècle de marchés.</p>
+          <div class="pills">
+            <div class="pill"><small>Prudent</small><strong>5,99&nbsp;%</strong></div>
+            <div class="pill central"><small>★ Central</small><strong>8,22&nbsp;%</strong></div>
+            <div class="pill"><small>Optimiste</small><strong>10,07&nbsp;%</strong></div>
+          </div>
+        </div>
+        <div>
+          <svg class="curve" viewBox="0 0 600 360" aria-label="Courbe de projection">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c9a86a" stop-opacity=".4"/><stop offset="1" stop-color="#e8cf9a"/></linearGradient></defs>
+            <g stroke="rgba(255,255,255,.08)" stroke-width="1"><line x1="40" y1="40" x2="40" y2="320"/><line x1="40" y1="320" x2="580" y2="320"/></g>
+            <path id="p-prudent" d="M40,300 C150,290 260,260 360,235 S500,200 580,185" fill="none" stroke="#8a7f6a" stroke-width="3" stroke-dasharray="700" stroke-dashoffset="700"/>
+            <path id="p-central" d="M40,300 C150,280 260,230 360,185 S500,110 580,70" fill="none" stroke="url(#g)" stroke-width="4" stroke-dasharray="700" stroke-dashoffset="700"/>
+            <path id="p-opti" d="M40,300 C150,270 260,200 360,140 S500,50 580,20" fill="none" stroke="#e8cf9a" stroke-width="2" stroke-dasharray="700" stroke-dashoffset="700" opacity=".8"/>
+            <circle id="dot-end" cx="580" cy="70" r="7" fill="#c9a86a" opacity="0"/>
+          </svg>
+          <p class="sub" style="font-size:clamp(11px,1.4vw,15px)">Inflation 2,1&nbsp;% déjà déduite · horizon 30 ans · versements composés</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 3 -->
+    <div class="scene" data-cap="CTO, PEA, Assurance-vie, PER : la fiscalité change tout.">
+      <div class="eyebrow">Fiscalité française</div>
+      <h2 class="big" style="font-size:clamp(26px,4.5vw,58px)"><span class="kinetic"><span class="d1">La fiscalité</span></span> <span class="kinetic"><span class="d2" style="color:var(--gold)">change tout.</span></span></h2>
+      <p class="sub">4 enveloppes, 4 destins pour le même effort d'épargne. Snowball Pro applique les vraies règles françaises.</p>
+      <div class="cards4">
+        <div class="fcard"><h3>CTO</h3><p>Flat tax 30&nbsp;% · flexible, sans plafond.</p><span class="tag">souple</span></div>
+        <div class="fcard"><h3>PEA</h3><p>17,2&nbsp;% après 5 ans · actions Europe.</p><span class="tag">0 impôt à 5 ans</span></div>
+        <div class="fcard"><h3>AV</h3><p>Abattement 4 600 / 9 200&nbsp;€ après 8 ans.</p><span class="tag">transmission</span></div>
+        <div class="fcard"><h3>PER</h3><p>Déduction à l'entrée, imposé à la sortie.</p><span class="tag">retraite</span></div>
+      </div>
+    </div>
+
+    <!-- SCENE 4 -->
+    <div class="scene" data-cap="10 000 scénarios Monte Carlo : le nuage des possibles, P10 / P50 / P90.">
+      <div class="eyebrow">Monte Carlo · 10 000 scénarios</div>
+      <div class="grid2">
+        <div>
+          <h2 class="big" style="font-size:clamp(26px,4.2vw,54px)"><span class="kinetic"><span class="d1">Le nuage</span></span><span class="kinetic"><span class="d2" style="color:var(--gold)">des possibles.</span></span></h2>
+          <p class="sub">300 trajectoires affichées, 10&nbsp;000 simulées. Pas une promesse — une distribution de probabilités.</p>
+          <div class="pbar-row">
+            <div class="pstat"><small>P10 PRUDENT</small><strong id="p10">…</strong></div>
+            <div class="pstat" style="border-color:var(--gold)"><small>MÉDIANE P50</small><strong id="p50" style="color:var(--gold)">…</strong></div>
+            <div class="pstat"><small>P90 OPTIMISTE</small><strong id="p90">…</strong></div>
+          </div>
+        </div>
+        <div><canvas id="mc-canvas" width="640" height="340"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SCENE 5 -->
+    <div class="scene" data-cap="1973, 2000, 2008 : ta rente survit-elle ? Pilotage Guyton-Klinger.">
+      <div class="eyebrow">Rente &amp; crises</div>
+      <h2 class="big" style="font-size:clamp(26px,4.5vw,58px)"><span class="kinetic"><span class="d1">Ta rente survivra-t-elle</span></span><span class="kinetic"><span class="d2" style="color:var(--gold)">aux krachs&nbsp;?</span></span></h2>
+      <div class="stress"><div class="flash">1973 · Choc pétrolier</div><div class="flash">2000 · Éclatement internet</div><div class="flash">2008 · Crise financière</div></div>
+      <div class="shield">🛡️ Règle de <b>&nbsp;Guyton-Klinger&nbsp;</b> : la rente s'ajuste quand les marchés chutent — elle ne casse pas.</div>
+      <p class="sub">Stress-tests historiques intégrés · taux de survie du capital sur 30 ans de retraite.</p>
+    </div>
+
+    <!-- SCENE 6 -->
+    <div class="scene" data-cap="Gratuit, 100 % local, sans inscription. Lance ta simulation.">
+      <div class="eyebrow">Snowball Pro</div>
+      <h2 class="big"><span class="kinetic"><span class="d1">Gratuit. Local.</span></span><span class="kinetic"><span class="d2" style="color:var(--gold)">Sans inscription.</span></span></h2>
+      <p class="sub">Tes données ne quittent jamais ton navigateur. 100&nbsp;% local, sans compte, sans tracking.</p>
+      <div><a class="cta-btn" href="../" onclick="return true">▶ Lancer ma simulation →</a></div>
+      <div class="cta-points"><span>Gratuit</span><span class="dot-sep">●</span><span>100&nbsp;% local</span><span class="dot-sep">●</span><span>Sans inscription</span><span class="dot-sep">●</span><span>CTO / PEA / AV / PER</span></div>
+    </div>
+
+    <div class="caption" id="caption">…</div>
+  </div>
+
+  <div class="controls">
+    <div class="prog" id="prog"><div class="prog-fill" id="fill"></div><div class="prog-marks"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="row">
+      <button class="btn" id="prev" title="Scène précédente">⏮</button>
+      <button class="btn primary" id="playpause" title="Lecture / Pause (espace)">⏸ Pause</button>
+      <button class="btn" id="replay" title="Rejouer">↺ Replay</button>
+      <button class="btn" id="next" title="Scène suivante">⏭</button>
+      <div class="scenedots" id="dots"></div>
+      <div class="timer"><span id="tcur">0:00</span> / <span>1:15</span> · <span id="slabel">Scène 1/6</span></div>
+    </div>
+  </div>
+  <p class="hint"><kbd>Espace</kbd> lecture / pause &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> changer de scène &nbsp;·&nbsp; clique sur la barre pour naviguer &nbsp;·&nbsp; ouvre ce fichier dans un navigateur, aucune dépendance</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+var SCENE_DUR = 12.5, N = 6, TOTAL = SCENE_DUR * N;
+var scenes = Array.prototype.slice.call(document.querySelectorAll('.scene'));
+var caption = document.getElementById('caption');
+var fill = document.getElementById('fill');
+var prog = document.getElementById('prog');
+var tcur = document.getElementById('tcur');
+var slabel = document.getElementById('slabel');
+var btnPP = document.getElementById('playpause');
+var dotsBox = document.getElementById('dots');
+var dots = [];
+for (var d=0; d<N; d++){ (function(k){ var i=document.createElement('i'); i.title='Scène '+(k+1); i.onclick=function(){seek(k*SCENE_DUR+0.01);}; dotsBox.appendChild(i); dots.push(i); })(d); }
+
+var playing = false, elapsed = 0, lastTs = 0, rafMain = 0;
+var timers = [], rafs = [];
+function clearFx(){ timers.forEach(clearTimeout); timers=[]; rafs.forEach(cancelAnimationFrame); rafs=[]; }
+function later(fn,ms){ var id=setTimeout(fn,ms); timers.push(id); return id; }
+function loop(fn){ var id=requestAnimationFrame(function tick(t){ fn(t); var n=requestAnimationFrame(tick); rafs[rafs.length-1]=n; }); rafs.push(id); }
+function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2); }
+function fmtEUR(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f')+'\u202f€'; }
+function cur(){ return Math.min(N-1, Math.floor(elapsed / SCENE_DUR)); }
+
+/* --- per-scene effects --- */
+function fxScene(i){
+  clearFx();
+  // re-trigger kinetic animations
+  var ks = scenes[i].querySelectorAll('.kinetic > span');
+  for (var k=0;k<ks.length;k++){ var el=ks[k]; el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+  if (i===0){
+    var target=512480, t0=performance.now(), dur=9000;
+    loop(function(){ var p=Math.min(1,(performance.now()-t0)/dur); var e=1-Math.pow(1-p,3);
+      document.getElementById('count-hero').textContent=fmtEUR(target*e); if(p>=1){document.getElementById('count-hero').textContent=fmtEUR(target);} });
+  }
+  if (i===1){
+    ['p-prudent','p-central','p-opti'].forEach(function(id,j){
+      var p=document.getElementById(id); var L=700; p.style.transition='none'; p.style.strokeDashoffset=L;
+      void p.getBoundingClientRect();
+      later(function(){ p.style.transition='stroke-dashoffset 6s ease '+(j*0.4)+'s'; p.style.strokeDashoffset='0'; },150);
+    });
+    later(function(){ document.getElementById('dot-end').style.transition='opacity .8s'; document.getElementById('dot-end').style.opacity='1'; },5500);
+  }
+  if (i===3){ drawMC(); countPvals(); }
+}
+
+function drawMC(){
+  var c=document.getElementById('mc-canvas'); if(!c) return;
+  var ctx=c.getContext('2d'); var W=c.width,H=c.height;
+  var seed=42; function rnd(){ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; }
+  var t0=performance.now(), dur=8000, drawn=0, total=300, paths=[];
+  for(var s=0;s<total;s++){ var drift=(rnd()*2-1)*0.9, pts=[], v=H*0.82; for(var x=0;x<=60;x++){ v-= (2.1+rnd()*3.2)+drift*1.4; v=Math.min(H*0.9,Math.max(8,v+(rnd()*2-1)*9)); pts.push([x/60*W, v]); } paths.push({pts:pts, a:0.12+rnd()*0.5, w: rnd()<0.06?2:1}); }
+  loop(function(){
+    var p=Math.min(1,(performance.now()-t0)/dur);
+    var want=Math.floor(p*total);
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1;
+    for(var g=0;g<5;g++){ ctx.beginPath(); ctx.moveTo(0,g*H/4); ctx.lineTo(W,g*H/4); ctx.stroke(); }
+    for(var j=0;j<want;j++){ var P=paths[j]; ctx.globalAlpha=P.a; ctx.strokeStyle=j%9===0?'#e8cf9a':'#c9a86a'; ctx.lineWidth=P.w; ctx.beginPath(); var upto=Math.floor(p*60); for(var q=0;q<=upto;q++){ var pt=P.pts[q]; if(q===0)ctx.moveTo(pt[0],pt[1]); else ctx.lineTo(pt[0],pt[1]); } ctx.stroke(); }
+    ctx.globalAlpha=1;
+    // median line
+    ctx.strokeStyle='#f5efe2'; ctx.lineWidth=2.5; ctx.beginPath();
+    for(var m=0;m<=Math.floor(p*60);m++){ var my=H*0.82-m*(H*0.72/60); if(m===0)ctx.moveTo(0,my); else ctx.lineTo(m/60*W,my); } ctx.stroke();
+    drawn=want; if(p>=1){ /* hold full frame */ }
+  });
+}
+function countPvals(){
+  var t0=performance.now(), dur=6000;
+  var v10=184320, v50=512480, v90=1127400;
+  loop(function(){ var p=Math.min(1,(performance.now()-t0)/dur); var e=1-Math.pow(1-p,3);
+    document.getElementById('p10').textContent=fmtEUR(v10*e);
+    document.getElementById('p50').textContent=fmtEUR(v50*e);
+    document.getElementById('p90').textContent=fmtEUR(v90*e); });
+}
+
+/* --- background particles --- */
+var bg=document.getElementById('bg-canvas'), bctx=bg.getContext('2d'), parts=[];
+function bgSize(){ var r=bg.parentElement.getBoundingClientRect(); bg.width=r.width; bg.height=r.height; }
+window.addEventListener('resize',bgSize); bgSize();
+for(var pi=0;pi<70;pi++) parts.push({x:Math.random(),y:Math.random(),s:Math.random()*2+0.5,v:Math.random()*0.0004+0.0001,o:Math.random()*0.5+0.15});
+(function bgLoop(){ bctx.clearRect(0,0,bg.width,bg.height); for(var j=0;j<parts.length;j++){ var P=parts[j]; P.y-=P.v; if(P.y<0)P.y=1; bctx.globalAlpha=P.o; bctx.fillStyle='#c9a86a'; bctx.beginPath(); bctx.arc(P.x*bg.width,P.y*bg.height,P.s,0,7); bctx.fill(); } bctx.globalAlpha=1; requestAnimationFrame(bgLoop); })();
+
+/* --- master timeline --- */
+function showScene(i){
+  scenes.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+  caption.textContent = scenes[i].getAttribute('data-cap') || '';
+  slabel.textContent = 'Scène '+(i+1)+'/'+N;
+  dots.forEach(function(x,k){ x.classList.toggle('on', k===i); });
+  fxScene(i);
+}
+function tick(ts){
+  if(!playing) return;
+  var dt=(ts-lastTs)/1000; lastTs=ts; elapsed+=dt;
+  if(elapsed>=TOTAL){ elapsed=TOTAL; render(); pause(); showScene(N-1); btnPP.textContent='↺ Rejouer'; return; }
+  var i=cur();
+  if(!scenes[i].classList.contains('active')) showScene(i);
+  render(); rafMain=requestAnimationFrame(tick);
+}
+function render(){
+  fill.style.width=(elapsed/TOTAL*100)+'%';
+  tcur.textContent=fmt(elapsed);
+}
+function play(){ if(elapsed>=TOTAL) elapsed=0; playing=true; lastTs=performance.now(); btnPP.textContent='⏸ Pause'; if(!scenes[cur()].classList.contains('active')) showScene(cur()); else { /* resume fx-free */ } cancelAnimationFrame(rafMain); rafMain=requestAnimationFrame(tick); }
+function pause(){ playing=false; cancelAnimationFrame(rafMain); clearFx(); btnPP.textContent='▶ Lecture'; }
+function seek(t){ elapsed=Math.max(0,Math.min(TOTAL-0.01,t)); btnPP.textContent=playing?'⏸ Pause':'▶ Lecture'; showScene(cur()); render(); if(playing){ cancelAnimationFrame(rafMain); lastTs=performance.now(); rafMain=requestAnimationFrame(tick); } }
+
+btnPP.onclick=function(){ if(elapsed>=TOTAL && !playing){ elapsed=0; showScene(0); play(); } else if(playing) pause(); else play(); };
+document.getElementById('replay').onclick=function(){ elapsed=0; showScene(0); render(); play(); };
+document.getElementById('prev').onclick=function(){ var i=Math.max(0,cur()-1); seek(i*SCENE_DUR+0.01); };
+document.getElementById('next').onclick=function(){ var i=Math.min(N-1,cur()+1); seek(i*SCENE_DUR+0.01); };
+prog.onclick=function(e){ var r=prog.getBoundingClientRect(); seek((e.clientX-r.left)/r.width*TOTAL); };
+document.addEventListener('keydown',function(e){
+  if(e.code==='Space'){ e.preventDefault(); btnPP.click(); }
+  if(e.key==='ArrowRight') document.getElementById('next').click();
+  if(e.key==='ArrowLeft') document.getElementById('prev').click();
+});
+
+/* autoplay */
+showScene(0); render(); play();
+})();
+</script>
+</body>
+</html>

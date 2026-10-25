@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Snowball Pro — Simulateur patrimonial français, gratuit et 100 % local</title>
+<meta name="description" content="Snowball Pro : simulateur patrimonial français, 100 % local, gratuit. 100 ans d'historique, 3 scénarios, fiscalité 2026, Monte Carlo, rente." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2eb; --bg2:#efe9db; --card:#fffdf8; --ink:#1c1917; --muted:#6b6459;
+  --line:#e5ddcc; --gold:#b98a1f; --gold-soft:#f3e6c3; --gold-ink:#7a5c10;
+  --green:#1d7a4f; --green-bg:#e2f1e7; --red:#b3402e; --red-bg:#f7e4de;
+  --blue:#2f5da3; --blue-bg:#e3ebf8; --violet:#6d4fc2; --violet-bg:#e9e4f9;
+  --radius:14px; --shadow:0 10px 30px rgba(60,45,10,.08);
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',system-ui,sans-serif; --disp:'Outfit',sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#14110d; --bg2:#1d1913; --card:#201b14; --ink:#f2ece0; --muted:#b3a893;
+  --line:#38301f; --gold:#e3b94e; --gold-soft:#33270e; --gold-ink:#f0d48a;
+  --green-bg:#123324; --red-bg:#3a1c15; --blue-bg:#16294d; --violet-bg:#251e4d;
+  --shadow:0 10px 30px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;transition:background .3s,color .3s}
+::selection{background:var(--gold-soft)}
+/* progress */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--gold),#e8c35a);z-index:99}
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:color-mix(in srgb,var(--bg) 88%,transparent);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:10px 18px;display:flex;gap:12px;align-items:center}
+.logo{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo i{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#d9ab2e,#8a6410);display:inline-flex;align-items:center;justify-content:center;font-style:normal}
+nav.toc{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+nav.toc a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:99px;border:1px solid transparent}
+nav.toc a:hover,nav.toc a.active{color:var(--ink);border-color:var(--line);background:var(--card)}
+.btn{font-family:var(--disp);font-weight:700;border:0;cursor:pointer;border-radius:99px;padding:10px 18px;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s}
+.btn-gold{background:linear-gradient(135deg,#d9ab2e,#a97f14);color:#fff;box-shadow:0 6px 18px rgba(185,138,31,.35)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(185,138,31,.45)}
+.btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-ink)}
+.theme{margin-left:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:8px 12px;cursor:pointer;font-size:14px}
+/* page */
+.page{max-width:800px;margin:0 auto;padding:28px 20px 90px}
+.breadcrumb{font-size:13px;color:var(--muted);margin:14px 0 6px}
+h1{font-family:var(--disp);font-size:clamp(34px,5.4vw,52px);line-height:1.06;letter-spacing:-.03em;margin:.2em 0 .3em}
+h2{font-family:var(--disp);font-size:26px;letter-spacing:-.02em;margin:56px 0 6px;display:flex;gap:10px;align-items:center}
+h2 .n{background:var(--gold-soft);color:var(--gold-ink);font-size:13px;font-family:var(--mono);padding:3px 9px;border-radius:99px;border:1px solid var(--line)}
+h3{font-family:var(--disp);margin:1.2em 0 .4em}
+p.lead{font-size:18px;color:var(--muted)}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.badge{font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--muted)}
+.badge.gold{background:var(--gold-soft);color:var(--gold-ink);border-color:#d9c48a;font-weight:700}
+.hero-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:var(--shadow);margin:26px 0;position:relative;overflow:hidden}
+.hero-card::after{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,#d9ab2e,#f3e6c3,#d9ab2e)}
+.magic{font-family:var(--disp);font-size:clamp(38px,7vw,58px);font-weight:800;letter-spacing:-.03em;color:var(--gold-ink)}
+.magic small{font-size:15px;font-family:var(--sans);font-weight:500;color:var(--muted);display:block;letter-spacing:0}
+.typing{border-right:3px solid var(--gold);white-space:nowrap;overflow:hidden;display:inline-block;vertical-align:bottom;animation:caret 1s steps(1) infinite}
+@keyframes caret{50%{border-color:transparent}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}nav.toc{display:none}}
+.callout{border:1px solid var(--line);border-left:5px solid var(--gold);background:var(--card);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:15px}
+.callout.green{border-left-color:var(--green);background:color-mix(in srgb,var(--green-bg) 55%,var(--card))}
+.callout.blue{border-left-color:var(--blue)}
+.callout .t{font-weight:700;font-family:var(--disp);display:block;margin-bottom:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:transform .18s,border-color .18s,box-shadow .18s}
+.card:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 16px 34px rgba(185,138,31,.18)}
+.card h3{margin:.1em 0 .3em;font-size:17px}
+.card .rate{font-family:var(--mono);font-weight:700;color:var(--gold-ink)}
+.mono{font-family:var(--mono)}
+.kpi{background:var(--bg2);border:1px dashed var(--line);border-radius:12px;padding:12px 14px}
+.kpi b{font-family:var(--mono);font-size:18px;display:block}
+/* sliders */
+input[type=range]{width:100%;accent-color:var(--gold);height:28px}
+.slider-row{display:grid;grid-template-columns:150px 1fr 130px;gap:10px;align-items:center;margin:12px 0;font-size:14px}
+.slider-row output{font-family:var(--mono);font-weight:700;text-align:right}
+@media(max-width:560px){.slider-row{grid-template-columns:1fr;gap:2px}.slider-row output{text-align:left}}
+table.db{width:100%;border-collapse:collapse;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.db th{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;background:var(--bg2);padding:10px 12px;border-bottom:1px solid var(--line)}
+table.db td{padding:10px 12px;border-bottom:1px solid var(--line)}
+table.db tr:last-child td{border-bottom:0}
+details{border:1px solid var(--line);background:var(--card);border-radius:12px;margin:10px 0;overflow:hidden;transition:border-color .2s}
+details:hover{border-color:var(--gold)}
+details summary{cursor:pointer;padding:15px 16px;font-weight:600;font-family:var(--disp);list-style:none;display:flex;gap:10px;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+";font-family:var(--mono);color:var(--gold-ink);border:1px solid var(--line);width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;transition:transform .25s}
+details[open] summary::before{content:"–";transform:rotate(180deg);background:var(--gold-soft)}
+details .body{padding:0 16px 16px;color:var(--muted);font-size:15px;animation:fadeSlide .25s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+svg.curve{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+canvas#mc{width:100%;height:300px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+footer{margin-top:60px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:13px}
+.tag{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);color:var(--muted)}
+.pillars{display:flex;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;font-family:var(--mono);margin:10px 0}
+.dot{display:inline-block;width:11px;height:11px;border-radius:99px;margin-right:6px}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="topbar-in">
+  <div class="logo"><i>❄</i> Snowball&nbsp;Pro</div>
+  <nav class="toc" id="toc">
+    <a href="#demo">Démo</a><a href="#projection">Projection</a><a href="#fiscalite">Fiscalité</a>
+    <a href="#montecarlo">Monte&nbsp;Carlo</a><a href="#rente">Rente</a><a href="#methode">Méthode</a><a href="#faq">FAQ</a>
+  </nav>
+  <button class="theme" id="themeBtn" title="Basculer clair / sombre">🌙</button>
+  <a class="btn btn-gold" href="/" style="padding:8px 14px">Ouvrir l'app</a>
+</div></div>
+
+<main class="page">
+  <div class="breadcrumb">Snowball Pro / Présentation / <b>Édition Notion</b></div>
+
+  <!-- HERO -->
+  <section class="reveal in">
+    <div class="badges">
+      <span class="badge gold">⛄ 100 % local · localStorage</span>
+      <span class="badge">🎁 Gratuit, sans compte</span>
+      <span class="badge">📈 100 ans d'historique</span>
+      <span class="badge">🇫🇷 Fiscalité 2026</span>
+    </div>
+    <h1>Le simulateur patrimonial<br /><span class="typing" id="typing"></span></h1>
+    <p class="lead">Snowball Pro projette votre épargne avec les <b>rendements réels du MSCI World (1970-2025)</b> prolongés par le S&amp;P 500 SBBI (1926-1969). Trois scénarios, fiscalité française, Monte Carlo jusqu'à 10&nbsp;000 scénarios, rente avec garde-fous. Le tout dans un seul fichier Vite, en français, sans serveur.</p>
+    <div class="hero-card">
+      <span class="tag">✨ LE NOMBRE MAGIQUE · SCÉNARIO CENTRAL 8,22 %</span>
+      <div class="magic"><span id="magicNum">0&nbsp;€</span><small>500&nbsp;€/mois pendant 25 ans, capital initial 0&nbsp;€ — versé : 150&nbsp;000&nbsp;€, le reste ce sont les intérêts composés.</small></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <a class="btn btn-gold" href="#demo">▶ Tester mes chiffres</a>
+        <a class="btn btn-ghost" href="/">Ouvrir le simulateur →</a>
+      </div>
+    </div>
+    <div class="callout green"><span class="t">💡 Pourquoi ce chiffre compte</span>150&nbsp;000&nbsp;€ versés deviennent <b class="mono" id="magicInline">…</b> en scénario central. La différence, c'est la composition au taux géométrique <b>8,22&nbsp;%/an</b> — krachs inclus, aucun lissage magique.</div>
+  </section>
+
+  <!-- DEMO -->
+  <section id="demo" class="reveal">
+    <h2><span class="n">01</span> Démo interactive — calcul live à 8,22&nbsp;%</h2>
+    <p>Bougez les curseurs : tout est recalculé instantanément en JavaScript, avec la formule des versements mensuels capitalisés au taux mensuel équivalent <span class="mono">r<sub>m</sub> = (1+8,22&nbsp%)<sup>1/12</sup> − 1</span>.</p>
+    <div class="card">
+      <div class="slider-row"><label>Capital initial</label><input type="range" id="sCap" min="0" max="200000" step="1000" value="10000" /><output id="oCap"></output></div>
+      <div class="slider-row"><label>Versement mensuel</label><input type="range" id="sMen" min="0" max="3000" step="50" value="500" /><output id="oMen"></output></div>
+      <div class="slider-row"><label>Durée (années)</label><input type="range" id="sDur" min="1" max="40" step="1" value="25" /><output id="oDur"></output></div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="kpi">🌿 Prudent 5,99 %<b id="kPru"></b></div>
+        <div class="kpi">⭐ Central 8,22 %<b id="kCen"></b></div>
+        <div class="kpi">🚀 Optimiste 10,07 %<b id="kOpt"></b></div>
+        <div class="kpi">💰 Total versé<b id="kVer"></b></div>
+      </div>
+    </div>
+    <div class="callout"><span class="t">🧊 Rappel Notion</span>Ce mini-calcul ignore la fiscalité et l'inflation : c'est un ordre de grandeur. Le simulateur complet applique CTO / PEA / AV / PER et l'inflation à 2,1&nbsp;%.</div>
+  </section>
+
+  <!-- PROJECTION -->
+  <section id="projection" class="reveal">
+    <h2><span class="n">02</span> Projection — la courbe des intérêts composés</h2>
+    <p>Courbe SVG animée (effet <i>draw</i>) : 500&nbsp;€/mois, 10&nbsp;000&nbsp;€ initiaux, 25 ans. Trois mondes, mêmes versements.</p>
+    <div class="legend"><span><i class="dot" style="background:#b3402e"></i>Prudent 5,99 %</span><span><i class="dot" style="background:#b98a1f"></i>Central 8,22 %</span><span><i class="dot" style="background:#1d7a4f"></i>Optimiste 10,07 %</span></div>
+    <svg class="curve" id="curve" viewBox="0 0 800 330" role="img" aria-label="Courbes de projection"></svg>
+    <div style="height:14px"></div>
+    <table class="db">
+      <tr><th>Scénario</th><th>Taux</th><th>Définition</th><th>Capital à 25 ans*</th></tr>
+      <tr><td>🚀 Optimiste</td><td class="mono">10,07 %</td><td>Moyenne arithmétique des années</td><td class="mono" id="tOpt"></td></tr>
+      <tr><td>⭐ Central (défaut)</td><td class="mono">8,22 %</td><td>Moyenne géométrique composée</td><td class="mono" id="tCen"></td></tr>
+      <tr><td>🌿 Prudent</td><td class="mono">5,99 %</td><td>Rendement réel après inflation (Fisher)</td><td class="mono" id="tPru"></td></tr>
+    </table>
+    <p style="font-size:12.5px;color:var(--muted)">* 10&nbsp;000&nbsp;€ + 500&nbsp;€/mois × 25 ans, avant fiscalité.</p>
+  </section>
+
+  <!-- FISCALITE -->
+  <section id="fiscalite" class="reveal">
+    <h2><span class="n">03</span> Fiscalité 2026 — 4 enveloppes</h2>
+    <p>Taux issus de la table fiscale de l'app (LFSS 2026, service-public.fr). L'assurance-vie est <b>exclue</b> de la hausse de CSG.</p>
+    <div class="grid2">
+      <div class="card"><h3>📊 CTO — Compte-titres</h3><div class="rate">PFU 31,4 % = 12,8 % + 18,6 %</div><p style="font-size:14px;color:var(--muted)">Prélèvements sociaux 2026 à <b>18,6&nbsp;%</b> (CSG passée de 9,2 à 10,6&nbsp;%). Imposition des gains à la cession. Liberté totale, zéro plafond.</p><span class="tag">souple · sans plafond</span></div>
+      <div class="card"><h3>🛡️ PEA — Plan d'épargne en actions</h3><div class="rate">17,2 % → 18,6 % sociaux après 5 ans</div><p style="font-size:14px;color:var(--muted)">Exonération d'IR après 5 ans, seuls les prélèvements sociaux restent. Plafond <b>150&nbsp;000&nbsp;€</b> (300&nbsp;000&nbsp;€ couple), titres européens.</p><span class="tag">plafond 150 k€</span></div>
+      <div class="card"><h3>🏦 AV — Assurance-vie</h3><div class="rate">Sociaux 17,2 % inchangés · IR 7,5 % ≥ 8 ans</div><p style="font-size:14px;color:var(--muted)">Exclue de la hausse CSG. Abattement annuel <b>4&nbsp;600&nbsp;€ / 9&nbsp;200&nbsp;€</b>, taux réduit 7,5&nbsp;% jusqu'à 150&nbsp;000&nbsp;€ de primes, 12,8&nbsp;% au-delà.</p><span class="tag">abattement 4 600 €</span></div>
+      <div class="card"><h3>🏖️ PER — Plan d'épargne retraite</h3><div class="rate">Gains : 18,6 % sociaux à la sortie</div><p style="font-size:14px;color:var(--muted)">Versements déductibles du revenu imposable, capital bloqué jusqu'à la retraite (cas de déblocage prévus). Fiscalité de sortie selon la part versée / gagnée.</p><span class="tag">blocage retraite</span></div>
+    </div>
+  </section>
+
+  <!-- MONTE CARLO -->
+  <section id="montecarlo" class="reveal">
+    <h2><span class="n">04</span> Robustesse — Monte Carlo animé</h2>
+    <p>Jusqu'à <b>10&nbsp;000 scénarios</b> qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Lecture en <b>P10 / P50 / P90</b> + probabilité de succès. Ci-dessous : nuage animé (800 trajectoires simulées, RNG déterministe).</p>
+    <canvas id="mc" width="760" height="300"></canvas>
+    <div class="grid2" style="margin-top:12px">
+      <div class="kpi">🔻 P10 (1 cas sur 10 fait pire)<b id="mcP10"></b></div>
+      <div class="kpi">�med P50 (médiane)<b id="mcP50"></b></div>
+      <div class="kpi">🔺 P90 (1 cas sur 10 fait mieux)<b id="mcP90"></b></div>
+      <div class="kpi">🎯 Probabilité d'atteindre 400 k€<b id="mcProba"></b></div>
+    </div>
+    <div class="callout blue"><span class="t">🧪 Interprétation</span>Le scénario central donne <b>une</b> trajectoire moyenne. Monte Carlo donne la <b>distribution</b> : si P10 couvre encore votre objectif, votre plan est robuste.</div>
+  </section>
+
+  <!-- RENTE -->
+  <section id="rente" class="reveal">
+    <h2><span class="n">05</span> Rente &amp; retraite — durer sans se tromper</h2>
+    <p>Combien retirer par an sans épuiser le capital ? L'app applique les <b>garde-fous Guyton-Klinger</b> (on réduit la rente après une mauvaise année, on l'augmente avec prudence après les bonnes) et rejoue les stress <b>1973 · 2000 · 2008</b>.</p>
+    <div class="grid2">
+      <div class="card"><h3>🛡️ Garde-fous Guyton-Klinger</h3><p style="font-size:14px;color:var(--muted)">Règle de retrait dynamique : −10&nbsp;% de rente si le taux de retrait dépasse +20&nbsp;% sa cible, +10&nbsp;% s'il passe 20&nbsp;% en dessous. Le capital survit aux krachs au lieu de les subir.</p></div>
+      <div class="card"><h3>🌪️ Stress 1973 / 2000 / 2008</h3><p style="font-size:14px;color:var(--muted)">Choc pétrolier + stagflation, bulle internet, crise subprime : votre rente est testée départ au pire moment. Si elle tient là, elle tient (presque) partout.</p></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Mini-estimateur de rente <span class="tag">4 % indicatif</span></h3>
+      <div class="slider-row"><label>Capital au départ</label><input type="range" id="sRet" min="100000" max="2000000" step="10000" value="500000" /><output id="oRet"></output></div>
+      <p style="font-size:15px">Rente brute ≈ <b class="mono" id="renteOut"></b> / an, soit <b class="mono" id="renteMois"></b> / mois — avant fiscalité, avant inflation, à ajuster avec les garde-fous.</p>
+    </div>
+  </section>
+
+  <!-- METHODE -->
+  <section id="methode" class="reveal">
+    <h2><span class="n">06</span> Méthodologie — pas de chiffres inventés</h2>
+    <table class="db">
+      <tr><th>Paramètre</th><th>Valeur</th><th>Source / calcul</th></tr>
+      <tr><td>Historique</td><td class="mono">100 ans</td><td>S&amp;P 500 SBBI 1926-1969 (dividendes réinvestis), puis MSCI World 1970-2025</td></tr>
+      <tr><td>Central</td><td class="mono">8,22 %/an</td><td>Moyenne géométrique composée, krachs inclus — défaut de l'app</td></tr>
+      <tr><td>Optimiste</td><td class="mono">10,07 %/an</td><td>Moyenne arithmétique des années</td></tr>
+      <tr><td>Prudent (réel)</td><td class="mono">5,99 %/an</td><td>Fisher exact : (1+8,22 %) ÷ (1+2,1 %) − 1 — pas 8,22 − 2,1</td></tr>
+      <tr><td>Inflation</td><td class="mono">2,1 %</td><td>Hypothèse future ≈ cible BCE. Historique FR 1970-2025 : moyenne 4,0 %, <b>médiane 2,1 %</b> (pics 70s : 13,7 % en 1974)</td></tr>
+    </table>
+    <div class="callout"><span class="t">➗ La formule de Fisher (exacte)</span><span class="mono">r<sub>réel</sub> = (1 + r<sub>nominal</sub>) ÷ (1 + inflation) − 1 = 1,0822 ÷ 1,021 − 1 = 5,99&nbsp;%</span><br />Soustraire simplement (8,22 − 2,1 = 6,12) est une approximation qui surestime le réel.</div>
+    <div class="callout green"><span class="t">📐 Pourquoi la médiane 2,1 % ?</span>La moyenne historique (4,0&nbsp;%) est tirée vers le haut par les chocs 1970-1985. Depuis 1986, la moyenne n'est que de 1,9&nbsp;%. Pour l'avenir, 2,1&nbsp;% est raisonnable, voire prudent.</div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="reveal">
+    <h2><span class="n">07</span> FAQ — les 8 vraies questions</h2>
+    <p>Reprises verbatim de la landing et des données structurées du site.</p>
+    <details open><summary>Mes données sont-elles envoyées sur un serveur ?</summary><div class="body">Non. Tout est calculé et stocké dans votre navigateur (localStorage) : aucune donnée ne quitte votre appareil. Un compte crée un espace isolé pour vos simulations sur cet appareil — la synchronisation cloud n'existe pas encore.</div></details>
+    <details><summary>Un compte est-il obligatoire ?</summary><div class="body">Non, l'application fonctionne intégralement sans compte. Un compte vous permet d'isoler vos simulations de celles des autres utilisateurs de l'appareil et prépare la synchronisation future.</div></details>
+    <details><summary>Prudent, Central, Optimiste : c'est quoi la différence ?</summary><div class="body">Trois lectures du même historique (MSCI World 1970-2025). L'app applique par défaut le Central : la moyenne géométrique composée (≈ 8,22 %/an), krachs inclus. L'Optimiste est la moyenne arithmétique des années (≈ 10,07 %), le Prudent le rendement réel après inflation (≈ 5,99 %). Comparez votre plan dans les trois mondes.</div></details>
+    <details><summary>Pourquoi 10,07 % et pas 6,12 % ?</summary><div class="body">10,07 % est la moyenne arithmétique des années (scénario Optimiste) ; l'app applique par défaut le Central, 8,22 %/an composé. 6,12 serait la simple soustraction 8,22 − 2,1 : c'est une approximation. La formule exacte de Fisher est (1 + 8,22 %) ÷ (1 + 2,1 %) − 1 = 5,99 %/an réel — le scénario Prudent.</div></details>
+    <details><summary>Pourquoi 2,1 % d'inflation et pas la moyenne réelle ?</summary><div class="body">2,1 % est une hypothèse d'inflation future (proche de la cible BCE de 2 %), pas la moyenne historique : l'inflation française réelle 1970-2025 est de 4,0 % en moyenne, mais cette moyenne est tirée vers le haut par les chocs des années 1970-1985 (jusqu'à 13,7 % en 1974). La médiane de la période est justement 2,1 %, et depuis 1986 la moyenne n'est que de 1,9 %.</div></details>
+    <details><summary>Qu'est-ce que Monte Carlo ?</summary><div class="body">Jusqu'à 10 000 scénarios qui rejouent l'historique réel par blocs — krachs et bull markets inclus. Vous obtenez les percentiles P10/P50/P90, la probabilité de succès et l'intervalle de confiance de cette estimation.</div></details>
+    <details><summary>Comment est construit l'historique de 100 ans ?</summary><div class="body">S&amp;P 500 SBBI 1926-1969 (dividendes réinvestis) puis MSCI World 1970-2025 : la période récente est couverte par un indice mondial, l'ancienne par le marché américain, seul indice de référence fiable à l'époque. L'inflation utilisée est la série INSEE française.</div></details>
+    <details><summary>L'application est-elle vraiment gratuite ?</summary><div class="body">Oui. Gratuite, sans engagement et sans carte bancaire — aujourd'hui et demain.</div></details>
+  </section>
+
+  <!-- CTA -->
+  <section class="reveal">
+    <div class="hero-card" style="text-align:center">
+      <span class="tag">🎁 GRATUIT · LOCAL · SANS COMPTE</span>
+      <h2 style="justify-content:center;margin-top:10px">Votre boule de neige commence ici.</h2>
+      <p style="color:var(--muted)">Single-file Vite, français, données dans votre navigateur. Rien ne part, tout se simule.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <a class="btn btn-gold" href="/">❄ Lancer Snowball Pro</a>
+        <a class="btn btn-ghost" href="#demo">Revoir la démo</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>Simulation pédagogique — ni conseil en investissement, ni démarchage. Les performances passées (MSCI World, S&amp;P 500) ne préjugent pas des performances futures. Fiscalité : année 2026. Fichier autonome notion-snowball.html — CSS/JS inline, zéro dépendance npm.</footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+var fmt=function(n){return new Intl.NumberFormat("fr-FR",{maximumFractionDigits:0}).format(n)+" €"};
+var fmt1=function(n){return new Intl.NumberFormat("fr-FR",{maximumFractionDigits:0}).format(n)};
+/* theme */
+var root=document.documentElement,btn=document.getElementById("themeBtn");
+try{if(localStorage.getItem("notion_sb_theme")==="dark"){root.dataset.theme="dark";btn.textContent="☀️"}}catch(e){}
+btn.addEventListener("click",function(){
+  var d=root.dataset.theme==="dark"?"light":"dark";
+  root.dataset.theme=d;btn.textContent=d==="dark"?"☀️":"🌙";
+  try{localStorage.setItem("notion_sb_theme",d)}catch(e){}
+});
+/* progress */
+var prog=document.getElementById("progress");
+addEventListener("scroll",function(){
+  var h=document.documentElement,p=h.scrollTop/(h.scrollHeight-h.clientHeight||1);
+  prog.style.width=(p*100).toFixed(1)+"%";
+  var secs=["demo","projection","fiscalite","montecarlo","rente","methode","faq"],cur="";
+  secs.forEach(function(id){var el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<160)cur=id});
+  document.querySelectorAll("#toc a").forEach(function(a){a.classList.toggle("active",a.getAttribute("href")==="#"+cur)});
+},{passive:true});
+/* typing */
+var txt="français, gratuit et 100 % local.",ti=document.getElementById("typing"),k=0;
+(function type(){ti.textContent=txt.slice(0,++k);if(k<=txt.length)setTimeout(type,42)})();
+/* reveal */
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.12});
+document.querySelectorAll(".reveal").forEach(function(el){io.observe(el)});
+/* finance */
+function fv(cap,men,annees,taux){
+  var rm=Math.pow(1+taux,1/12)-1,n=Math.round(annees*12),v=cap*Math.pow(1+rm,n);
+  if(men>0)v+=men*(Math.pow(1+rm,n)-1)/rm;
+  return v;
+}
+/* magic count-up: 500/mois x 25 ans @8.22% */
+var TARGET=fv(0,500,25,.0822);
+document.getElementById("magicInline").textContent=fmt(Math.round(TARGET));
+var mEl=document.getElementById("magicNum"),t0=null;
+function count(ts){if(!t0)t0=ts;var p=Math.min(1,(ts-t0)/1600),e=1-Math.pow(1-p,3);
+  mEl.textContent=fmt(Math.round(TARGET*e));if(p<1)requestAnimationFrame(count)}
+requestAnimationFrame(count);
+/* demo sliders */
+var sCap=document.getElementById("sCap"),sMen=document.getElementById("sMen"),sDur=document.getElementById("sDur");
+function demo(){
+  var c=+sCap.value,m=+sMen.value,d=+sDur.value;
+  document.getElementById("oCap").textContent=fmt(c);
+  document.getElementById("oMen").textContent=fmt(m);
+  document.getElementById("oDur").textContent=d+" ans";
+  document.getElementById("kPru").textContent=fmt(Math.round(fv(c,m,d,.0599)));
+  document.getElementById("kCen").textContent=fmt(Math.round(fv(c,m,d,.0822)));
+  document.getElementById("kOpt").textContent=fmt(Math.round(fv(c,m,d,.1007)));
+  document.getElementById("kVer").textContent=fmt(c+m*d*12);
+  drawCurve(c,m,d);
+}
+[sCap,sMen,sDur].forEach(function(s){s.addEventListener("input",demo)});
+/* SVG projection */
+var NS="http://www.w3.org/2000/svg";
+function pathFor(cap,men,d,taux,W,H,pad,maxV){
+  var pts=[],n=Math.max(d,1);
+  for(var y=0;y<=n;y++){var v=fv(cap,men,y,taux);
+    pts.push([pad+(W-2*pad)*y/n,H-pad-(H-2*pad)*v/maxV])}
+  return "M"+pts.map(function(p){return p[0].toFixed(1)+" "+p[1].toFixed(1)}).join(" L");
+}
+function drawCurve(cap,men,d){
+  cap=cap==null?10000:cap;men=men==null?500:men;d=d==null?25:d;
+  var svg=document.getElementById("curve");svg.innerHTML="";
+  var W=800,H=330,pad=44,maxV=fv(cap,men,d,.1007)*1.05;
+  function grid(y){var l=document.createElementNS(NS,"line");
+    l.setAttribute("x1",pad);l.setAttribute("x2",W-16);l.setAttribute("y1",y);l.setAttribute("y2",y);
+    l.setAttribute("stroke","currentColor");l.setAttribute("opacity",".12");svg.appendChild(l)}
+  for(var i=0;i<5;i++)grid(pad+i*(H-2*pad)/4);
+  var defs=[[".0599","#b3402e"],[".0822","#b98a1f"],[".1007","#1d7a4f"]];
+  var rates={".0599":.0599,".0822":.0822,".1007":.1007};
+  defs.forEach(function(pair){
+    var p=document.createElementNS(NS,"path");
+    p.setAttribute("d",pathFor(cap,men,d,rates[pair[0]],W,H,pad,maxV));
+    p.setAttribute("fill","none");p.setAttribute("stroke",pair[1]);p.setAttribute("stroke-width",pair[0]===".0822"?4:2.5);
+    p.setAttribute("stroke-linecap","round");
+    var len=4000;p.style.strokeDasharray=String(len);p.style.strokeDashoffset=String(len);
+    svg.appendChild(p);
+    requestAnimationFrame(function(){p.style.transition="stroke-dashoffset 1.6s ease";p.style.strokeDashoffset="0"});
+  });
+  var end=document.createElementNS(NS,"circle");
+  var ex=pad+(W-2*pad),ey=H-pad-(H-2*pad)*fv(cap,men,d,.0822)/maxV;
+  end.setAttribute("cx",ex-16);end.setAttribute("cy",ey);end.setAttribute("r","6");
+  end.setAttribute("fill","#b98a1f");end.setAttribute("stroke","#fff");end.setAttribute("stroke-width","2");
+  svg.appendChild(end);
+  document.getElementById("tOpt").textContent=fmt(Math.round(fv(cap,men,d,.1007)));
+  document.getElementById("tCen").textContent=fmt(Math.round(fv(cap,men,d,.0822)));
+  document.getElementById("tPru").textContent=fmt(Math.round(fv(cap,men,d,.0599)));
+}
+demo();
+/* Monte Carlo canvas */
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+var cv=document.getElementById("mc"),ctx=cv.getContext("2d");
+function runMC(){
+  var W=cv.width,H=cv.height,pad=34,rnd=mulberry(20261008),N=800,Y=25,paths=[],i,y;
+  for(i=0;i<N;i++){var bal=10000,v=[];var drift=.0822+(rnd()-.5)*.02;
+    for(y=0;y<=Y;y++){var shock=(rnd()-.48)*.28;bal=Math.max(0,(bal+500*12)*(1+drift+shock*.35));v.push(bal)}
+    paths.push(v)}
+  var maxV=Math.max.apply(null,paths.map(function(p){return p[Y]}));
+  function q(p){var s=paths.map(function(x){return x[Y]}).sort(function(a,b){return a-b});return s[Math.floor(p*(s.length-1))]}
+  var p10=q(.1),p50=q(.5),p90=q(.9);
+  document.getElementById("mcP10").textContent=fmt(Math.round(p10));
+  document.getElementById("mcP50").textContent=fmt(Math.round(p50));
+  document.getElementById("mcP90").textContent=fmt(Math.round(p90));
+  var ok=paths.filter(function(p){return p[Y]>=400000}).length;
+  document.getElementById("mcProba").textContent=((ok/N*100).toFixed(1).replace(".",",")+" %");
+  var f=0;(function anim(){
+    ctx.clearRect(0,0,W,H);
+    var dark=root.dataset.theme==="dark";
+    ctx.strokeStyle=dark?"#38301f":"#e5ddcc";ctx.lineWidth=1;
+    for(var g=0;g<5;g++){var gy=pad+g*(H-2*pad)/4;ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(W-10,gy);ctx.stroke()}
+    var upto=Math.floor(3+f*(N/60));
+    for(var j=0;j<Math.min(upto,paths.length);j++){
+      var med=Math.abs(paths[j][Y]-p50)/p50;
+      ctx.strokeStyle=med<.35?"rgba(185,138,31,.35)":"rgba(120,120,120,.16)";
+      ctx.beginPath();
+      for(var yy=0;yy<=Y;yy++){var x=pad+(W-pad-10)*yy/Y,py=H-pad-(H-2*pad)*paths[j][yy]/maxV;
+        yy?ctx.lineTo(x,py):ctx.moveTo(x,py)}
+      ctx.stroke();
+    }
+    if(f<60){f++;requestAnimationFrame(anim)}
+  })();
+}
+new IntersectionObserver(function(es,obs){es.forEach(function(e){if(e.isIntersecting){runMC();obs.disconnect()}})},{threshold:.3}).observe(cv);
+/* rente */
+var sRet=document.getElementById("sRet");
+function rente(){var c=+sRet.value;
+  document.getElementById("oRet").textContent=fmt(c);
+  document.getElementById("renteOut").textContent=fmt(Math.round(c*.04));
+  document.getElementById("renteMois").textContent=fmt(Math.round(c*.04/12))}
+sRet.addEventListener("input",rente);rente();
+})();
+</script>
+</body>
+</html>
