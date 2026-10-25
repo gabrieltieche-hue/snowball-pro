@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ArrowRight, ChevronLeft, Star, Wallet, X } from "lucide-react"
 import {
@@ -8,19 +8,28 @@ import {
   ENVELOPE_CONFIGS,
   MONTHLY_CHOICES,
   RETIREMENT_AGE_CHOICES,
+  WIZARD_DEFAULT_ANSWERS,
   asksRetirementAge,
   defaultSimulationName,
+  previewInputsFromAnswers,
   recommendDuration,
   recommendEnvelope,
+  runSimulation,
 } from "../../engine"
 import type { ProjectGoal, RiskLevel, WizardAnswers } from "../../engine"
 import type { EnvelopeType } from "../../types"
 import { useLang } from "../../i18n"
 import { cn } from "../../utils/cn"
+import { useFocusTrap } from "../../hooks/useFocusTrap"
+import { LivePreview } from "./LivePreview"
+import { Reveal } from "./Reveal"
 
 interface SimulationWizardProps {
   onCancel: () => void
   onComplete: (answers: WizardAnswers, name: string) => void
+  /** Vrai nouveau visiteur : parcours obligatoire mais agréable — pas de croix,
+   *  pas d'Échap. Le seul chemin est de répondre. */
+  firstRun?: boolean
 }
 
 type StepId =
@@ -42,20 +51,25 @@ const RISK_OPTIONS: { id: RiskLevel; label: string; desc: string }[] = [
 ]
 
 /**
- * Questionnaire guidé « Nouvelle simulation » (v7) : une question par écran,
- * gros boutons, barre de progression, étoile ⭐ sur la recommandation calculée
- * à partir des réponses précédentes, question retraite conditionnelle, et nom
- * de la simulation en dernière étape. Réponses vierges à chaque ouverture —
- * on peut très bien vouloir tester d'autres chiffres.
+ * Questionnaire guidé « Le chiffre d'abord » (v8) : une question par écran, et
+ * à CHAQUE réponse la projection en direct se met à jour (chiffre + courbe) —
+ * le moteur tourne en aperçu sur les réponses partielles. À la fin, la
+ * révélation plein écran met en scène le résultat avant de l'appliquer.
+ * Premier run : parcours obligatoire mais agréable (pas de croix, pas d'Échap) ;
+ * visiteur connu : fermable, réponses vierges à chaque ouverture.
  */
-export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps) {
+export function SimulationWizard({ onCancel, onComplete, firstRun = false }: SimulationWizardProps) {
   const { tr, fmtCurrency } = useLang()
   const [answers, setAnswers] = useState<Partial<WizardAnswers>>({})
   const [name, setName] = useState("")
-  const [customAmount, setCustomAmount] = useState("")
-  // « Autre / Autre montant » : l'étape où un champ libre est ouvert (l'input
-  // doit apparaître immédiatement, et sa valeur doit engager la réponse).
+  // « Autre / Autre montant » : l'étape où un champ libre est ouvert. Le
+  // brouillon est reset à chaque ouverture (v8 — avant, le montant saisi à une
+  // étape fuyait vers les suivantes).
   const [customStep, setCustomStep] = useState<StepId | null>(null)
+  const [customDraft, setCustomDraft] = useState("")
+  const [revealOpen, setRevealOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const trap = useFocusTrap(containerRef)
 
   const set = <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K] | undefined) =>
     setAnswers(a => ({ ...a, [key]: value }))
@@ -72,6 +86,11 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
   const [stepIdx, setStepIdx] = useState(0)
   const step = steps[stepIdx]
   const isLast = step === "name"
+
+  // La projection en direct : le moteur tourne sur les réponses partielles
+  // (défauts partagés avec le résultat final — aucun saut entre les deux).
+  const previewInputs = useMemo(() => previewInputsFromAnswers(answers), [answers])
+  const previewRows = useMemo(() => runSimulation(previewInputs), [previewInputs])
 
   // Le nom par défaut suit les réponses (recalculé à chaque arrivée sur l'écran nom).
   const defaultName = useMemo(
@@ -104,20 +123,31 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
     }
   }
 
+  // Réponses complètes = réponses + défauts du wizard. La révélation et le
+  // résultat final sont construits sur CET objet, l'aperçu sur les mêmes
+  // défauts : le chiffre affiché ne change pas entre la dernière question et
+  // la révélation.
+  const completeAnswers = useMemo<WizardAnswers>(
+    () => ({
+      age: answers.age ?? WIZARD_DEFAULT_ANSWERS.age,
+      hasCapital: answers.hasCapital ?? WIZARD_DEFAULT_ANSWERS.hasCapital,
+      capital: answers.hasCapital ? (answers.capital ?? 0) : 0,
+      monthly: answers.monthly ?? WIZARD_DEFAULT_ANSWERS.monthly,
+      project: answers.project ?? null,
+      duration: answers.duration ?? WIZARD_DEFAULT_ANSWERS.duration,
+      envelope: answers.envelope ?? WIZARD_DEFAULT_ANSWERS.envelope,
+      retirementAge: answers.retirementAge ?? null,
+      risk: answers.risk ?? WIZARD_DEFAULT_ANSWERS.risk,
+    }),
+    [answers],
+  )
+  const finalName = name.trim() === "" ? defaultName : name.trim()
+
   const next = () => {
     if (isLast) {
-      const complete: WizardAnswers = {
-        age: answers.age ?? 30,
-        hasCapital: answers.hasCapital ?? false,
-        capital: answers.hasCapital ? (answers.capital ?? 0) : 0,
-        monthly: answers.monthly ?? 250,
-        project: answers.project ?? null,
-        duration: answers.duration ?? 25,
-        envelope: answers.envelope ?? "auto",
-        retirementAge: answers.retirementAge ?? null,
-        risk: answers.risk ?? "equilibre",
-      }
-      onComplete(complete, name.trim() === "" ? defaultName : name.trim())
+      // La révélation d'abord — onComplete sera appelé par « Ouvrir ma
+      // simulation » (ou « Modifier mes réponses » ramène au questionnaire).
+      setRevealOpen(true)
       return
     }
     if (!answered(step)) return
@@ -134,6 +164,23 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
     }
   }
 
+  // Fermeture au clavier : jamais pour le vrai nouveau visiteur, jamais
+  // pendant la révélation (retour explicite à la place).
+  useEffect(() => {
+    if (firstRun || revealOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [firstRun, revealOpen, onCancel])
+
+  // Focus le titre de l'étape (lecture d'écran ; le focus suit la progression,
+  // et revient sur la carte au retour depuis la révélation).
+  useEffect(() => {
+    containerRef.current?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true })
+  }, [step, revealOpen])
+
   const recommendedDuration = answers.project !== undefined ? recommendDuration(answers.project ?? null) : null
   const recommendedEnvelope =
     answers.duration !== undefined ? recommendEnvelope(answers.project ?? null, answers.duration) : null
@@ -148,50 +195,60 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
           : "border-border hover:border-primary/40 hover:bg-glass-hover",
     )
 
-  const CustomAmountInput = ({ label, onCommit }: { label: string; onCommit: (v: number) => void }) => (
-    <div className="mt-2">
-      <label className="sr-only" htmlFor="wizard-custom-amount">
-        {label}
-      </label>
-      <input
-        id="wizard-custom-amount"
-        type="number"
-        inputMode="numeric"
-        min={0}
-        value={customAmount}
-        onChange={e => {
-          setCustomAmount(e.target.value)
-          onCommit(Number(e.target.value))
-        }}
-        placeholder={tr("Autre montant")}
-        className="w-full rounded-xl border border-border bg-surface-50/40 px-4 py-3 text-sm font-bold text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+  // Champ libre (« Autre ») : ouverture avec la valeur déjà engagée pré-remplie,
+  // champ vidé → réponse retirée (le bouton Suivant se désactive).
+  const openCustom = (s: StepId) => {
+    const current = answers[s as "age" | "capital" | "monthly"]
+    setCustomStep(s)
+    setCustomDraft(typeof current === "number" ? String(current) : "")
+  }
+  const commitCustom = (key: "age" | "capital" | "monthly", raw: string) => {
+    setCustomDraft(raw)
+    const num = Number(raw)
+    set(key, raw.trim() === "" || !Number.isFinite(num) ? undefined : num)
+  }
+
+  if (revealOpen) {
+    return (
+      <Reveal
+        answers={completeAnswers}
+        name={finalName}
+        firstRun={firstRun}
+        onOpen={() => onComplete(completeAnswers, finalName)}
+        onBack={() => setRevealOpen(false)}
       />
-    </div>
-  )
+    )
+  }
 
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-modal="true"
-      aria-label={tr("Nouvelle simulation — questionnaire guidé")}
+      aria-label={
+        firstRun ? tr("Bienvenue — créons votre première simulation") : tr("Nouvelle simulation — questionnaire guidé")
+      }
+      onKeyDown={trap}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-surface/95 backdrop-blur-sm p-4"
     >
       <div className="w-full max-w-lg">
-        {/* En-tête : progression + fermeture (le questionnaire n'est pas piégeant,
-            contrairement au tutoriel — on peut annuler, rien n'est créé). */}
+        {/* En-tête : progression + fermeture (aucune croix pour le vrai nouveau
+            visiteur — le parcours est obligatoire mais agréable). */}
         <div className="flex items-center justify-between gap-3 mb-3">
           <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-dim">
             {tr("Question {current} sur {total}", { current: stepIdx + 1, total: steps.length })}
           </span>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label={tr("Fermer le questionnaire")}
-            title={tr("Fermer le questionnaire")}
-            className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
-          >
-            <X size={16} aria-hidden />
-          </button>
+          {!firstRun && (
+            <button
+              type="button"
+              onClick={onCancel}
+              aria-label={tr("Fermer le questionnaire")}
+              title={tr("Fermer le questionnaire")}
+              className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
+            >
+              <X size={16} aria-hidden />
+            </button>
+          )}
         </div>
         {/* Barre de progression */}
         <div className="h-1.5 rounded-full bg-border/70 overflow-hidden mb-6" aria-hidden>
@@ -200,6 +257,17 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
             style={{ width: `${((stepIdx + 1) / steps.length) * 100}%` }}
           />
         </div>
+        {/* Mot d'accueil du premier run — la promesse de l'onboarding. */}
+        {firstRun && stepIdx === 0 && (
+          <div className="mb-3">
+            <p className="font-display text-base font-extrabold tracking-tight text-text">
+              {tr("Bienvenue sur Snowball Pro")}
+            </p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              {tr("Répondez à quelques questions — votre projection se met à jour en direct.")}
+            </p>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -210,6 +278,9 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="glass rounded-3xl shadow-premium-lg p-6 sm:p-8"
           >
+            {/* Le chiffre d'abord : la projection vivante ouvre chaque écran. */}
+            <LivePreview rows={previewRows} inputs={previewInputs} className="mb-5" />
+
             {step === "age" && (
               <>
                 <StepTitle title={tr("Quel âge avez-vous ?")} sub={tr("Cela nous aide à estimer votre horizon.")} />
@@ -218,7 +289,10 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
                     <button
                       key={age}
                       type="button"
-                      onClick={() => pick("age", age)}
+                      onClick={() => {
+                        pick("age", age)
+                        setCustomStep(null)
+                      }}
                       className={cn(optionClass(answers.age === age, false), "flex items-center justify-between")}
                     >
                       <span className="text-sm font-bold text-text">
@@ -228,32 +302,22 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
                   ))}
                   <button
                     type="button"
-                    onClick={() => setCustomStep("age")}
+                    onClick={() => openCustom("age")}
                     className={cn(optionClass(customStep === "age", false), "col-span-2")}
                   >
                     <span className="text-sm font-bold text-text">{tr("Autre")}</span>
                   </button>
                 </div>
                 {customStep === "age" && (
-                  <div className="mt-2">
-                    <label className="sr-only" htmlFor="wizard-age-custom">
-                      {tr("Votre âge")}
-                    </label>
-                    <input
-                      id="wizard-age-custom"
-                      type="number"
-                      inputMode="numeric"
-                      min={15}
-                      max={90}
-                      value={customAmount}
-                      onChange={e => {
-                        setCustomAmount(e.target.value)
-                        set("age", Number(e.target.value))
-                      }}
-                      placeholder={tr("Votre âge")}
-                      className="w-full rounded-xl border border-border bg-surface-50/40 px-4 py-3 text-sm font-bold text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
+                  <CustomAmountInput
+                    id="wizard-age-custom"
+                    label={tr("Votre âge")}
+                    value={customDraft}
+                    placeholder={tr("Votre âge")}
+                    min={15}
+                    max={90}
+                    onChange={raw => commitCustom("age", raw)}
+                  />
                 )}
               </>
             )}
@@ -303,14 +367,20 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
                   ))}
                   <button
                     type="button"
-                    onClick={() => setCustomStep("capital")}
+                    onClick={() => openCustom("capital")}
                     className={cn(optionClass(customStep === "capital", false), "col-span-2")}
                   >
                     <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
                   </button>
                 </div>
                 {customStep === "capital" && (
-                  <CustomAmountInput label={tr("Montant à investir")} onCommit={v => set("capital", v)} />
+                  <CustomAmountInput
+                    id="wizard-capital-custom"
+                    label={tr("Montant à investir")}
+                    value={customDraft}
+                    placeholder={tr("Autre montant")}
+                    onChange={raw => commitCustom("capital", raw)}
+                  />
                 )}
               </>
             )}
@@ -337,14 +407,20 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
                   ))}
                   <button
                     type="button"
-                    onClick={() => setCustomStep("monthly")}
+                    onClick={() => openCustom("monthly")}
                     className={cn(optionClass(customStep === "monthly", false), "col-span-2")}
                   >
                     <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
                   </button>
                 </div>
                 {customStep === "monthly" && (
-                  <CustomAmountInput label={tr("Épargne mensuelle")} onCommit={v => set("monthly", v)} />
+                  <CustomAmountInput
+                    id="wizard-monthly-custom"
+                    label={tr("Épargne mensuelle")}
+                    value={customDraft}
+                    placeholder={tr("Autre montant")}
+                    onChange={raw => commitCustom("monthly", raw)}
+                  />
                 )}
               </>
             )}
@@ -590,11 +666,56 @@ export function SimulationWizard({ onCancel, onComplete }: SimulationWizardProps
   )
 }
 
+/** Titre d'étape — focusable par programme (le focus suit la progression). */
 function StepTitle({ title, sub }: { title: string; sub: string }) {
   return (
     <header>
-      <h2 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-text">{title}</h2>
+      <h2
+        tabIndex={-1}
+        className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-text outline-none"
+      >
+        {title}
+      </h2>
       <p className="text-[11.5px] text-text-muted leading-relaxed mt-1.5">{sub}</p>
     </header>
+  )
+}
+
+/** Champ libre « Autre montant » : composant module-level (v8) — défini dans le
+ *  corps du wizard, il était remonté à chaque frappe et perdait le focus. */
+function CustomAmountInput({
+  id,
+  label,
+  value,
+  placeholder,
+  min = 0,
+  max,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: string
+  placeholder: string
+  min?: number
+  max?: number
+  onChange: (raw: string) => void
+}) {
+  return (
+    <div className="mt-2">
+      <label className="sr-only" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-border bg-surface-50/40 px-4 py-3 text-sm font-bold text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+    </div>
   )
 }

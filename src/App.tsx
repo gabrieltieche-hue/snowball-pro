@@ -44,7 +44,7 @@ import { SETTINGS_B_KEY, scopeKey } from "./auth/storage"
 import { THEME_KEY, applyThemeClass, loadInitialDarkMode } from "./utils/theme"
 import { loadUiMode, saveUiMode, type UiMode } from "./utils/uiMode"
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "./utils/sidebar"
-import { loadTutorialVisible, saveTutorialDone } from "./utils/onboarding"
+import { loadOnboardingVisible, saveOnboardingDone } from "./utils/onboarding"
 import { loadSnapshotsFromStorage, saveSnapshotsToStorage } from "./utils/snapshotsStorage"
 import { readSharedState, writeSharedState } from "./utils/urlState"
 import { TAB_FIELD } from "./utils/validationTargets"
@@ -54,7 +54,7 @@ import { ActionBar } from "./components/Layout/ActionBar"
 import { ComparisonBar } from "./components/Layout/ComparisonBar"
 import { DisclaimerBar } from "./components/Layout/DisclaimerBar"
 import { SimulationWizard } from "./components/Onboarding/SimulationWizard"
-import { Tutorial } from "./components/Onboarding/Tutorial"
+import { SpotlightTour } from "./components/Onboarding/SpotlightTour"
 import { Sidebar } from "./components/Layout/Sidebar"
 import { TabBar, type TabDef } from "./components/Layout/TabBar"
 import { ErrorBoundary } from "./components/shared/ErrorBoundary"
@@ -154,13 +154,18 @@ function AppShell({ scope }: { scope: string | null }) {
       return next
     })
   }, [])
-  // Tutoriel v7 : non-skippable pour le vrai nouveau visiteur (voir
-  // utils/onboarding.ts) — terminé une fois, il ne revient plus jamais.
-  const [showTutorial, setShowTutorial] = useState<boolean>(() => loadTutorialVisible(scope))
-  // Questionnaire « Nouvelle simulation » : ouvert par le tutoriel (premier
-  // run) ou par le bouton « Nouvelle simulation ». Réponses vierges à chaque
-  // ouverture (l'utilisateur veut peut-être tester d'autres chiffres).
-  const [showWizard, setShowWizard] = useState(false)
+  // Onboarding v8 « Le chiffre d'abord » : le questionnaire s'ouvre en direct
+  // chez le vrai nouveau visiteur (voir utils/onboarding.ts) — chaque réponse
+  // met à jour une projection en direct, puis la révélation met en scène le
+  // résultat. Terminé une fois, il ne revient plus jamais.
+  const [firstRun, setFirstRun] = useState<boolean>(() => loadOnboardingVisible(scope))
+  // Questionnaire « Nouvelle simulation » : ouvert par le bouton du même nom
+  // (ou automatiquement au premier run). Réponses vierges à chaque ouverture —
+  // on peut très bien vouloir tester d'autres chiffres.
+  const [showWizard, setShowWizard] = useState(firstRun)
+  // Visite guidée 3 bulles (premier run uniquement) : après la révélation, sur
+  // la vraie simulation que l'utilisateur vient de créer.
+  const [showTour, setShowTour] = useState(false)
   // Dialogue « sauvegarder avant de créer » : la simulation en cours a des
   // changements non sauvegardés (dirty) → on propose de la figer (snapshot).
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
@@ -379,13 +384,6 @@ function AppShell({ scope }: { scope: string | null }) {
     setDecumComputedFor("")
   }, [scope])
 
-  // Fin du tutoriel : marqué définitivement, puis le questionnaire s'ouvre.
-  const finishTutorial = useCallback(() => {
-    saveTutorialDone()
-    setShowTutorial(false)
-    setShowWizard(true)
-  }, [])
-
   // « Nouvelle simulation » : dirty → proposer de figer l'état courant ; sinon
   // le questionnaire s'ouvre directement (réponses vierges).
   const openNewSimulation = useCallback(() => {
@@ -412,6 +410,8 @@ function AppShell({ scope }: { scope: string | null }) {
 
   // Fin du questionnaire : les réponses deviennent la simulation active ET une
   // entrée de la bibliothèque « Mes simulations » (nom choisi par l'utilisateur).
+  // Premier run : l'onboarding est marqué définitivement et la visite guidée
+  // s'ouvre sur cette vraie simulation.
   const handleWizardComplete = useCallback(
     (answers: WizardAnswers, name: string) => {
       const nextInputs = buildSimulationFromAnswers(answers)
@@ -433,8 +433,13 @@ function AppShell({ scope }: { scope: string | null }) {
       }
       setShowWizard(false)
       setActiveTab("simulator")
+      if (firstRun) {
+        saveOnboardingDone()
+        setFirstRun(false)
+        setShowTour(true)
+      }
     },
-    [scope],
+    [scope, firstRun],
   )
 
   useKeyboardShortcuts({
@@ -914,11 +919,15 @@ function AppShell({ scope }: { scope: string | null }) {
       {/* Rapport patrimonial imprimable — monté au premier clic « Rapport
           PDF », hors-écran à l'écran, seul visible à l'impression. */}
       {reportOpen && <PatrimonialReport rows={rows} inputs={activeInputs} />}
-      {/* Onboarding v7 : tutoriel (vrai nouveau visiteur) → questionnaire →
-          résultat. Le dialogue de sauvegarde précède le questionnaire quand la
+      {/* Onboarding v8 « Le chiffre d'abord » : le questionnaire s'ouvre en
+          direct chez le nouveau visiteur (projection en direct → révélation),
+          puis la visite guidée présente l'app en 3 bulles sur sa simulation.
+          Le dialogue de sauvegarde précède le questionnaire quand la
           simulation en cours a des changements non sauvegardés. */}
-      {showTutorial && <Tutorial onFinish={finishTutorial} />}
-      {showWizard && <SimulationWizard onCancel={() => setShowWizard(false)} onComplete={handleWizardComplete} />}
+      {showWizard && (
+        <SimulationWizard firstRun={firstRun} onCancel={() => setShowWizard(false)} onComplete={handleWizardComplete} />
+      )}
+      {showTour && <SpotlightTour onClose={() => setShowTour(false)} />}
       {saveDialogOpen && (
         <SaveSimulationDialog
           onSave={handleSaveAndCreate}

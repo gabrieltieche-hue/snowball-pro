@@ -82,6 +82,8 @@ export {
   asksRetirementAge,
   buildSimulationFromAnswers,
   defaultSimulationName,
+  WIZARD_DEFAULT_ANSWERS,
+  previewInputsFromAnswers,
 } from "./onboarding"
 export type { ProjectGoal, RiskLevel, WizardAnswers } from "./onboarding"
 export { mergeComparisonSeries } from "./comparison"

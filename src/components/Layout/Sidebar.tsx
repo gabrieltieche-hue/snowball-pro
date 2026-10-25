@@ -211,6 +211,7 @@ export function Sidebar({
 
   return (
     <aside
+      data-tour="settings"
       className={cn(
         "glass rounded-3xl shadow-premium",
         // Rail replié : pas de overflow-hidden (les tooltips débordent à

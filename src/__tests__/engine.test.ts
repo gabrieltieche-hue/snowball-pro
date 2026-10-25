@@ -5,7 +5,10 @@ import {
   buildSimulationFromAnswers,
   defaultSimulationName,
   renameSnapshot,
+  WIZARD_DEFAULT_ANSWERS,
+  previewInputsFromAnswers,
 } from "../engine"
+import type { WizardAnswers } from "../engine"
 import {
   roundCent,
   clamp,
@@ -2562,5 +2565,62 @@ describe("v7 — onboarding : recommandations et construction de la simulation",
     expect(defaultSimulationName({ project: "retraite", duration: 35 })).toBe("Retraite — 35 ans")
     expect(defaultSimulationName({ project: "immobilier", duration: 10 })).toBe("Projet immobilier — 10 ans")
     expect(defaultSimulationName({ project: null, duration: 25 })).toBe("Ma simulation — 25 ans")
+  })
+})
+
+describe("v8 — onboarding : aperçu en direct (défauts + réponses partielles)", () => {
+  it("WIZARD_DEFAULT_ANSWERS décrit la situation type du premier aperçu", () => {
+    expect(WIZARD_DEFAULT_ANSWERS).toEqual({
+      age: 30,
+      hasCapital: false,
+      capital: 0,
+      monthly: 250,
+      project: null,
+      duration: 25,
+      envelope: "auto",
+      retirementAge: null,
+      risk: "equilibre",
+    })
+  })
+
+  it("previewInputsFromAnswers({}) ≡ résultat final des défauts (aucun saut aperçu → résultat)", () => {
+    expect(previewInputsFromAnswers({})).toEqual(buildSimulationFromAnswers(WIZARD_DEFAULT_ANSWERS))
+  })
+
+  it("les réponses partielles ne changent que leurs champs, le reste suit les défauts", () => {
+    const preview = previewInputsFromAnswers({ monthly: 1000, duration: 10 })
+    expect(preview.monthlyPayment).toBe(1000)
+    expect(preview.duration).toBe(10)
+    expect(preview.ageNow).toBe(WIZARD_DEFAULT_ANSWERS.age)
+    expect(preview.capitalInitial).toBe(0)
+    // durée 10 ans → assurence-vie (même règle que la ⭐ du wizard).
+    expect(preview.envelope).toBe("av")
+    expect(preview.returnScenario).toBe("central")
+  })
+
+  it("un aperçu avec réponses complètes ≡ le résultat final construit", () => {
+    const answers: WizardAnswers = {
+      age: 45,
+      hasCapital: true,
+      capital: 25000,
+      monthly: 500,
+      project: "liberte",
+      duration: 20,
+      envelope: "auto",
+      retirementAge: 62,
+      risk: "audacieux",
+    }
+    expect(previewInputsFromAnswers(answers)).toEqual(buildSimulationFromAnswers(answers))
+  })
+
+  it("hasCapital false neutralise un montant résiduel, true le conserve", () => {
+    expect(previewInputsFromAnswers({ hasCapital: false, capital: 5000 }).capitalInitial).toBe(0)
+    expect(previewInputsFromAnswers({ hasCapital: true, capital: 5000 }).capitalInitial).toBe(5000)
+  })
+
+  it("un champ vidé (undefined explicite) retombe sur les défauts, sans trou dans les inputs", () => {
+    expect(previewInputsFromAnswers({ age: undefined, monthly: undefined, capital: undefined })).toEqual(
+      buildSimulationFromAnswers(WIZARD_DEFAULT_ANSWERS),
+    )
   })
 })

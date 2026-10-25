@@ -48,54 +48,9 @@ import { Brand } from "./Brand"
 import { CrashChart } from "./CrashChart"
 import { HeroChart } from "./HeroChart"
 import { RetirementChart } from "./RetirementChart"
+import { useCountUp } from "../../hooks/useCountUp"
 
-// ─── Hooks maison (framer-motion est mocké en test : on n'utilise pas useInView) ──
-
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    try {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-      setReduced(mq.matches)
-      const onChange = (e: MediaQueryListEvent) => setReduced(e.matches)
-      mq.addEventListener("change", onChange)
-      return () => mq.removeEventListener("change", onChange)
-    } catch {
-      return
-    }
-  }, [])
-  return reduced
-}
-
-/** Compteur animé (ease-out cubique), déclenché au montage après un délai de
- *  cascade — jamais à zéro si l'animation ne peut pas tourner (motion réduite,
- *  jsdom, rAF absent) : on saute directement à la cible. */
-function useCountUp(target: number, delayMs = 0): number {
-  const [value, setValue] = useState(0)
-  const reduced = usePrefersReducedMotion()
-  useEffect(() => {
-    if (reduced || typeof requestAnimationFrame === "undefined") {
-      setValue(target)
-      return
-    }
-    let raf = 0
-    let timer = 0
-    const t0 = performance.now() + delayMs
-    const tick = (now: number) => {
-      const p = Math.min(1, Math.max(0, now - t0) / 1200)
-      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    timer = window.setTimeout(() => {
-      raf = requestAnimationFrame(tick)
-    }, delayMs)
-    return () => {
-      window.clearTimeout(timer)
-      cancelAnimationFrame(raf)
-    }
-  }, [target, delayMs, reduced])
-  return value
-}
+// ─── Compteurs animés partagés (landing + onboarding, voir src/hooks/useCountUp.ts) ──
 
 /** Montant animé (compteur) — isolé pour que le héro recalcule sans recréer le reste. */
 function AnimatedAmount({ value }: { value: number }) {

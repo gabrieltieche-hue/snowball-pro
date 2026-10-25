@@ -41,6 +41,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
       ref={listRef}
       role="tablist"
       aria-label={tr("Onglets de simulation")}
+      data-tour="tabs"
       className="flex flex-nowrap sm:flex-wrap gap-1 glass rounded-2xl p-1 sm:p-1.5 no-print overflow-x-auto"
     >
       {tabs.map((tab, index) => {

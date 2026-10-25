@@ -1,10 +1,10 @@
 /**
- * Tutoriel d'onboarding (v7) — persistance et détection du « vrai nouveau
- * visiteur ».
+ * Onboarding (v8 « Le chiffre d'abord ») — persistance et détection du « vrai
+ * nouveau visiteur ».
  *
- * Le tutoriel est non-skippable UNIQUEMENT pour qui n'a jamais vu l'app :
+ * Le questionnaire s'ouvre en direct UNIQUEMENT pour qui n'a jamais vu l'app :
  *  - aucune clé globale `snowball_v5_tutorial_done` (déjà vu, quel que soit le
- *    compte — un compte créé après l'invité n'a pas besoin de revoir le guide) ;
+ *    compte — un compte créé après l'invité n'a pas besoin de refaire le guide) ;
  *  - pas de lien partagé `#s=` (état explicitement demandé, pas un nouveau venu) ;
  *  - aucun réglage ni snapshot dans le scope courant (visiteur connu).
  */
@@ -14,7 +14,7 @@ import { readSharedState } from "./urlState"
 
 export const TUTORIAL_DONE_KEY = "snowball_v5_tutorial_done"
 
-export function loadTutorialVisible(scope: string | null): boolean {
+export function loadOnboardingVisible(scope: string | null): boolean {
   try {
     if (localStorage.getItem(TUTORIAL_DONE_KEY)) return false
     if (readSharedState() !== null) return false
@@ -26,7 +26,7 @@ export function loadTutorialVisible(scope: string | null): boolean {
   }
 }
 
-export function saveTutorialDone(): void {
+export function saveOnboardingDone(): void {
   try {
     localStorage.setItem(TUTORIAL_DONE_KEY, "1")
   } catch {

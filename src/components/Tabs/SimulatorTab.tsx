@@ -49,7 +49,10 @@ export function SimulatorTab({ rows, inputs, darkMode, uiMode = "debutant" }: Si
      la vue, sans sélecteur qui gâche le résultat. */
   return (
     <div className="space-y-5 animate-fade-in">
-      <HeroResult rows={rows} inputs={inputs} />
+      {/* Cible de la visite guidée (v8) : le héro est le premier écran. */}
+      <div data-tour="hero">
+        <HeroResult rows={rows} inputs={inputs} />
+      </div>
       <SummaryStats rows={rows} inputs={inputs} />
       <EquityChart rows={rows} inputs={inputs} darkMode={darkMode} />
 

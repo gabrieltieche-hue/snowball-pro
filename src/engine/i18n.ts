@@ -1548,6 +1548,30 @@ const EN: Record<string, string> = {
   "Réglages avancés": "Advanced settings",
   "Déplier les réglages avancés": "Expand advanced settings",
   "Replier les réglages avancés": "Collapse advanced settings",
+
+  // ─── Onboarding v8 « Le chiffre d'abord » : projection, révélation, tour ──
+  "Bienvenue — créons votre première simulation": "Welcome — let's build your first simulation",
+  "Répondez à quelques questions — votre projection se met à jour en direct.":
+    "Answer a few questions — your projection updates live.",
+  "Projection en direct": "Live projection",
+  "Votre première simulation": "Your first simulation",
+  "Votre simulation est prête": "Your simulation is ready",
+  "Ouvrir ma simulation": "Open my simulation",
+  "Modifier mes réponses": "Edit my answers",
+  "Projection hypothétique basée sur les rendements réels de la bourse (1926-2025), krachs inclus. Les performances passées ne garantissent pas les résultats futurs.":
+    "Hypothetical projection based on real stock market returns (1926-2025), crashes included. Past performance does not guarantee future results.",
+  "Visite guidée": "Guided tour",
+  Passer: "Skip",
+  "Terminé": "Done",
+  "Votre chiffre": "Your number",
+  "Capital projeté et pouvoir d'achat : le résultat se recalcule à chaque réglage.":
+    "Projected capital and purchasing power: the result recalculates with every setting.",
+  "Explorez les onglets": "Explore the tabs",
+  "Robustesse : et si les krachs tombaient au mauvais moment ? Rente : vivre de votre épargne. Objectif : combien investir.":
+    "Plan robustness: what if crashes hit at the worst time? Annuity & Retirement: living off your savings. How much to invest: the reverse goal.",
+  "Tout se règle ici": "Everything is set here",
+  "Épargne, frais, fiscalité : ouvrez les réglages avancés quand vous voulez. Vos données restent sur votre appareil.":
+    "Savings, fees, taxes: open advanced settings whenever you want. Your data stays on your device.",
 }
 
 /** Remplace les placeholders {x} d'un libellé. */

@@ -26,6 +26,22 @@ export interface WizardAnswers {
   risk: RiskLevel
 }
 
+/** Réponses par défaut du wizard — la « situation type » de l'aperçu en direct.
+ *  Source unique : l'aperçu (previewInputsFromAnswers) et le résultat final
+ *  (buildSimulationFromAnswers) partagent ces défauts — le chiffre affiché ne
+ *  saute donc jamais entre la dernière question et l'écran de révélation. */
+export const WIZARD_DEFAULT_ANSWERS: WizardAnswers = {
+  age: 30,
+  hasCapital: false,
+  capital: 0,
+  monthly: 250,
+  project: null,
+  duration: 25,
+  envelope: "auto",
+  retirementAge: null,
+  risk: "equilibre",
+}
+
 /** Choix proposés par le wizard — l'utilisateur peut aussi saisir « Autre ». */
 export const AGE_CHOICES = [25, 35, 45, 55] as const
 
@@ -90,6 +106,24 @@ export function buildSimulationFromAnswers(answers: WizardAnswers): SimulationIn
     maxDrawdownTolerance: drawdown,
     riskTolerance: answers.risk,
   }
+}
+
+/** Inputs moteur correspondant à des réponses PARTIELLES (aperçu en direct du
+ *  questionnaire) : les champs non répondus (absents OU vidés → undefined)
+ *  suivent WIZARD_DEFAULT_ANSWERS. Avec des réponses complètes,
+ *  ≡ buildSimulationFromAnswers. */
+export function previewInputsFromAnswers(partial: Partial<WizardAnswers>): SimulationInputs {
+  return buildSimulationFromAnswers({
+    age: partial.age ?? WIZARD_DEFAULT_ANSWERS.age,
+    hasCapital: partial.hasCapital ?? WIZARD_DEFAULT_ANSWERS.hasCapital,
+    capital: partial.capital ?? WIZARD_DEFAULT_ANSWERS.capital,
+    monthly: partial.monthly ?? WIZARD_DEFAULT_ANSWERS.monthly,
+    project: partial.project ?? WIZARD_DEFAULT_ANSWERS.project,
+    duration: partial.duration ?? WIZARD_DEFAULT_ANSWERS.duration,
+    envelope: partial.envelope ?? WIZARD_DEFAULT_ANSWERS.envelope,
+    retirementAge: partial.retirementAge ?? WIZARD_DEFAULT_ANSWERS.retirementAge,
+    risk: partial.risk ?? WIZARD_DEFAULT_ANSWERS.risk,
+  })
 }
 
 /** Libellés FR (clés i18n) des projets — base du nom par défaut d'une simulation. */
