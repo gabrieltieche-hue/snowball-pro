@@ -1431,3 +1431,12 @@ Checklist produit de l'utilisateur (« corrections prioritaires », version ultr
 - **Comparateur multi-enveloppes dédié** (CTO/PEA/AV/PER sur un même scénario).
 - **Migrer les frais des états stockés** v6.3 (0 % → 0,25/0,75 %) si décision.
 - Mobile dédié (toujours le plus gros chantier produit) ; tests e2e automatisés (webapp-testing skill).
+
+## v8 — graphiques dynamiques (10 oct 2026, commit 22a23b3, poussé sur origin/main)
+
+- Demande : les courbes « Projection de votre capital » jugées moches/plates sur capture tablette (traits 2px, `isAnimationActive={false}` partout, or clair #996f09 boueux).
+- Changements (7 fichiers) : animations Recharts réactivées (1200-1500 ms ease-out + activeDots), or clair #a67c00 + `glowGains`/`glowInvested` dans `chartTheme`, courbe gains 3.5px + drop-shadow, gradients enrichis, halo pulsant `.chart-end-pulse` (keyframes `chartPulse`), labels finaux renforcés, grille adoucie. Comparaison/MonteCarlo/Drawdown alignés.
+- Tests `engine.test.ts` : valeurs de palette v8 (3 tests mis à jour).
+- Vérifié : typecheck 0, eslint 0, 433/433 tests, build ok, capture headless PASS (état final) — animations Recharts non capturables en screenshot headless (rAF figé frame 0), prouvé par diag A/B/C ; état final pixel-vérifié, mécanisme d'animation standard.
+- Déployé : Vercel auto-deploy après push, `chart-end-pulse` confirmé en prod.
+- Note : arbre de travail contenait déjà un autre chantier (CHANGELOG, Landing, i18n) — non touché, à committer séparément.
