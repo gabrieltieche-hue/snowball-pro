@@ -11,3 +11,9 @@ dist/
 .github/hooks/
 .github/skills/
 .agents/skills/
+.agents/apex/runs/
+
+# Artefacts locaux (caches Python, sauvegardes ponctuelles d'archive)
+__pycache__/
+*.pyc
+BACKUP-*.tgz
