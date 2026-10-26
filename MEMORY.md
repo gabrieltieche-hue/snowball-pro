@@ -4,6 +4,36 @@
 
 ---
 
+## SESSION — 2026-10-26 (v6.24.0 : onboarding v8 livré, vérifié et déployé)
+
+### Résumé
+
+Demande : « FIX CES 2 POINTS » — finaliser la release **6.24.0** (onboarding v8 « le chiffre d'abord ») et déployer la production, restée en v6.22.1. Les commits du chantier étaient déjà poussés jusqu'à `ff4c048`. Cette session : artefacts de version, vérification navigateur réelle (Selenium + Firefox headless), deux correctifs visuels trouvés en T10, commit/push `225a828`, déploiement Vercel production.
+
+### Décisions
+
+- **Version 6.24.0** : package.json/lock, `sw.js` (`snowball-pro-v6.24.0`), CHANGELOG, `changelog.html`, UPDATES + footer landing, i18n FR/EN, MEMORY.
+- **Vérification navigateur** : parcours complet du premier run à 1440×900, 390×844, 320×568 et 1440 en `prefers-reduced-motion` (questionnaire → révélation → visite guidée → app). Firefox 157 + geckodriver ; clics JS confinés au dialogue (les animations framer-motion font rater les clics natifs ; « Non, je pars de zéro » auto-avance ; projet et durée demandent chacun un « Suivant »).
+- **Correctif 320 px** : le questionnaire (`fixed inset-0 flex items-center`) dépassait sans scroll — haut et bouton « Suivant » rognés. Remplacé par `overflow-y-auto` + wrapper `min-h-full flex items-center` ; preuve par captures haut et bas défilé.
+- **Correctif visite guidée** : `data-tour="settings"` était posé sur toute la barre latérale (plus haute que le viewport) → la bulle se calculait au-dessus, en haut à gauche sur le logo. Cible déplacée sur le groupe « Sections de réglages » et placement latéral sous la cible : la bulle ne recouvre plus le montant principal.
+- **PEA (observation, non corrigé ici)** : la révélation affiche « Épargne 150 000 € » pour 500 €/mois × 35 ans parce que l'enveloppe auto (horizon ≥ 15 ans) = PEA, plafonné à 150 k€ ; le moteur ignore les versements au-delà (comportement préexistant, cohérent avec `buildCashFlows`, mentionné seulement dans la fiscalité). Dette produit à traiter.
+- **Déploiement** : CLI Vercel 65.0.0 via `node /usr/lib/node_modules/vercel/dist/vc.js` (le symlink `/usr/bin/vercel` se bloque au démarrage sur cette machine), token local du projet. Aucun secret affiché.
+
+### Vérifications
+
+- Gate : typecheck ✓ lint ✓ **448/448 tests** (`npx vitest run --no-file-parallelism` ; le mode parallèle échoue parfois au démarrage de worker sous pression RAM) ✓ build ✓ **1 349,93 kB / 389,46 kB gzip**.
+- Visuel : 1440 PASS (questionnaire, aperçu vivant 225 536 → 451 073 €, révélation 969 307 € / 468 339 € aujourd'hui, visite 1→3, app) ; 390 PASS ; 320 PASS après correctif (scroll jusqu'au pied) ; reduced motion PASS (chiffre final immédiat, pas de compteur).
+- **Commit/push** : `225a828` « release: 6.24.0 — onboarding v8… », push `ff4c048..225a828` sur `origin/main`.
+- **Prod** : déploiement Vercel production aliasé `https://snowball-pro.vercel.app` ; footer `© 2026 Snowball Pro · v6.24.0`, `changelog.html` en tête v6.24.0, `sw.js` `snowball-pro-v6.24.0`, index 1 349 931 octets.
+- Flake connu : sous Firefox headless, une transition framer-motion peut se figer (une relance suffit) — sans impact navigateur réel.
+
+### Pistes
+
+- PEA plein : rediriger l'excédent mensuel vers CTO/AV, ou l'annoncer dans `Reveal`.
+- Décider si `--no-file-parallelism` doit être le défaut du script de test sur cette tablette.
+
+---
+
 ## SESSION — 2026-10-23 (v6.23.0 : landing retraite 2008 + app mobile allégée)
 
 ### Résumé
