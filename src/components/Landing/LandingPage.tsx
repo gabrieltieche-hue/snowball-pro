@@ -506,6 +506,11 @@ const MANIFESTO = [
 /** Dernières éditions réelles (CHANGELOG.md) — aucun chiffre inventé. */
 const UPDATES = [
   {
+    version: "v6.24.0",
+    title: "Votre chiffre apparaît dès la première réponse",
+    text: "L'onboarding est refondu : chaque réponse recalcule une projection en direct (chiffre, courbe, krachs inclus), une révélation plein écran met en scène le résultat, et une visite guidée en 3 bulles présente l'app sur votre propre simulation. Le tutoriel passif de 5 écrans disparaît.",
+  },
+  {
     version: "v6.23.0",
     title: "La retraite en 2008 + l'app mobile allégée",
     text: "Nouvelle démo landing : choisissez votre année de retraite (1973, 2000 ou 2008) et votre capital, le moteur rejoue la crise réelle — rente de 4 %, inflation, garde-fous. Côté mobile : en-tête compact, onglets sur une rangée, réglages en tiroir, et les explications secondaires rangées pour ne garder que l'essentiel.",
@@ -2089,7 +2094,7 @@ export function LandingPage() {
           </p>
           <p className="text-[10px] text-text-dim mt-3">
             {tr(
-              "© 2026 Snowball Pro · v6.23.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
+              "© 2026 Snowball Pro · v6.24.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.",
             )}
           </p>
         </div>

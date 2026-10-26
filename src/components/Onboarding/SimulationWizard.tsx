@@ -229,438 +229,444 @@ export function SimulationWizard({ onCancel, onComplete, firstRun = false }: Sim
         firstRun ? tr("Bienvenue — créons votre première simulation") : tr("Nouvelle simulation — questionnaire guidé")
       }
       onKeyDown={trap}
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-surface/95 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[70] overflow-y-auto bg-surface/95 backdrop-blur-sm"
     >
-      <div className="w-full max-w-lg">
-        {/* En-tête : progression + fermeture (aucune croix pour le vrai nouveau
+      {/* min-h-full + centrage : sur un écran court (320x568), la carte peut
+          dépasser — elle défile au lieu d'être rognée en haut et en bas. */}
+      <div className="min-h-full flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          {/* En-tête : progression + fermeture (aucune croix pour le vrai nouveau
             visiteur — le parcours est obligatoire mais agréable). */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-dim">
-            {tr("Question {current} sur {total}", { current: stepIdx + 1, total: steps.length })}
-          </span>
-          {!firstRun && (
-            <button
-              type="button"
-              onClick={onCancel}
-              aria-label={tr("Fermer le questionnaire")}
-              title={tr("Fermer le questionnaire")}
-              className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
-            >
-              <X size={16} aria-hidden />
-            </button>
-          )}
-        </div>
-        {/* Barre de progression */}
-        <div className="h-1.5 rounded-full bg-border/70 overflow-hidden mb-6" aria-hidden>
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-primary-light via-primary to-primary-dark transition-all duration-300"
-            style={{ width: `${((stepIdx + 1) / steps.length) * 100}%` }}
-          />
-        </div>
-        {/* Mot d'accueil du premier run — la promesse de l'onboarding. */}
-        {firstRun && stepIdx === 0 && (
-          <div className="mb-3">
-            <p className="font-display text-base font-extrabold tracking-tight text-text">
-              {tr("Bienvenue sur Snowball Pro")}
-            </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              {tr("Répondez à quelques questions — votre projection se met à jour en direct.")}
-            </p>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-dim">
+              {tr("Question {current} sur {total}", { current: stepIdx + 1, total: steps.length })}
+            </span>
+            {!firstRun && (
+              <button
+                type="button"
+                onClick={onCancel}
+                aria-label={tr("Fermer le questionnaire")}
+                title={tr("Fermer le questionnaire")}
+                className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-glass-hover transition-colors"
+              >
+                <X size={16} aria-hidden />
+              </button>
+            )}
           </div>
-        )}
+          {/* Barre de progression */}
+          <div className="h-1.5 rounded-full bg-border/70 overflow-hidden mb-6" aria-hidden>
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary-light via-primary to-primary-dark transition-all duration-300"
+              style={{ width: `${((stepIdx + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+          {/* Mot d'accueil du premier run — la promesse de l'onboarding. */}
+          {firstRun && stepIdx === 0 && (
+            <div className="mb-3">
+              <p className="font-display text-base font-extrabold tracking-tight text-text">
+                {tr("Bienvenue sur Snowball Pro")}
+              </p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                {tr("Répondez à quelques questions — votre projection se met à jour en direct.")}
+              </p>
+            </div>
+          )}
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="glass rounded-3xl shadow-premium-lg p-6 sm:p-8"
-          >
-            {/* Le chiffre d'abord : la projection vivante ouvre chaque écran. */}
-            <LivePreview rows={previewRows} inputs={previewInputs} className="mb-5" />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="glass rounded-3xl shadow-premium-lg p-6 sm:p-8"
+            >
+              {/* Le chiffre d'abord : la projection vivante ouvre chaque écran. */}
+              <LivePreview rows={previewRows} inputs={previewInputs} className="mb-5" />
 
-            {step === "age" && (
-              <>
-                <StepTitle title={tr("Quel âge avez-vous ?")} sub={tr("Cela nous aide à estimer votre horizon.")} />
-                <div className="grid grid-cols-2 gap-2.5 mt-5">
-                  {AGE_CHOICES.map(age => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => {
-                        pick("age", age)
-                        setCustomStep(null)
-                      }}
-                      className={cn(optionClass(answers.age === age, false), "flex items-center justify-between")}
-                    >
-                      <span className="text-sm font-bold text-text">
-                        {age} {tr("ans")}
-                      </span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => openCustom("age")}
-                    className={cn(optionClass(customStep === "age", false), "col-span-2")}
-                  >
-                    <span className="text-sm font-bold text-text">{tr("Autre")}</span>
-                  </button>
-                </div>
-                {customStep === "age" && (
-                  <CustomAmountInput
-                    id="wizard-age-custom"
-                    label={tr("Votre âge")}
-                    value={customDraft}
-                    placeholder={tr("Votre âge")}
-                    min={15}
-                    max={90}
-                    onChange={raw => commitCustom("age", raw)}
-                  />
-                )}
-              </>
-            )}
-
-            {step === "hasCapital" && (
-              <>
-                <StepTitle
-                  title={tr("Avez-vous de l'argent épargné disponible pour investir ?")}
-                  sub={tr("Capital déjà constitué : livret, compte courant, assurance-vie…")}
-                />
-                <div className="grid grid-cols-2 gap-2.5 mt-5">
-                  {[true, false].map(oui => (
-                    <button
-                      key={String(oui)}
-                      type="button"
-                      onClick={() => pick("hasCapital", oui)}
-                      className={cn(optionClass(answers.hasCapital === oui, false), "py-4")}
-                    >
-                      <span className="text-sm font-bold text-text">
-                        {oui ? tr("Oui") : tr("Non, je pars de zéro")}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {step === "capital" && (
-              <>
-                <StepTitle
-                  title={tr("Combien pouvez-vous investir dès maintenant ?")}
-                  sub={tr("Un ordre de grandeur suffit.")}
-                />
-                <div className="grid grid-cols-2 gap-2.5 mt-5">
-                  {CAPITAL_CHOICES.map(cap => (
-                    <button
-                      key={cap}
-                      type="button"
-                      onClick={() => {
-                        set("capital", cap)
-                        setCustomStep(null)
-                      }}
-                      className={cn(optionClass(answers.capital === cap, false), "flex items-center justify-between")}
-                    >
-                      <span className="text-sm font-bold text-text mono">{fmtCurrency(cap)}</span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => openCustom("capital")}
-                    className={cn(optionClass(customStep === "capital", false), "col-span-2")}
-                  >
-                    <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
-                  </button>
-                </div>
-                {customStep === "capital" && (
-                  <CustomAmountInput
-                    id="wizard-capital-custom"
-                    label={tr("Montant à investir")}
-                    value={customDraft}
-                    placeholder={tr("Autre montant")}
-                    onChange={raw => commitCustom("capital", raw)}
-                  />
-                )}
-              </>
-            )}
-
-            {step === "monthly" && (
-              <>
-                <StepTitle
-                  title={tr("Combien pouvez-vous épargner chaque mois ?")}
-                  sub={tr("Ce que vous pouvez mettre de côté sans vous priver.")}
-                />
-                <div className="grid grid-cols-2 gap-2.5 mt-5">
-                  {MONTHLY_CHOICES.map(m => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        set("monthly", m)
-                        setCustomStep(null)
-                      }}
-                      className={cn(optionClass(answers.monthly === m, false), "flex items-center justify-between")}
-                    >
-                      <span className="text-sm font-bold text-text mono">{fmtCurrency(m)}</span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => openCustom("monthly")}
-                    className={cn(optionClass(customStep === "monthly", false), "col-span-2")}
-                  >
-                    <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
-                  </button>
-                </div>
-                {customStep === "monthly" && (
-                  <CustomAmountInput
-                    id="wizard-monthly-custom"
-                    label={tr("Épargne mensuelle")}
-                    value={customDraft}
-                    placeholder={tr("Autre montant")}
-                    onChange={raw => commitCustom("monthly", raw)}
-                  />
-                )}
-              </>
-            )}
-
-            {step === "project" && (
-              <>
-                <StepTitle
-                  title={tr("Pour quel projet souhaitez-vous investir ?")}
-                  sub={tr("Le projet fixe un horizon conseillé — ajustable à l'étape suivante.")}
-                />
-                <div className="grid grid-cols-1 gap-2.5 mt-5">
-                  {PROJECT_OPTIONS.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        pick("project", p.id)
-                        set("duration", recommendDuration(p.id))
-                      }}
-                      className={cn(
-                        optionClass(answers.project === p.id, false),
-                        "flex items-start justify-between gap-3",
-                      )}
-                    >
-                      <span>
-                        <span className="block text-sm font-bold text-text">{tr(p.label)}</span>
-                        <span className="block text-[11px] text-text-dim mt-0.5">{tr(p.desc)}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {step === "duration" && (
-              <>
-                <StepTitle
-                  title={tr("Pendant combien d'années ?")}
-                  sub={tr("L'horizon conseillé pour votre projet est indiqué d'une étoile.")}
-                />
-                <div className="grid grid-cols-4 gap-2 mt-5">
-                  {DURATION_CHOICES.map(d => {
-                    const rec = recommendedDuration !== null && d === recommendedDuration
-                    return (
+              {step === "age" && (
+                <>
+                  <StepTitle title={tr("Quel âge avez-vous ?")} sub={tr("Cela nous aide à estimer votre horizon.")} />
+                  <div className="grid grid-cols-2 gap-2.5 mt-5">
+                    {AGE_CHOICES.map(age => (
                       <button
-                        key={d}
+                        key={age}
                         type="button"
-                        onClick={() => set("duration", d)}
-                        className={cn(optionClass(answers.duration === d, rec), "py-3.5 text-center")}
+                        onClick={() => {
+                          pick("age", age)
+                          setCustomStep(null)
+                        }}
+                        className={cn(optionClass(answers.age === age, false), "flex items-center justify-between")}
                       >
-                        <span className="block text-sm font-bold text-text">{d}</span>
-                        <span className="block text-[10px] text-text-dim">{tr("ans")}</span>
-                        {rec && (
-                          <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-primary-light via-primary to-primary-dark shadow-gold flex items-center justify-center">
-                            <Star size={10} className="btn-gold-text fill-current" aria-hidden />
-                          </span>
-                        )}
+                        <span className="text-sm font-bold text-text">
+                          {age} {tr("ans")}
+                        </span>
                       </button>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {step === "envelope" && (
-              <>
-                <StepTitle
-                  title={tr("Où souhaitez-vous placer cet argent ?")}
-                  sub={tr(
-                    "L'étoile marque la meilleure option pour votre horizon — « Je ne sais pas » laisse l'app choisir.",
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => openCustom("age")}
+                      className={cn(optionClass(customStep === "age", false), "col-span-2")}
+                    >
+                      <span className="text-sm font-bold text-text">{tr("Autre")}</span>
+                    </button>
+                  </div>
+                  {customStep === "age" && (
+                    <CustomAmountInput
+                      id="wizard-age-custom"
+                      label={tr("Votre âge")}
+                      value={customDraft}
+                      placeholder={tr("Votre âge")}
+                      min={15}
+                      max={90}
+                      onChange={raw => commitCustom("age", raw)}
+                    />
                   )}
-                />
-                <div className="grid grid-cols-1 gap-2.5 mt-5">
-                  {(["pea", "av", "cto", "per"] as EnvelopeType[]).map(env => {
-                    const cfg = ENVELOPE_CONFIGS.find(c => c.id === env)
-                    const rec = recommendedEnvelope === env
-                    return (
+                </>
+              )}
+
+              {step === "hasCapital" && (
+                <>
+                  <StepTitle
+                    title={tr("Avez-vous de l'argent épargné disponible pour investir ?")}
+                    sub={tr("Capital déjà constitué : livret, compte courant, assurance-vie…")}
+                  />
+                  <div className="grid grid-cols-2 gap-2.5 mt-5">
+                    {[true, false].map(oui => (
                       <button
-                        key={env}
+                        key={String(oui)}
                         type="button"
-                        onClick={() => set("envelope", env)}
+                        onClick={() => pick("hasCapital", oui)}
+                        className={cn(optionClass(answers.hasCapital === oui, false), "py-4")}
+                      >
+                        <span className="text-sm font-bold text-text">
+                          {oui ? tr("Oui") : tr("Non, je pars de zéro")}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === "capital" && (
+                <>
+                  <StepTitle
+                    title={tr("Combien pouvez-vous investir dès maintenant ?")}
+                    sub={tr("Un ordre de grandeur suffit.")}
+                  />
+                  <div className="grid grid-cols-2 gap-2.5 mt-5">
+                    {CAPITAL_CHOICES.map(cap => (
+                      <button
+                        key={cap}
+                        type="button"
+                        onClick={() => {
+                          set("capital", cap)
+                          setCustomStep(null)
+                        }}
+                        className={cn(optionClass(answers.capital === cap, false), "flex items-center justify-between")}
+                      >
+                        <span className="text-sm font-bold text-text mono">{fmtCurrency(cap)}</span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => openCustom("capital")}
+                      className={cn(optionClass(customStep === "capital", false), "col-span-2")}
+                    >
+                      <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
+                    </button>
+                  </div>
+                  {customStep === "capital" && (
+                    <CustomAmountInput
+                      id="wizard-capital-custom"
+                      label={tr("Montant à investir")}
+                      value={customDraft}
+                      placeholder={tr("Autre montant")}
+                      onChange={raw => commitCustom("capital", raw)}
+                    />
+                  )}
+                </>
+              )}
+
+              {step === "monthly" && (
+                <>
+                  <StepTitle
+                    title={tr("Combien pouvez-vous épargner chaque mois ?")}
+                    sub={tr("Ce que vous pouvez mettre de côté sans vous priver.")}
+                  />
+                  <div className="grid grid-cols-2 gap-2.5 mt-5">
+                    {MONTHLY_CHOICES.map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          set("monthly", m)
+                          setCustomStep(null)
+                        }}
+                        className={cn(optionClass(answers.monthly === m, false), "flex items-center justify-between")}
+                      >
+                        <span className="text-sm font-bold text-text mono">{fmtCurrency(m)}</span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => openCustom("monthly")}
+                      className={cn(optionClass(customStep === "monthly", false), "col-span-2")}
+                    >
+                      <span className="text-sm font-bold text-text">{tr("Autre montant")}</span>
+                    </button>
+                  </div>
+                  {customStep === "monthly" && (
+                    <CustomAmountInput
+                      id="wizard-monthly-custom"
+                      label={tr("Épargne mensuelle")}
+                      value={customDraft}
+                      placeholder={tr("Autre montant")}
+                      onChange={raw => commitCustom("monthly", raw)}
+                    />
+                  )}
+                </>
+              )}
+
+              {step === "project" && (
+                <>
+                  <StepTitle
+                    title={tr("Pour quel projet souhaitez-vous investir ?")}
+                    sub={tr("Le projet fixe un horizon conseillé — ajustable à l'étape suivante.")}
+                  />
+                  <div className="grid grid-cols-1 gap-2.5 mt-5">
+                    {PROJECT_OPTIONS.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          pick("project", p.id)
+                          set("duration", recommendDuration(p.id))
+                        }}
                         className={cn(
-                          optionClass(answers.envelope === env, rec),
+                          optionClass(answers.project === p.id, false),
+                          "flex items-start justify-between gap-3",
+                        )}
+                      >
+                        <span>
+                          <span className="block text-sm font-bold text-text">{tr(p.label)}</span>
+                          <span className="block text-[11px] text-text-dim mt-0.5">{tr(p.desc)}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === "duration" && (
+                <>
+                  <StepTitle
+                    title={tr("Pendant combien d'années ?")}
+                    sub={tr("L'horizon conseillé pour votre projet est indiqué d'une étoile.")}
+                  />
+                  <div className="grid grid-cols-4 gap-2 mt-5">
+                    {DURATION_CHOICES.map(d => {
+                      const rec = recommendedDuration !== null && d === recommendedDuration
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => set("duration", d)}
+                          className={cn(optionClass(answers.duration === d, rec), "py-3.5 text-center")}
+                        >
+                          <span className="block text-sm font-bold text-text">{d}</span>
+                          <span className="block text-[10px] text-text-dim">{tr("ans")}</span>
+                          {rec && (
+                            <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-primary-light via-primary to-primary-dark shadow-gold flex items-center justify-center">
+                              <Star size={10} className="btn-gold-text fill-current" aria-hidden />
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+
+              {step === "envelope" && (
+                <>
+                  <StepTitle
+                    title={tr("Où souhaitez-vous placer cet argent ?")}
+                    sub={tr(
+                      "L'étoile marque la meilleure option pour votre horizon — « Je ne sais pas » laisse l'app choisir.",
+                    )}
+                  />
+                  <div className="grid grid-cols-1 gap-2.5 mt-5">
+                    {(["pea", "av", "cto", "per"] as EnvelopeType[]).map(env => {
+                      const cfg = ENVELOPE_CONFIGS.find(c => c.id === env)
+                      const rec = recommendedEnvelope === env
+                      return (
+                        <button
+                          key={env}
+                          type="button"
+                          onClick={() => set("envelope", env)}
+                          className={cn(
+                            optionClass(answers.envelope === env, rec),
+                            "flex items-start justify-between gap-3",
+                          )}
+                        >
+                          <span>
+                            <span className="block text-sm font-bold text-text">
+                              {cfg ? tr(cfg.name) : env}
+                              {rec && (
+                                <span className="ml-2 inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-primary align-middle">
+                                  <Star size={10} className="fill-primary" aria-hidden /> {tr("Recommandé")}
+                                </span>
+                              )}
+                            </span>
+                            <span className="block text-[11px] text-text-dim mt-0.5">{cfg ? tr(cfg.desc) : ""}</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => set("envelope", "auto")}
+                      className={cn(optionClass(answers.envelope === "auto", false))}
+                    >
+                      <span className="block text-sm font-bold text-text">
+                        {tr("Je ne sais pas — recommandez-moi")}
+                      </span>
+                      <span className="block text-[11px] text-text-dim mt-0.5">
+                        {tr("L'app choisit la meilleure enveloppe pour votre horizon.")}
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {step === "retirementAge" && (
+                <>
+                  <StepTitle
+                    title={tr("À quel âge voulez-vous arrêter de travailler ?")}
+                    sub={tr("L'app estime la durée pendant laquelle votre épargne devra vous faire vivre.")}
+                  />
+                  <div className="grid grid-cols-3 gap-2.5 mt-5">
+                    {RETIREMENT_AGE_CHOICES.map(age => (
+                      <button
+                        key={age}
+                        type="button"
+                        onClick={() => set("retirementAge", age)}
+                        className={cn(optionClass(answers.retirementAge === age, false), "py-3.5 text-center")}
+                      >
+                        <span className="text-sm font-bold text-text">
+                          {age} {tr("ans")}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === "risk" && (
+                <>
+                  <StepTitle
+                    title={tr("Comment réagiriez-vous si votre épargne baissait temporairement ?")}
+                    sub={tr("Le marché monte et descend : votre confort face aux variations guide la projection.")}
+                  />
+                  <div className="grid grid-cols-1 gap-2.5 mt-5">
+                    {RISK_OPTIONS.map(r => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => set("risk", r.id)}
+                        className={cn(
+                          optionClass(answers.risk === r.id, r.id === "equilibre"),
                           "flex items-start justify-between gap-3",
                         )}
                       >
                         <span>
                           <span className="block text-sm font-bold text-text">
-                            {cfg ? tr(cfg.name) : env}
-                            {rec && (
+                            {tr(r.label)}
+                            {r.id === "equilibre" && (
                               <span className="ml-2 inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-primary align-middle">
                                 <Star size={10} className="fill-primary" aria-hidden /> {tr("Recommandé")}
                               </span>
                             )}
                           </span>
-                          <span className="block text-[11px] text-text-dim mt-0.5">{cfg ? tr(cfg.desc) : ""}</span>
+                          <span className="block text-[11px] text-text-dim mt-0.5">{tr(r.desc)}</span>
                         </span>
                       </button>
-                    )
-                  })}
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === "name" && (
+                <>
+                  <StepTitle
+                    title={tr("Nommez votre simulation")}
+                    sub={tr("Retrouvez-la plus tard dans l'onglet « Mes simulations ».")}
+                  />
+                  <div className="mt-5">
+                    <label htmlFor="wizard-sim-name" className="sr-only">
+                      {tr("Nom de la simulation")}
+                    </label>
+                    <input
+                      id="wizard-sim-name"
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder={defaultName}
+                      className="w-full rounded-xl border border-border bg-surface-50/40 px-4 py-3 text-sm font-bold text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  {/* Récapitulatif : la valeur promise, résultat d'abord. */}
+                  <div className="mt-4 rounded-xl border border-border/70 bg-surface-50/40 p-3.5 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Wallet size={16} aria-hidden />
+                    </div>
+                    <div className="min-w-0 text-[11px] text-text-muted leading-snug">
+                      {tr("Capital initial")} {fmtCurrency(answers.hasCapital ? (answers.capital ?? 0) : 0)} ·{" "}
+                      {tr("versement")} {fmtCurrency(answers.monthly ?? 0)}/{tr("mois")} · {answers.duration ?? 25}{" "}
+                      {tr("ans")} ·{" "}
+                      {answers.envelope === "auto"
+                        ? tr("enveloppe recommandée")
+                        : tr(ENVELOPE_CONFIGS.find(c => c.id === answers.envelope)?.name ?? "")}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Pied : Retour / Suivant (ou « Voir mon résultat » sur la dernière étape). */}
+              <div className="flex items-center justify-between gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={back}
+                  disabled={stepIdx === 0}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[11px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={14} aria-hidden /> {tr("Retour")}
+                </button>
+                {isLast ? (
                   <button
                     type="button"
-                    onClick={() => set("envelope", "auto")}
-                    className={cn(optionClass(answers.envelope === "auto", false))}
+                    onClick={next}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-b from-primary-light via-primary to-primary-dark btn-gold-text text-[12px] font-extrabold shadow-gold transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
                   >
-                    <span className="block text-sm font-bold text-text">{tr("Je ne sais pas — recommandez-moi")}</span>
-                    <span className="block text-[11px] text-text-dim mt-0.5">
-                      {tr("L'app choisit la meilleure enveloppe pour votre horizon.")}
-                    </span>
+                    {tr("Voir mon résultat")}
+                    <ArrowRight size={14} aria-hidden />
                   </button>
-                </div>
-              </>
-            )}
-
-            {step === "retirementAge" && (
-              <>
-                <StepTitle
-                  title={tr("À quel âge voulez-vous arrêter de travailler ?")}
-                  sub={tr("L'app estime la durée pendant laquelle votre épargne devra vous faire vivre.")}
-                />
-                <div className="grid grid-cols-3 gap-2.5 mt-5">
-                  {RETIREMENT_AGE_CHOICES.map(age => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => set("retirementAge", age)}
-                      className={cn(optionClass(answers.retirementAge === age, false), "py-3.5 text-center")}
-                    >
-                      <span className="text-sm font-bold text-text">
-                        {age} {tr("ans")}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {step === "risk" && (
-              <>
-                <StepTitle
-                  title={tr("Comment réagiriez-vous si votre épargne baissait temporairement ?")}
-                  sub={tr("Le marché monte et descend : votre confort face aux variations guide la projection.")}
-                />
-                <div className="grid grid-cols-1 gap-2.5 mt-5">
-                  {RISK_OPTIONS.map(r => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => set("risk", r.id)}
-                      className={cn(
-                        optionClass(answers.risk === r.id, r.id === "equilibre"),
-                        "flex items-start justify-between gap-3",
-                      )}
-                    >
-                      <span>
-                        <span className="block text-sm font-bold text-text">
-                          {tr(r.label)}
-                          {r.id === "equilibre" && (
-                            <span className="ml-2 inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-primary align-middle">
-                              <Star size={10} className="fill-primary" aria-hidden /> {tr("Recommandé")}
-                            </span>
-                          )}
-                        </span>
-                        <span className="block text-[11px] text-text-dim mt-0.5">{tr(r.desc)}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {step === "name" && (
-              <>
-                <StepTitle
-                  title={tr("Nommez votre simulation")}
-                  sub={tr("Retrouvez-la plus tard dans l'onglet « Mes simulations ».")}
-                />
-                <div className="mt-5">
-                  <label htmlFor="wizard-sim-name" className="sr-only">
-                    {tr("Nom de la simulation")}
-                  </label>
-                  <input
-                    id="wizard-sim-name"
-                    type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder={defaultName}
-                    className="w-full rounded-xl border border-border bg-surface-50/40 px-4 py-3 text-sm font-bold text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-                {/* Récapitulatif : la valeur promise, résultat d'abord. */}
-                <div className="mt-4 rounded-xl border border-border/70 bg-surface-50/40 p-3.5 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <Wallet size={16} aria-hidden />
-                  </div>
-                  <div className="min-w-0 text-[11px] text-text-muted leading-snug">
-                    {tr("Capital initial")} {fmtCurrency(answers.hasCapital ? (answers.capital ?? 0) : 0)} ·{" "}
-                    {tr("versement")} {fmtCurrency(answers.monthly ?? 0)}/{tr("mois")} · {answers.duration ?? 25}{" "}
-                    {tr("ans")} ·{" "}
-                    {answers.envelope === "auto"
-                      ? tr("enveloppe recommandée")
-                      : tr(ENVELOPE_CONFIGS.find(c => c.id === answers.envelope)?.name ?? "")}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Pied : Retour / Suivant (ou « Voir mon résultat » sur la dernière étape). */}
-            <div className="flex items-center justify-between gap-3 mt-6">
-              <button
-                type="button"
-                onClick={back}
-                disabled={stepIdx === 0}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[11px] font-bold text-text-muted hover:text-text hover:bg-glass-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={14} aria-hidden /> {tr("Retour")}
-              </button>
-              {isLast ? (
-                <button
-                  type="button"
-                  onClick={next}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-b from-primary-light via-primary to-primary-dark btn-gold-text text-[12px] font-extrabold shadow-gold transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
-                >
-                  {tr("Voir mon résultat")}
-                  <ArrowRight size={14} aria-hidden />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={next}
-                  disabled={!answered(step)}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary/10 text-primary border border-primary/30 text-[12px] font-extrabold transition-all duration-150 hover:bg-primary/20 active:scale-[0.98] disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  {tr("Suivant")}
-                  <ArrowRight size={14} aria-hidden />
-                </button>
-              )}
-            </div>
-          </motion.div>
-        </AnimatePresence>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={next}
+                    disabled={!answered(step)}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary/10 text-primary border border-primary/30 text-[12px] font-extrabold transition-all duration-150 hover:bg-primary/20 active:scale-[0.98] disabled:opacity-35 disabled:cursor-not-allowed"
+                  >
+                    {tr("Suivant")}
+                    <ArrowRight size={14} aria-hidden />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   )

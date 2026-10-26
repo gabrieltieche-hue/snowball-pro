@@ -211,7 +211,6 @@ export function Sidebar({
 
   return (
     <aside
-      data-tour="settings"
       className={cn(
         "glass rounded-3xl shadow-premium",
         // Rail replié : pas de overflow-hidden (les tooltips débordent à
@@ -250,7 +249,11 @@ export function Sidebar({
           {/* Séparateur après la marque (desktop uniquement). */}
           <div className="hidden lg:block w-9 h-px bg-border/70" aria-hidden />
 
-          <nav aria-label={tr("Sections de réglages")} className="flex lg:flex-col items-center gap-1 lg:gap-2">
+          <nav
+            aria-label={tr("Sections de réglages")}
+            data-tour="settings"
+            className="flex lg:flex-col items-center gap-1 lg:gap-2"
+          >
             {SECTIONS.map(({ id, label, icon: Icon }) => {
               const active = openSections[id]
               return (

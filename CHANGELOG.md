@@ -4,6 +4,30 @@
 
 ---
 
+## v6.24.0 — L'onboarding montre votre chiffre dès la première réponse
+
+Refonte complète du premier contact (plan v8 « Le chiffre d'abord ») : le tutoriel passif de 5 écrans disparaît. Le questionnaire s'ouvre directement chez le vrai nouveau visiteur, et **chaque réponse recalcule une projection réelle** (chiffre + courbe, krachs historiques inclus) avant que le résultat ne soit mis en scène.
+
+### 🎯 Parcours nouveau visiteur
+
+- **Aperçu vivant** : `previewInputsFromAnswers` branche les réponses partielles sur le vrai moteur ; `LivePreview` affiche le capital projeté, l'euro d'aujourd'hui et une sparkline redessinée à chaque question (valeur aussi en `sr-only` + `aria-live`).
+- **Révélation plein écran** (`Reveal.tsx`) : compteur de cérémonie 1,6 s, décomposition épargne/croissance, courbe qui se dessine, note d'honnêteté, CTA « Ouvrir ma simulation » + « Modifier mes réponses » (réponses conservées).
+- **Visite guidée 3 bulles** (`SpotlightTour.tsx`) sur la vraie simulation : cibles `data-tour` héros/onglets/réglages, « Passer »/« Suivant »/« Terminé », Échap, repli centré si la cible est absente (mobile).
+- **Tutoriel v7 supprimé** (`Tutorial.tsx`) ; clé `snowball_v5_tutorial_done` conservée — aucun utilisateur existant ne revoit l'onboarding.
+- **Visiteur connu** : « Nouvelle simulation » ouvre le même questionnaire, fermable (croix + Échap), sans visite guidée.
+
+### 🔧 Technique
+
+- Hooks partagés extraits : `useCountUp` (landing + onboarding) et `useFocusTrap`.
+- `WIZARD_DEFAULT_ANSWERS` + `previewInputsFromAnswers` exportés par le moteur ; 17 clés FR→EN.
+- Tests : 9 tests ajoutés (moteur + composants) — **448/448**.
+- Gate : typecheck ✓ lint ✓ i18n 0 clé manquante ✓ **448/448 tests** ✓ build ✓.
+- Vérification navigateur réelle (Firefox headless, 1440×900 / 390×844 / 320×568, reduced motion), verdicts visuels consignés dans MEMORY.md.
+- Correctifs issus de cette vérification : questionnaire défilable à 320 px (pied « Suivant » atteignable, plus de haut rogné) et visite guidée ancrée au groupe de réglages (elle ne recouvre plus le montant principal).
+- Version 6.23.0 → **6.24.0** (package.json, package-lock.json, `public/sw.js` `CACHE_VERSION` = `snowball-pro-v6.24.0`, footer landing v6.24.0, « Dernières éditions » v6.24.0, changelog.html), CHANGELOG (cette entrée), MEMORY.md (entrée session).
+
+---
+
 ## v6.23.0 — La retraite en 2008 + l'app mobile allégée
 
 Deux chantiers : le **dernier de la feuille de route landing** (5.3 — « et si vous partiez à la retraite en 2008 ? ») et une **refonte de la densité sur mobile** (en-tête, onglets, réglages, explications). Au passage, le lot graphiques v8 (commit `22a23b3`, déjà sur `main`) est enfin documenté — il était resté sans entrée.

@@ -98,9 +98,25 @@ export function SpotlightTour({ onClose }: SpotlightTourProps) {
     const cardW = Math.min(CARD_WIDTH, Math.max(viewportW - 24, 240))
     if (rect) {
       const cardH = cardRef.current?.getBoundingClientRect().height || CARD_ESTIMATED_HEIGHT
-      const below = rect.bottom + 12
-      const top = below + cardH <= viewportH - 12 ? below : Math.max(12, rect.top - cardH - 12)
-      const left = Math.min(Math.max(rect.left + rect.width / 2 - cardW / 2, 12), Math.max(12, viewportW - cardW - 12))
+      const maxTop = Math.max(12, viewportH - cardH - 12)
+      // Cible verticale à gauche (barre latérale des réglages) : la placer
+      // sous/au-dessus la ferait sortir de l'écran (la barre est plus haute
+      // que le viewport) et la bulle finissait sur le logo. On l'ancre à
+      // droite de la cible, en haut de celle-ci.
+      const isSideTarget = rect.left < viewportW * 0.2 && rect.width < viewportW * 0.4
+      let top: number
+      let left: number
+      if (isSideTarget) {
+        left = Math.min(rect.right + 12, Math.max(12, viewportW - cardW - 12))
+        // Sous la cible si la place le permet (groupe de réglages), sinon en
+        // haut — une barre latérale plus haute que l'écran n'a pas de dessous.
+        const below = rect.bottom + 12
+        top = below + cardH <= viewportH - 12 ? below : Math.min(Math.max(rect.top, 12), maxTop)
+      } else {
+        const below = rect.bottom + 12
+        top = below + cardH <= viewportH - 12 ? below : Math.max(12, rect.top - cardH - 12)
+        left = Math.min(Math.max(rect.left + rect.width / 2 - cardW / 2, 12), Math.max(12, viewportW - cardW - 12))
+      }
       cardStyle = { top, left, width: cardW }
     }
   }

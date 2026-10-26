@@ -1057,6 +1057,10 @@ const EN: Record<string, string> = {
   "Les autres simulateurs supposent un rendement fixe.": "Other simulators assume a fixed return.",
   "Nous, on rejoue 100 ans de vraie histoire, krachs inclus.": "We replay 100 years of real history, crashes included.",
   // ─── Landing v6.22.1 : carte démo compacte ──────────────────────────────
+  // ─── Landing v6.24.0 : onboarding v8 « le chiffre d'abord » ──────────────
+  "Votre chiffre apparaît dès la première réponse": "Your number appears from the very first answer",
+  "L'onboarding est refondu : chaque réponse recalcule une projection en direct (chiffre, courbe, krachs inclus), une révélation plein écran met en scène le résultat, et une visite guidée en 3 bulles présente l'app sur votre propre simulation. Le tutoriel passif de 5 écrans disparaît.":
+    "Onboarding redesigned: every answer recomputes a live projection (number, chart, crashes included), a full-screen reveal stages the result, and a 3-bubble guided tour introduces the app on your own simulation. The passive 5-screen tutorial is gone.",
   // ─── Landing v6.23.0 : retraite 2008 + mobile allégé ─────────────────────
   "La retraite en 2008 + l'app mobile allégée": "Retiring in 2008 + a lighter mobile app",
   "Nouvelle démo landing : choisissez votre année de retraite (1973, 2000 ou 2008) et votre capital, le moteur rejoue la crise réelle — rente de 4 %, inflation, garde-fous. Côté mobile : en-tête compact, onglets sur une rangée, réglages en tiroir, et les explications secondaires rangées pour ne garder que l'essentiel.":
@@ -1064,8 +1068,8 @@ const EN: Record<string, string> = {
   "La carte démo tient à l'écran": "The demo card fits on screen",
   "La fenêtre de simulation du héro est compactée (courbe réduite, espacements resserrés) : le bouton « Repartir de cette simulation » est visible dès l'arrivée, sans scroller.":
     "The hero simulation card is compacted (shorter chart, tighter spacing): the “Start from this simulation” button is visible on arrival, no scrolling needed.",
-  "© 2026 Snowball Pro · v6.23.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
-    "© 2026 Snowball Pro · v6.23.0 · 100% local data · Made with real returns, not promises.",
+  "© 2026 Snowball Pro · v6.24.0 · Données 100 % locales · Fait avec les rendements réels, pas des promesses.":
+    "© 2026 Snowball Pro · v6.24.0 · 100% local data · Made with real returns, not promises.",
   // ─── Landing v6.22 : démo éditable du héro (2.1) ─────────────────────────
   "La démo du héro devient éditable": "The hero demo becomes editable",
   "Le héro n'est plus une vitrine : 3 curseurs (montant initial, versement mensuel, durée) recalculent le vrai moteur en direct, avec le sélecteur Prudent/Central/Optimiste et le bouton « Repartir de cette simulation » qui pré-remplit l'app via deep-link #s=.":
