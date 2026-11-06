@@ -22,12 +22,14 @@
     "ios:open": "npx cap open ios"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "clsx": "2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.25.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.9.2",
+    "stripe": "^23.1.0",
     "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
