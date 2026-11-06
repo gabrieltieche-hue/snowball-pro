@@ -1470,3 +1470,21 @@ Checklist produit de l'utilisateur (« corrections prioritaires », version ultr
 - Vérifié : typecheck 0, eslint 0, 433/433 tests, build ok, capture headless PASS (état final) — animations Recharts non capturables en screenshot headless (rAF figé frame 0), prouvé par diag A/B/C ; état final pixel-vérifié, mécanisme d'animation standard.
 - Déployé : Vercel auto-deploy après push, `chart-end-pulse` confirmé en prod.
 - Note : arbre de travail contenait déjà un autre chantier (CHANGELOG, Landing, i18n) — non touché, à committer séparément.
+
+---
+
+## SESSION — 2026-11-06 (v6.24.x : fondations SaaS — Supabase + Stripe)
+
+### Résumé
+- Choix utilisateur : modèle A (soutien) + C (SaaS léger), stack Supabase + Stripe, tier Slim Pro pour plus tard (tout reste gratuit et très généreux pour l'instant).
+- Fondations posées sans rupture de la promesse locale : client Supabase lazy (null si env absents), endpoints Vercel `/api/stripe/create-checkout` et `/api/stripe/webhook`, `.env.example`, blueprint `docs/SAAS-BLUEPRINT.md` avec checklist.
+- Pricing page : bloc « Soutenir le projet + liste d'attente Pro ».
+- Déployé en production (Vercel READY, alias `https://snowball-pro.vercel.app`). Endpoints inactifs tant que les env vars ne sont pas renseignées.
+- Commit `0412467` poussé (push à confirmer).
+
+### Prochaines étapes (dépendent des comptes utilisateur)
+1. Créer projet Supabase + tables + RLS ; remplir env Vercel.
+2. Créer produit/prix Stripe + webhook URL.
+3. Implémenter login cloud optionnel + sync multi-appareils.
+4. Webhook → mise à jour plan Pro.
+5. Lancement Product Hunt / Hacker News.
